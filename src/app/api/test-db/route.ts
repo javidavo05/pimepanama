@@ -18,12 +18,13 @@ export async function GET() {
         services: serviceCount,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
+    const err = error as { message?: string; code?: string };
     return NextResponse.json(
       {
         status: "error",
-        message: error.message,
-        code: error.code,
+        message: err.message || "Unknown error",
+        code: err.code || "unknown",
         database: process.env.DATABASE_URL ? "configured" : "not configured",
       },
       { status: 500 }
