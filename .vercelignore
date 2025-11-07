@@ -1,0 +1,11 @@
+# Vercel ignore file
+.env*
+!.env.example
+prisma/dev.db
+prisma/dev.db-journal
+.npm-cache/
+supabase-*.sql
+.env.supabase
+*.md
+!README.md
+
