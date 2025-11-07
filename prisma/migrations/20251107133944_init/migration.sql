@@ -1,26 +1,32 @@
+-- CreateEnum
+CREATE TYPE "AdminRole" AS ENUM ('OWNER', 'STAFF');
+
 -- CreateTable
 CREATE TABLE "AdminUser" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "passwordHash" TEXT NOT NULL,
-    "role" TEXT NOT NULL DEFAULT 'STAFF',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "role" "AdminRole" NOT NULL DEFAULT 'STAFF',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AdminUser_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "AdminSession" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "token" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "expiresAt" DATETIME NOT NULL,
-    CONSTRAINT "AdminSession_userId_fkey" FOREIGN KEY ("userId") REFERENCES "AdminUser" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "AdminSession_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Hero" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "headline_en" TEXT NOT NULL,
     "headline_es" TEXT NOT NULL,
     "subheadline_en" TEXT NOT NULL,
@@ -35,13 +41,15 @@ CREATE TABLE "Hero" (
     "ctaSecondaryLabel_en" TEXT,
     "ctaSecondaryLabel_es" TEXT,
     "ctaSecondaryLink" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Hero_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "PageSection" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "title_en" TEXT,
     "title_es" TEXT,
@@ -49,13 +57,15 @@ CREATE TABLE "PageSection" (
     "subtitle_es" TEXT,
     "body_en" TEXT,
     "body_es" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PageSection_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Service" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "order" INTEGER NOT NULL DEFAULT 0,
     "icon" TEXT,
@@ -64,39 +74,45 @@ CREATE TABLE "Service" (
     "title_es" TEXT NOT NULL,
     "description_en" TEXT NOT NULL,
     "description_es" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Service_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Sector" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "order" INTEGER NOT NULL DEFAULT 0,
     "title_en" TEXT NOT NULL,
     "title_es" TEXT NOT NULL,
     "description_en" TEXT,
     "description_es" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Sector_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Differentiator" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "order" INTEGER NOT NULL DEFAULT 0,
     "title_en" TEXT NOT NULL,
     "title_es" TEXT NOT NULL,
     "description_en" TEXT NOT NULL,
     "description_es" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Differentiator_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "PortfolioItem" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "order" INTEGER NOT NULL DEFAULT 0,
     "imageUrl" TEXT,
@@ -110,13 +126,15 @@ CREATE TABLE "PortfolioItem" (
     "outcome_en" TEXT,
     "outcome_es" TEXT,
     "caseStudyUrl" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PortfolioItem_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "CallToAction" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
     "order" INTEGER NOT NULL DEFAULT 0,
     "eyebrow_en" TEXT,
@@ -128,13 +146,15 @@ CREATE TABLE "CallToAction" (
     "buttonLabel_en" TEXT,
     "buttonLabel_es" TEXT,
     "buttonLink" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "CallToAction_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "SeoSetting" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "page" TEXT NOT NULL,
     "metaTitle_en" TEXT NOT NULL,
     "metaTitle_es" TEXT NOT NULL,
@@ -143,8 +163,10 @@ CREATE TABLE "SeoSetting" (
     "ogImageUrl" TEXT,
     "keywords_en" TEXT,
     "keywords_es" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "SeoSetting_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -173,3 +195,6 @@ CREATE UNIQUE INDEX "CallToAction_slug_key" ON "CallToAction"("slug");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "SeoSetting_page_key" ON "SeoSetting"("page");
+
+-- AddForeignKey
+ALTER TABLE "AdminSession" ADD CONSTRAINT "AdminSession_userId_fkey" FOREIGN KEY ("userId") REFERENCES "AdminUser"("id") ON DELETE CASCADE ON UPDATE CASCADE;
