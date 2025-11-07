@@ -1,4 +1,8 @@
 import { NextResponse } from "next/server";
+import { Resend } from "resend";
+import { getAdminNotificationEmail, getCustomerThankYouEmail } from "@/lib/email-templates";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: Request) {
   try {
@@ -13,45 +17,37 @@ export async function POST(request: Request) {
       );
     }
 
-    // Aquí enviarías el email usando un servicio como Resend, SendGrid, etc.
-    // Por ahora, solo logueamos la información
-    console.log("Contact form submission:", {
+    const contactData = {
       name,
       email,
       company,
       phone,
       message,
-      locale,
-      timestamp: new Date().toISOString(),
-    });
+      locale: locale || "en",
+    };
 
-    // En producción, implementarías algo como:
-    /*
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    
+    // Send notification to admin
+    const adminEmail = getAdminNotificationEmail(contactData);
     await resend.emails.send({
-      from: 'PIME Panama <noreply@pimepanama.com>',
-      to: 'info@pimepanama.com',
-      subject: `New Contact Request from ${name}`,
-      html: `
-        <h2>New Contact Request</h2>
-        <p><strong>Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Company:</strong> ${company || 'N/A'}</p>
-        <p><strong>Phone:</strong> ${phone || 'N/A'}</p>
-        <p><strong>Message:</strong></p>
-        <p>${message}</p>
-      `,
+      from: "PIME Panama <onboarding@resend.dev>", // Cambiar a tu dominio verificado
+      to: "info@pimepanama.com",
+      subject: adminEmail.subject,
+      html: adminEmail.html,
     });
-    */
 
-    // Por ahora, simulamos un envío exitoso
+    // Send thank you email to customer
+    const thankYouEmail = getCustomerThankYouEmail(contactData);
+    await resend.emails.send({
+      from: "PIME Panama <onboarding@resend.dev>", // Cambiar a tu dominio verificado
+      to: email,
+      subject: thankYouEmail.subject,
+      html: thankYouEmail.html,
+    });
+
     return NextResponse.json(
       { 
         success: true, 
-        message: "Email sent successfully",
-        // En desarrollo, incluimos los datos para verificación
-        data: process.env.NODE_ENV === "development" ? body : undefined 
+        message: "Emails sent successfully"
       },
       { status: 200 }
     );
