@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
 import { getAdminNotificationEmail, getCustomerThankYouEmail } from "@/lib/email-templates";
+import { sendEmail } from "@/lib/email-service";
 
 export async function POST(request: Request) {
-  const resend = new Resend(process.env.RESEND_API_KEY);
   try {
     const body = await request.json();
     const { name, email, company, phone, message, locale } = body;
@@ -27,8 +26,7 @@ export async function POST(request: Request) {
 
     // Send notification to admin
     const adminEmail = getAdminNotificationEmail(contactData);
-    const adminResult = await resend.emails.send({
-      from: "PIME Panama <onboarding@resend.dev>",
+    const adminResult = await sendEmail({
       to: "info@pimepanama.com",
       subject: adminEmail.subject,
       html: adminEmail.html,
@@ -38,8 +36,7 @@ export async function POST(request: Request) {
 
     // Send thank you email to customer
     const thankYouEmail = getCustomerThankYouEmail(contactData);
-    const customerResult = await resend.emails.send({
-      from: "PIME Panama <onboarding@resend.dev>",
+    const customerResult = await sendEmail({
       to: email,
       subject: thankYouEmail.subject,
       html: thankYouEmail.html,
@@ -51,8 +48,8 @@ export async function POST(request: Request) {
       { 
         success: true, 
         message: "Emails sent successfully",
-        adminEmailId: adminResult.data?.id,
-        customerEmailId: customerResult.data?.id,
+        adminEmailId: adminResult.messageId,
+        customerEmailId: customerResult.messageId,
       },
       { status: 200 }
     );
