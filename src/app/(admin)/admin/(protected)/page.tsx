@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
 import { ensureAuthenticated } from "../actions";
+import { AdminClientShell } from "./client-shell";
 const requiredString = z
   .string()
   .min(1)
@@ -425,7 +426,7 @@ export default async function AdminPage() {
   const seoHome = seo.find((item) => item.page === "home");
 
   return (
-    <>
+    <AdminClientShell>
       <AdminSection
         title="Hero"
         description="Update the primary bilingual messaging, media, and hero calls to action."
@@ -739,7 +740,7 @@ export default async function AdminPage() {
           </form>
         </AdminSection>
       ) : null}
-    </>
+    </AdminClientShell>
   );
 }
 
