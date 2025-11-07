@@ -140,9 +140,13 @@ export function HeroSection({
                     <p>Turnkey engineering for high-stakes industrial programs.</p>
                     <p>Lifecycle integration from strategic advisory to predictive maintenance.</p>
                   </div>
-                <div className="flex flex-wrap justify-center gap-3 text-xs uppercase tracking-[0.3em] text-white/40">
+                <div className="grid grid-cols-2 gap-3 text-xs uppercase tracking-[0.3em] text-white/40">
                     {navigation.slice(0, 4).map((item) => (
-                      <Link key={item.href} href={item.href} className="rounded-full border border-transparent px-3 py-1 transition hover:border-[#2563EB]/40 hover:text-white">
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className="flex items-center justify-center rounded-full border border-transparent px-3 py-1 transition hover:border-[#2563EB]/40 hover:text-white"
+                    >
                         {item.label}
                       </Link>
                     ))}
