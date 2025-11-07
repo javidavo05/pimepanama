@@ -2,13 +2,20 @@ import nodemailer from "nodemailer";
 
 // Create reusable transporter
 function createTransporter() {
+  const port = parseInt(process.env.SMTP_PORT || "587");
+  const secure = port === 465 || process.env.SMTP_SECURE === "true";
+  
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST || "smtp.gmail.com",
-    port: parseInt(process.env.SMTP_PORT || "587"),
-    secure: process.env.SMTP_SECURE === "true", // true for 465, false for other ports
+    port,
+    secure, // true for 465, false for other ports
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASSWORD,
+    },
+    // Additional options for better compatibility
+    tls: {
+      rejectUnauthorized: false, // For self-signed certificates
     },
   });
 }
