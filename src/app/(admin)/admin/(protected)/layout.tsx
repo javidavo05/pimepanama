@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 
 import { ensureAuthenticated, logoutAction } from "../actions";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminProtectedLayout({ children }: { children: ReactNode }) {
   const admin = await ensureAuthenticated();
 
