@@ -182,6 +182,8 @@ datasource db {
 DATABASE_URL=postgresql://...
 ```
 
+> **Importante:** Si tu contraseña tiene caracteres especiales (`@`, `#`, `?`, etc.) debes [codificarlos en URL](https://en.wikipedia.org/wiki/Percent-encoding). Por ejemplo, `Th3m0stw@nt3dtopg` debe quedar como `Th3m0stw%40nt3dtopg` antes de pegarla en `DATABASE_URL` y `DIRECT_URL`.
+
 ---
 
 ## 📧 Email en Producción
