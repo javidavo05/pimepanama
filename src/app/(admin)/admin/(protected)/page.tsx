@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 
 import { ensureAuthenticated } from "../actions";
 
+export const dynamic = "force-dynamic";
+
 const requiredString = z
   .string()
   .min(1)
