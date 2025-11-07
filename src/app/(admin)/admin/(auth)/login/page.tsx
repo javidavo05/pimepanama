@@ -5,10 +5,15 @@ import { getCurrentAdmin } from "@/lib/auth";
 import { LoginForm } from "./login-form";
 
 export default async function LoginPage() {
-  const admin = await getCurrentAdmin();
+  try {
+    const admin = await getCurrentAdmin();
 
-  if (admin) {
-    redirect("/admin");
+    if (admin) {
+      redirect("/admin");
+    }
+  } catch (error) {
+    console.error("Error checking admin auth:", error);
+    // Continue to show login form even if database is unavailable
   }
 
   return (
@@ -19,7 +24,18 @@ export default async function LoginPage() {
           <h1 className="text-2xl font-semibold uppercase tracking-[0.3em]">Access</h1>
           <p className="text-sm text-white/50">Secure area for managing web content and case studies.</p>
         </div>
-        <LoginForm />
+        {process.env.DATABASE_URL && process.env.DATABASE_URL.includes("file:") ? (
+          <div className="rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-6 text-center">
+            <p className="text-sm text-yellow-200">
+              ⚠️ Admin panel requires database configuration.
+            </p>
+            <p className="mt-2 text-xs text-yellow-300/60">
+              Please configure Vercel Postgres or Supabase to enable CMS functionality.
+            </p>
+          </div>
+        ) : (
+          <LoginForm />
+        )}
         <p className="text-center text-xs text-white/30">
           Need help? Contact the platform administrator to reset credentials.
         </p>
