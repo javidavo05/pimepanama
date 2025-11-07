@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    @apply border-white/10;
+  }
+
+  body {
+    @apply bg-black text-white antialiased;
+    font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  a {
+    @apply transition-colors;
+  }
+}

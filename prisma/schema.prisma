@@ -1,0 +1,156 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  passwordHash String
+  role         AdminRole      @default(STAFF)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  sessions     AdminSession[]
+}
+
+model AdminSession {
+  id        String    @id @default(cuid())
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  token     String    @unique
+  createdAt DateTime  @default(now())
+  expiresAt DateTime
+}
+
+enum AdminRole {
+  OWNER
+  STAFF
+}
+
+model Hero {
+  id                  String   @id @default(cuid())
+  headline_en         String
+  headline_es         String
+  subheadline_en      String
+  subheadline_es      String
+  highlight_en        String?
+  highlight_es        String?
+  backgroundImageUrl  String?
+  backgroundVideoUrl  String?
+  ctaPrimaryLabel_en  String?
+  ctaPrimaryLabel_es  String?
+  ctaPrimaryLink      String?
+  ctaSecondaryLabel_en String?
+  ctaSecondaryLabel_es String?
+  ctaSecondaryLink    String?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+}
+
+model PageSection {
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  title_en   String?
+  title_es   String?
+  subtitle_en String?
+  subtitle_es String?
+  body_en    String?
+  body_es    String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model Service {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  order           Int      @default(0)
+  icon            String?
+  imageUrl        String?
+  title_en        String
+  title_es        String
+  description_en  String
+  description_es  String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Sector {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  order          Int      @default(0)
+  title_en       String
+  title_es       String
+  description_en String?
+  description_es String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Differentiator {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  order          Int      @default(0)
+  title_en       String
+  title_es       String
+  description_en String
+  description_es String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model PortfolioItem {
+  id                String   @id @default(cuid())
+  slug              String   @unique
+  order             Int      @default(0)
+  imageUrl          String?
+  clientName        String?
+  industry_en       String?
+  industry_es       String?
+  title_en          String
+  title_es          String
+  summary_en        String
+  summary_es        String
+  outcome_en        String?
+  outcome_es        String?
+  caseStudyUrl      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model CallToAction {
+  id              String   @id @default(cuid())
+  slug            String   @unique
+  order           Int      @default(0)
+  eyebrow_en      String?
+  eyebrow_es      String?
+  title_en        String
+  title_es        String
+  description_en  String?
+  description_es  String?
+  buttonLabel_en  String?
+  buttonLabel_es  String?
+  buttonLink      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model SeoSetting {
+  id               String   @id @default(cuid())
+  page             String   @unique
+  metaTitle_en     String
+  metaTitle_es     String
+  metaDescription_en String
+  metaDescription_es String
+  ogImageUrl       String?
+  keywords_en      String?
+  keywords_es      String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
