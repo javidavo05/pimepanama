@@ -134,13 +134,13 @@ export function HeroSection({
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: 0.8 }}
-                  className="space-y-4 text-center"
+                className="flex min-h-[180px] w-full flex-col items-center justify-center space-y-4 text-center"
                 >
                   <div className="grid gap-3 text-sm text-white/70">
                     <p>Turnkey engineering for high-stakes industrial programs.</p>
                     <p>Lifecycle integration from strategic advisory to predictive maintenance.</p>
                   </div>
-                  <div className="flex flex-wrap justify-center gap-3 text-xs uppercase tracking-[0.3em] text-white/40">
+                <div className="flex flex-wrap justify-center gap-3 text-xs uppercase tracking-[0.3em] text-white/40">
                     {navigation.slice(0, 4).map((item) => (
                       <Link key={item.href} href={item.href} className="rounded-full border border-transparent px-3 py-1 transition hover:border-[#2563EB]/40 hover:text-white">
                         {item.label}
