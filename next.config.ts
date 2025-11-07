@@ -1,11 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "export",
+  // Comentamos output: export para usar SSR en Vercel
+  // output: "export",
   images: {
     unoptimized: true,
   },
-  // Disable server-only features for static export
   trailingSlash: true,
 };
 
