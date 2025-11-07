@@ -4,6 +4,8 @@ import { getCurrentAdmin } from "@/lib/auth";
 
 import { LoginForm } from "./login-form";
 
+export const dynamic = "force-dynamic";
+
 export default async function LoginPage() {
   let admin = null;
   let dbError = false;
