@@ -5,7 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 
 import { ensureAuthenticated } from "../actions";
-import { AdminClientShell } from "./client-shell";
+import AdminClientShell from "./client-shell";
 const requiredString = z
   .string()
   .min(1)
