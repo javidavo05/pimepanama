@@ -51,6 +51,8 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     ? "industrial engineering Panama, equipment supply Panama, turnkey projects, engineering consulting, industrial maintenance, Maersk, Svitzer, PIME Panama, industrial solutions, project management, ISO certified, ASME standards"
     : "ingeniería industrial Panamá, suministro equipos industriales, proyectos llave en mano, consultoría ingeniería, mantenimiento industrial, Maersk, Svitzer, PIME Panama, soluciones industriales, gestión proyectos, certificación ISO, estándares ASME";
 
+  const ogImagePath = `/api/og/${locale}`;
+
   return {
     title: title ?? undefined,
     description: description ?? undefined,
@@ -66,18 +68,24 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://pimepanama.com"),
     openGraph: {
       title: title ?? undefined,
-      description: description ?? undefined,
+      description:
+        description ??
+        "Turnkey industrial engineering for LATAM’s critical infrastructure. PIME Panama integrates consulting, premium equipment supply, and predictive maintenance under ISO-certified standards.",
       url: `/${locale}`,
       siteName: "PIME Panama",
       locale: locale === "es" ? "es_PA" : "en_US",
       type: "website",
-      images: seoHome.ogImageUrl ? [{ url: seoHome.ogImageUrl }] : [{ url: "/pime-icon.svg", width: 420, height: 420, alt: "PIME Panama Logo" }],
+      images: seoHome.ogImageUrl
+        ? [{ url: seoHome.ogImageUrl }]
+        : [{ url: ogImagePath, width: 1200, height: 630, alt: "PIME Panama" }],
     },
     twitter: {
       card: "summary_large_image",
       title: title ?? undefined,
-      description: description ?? undefined,
-      images: ["/pime-icon.svg"],
+      description:
+        description ??
+        "Turnkey industrial engineering for LATAM’s critical infrastructure. PIME Panama integrates consulting, premium equipment supply, and predictive maintenance under ISO-certified standards.",
+      images: [seoHome.ogImageUrl ?? ogImagePath],
     },
     alternates: {
       canonical: `/${locale}`,
