@@ -28,26 +28,32 @@ export async function POST(request: Request) {
 
     // Send notification to admin
     const adminEmail = getAdminNotificationEmail(contactData);
-    await resend.emails.send({
-      from: "PIME Panama <onboarding@resend.dev>", // Cambiar a tu dominio verificado
+    const adminResult = await resend.emails.send({
+      from: "PIME Panama <onboarding@resend.dev>",
       to: "info@pimepanama.com",
       subject: adminEmail.subject,
       html: adminEmail.html,
     });
 
+    console.log("Admin email sent:", adminResult);
+
     // Send thank you email to customer
     const thankYouEmail = getCustomerThankYouEmail(contactData);
-    await resend.emails.send({
-      from: "PIME Panama <onboarding@resend.dev>", // Cambiar a tu dominio verificado
+    const customerResult = await resend.emails.send({
+      from: "PIME Panama <onboarding@resend.dev>",
       to: email,
       subject: thankYouEmail.subject,
       html: thankYouEmail.html,
     });
 
+    console.log("Customer email sent:", customerResult);
+
     return NextResponse.json(
       { 
         success: true, 
-        message: "Emails sent successfully"
+        message: "Emails sent successfully",
+        adminEmailId: adminResult.data?.id,
+        customerEmailId: customerResult.data?.id,
       },
       { status: 200 }
     );
