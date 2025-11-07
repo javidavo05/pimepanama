@@ -3,6 +3,10 @@
 import type { ReactNode } from "react";
 
 export default function AdminClientShell({ children }: { children: ReactNode }) {
-  return <>{children}</>;
+  return (
+    <div suppressHydrationWarning>
+      {children}
+    </div>
+  );
 }
 
