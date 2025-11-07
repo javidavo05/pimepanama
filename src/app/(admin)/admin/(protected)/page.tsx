@@ -2,20 +2,10 @@ import { revalidatePath } from "next/cache";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 
-import dynamicImport from "next/dynamic";
-
 import { prisma } from "@/lib/prisma";
 
 import { ensureAuthenticated } from "../actions";
-
-const AdminClientShell = dynamicImport(() => import("./client-shell"), {
-  ssr: false,
-  loading: () => (
-    <div className="flex min-h-screen items-center justify-center text-xs uppercase tracking-[0.4em] text-white/30">
-      Initializing console…
-    </div>
-  ),
-});
+import AdminClientShell from "./client-shell";
 
 export const dynamic = "force-dynamic";
 
