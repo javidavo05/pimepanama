@@ -19,7 +19,7 @@ export function NavigationBar({
   items: NavigationItem[];
 }) {
   return (
-    <header className="sticky top-0 z-30 border-b border-white/10 bg-black/70 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-white/10 bg-[#030a16]/80 shadow-[0_1px_0_rgba(37,99,235,0.25)] backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
         <Link href={`/${locale}`} className="flex items-center gap-3 transition hover:opacity-80">
           <Image
@@ -36,12 +36,12 @@ export function NavigationBar({
             </p>
           </div>
         </Link>
-        <nav className="hidden items-center gap-6 text-[0.65rem] uppercase tracking-[0.35em] text-white/50 transition md:flex">
+        <nav className="hidden items-center gap-6 text-[0.65rem] uppercase tracking-[0.35em] text-white/50 md:flex">
           {items.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="hover:text-white"
+              className="rounded-full border border-transparent px-3 py-1 transition hover:border-[#2563EB]/40 hover:text-white"
             >
               {item.label}
             </Link>
@@ -53,7 +53,7 @@ export function NavigationBar({
               key={lang}
               href={lang === locale ? `/${locale}` : `/${lang}`}
               className={`text-xs uppercase tracking-[0.3em] transition ${
-                lang === locale ? "text-white" : "text-white/40 hover:text-white/70"
+                lang === locale ? "text-[#60A5FA]" : "text-white/40 hover:text-white/70"
               }`}
             >
               {localeNames[lang]}

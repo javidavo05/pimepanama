@@ -32,17 +32,17 @@ export function HeroSection({
   return (
     <section
       id="top"
-      className="relative isolate overflow-hidden border-b border-white/10 bg-[#050505] text-white"
+      className="relative isolate overflow-hidden border-b border-white/10 bg-gradient-to-b from-[#030a18] via-[#04040a] to-[#020206] text-white"
     >
-      <div className="absolute inset-0 opacity-60">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(80,80,80,0.25),_transparent_55%)]" />
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_-10%,rgba(37,99,235,0.3),transparent_55%),radial-gradient(circle_at_80%_0%,rgba(124,58,237,0.28),transparent_60%),radial-gradient(circle_at_bottom,rgba(8,145,178,0.18),transparent_65%)] opacity-70" />
         {hero.backgroundImageUrl ? (
           <div
-            className="absolute inset-0 bg-cover bg-center mix-blend-screen"
+            className="absolute inset-0 bg-cover bg-center mix-blend-soft-light"
             style={{ backgroundImage: `url(${hero.backgroundImageUrl})` }}
           />
         ) : null}
-        <div className="absolute inset-0 bg-gradient-to-br from-black via-black/60 to-[#090909]" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#02040a]/90 via-[#030510]/85 to-[#010208]/95" />
       </div>
       <div className="relative z-10">
         <div className="mx-auto flex max-w-6xl flex-col gap-16 px-6 pb-24 pt-16 lg:flex-row lg:items-center lg:gap-24 lg:pt-32">
@@ -53,11 +53,11 @@ export function HeroSection({
               transition={{ duration: 0.7, ease: "easeOut" }}
               className="space-y-6"
             >
-              <p className="text-xs uppercase tracking-[0.6em] text-white/40">PIME Panama</p>
-              <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight md:text-5xl lg:text-6xl">
+              <p className="text-xs uppercase tracking-[0.6em] text-[#60A5FA]">PIME Panama</p>
+              <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight text-white md:text-5xl lg:text-6xl">
                 {hero.headline}
               </h1>
-              <p className="max-w-2xl text-base leading-relaxed text-white/60 md:text-lg">{hero.subheadline}</p>
+              <p className="max-w-2xl text-base leading-relaxed text-white/70 md:text-lg">{hero.subheadline}</p>
             </motion.div>
             {hero.highlight ? (
               <motion.div
@@ -65,8 +65,8 @@ export function HeroSection({
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, ease: "easeOut", delay: 0.2 }}
               >
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/60 backdrop-blur">
-                  <span className="inline-block h-2 w-2 rounded-full bg-emerald-400" aria-hidden="true" />
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#3B82F6]/30 bg-[#0e1a2f]/80 px-4 py-2 text-sm text-white/70 backdrop-blur">
+                  <span className="inline-block h-2 w-2 rounded-full bg-[#38BDF8]" aria-hidden="true" />
                   {hero.highlight}
                 </div>
               </motion.div>
@@ -80,7 +80,7 @@ export function HeroSection({
               {hero.primaryCta.label && hero.primaryCta.href ? (
                 <Link
                   href={hero.primaryCta.href}
-                  className="group inline-flex items-center justify-center rounded-full border border-white/20 bg-white px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-black transition hover:bg-white/80"
+                  className="group inline-flex items-center justify-center rounded-full border-0 bg-gradient-to-r from-[#4F46E5] via-[#2563EB] to-[#0EA5E9] px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white shadow-[0_18px_35px_-20px_rgba(37,99,235,0.75)] transition hover:shadow-[0_18px_40px_-15px_rgba(37,99,235,0.9)]"
                 >
                   {hero.primaryCta.label}
                 </Link>
@@ -88,7 +88,7 @@ export function HeroSection({
               {hero.secondaryCta.label && hero.secondaryCta.href ? (
                 <Link
                   href={hero.secondaryCta.href}
-                  className="inline-flex items-center justify-center rounded-full border border-white/20 px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white transition hover:border-white/50"
+                  className="inline-flex items-center justify-center rounded-full border border-[#2563EB]/40 px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-white/80 transition hover:border-[#2563EB]/70 hover:text-white"
                 >
                   {hero.secondaryCta.label}
                 </Link>
@@ -101,8 +101,8 @@ export function HeroSection({
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.9, ease: "easeOut", delay: 0.35 }}
           >
-            <div className="relative h-full w-full max-w-xl overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.18),_transparent_65%)]" />
+            <div className="relative h-full w-full max-w-xl overflow-hidden rounded-3xl border border-[#2563EB]/20 bg-gradient-to-br from-white/10 via-[#0b1220]/60 to-[#041225]/90 p-8 shadow-[0_25px_60px_-40px_rgba(37,99,235,0.8)] backdrop-blur">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(96,165,250,0.22),_transparent_70%)]" />
               <div className="relative z-10 flex h-full flex-col items-center justify-center space-y-8">
                 <motion.div
                   initial={{ rotate: -10, scale: 0.8 }}
@@ -135,7 +135,7 @@ export function HeroSection({
                       priority
                     />
                   </motion.div>
-                  <div className="absolute -inset-4 -z-10 animate-pulse rounded-full bg-gradient-to-br from-[#0586FE]/20 to-[#552EFF]/20 blur-2xl" />
+                  <div className="absolute -inset-4 -z-10 animate-pulse rounded-full bg-gradient-to-br from-[#3B82F6]/25 via-[#60A5FA]/20 to-[#8B5CF6]/25 blur-2xl" />
                 </motion.div>
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -143,13 +143,13 @@ export function HeroSection({
                   transition={{ duration: 0.8, delay: 0.8 }}
                   className="space-y-4 text-center"
                 >
-                  <div className="grid gap-3 text-sm text-white/60">
+                  <div className="grid gap-3 text-sm text-white/70">
                     <p>Turnkey engineering for high-stakes industrial programs.</p>
                     <p>Lifecycle integration from strategic advisory to predictive maintenance.</p>
                   </div>
-                  <div className="flex flex-wrap justify-center gap-3 text-xs uppercase tracking-[0.3em] text-white/30">
+                  <div className="flex flex-wrap justify-center gap-3 text-xs uppercase tracking-[0.3em] text-white/40">
                     {navigation.slice(0, 4).map((item) => (
-                      <Link key={item.href} href={item.href} className="hover:text-white/70">
+                      <Link key={item.href} href={item.href} className="rounded-full border border-transparent px-3 py-1 transition hover:border-[#2563EB]/40 hover:text-white">
                         {item.label}
                       </Link>
                     ))}

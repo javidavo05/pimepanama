@@ -81,10 +81,10 @@ export function ContactForm({ locale }: ContactFormProps) {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="rounded-2xl border border-emerald-500/20 bg-emerald-500/10 p-8 text-center backdrop-blur"
+        className="rounded-2xl border border-[#38BDF8]/30 bg-[#0f1d35]/70 p-8 text-center shadow-[0_18px_45px_-28px_rgba(56,189,248,0.6)] backdrop-blur"
       >
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20">
-          <svg className="h-8 w-8 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#2563EB]/25">
+          <svg className="h-8 w-8 text-[#60A5FA]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
@@ -190,7 +190,7 @@ export function ContactForm({ locale }: ContactFormProps) {
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full rounded-lg bg-white px-6 py-4 text-sm font-semibold uppercase tracking-[0.3em] text-black transition hover:bg-white/90 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full rounded-lg border-0 bg-gradient-to-r from-[#4F46E5] via-[#2563EB] to-[#0EA5E9] px-6 py-4 text-sm font-semibold uppercase tracking-[0.3em] text-white shadow-[0_18px_35px_-20px_rgba(37,99,235,0.7)] transition hover:shadow-[0_20px_40px_-18px_rgba(14,165,233,0.7)] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {isSubmitting ? t.submitting : t.submit}
         </button>
