@@ -2,11 +2,14 @@
   "nav": {
     "tagline": "Desarrollo de Software",
     "services": "Servicios",
-    "sectors": "Sectores",
-    "advantages": "Diferenciales",
-    "portfolio": "Portafolio",
+    "projects": "Proyectos",
+    "whyPime": "¿Por qué Pime?",
     "websites": "Sitios Web",
-    "contact": "Contacto"
+    "sectors": "Sectores",
+    "about": "Nosotros",
+    "contact": "Contacto",
+    "advantages": "Diferenciales",
+    "portfolio": "Portafolio"
   },
   "hero": {
     "eyebrow": "Empresa de software en Panamá",
@@ -14,8 +17,8 @@
     "cta_secondary": "Ver Portafolio"
   },
   "portfolio": {
-    "heading": "Nuestro Trabajo",
-    "subheading": "Software empresarial construido para escalar. Más de $1.1M en desarrollos entregados."
+    "heading": "Sistemas construidos para operaciones reales",
+    "subheading": "Software empresarial construido para escalar. Más de 30 sistemas entregados en Panama y la región."
   },
   "contact": {
     "title": "Solicite Evaluación Técnica Gratuita",

@@ -11,31 +11,23 @@ export function AffordableSection() {
   const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${whatsappMsg}`;
 
   const packages = [
-    {
-      key: "landing" as const,
-      isPopular: false,
-    },
-    {
-      key: "booking" as const,
-      isPopular: true,
-    },
-    {
-      key: "business" as const,
-      isPopular: false,
-    },
+    { key: "landing" as const, isPopular: false },
+    { key: "booking" as const, isPopular: true },
+    { key: "business" as const, isPopular: false },
   ];
 
   return (
     <section
       id="websites"
-      className="relative overflow-hidden border-b border-white/10 bg-[#030611] px-6 py-24 text-white"
+      className="relative overflow-hidden border-b border-white/10 px-6 py-24 text-white"
+      style={{ background: "linear-gradient(180deg, #030611 0%, #04050c 50%, #030611 100%)" }}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(200,169,110,0.06),_transparent_70%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(37,99,235,0.07),_transparent_70%)]" />
 
       <div className="relative z-10 mx-auto max-w-6xl space-y-12">
         {/* Header */}
         <div className="space-y-4 text-center">
-          <p className="text-xs uppercase tracking-[0.5em] text-[#C8A96E]">{t("eyebrow")}</p>
+          <p className="text-xs uppercase tracking-[0.5em] text-[#60A5FA]">{t("eyebrow")}</p>
           <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">{t("title")}</h2>
           <p className="mx-auto max-w-2xl text-base text-white/55">{t("subtitle")}</p>
         </div>

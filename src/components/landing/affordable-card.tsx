@@ -1,5 +1,7 @@
 "use client";
 
+import { motion } from "framer-motion";
+
 type AffordableCardProps = {
   name: string;
   price: string;
@@ -43,16 +45,23 @@ export function AffordableCard({
   isPopular = false,
 }: AffordableCardProps) {
   return (
-    <div
-      className={`relative flex flex-col rounded-2xl border bg-white/[0.03] p-6 backdrop-blur transition-all duration-300 hover:bg-white/[0.05] ${
+    <motion.div
+      whileHover={{
+        scale: 1.02,
+        boxShadow: isPopular
+          ? "0 0 50px rgba(37,99,235,0.25)"
+          : "0 0 30px rgba(37,99,235,0.12)",
+      }}
+      transition={{ type: "spring", stiffness: 300, damping: 25 }}
+      className={`relative flex flex-col rounded-2xl border bg-white/[0.03] p-6 backdrop-blur ${
         isPopular
-          ? "border-[#C8A96E]/60 shadow-[0_0_40px_rgba(200,169,110,0.15)]"
+          ? "border-[#3B82F6]/50 shadow-[0_0_35px_rgba(37,99,235,0.15)]"
           : "border-white/10"
       }`}
     >
       {badge && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-          <span className="rounded-full border border-[#C8A96E]/50 bg-[#0a0a0a] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.3em] text-[#C8A96E]">
+          <span className="rounded-full border border-[#3B82F6]/50 bg-[#030611] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.3em] text-[#60A5FA]">
             {badge}
           </span>
         </div>
@@ -65,7 +74,7 @@ export function AffordableCard({
         </div>
 
         <div className="flex items-baseline gap-2">
-          <span className={`text-3xl font-extrabold ${isPopular ? "text-[#C8A96E]" : "text-white"}`}>
+          <span className={`text-3xl font-extrabold ${isPopular ? "text-[#60A5FA]" : "text-white"}`}>
             {price}
           </span>
           <span className="text-xs text-white/40">{priceNote}</span>
@@ -93,6 +102,6 @@ export function AffordableCard({
           {supportLabel}
         </p>
       </div>
-    </div>
+    </motion.div>
   );
 }

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 
+import { AboutSection } from "@/components/landing/about-section";
+import { AffordableSection } from "@/components/landing/affordable-section";
 import { ContactForm } from "@/components/landing/contact-form";
 import { DifferentiatorsSection } from "@/components/landing/differentiators-section";
 import { HeroSection } from "@/components/landing/hero-section";
@@ -9,10 +11,9 @@ import { NavigationBar } from "@/components/landing/navigation-bar";
 import { PortfolioSection } from "@/components/landing/portfolio-section";
 import { SectorsSection } from "@/components/landing/sectors-section";
 import { ServicesSection } from "@/components/landing/services-section";
-import { ValueSection } from "@/components/landing/value-section";
-import { AffordableSection } from "@/components/landing/affordable-section";
 import { getLandingContent } from "@/lib/content";
 import type { Locale } from "@/lib/i18n";
+import { ScrollProgressBar } from "@/components/ui/scroll-progress";
 
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
@@ -158,10 +159,11 @@ export default async function HomePage() {
 
   const navigationItems = [
     { label: t("services"), href: "#services" },
-    { label: t("sectors"), href: "#sectors" },
-    { label: t("advantages"), href: "#differentiators" },
-    { label: t("portfolio"), href: "/portfolio" },
+    { label: t("projects"), href: "#projects" },
+    { label: t("whyPime"), href: "#differentiators" },
     { label: t("websites"), href: "#websites" },
+    { label: t("sectors"), href: "#sectors" },
+    { label: t("about"), href: "#about" },
     { label: t("contact"), href: "#contact" },
   ];
 
@@ -183,12 +185,12 @@ export default async function HomePage() {
   };
 
   const servicesSection = sectionsBySlug.get("services");
-  const valueSection = sectionsBySlug.get("value");
   const sectorsSection = sectionsBySlug.get("sectors");
   const differentiatorsSection = sectionsBySlug.get("differentials");
 
   return (
     <>
+      <ScrollProgressBar />
       <NavigationBar locale={locale} items={navigationItems} />
       <HeroSection hero={heroContent} navigation={navigationItems} />
       {servicesSection ? (
@@ -198,19 +200,12 @@ export default async function HomePage() {
           services={services}
         />
       ) : null}
-      {valueSection ? (
-        <ValueSection
-          heading={localized(valueSection, "title", locale) ?? ""}
-          body={localized(valueSection, "body", locale)}
-        />
-      ) : null}
-      {sectorsSection ? (
-        <SectorsSection
-          heading={localized(sectorsSection, "title", locale) ?? ""}
-          subheading={localized(sectorsSection, "subtitle", locale)}
-          sectors={sectors}
-        />
-      ) : null}
+      <PortfolioSection
+        heading={tp("heading")}
+        subheading={tp("subheading")}
+        items={portfolioItems}
+        locale={locale}
+      />
       {differentiatorsSection ? (
         <DifferentiatorsSection
           heading={localized(differentiatorsSection, "title", locale) ?? ""}
@@ -218,15 +213,26 @@ export default async function HomePage() {
           items={differentiators}
         />
       ) : null}
-      <PortfolioSection
-        heading={tp("heading")}
-        subheading={tp("subheading")}
-        items={portfolioItems}
-        locale={locale}
-      />
       <AffordableSection />
-      <section id="contact" className="relative overflow-hidden bg-black px-6 py-24">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(5,134,254,0.1),_transparent_70%)]" />
+      {sectorsSection ? (
+        <SectorsSection
+          heading={localized(sectorsSection, "title", locale) ?? ""}
+          subheading={localized(sectorsSection, "subtitle", locale)}
+          sectors={sectors}
+        />
+      ) : null}
+      <AboutSection locale={locale} />
+      <section
+        id="contact"
+        className="relative overflow-hidden px-6 py-24"
+        style={{ background: "linear-gradient(180deg, #04050c 0%, #020308 100%)" }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background: "radial-gradient(ellipse at center, rgba(37,99,235,0.05), transparent 70%)",
+          }}
+        />
         <div className="relative z-10 mx-auto max-w-3xl">
           <ContactForm locale={locale} />
         </div>

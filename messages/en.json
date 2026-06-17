@@ -2,11 +2,14 @@
   "nav": {
     "tagline": "Software Development",
     "services": "Services",
-    "sectors": "Sectors",
-    "advantages": "Advantages",
-    "portfolio": "Portfolio",
+    "projects": "Projects",
+    "whyPime": "Why Pime?",
     "websites": "Websites",
-    "contact": "Contact"
+    "sectors": "Sectors",
+    "about": "About",
+    "contact": "Contact",
+    "advantages": "Advantages",
+    "portfolio": "Portfolio"
   },
   "hero": {
     "eyebrow": "Software company in Panama",
@@ -14,8 +17,8 @@
     "cta_secondary": "View Portfolio"
   },
   "portfolio": {
-    "heading": "Our Work",
-    "subheading": "Enterprise software built to scale. Over $1.1M in delivered software."
+    "heading": "Systems built for real operations",
+    "subheading": "Enterprise software built to scale. 30+ systems delivered across Panama and the region."
   },
   "contact": {
     "title": "Request Free Technical Assessment",

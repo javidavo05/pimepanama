@@ -49,9 +49,17 @@ export function ContactForm({ locale }: { locale: Locale }) {
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="rounded-2xl border border-[#38BDF8]/30 bg-[#0f1d35]/70 p-8 text-center shadow-[0_18px_45px_-28px_rgba(56,189,248,0.6)] backdrop-blur"
+        className="rounded-2xl p-8 text-center backdrop-blur"
+        style={{
+          border: "1px solid rgba(37,99,235,0.25)",
+          background: "rgba(8,14,32,0.7)",
+          boxShadow: "0 18px 45px -28px rgba(37,99,235,0.25)",
+        }}
       >
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#2563EB]/25">
+        <div
+          className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full"
+          style={{ background: "rgba(37,99,235,0.15)" }}
+        >
           <svg className="h-8 w-8 text-[#60A5FA]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
@@ -85,7 +93,7 @@ export function ContactForm({ locale }: { locale: Locale }) {
               id="name"
               name="name"
               required
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 backdrop-blur transition focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 backdrop-blur transition focus:border-[#3B82F6]/50 focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20"
               placeholder={t("placeholder_name")}
             />
           </div>
@@ -98,7 +106,7 @@ export function ContactForm({ locale }: { locale: Locale }) {
               id="email"
               name="email"
               required
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 backdrop-blur transition focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 backdrop-blur transition focus:border-[#3B82F6]/50 focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20"
               placeholder={t("placeholder_email")}
             />
           </div>
@@ -113,7 +121,7 @@ export function ContactForm({ locale }: { locale: Locale }) {
               type="text"
               id="company"
               name="company"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 backdrop-blur transition focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 backdrop-blur transition focus:border-[#3B82F6]/50 focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20"
               placeholder={t("placeholder_company")}
             />
           </div>
@@ -125,7 +133,7 @@ export function ContactForm({ locale }: { locale: Locale }) {
               type="tel"
               id="phone"
               name="phone"
-              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 backdrop-blur transition focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20"
+              className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 backdrop-blur transition focus:border-[#3B82F6]/50 focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20"
               placeholder="+507 6000-0000"
             />
           </div>
@@ -140,7 +148,7 @@ export function ContactForm({ locale }: { locale: Locale }) {
             name="message"
             required
             rows={5}
-            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 backdrop-blur transition focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20"
+            className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 backdrop-blur transition focus:border-[#3B82F6]/50 focus:outline-none focus:ring-2 focus:ring-[#3B82F6]/20"
             placeholder={t("placeholder_message")}
           />
         </div>
@@ -151,17 +159,23 @@ export function ContactForm({ locale }: { locale: Locale }) {
           </div>
         )}
 
-        <button
+        <motion.button
           type="submit"
           disabled={isSubmitting}
-          className="w-full rounded-lg border-0 bg-gradient-to-r from-[#4F46E5] via-[#2563EB] to-[#0EA5E9] px-6 py-4 text-sm font-semibold uppercase tracking-[0.3em] text-white shadow-[0_18px_35px_-20px_rgba(37,99,235,0.7)] transition hover:shadow-[0_20px_40px_-18px_rgba(14,165,233,0.7)] disabled:cursor-not-allowed disabled:opacity-50"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className="w-full rounded-lg border-0 px-6 py-4 text-sm font-semibold uppercase tracking-[0.3em] text-white transition disabled:cursor-not-allowed disabled:opacity-50"
+          style={{
+            background: "linear-gradient(135deg, #4F46E5 0%, #2563EB 50%, #0EA5E9 100%)",
+            boxShadow: "0 18px 35px -20px rgba(37,99,235,0.6)",
+          }}
         >
           {isSubmitting ? t("submitting") : t("submit")}
-        </button>
+        </motion.button>
 
         <p className="text-center text-xs text-white/40">
           {t("or_email")}{" "}
-          <a href="mailto:info@pimepanama.com" className="text-white/60 underline hover:text-white">
+          <a href="mailto:info@pimepanama.com" className="text-[#60A5FA]/70 underline hover:text-white">
             info@pimepanama.com
           </a>
         </p>
