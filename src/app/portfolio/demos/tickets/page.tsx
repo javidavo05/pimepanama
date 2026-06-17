@@ -1,25 +1,25 @@
 "use client";
 
-import { use } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
-import { AcademyxPlayerRoster } from "@/components/demos/academyx-player-roster";
+import { useLocale } from "next-intl";
+import { TicketsEventDashboard } from "@/components/demos/tickets-event-dashboard";
 
-const TECH = ["Next.js 16", "Supabase", "Stripe", "AWS S3", "WhatsApp", "Brevo", "Redis", "PWA", "Recharts"];
+const TECH = ["Next.js 14", "Drizzle ORM", "PostgreSQL", "NFC", "Yappy", "PWA", "IndexedDB", "Resend"];
 
-export default function AcademyxDemoPage({ params }: { params: Promise<{ locale: string }> }) {
-  const locale = use(params).locale === "es" ? "es" : "en";
+export default function TicketsDemoPage() {
+  const locale = useLocale() === "es" ? "es" : "en";
 
   return (
     <div className="min-h-screen bg-[#030611] text-white">
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
         <nav className="mb-6 flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-white/30">
-          <Link href={`/${locale}`} className="transition hover:text-white/60">Home</Link>
+          <Link href="/" className="transition hover:text-white/60">Home</Link>
           <span>/</span>
-          <Link href={`/${locale}/portfolio`} className="transition hover:text-white/60">Portfolio</Link>
+          <Link href="/portfolio" className="transition hover:text-white/60">Portfolio</Link>
           <span>/</span>
-          <span className="text-[#60A5FA]">Academyx Demo</span>
+          <span className="text-[#60A5FA]">Tickets Demo</span>
         </nav>
 
         <motion.div
@@ -36,17 +36,16 @@ export default function AcademyxDemoPage({ params }: { params: Promise<{ locale:
               SaaS · 2024
             </span>
             <span className="rounded-full border border-[#f59e0b]/30 bg-[#f59e0b]/10 px-2.5 py-1 text-[10px] uppercase tracking-wider text-[#f59e0b]">
-              $100K project
+              $325K project
             </span>
           </div>
           <h1 className="text-3xl font-bold leading-tight sm:text-4xl">
-            Academyx — Football Academy CRM
+            Tickets — Enterprise Event Ticketing
           </h1>
           <p className="max-w-2xl text-base text-white/55">
-            Complete SaaS for managing a football academy: multi-role enrollment, financial tracking,
-            attendance, tournaments, schedules, WhatsApp communications, and real-time dashboards.
+            Multi-tenant event ticketing platform built for 50,000+ daily transactions.
+            NFC cashless payments, cryptographic signed QR codes, and an offline-first PWA scanner.
           </p>
-          <p className="text-xs text-white/30">14,116 TypeScript files · 497 DB migrations · 5 user roles</p>
           <div className="flex flex-wrap gap-1.5">
             {TECH.map((t) => (
               <span key={t} className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-white/50">{t}</span>
@@ -63,15 +62,15 @@ export default function AcademyxDemoPage({ params }: { params: Promise<{ locale:
           <div className="mb-4 flex items-center gap-2">
             <span className="h-2 w-2 animate-pulse rounded-full bg-[#22c55e]" />
             <span className="text-[10px] uppercase tracking-[0.4em] text-white/40">
-              Interactive demo — simulated data
+              {locale === "es" ? "Demo interactivo" : "Interactive demo"} — datos simulados
             </span>
           </div>
-          <AcademyxPlayerRoster />
+          <TicketsEventDashboard />
         </motion.div>
 
         <div className="mt-8">
           <Link
-            href={`/${locale}/portfolio`}
+            href="/portfolio"
             className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-white/40 transition hover:text-white/70"
           >
             <Icon icon="ph:arrow-left" className="h-3.5 w-3.5" />

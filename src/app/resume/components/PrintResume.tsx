@@ -113,7 +113,7 @@ export function PrintResume() {
           {projects.map((p) => (
             <div key={p.id} style={{ breakInside: "avoid", marginBottom: "4px" }}>
               <div style={{ fontFamily: "var(--font-syne)", fontSize: "9pt", fontWeight: 700, color: INK }}>
-                {p.title}
+                {p.title[lang]}
               </div>
               <div style={{ fontSize: "7.5pt", color: GOLD, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: "2px" }}>
                 {p.category[lang]}

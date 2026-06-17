@@ -1,26 +1,25 @@
 "use client";
 
-import { use } from "react";
-
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
-import { GodmodeControlCenter } from "@/components/demos/godmode-control-center";
+import { useLocale } from "next-intl";
+import { WeddingSaasPlanner } from "@/components/demos/wedding-saas-planner";
 
-const TECH = ["Next.js 16", "React 19", "Supabase", "Tailwind v4", "Recharts", "Dodo Payments", "Resend", "Vitest"];
+const TECH = ["Next.js 16", "React 19", "Supabase", "Tailwind v4", "next-intl", "PWA", "Serwist", "dnd-kit"];
 
-export default function GodmodeDemoPage({ params }: { params: Promise<{ locale: string }> }) {
-  const locale = use(params).locale === "es" ? "es" : "en";
+export default function WeddingSaasDemoPage() {
+  const locale = useLocale() === "es" ? "es" : "en";
 
   return (
     <div className="min-h-screen bg-[#030611] text-white">
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
         <nav className="mb-6 flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-white/30">
-          <Link href={`/${locale}`} className="transition hover:text-white/60">Home</Link>
+          <Link href="/" className="transition hover:text-white/60">Home</Link>
           <span>/</span>
-          <Link href={`/${locale}/portfolio`} className="transition hover:text-white/60">Portfolio</Link>
+          <Link href="/portfolio" className="transition hover:text-white/60">Portfolio</Link>
           <span>/</span>
-          <span className="text-[#60A5FA]">Godmode Demo</span>
+          <span className="text-[#60A5FA]">Wedding SaaS Demo</span>
         </nav>
 
         <motion.div
@@ -37,17 +36,17 @@ export default function GodmodeDemoPage({ params }: { params: Promise<{ locale: 
               SaaS · 2024
             </span>
             <span className="rounded-full border border-[#f59e0b]/30 bg-[#f59e0b]/10 px-2.5 py-1 text-[10px] uppercase tracking-wider text-[#f59e0b]">
-              $115K project
+              $200K project
             </span>
           </div>
           <h1 className="text-3xl font-bold leading-tight sm:text-4xl">
-            Godmode — B2B SaaS Control Center
+            Wedding SaaS — Multi-tenant Wedding Platform
           </h1>
           <p className="max-w-2xl text-base text-white/55">
-            Unified B2B dashboard managing digital subscriptions, automotive inventory, and company
-            hierarchies across multiple organizations — with Dodo Payments billing and HMAC-signed webhooks.
+            White-label wedding planning SaaS with 7-locale support, audio invitations, guest galleries,
+            package-based billing, and a Godmode admin control plane.
           </p>
-          <p className="text-xs text-white/30">3 business modules · Multi-company RLS · Control plane webhooks</p>
+          <p className="text-xs text-white/30">11,577 TypeScript files · 708 routes · 7 locales · Multi-tenant RLS</p>
           <div className="flex flex-wrap gap-1.5">
             {TECH.map((t) => (
               <span key={t} className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[10px] text-white/50">{t}</span>
@@ -64,15 +63,15 @@ export default function GodmodeDemoPage({ params }: { params: Promise<{ locale: 
           <div className="mb-4 flex items-center gap-2">
             <span className="h-2 w-2 animate-pulse rounded-full bg-[#22c55e]" />
             <span className="text-[10px] uppercase tracking-[0.4em] text-white/40">
-              Interactive demo — B2B control center
+              Interactive demo — wedding planner dashboard
             </span>
           </div>
-          <GodmodeControlCenter />
+          <WeddingSaasPlanner />
         </motion.div>
 
         <div className="mt-8">
           <Link
-            href={`/${locale}/portfolio`}
+            href="/portfolio"
             className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.3em] text-white/40 transition hover:text-white/70"
           >
             <Icon icon="ph:arrow-left" className="h-3.5 w-3.5" />

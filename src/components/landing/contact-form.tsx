@@ -2,46 +2,14 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useTranslations } from "next-intl";
+import type { Locale } from "@/lib/i18n";
 
-type ContactFormProps = {
-  locale: "en" | "es";
-};
-
-export function ContactForm({ locale }: ContactFormProps) {
+export function ContactForm({ locale }: { locale: Locale }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
-
-  const labels = {
-    en: {
-      title: "Request Free Technical Assessment",
-      subtitle: "Share your project requirements and receive expert recommendations within 24 hours",
-      name: "Full Name",
-      email: "Email Address",
-      company: "Company Name",
-      phone: "Phone Number",
-      message: "Project Details",
-      submit: "Send Request",
-      submitting: "Sending...",
-      success: "Thank you! We'll contact you within 24 hours.",
-      errorMsg: "Error sending message. Please email us directly at info@pimepanama.com",
-    },
-    es: {
-      title: "Solicite Evaluación Técnica Gratuita",
-      subtitle: "Comparta los requerimientos de su proyecto y reciba recomendaciones expertas en 24 horas",
-      name: "Nombre Completo",
-      email: "Correo Electrónico",
-      company: "Nombre de la Empresa",
-      phone: "Número de Teléfono",
-      message: "Detalles del Proyecto",
-      submit: "Enviar Solicitud",
-      submitting: "Enviando...",
-      success: "¡Gracias! Nos pondremos en contacto en 24 horas.",
-      errorMsg: "Error al enviar mensaje. Por favor escríbanos directamente a info@pimepanama.com",
-    },
-  };
-
-  const t = labels[locale];
+  const t = useTranslations("contact");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -70,7 +38,7 @@ export function ContactForm({ locale }: ContactFormProps) {
       setSubmitted(true);
       e.currentTarget.reset();
     } catch {
-      setError(t.errorMsg);
+      setError(t("error"));
     } finally {
       setIsSubmitting(false);
     }
@@ -88,12 +56,12 @@ export function ContactForm({ locale }: ContactFormProps) {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         </div>
-        <p className="text-lg font-semibold text-white">{t.success}</p>
+        <p className="text-lg font-semibold text-white">{t("success")}</p>
         <button
           onClick={() => setSubmitted(false)}
           className="mt-6 text-sm text-white/60 underline hover:text-white"
         >
-          {locale === "en" ? "Send another request" : "Enviar otra solicitud"}
+          {t("another")}
         </button>
       </motion.div>
     );
@@ -102,15 +70,15 @@ export function ContactForm({ locale }: ContactFormProps) {
   return (
     <div className="space-y-6">
       <div className="space-y-2 text-center">
-        <h3 className="text-2xl font-bold text-white md:text-3xl">{t.title}</h3>
-        <p className="text-sm text-white/60">{t.subtitle}</p>
+        <h3 className="text-2xl font-bold text-white md:text-3xl">{t("title")}</h3>
+        <p className="text-sm text-white/60">{t("subtitle")}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label htmlFor="name" className="mb-2 block text-sm text-white/60">
-              {t.name} *
+              {t("name")} *
             </label>
             <input
               type="text"
@@ -118,12 +86,12 @@ export function ContactForm({ locale }: ContactFormProps) {
               name="name"
               required
               className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 backdrop-blur transition focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20"
-              placeholder={locale === "en" ? "John Doe" : "Juan Pérez"}
+              placeholder={t("placeholder_name")}
             />
           </div>
           <div>
             <label htmlFor="email" className="mb-2 block text-sm text-white/60">
-              {t.email} *
+              {t("email")} *
             </label>
             <input
               type="email"
@@ -131,7 +99,7 @@ export function ContactForm({ locale }: ContactFormProps) {
               name="email"
               required
               className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 backdrop-blur transition focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20"
-              placeholder={locale === "en" ? "john@company.com" : "juan@empresa.com"}
+              placeholder={t("placeholder_email")}
             />
           </div>
         </div>
@@ -139,19 +107,19 @@ export function ContactForm({ locale }: ContactFormProps) {
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label htmlFor="company" className="mb-2 block text-sm text-white/60">
-              {t.company}
+              {t("company")}
             </label>
             <input
               type="text"
               id="company"
               name="company"
               className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 backdrop-blur transition focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20"
-              placeholder={locale === "en" ? "Company Inc." : "Empresa S.A."}
+              placeholder={t("placeholder_company")}
             />
           </div>
           <div>
             <label htmlFor="phone" className="mb-2 block text-sm text-white/60">
-              {t.phone}
+              {t("phone")}
             </label>
             <input
               type="tel"
@@ -165,7 +133,7 @@ export function ContactForm({ locale }: ContactFormProps) {
 
         <div>
           <label htmlFor="message" className="mb-2 block text-sm text-white/60">
-            {t.message} *
+            {t("message")} *
           </label>
           <textarea
             id="message"
@@ -173,11 +141,7 @@ export function ContactForm({ locale }: ContactFormProps) {
             required
             rows={5}
             className="w-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white placeholder-white/40 backdrop-blur transition focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20"
-            placeholder={
-              locale === "en"
-                ? "Describe your project requirements, timeline, and any specific technical needs..."
-                : "Describa los requerimientos de su proyecto, cronograma y necesidades técnicas específicas..."
-            }
+            placeholder={t("placeholder_message")}
           />
         </div>
 
@@ -192,11 +156,11 @@ export function ContactForm({ locale }: ContactFormProps) {
           disabled={isSubmitting}
           className="w-full rounded-lg border-0 bg-gradient-to-r from-[#4F46E5] via-[#2563EB] to-[#0EA5E9] px-6 py-4 text-sm font-semibold uppercase tracking-[0.3em] text-white shadow-[0_18px_35px_-20px_rgba(37,99,235,0.7)] transition hover:shadow-[0_20px_40px_-18px_rgba(14,165,233,0.7)] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {isSubmitting ? t.submitting : t.submit}
+          {isSubmitting ? t("submitting") : t("submit")}
         </button>
 
         <p className="text-center text-xs text-white/40">
-          {locale === "en" ? "Or email us directly at" : "O escríbanos directamente a"}{" "}
+          {t("or_email")}{" "}
           <a href="mailto:info@pimepanama.com" className="text-white/60 underline hover:text-white">
             info@pimepanama.com
           </a>
@@ -205,4 +169,3 @@ export function ContactForm({ locale }: ContactFormProps) {
     </div>
   );
 }
-

@@ -113,7 +113,7 @@ export function ProjectsSection() {
                     </span>
                     <span className="ml-auto text-right">
                       <span className="text-sm font-extrabold" style={{ fontFamily: "var(--font-syne)", color: "#C8A96E" }}>
-                        {project.metric.value}
+                        {project.metric.value[lang]}
                       </span>
                       <span className="ml-1.5 text-[9px] uppercase tracking-[0.2em]" style={{ color: "#6B7B72" }}>
                         {project.metric.label[lang]}
@@ -122,7 +122,7 @@ export function ProjectsSection() {
                   </div>
 
                   <h3 className="mb-2 text-base font-bold leading-snug" style={{ fontFamily: "var(--font-syne)", color: "#EEEEE8" }}>
-                    {project.title}
+                    {project.title[lang]}
                   </h3>
                   <p className="mb-4 text-xs leading-relaxed" style={{ color: "#6B7B72" }}>
                     {project.description[lang]}

@@ -3,13 +3,18 @@
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useLang } from "../context/ResumeContext";
-import { content } from "../data/content";
+import { content, type Lang } from "../data/content";
 
-const TICKER_ITEMS = [
+const TECH_ITEMS = [
   "Next.js 15", "React 19", "TypeScript", "Supabase", "Tailwind CSS", "Vercel",
   "PostgreSQL", "Electron", "Turborepo", "AWS S3", "Drizzle ORM", "Stripe",
-  "PWA", "Multi-tenant SaaS", "5+ Payment Gateways", "$1.1M+ Delivered", "Panama City, Panama",
+  "PWA", "Multi-tenant SaaS",
 ];
+
+const TICKER_ITEMS: Record<Lang, string[]> = {
+  en: [...TECH_ITEMS, "5+ Payment Gateways", "$1.1M+ Delivered", "Panama City, Panama"],
+  es: [...TECH_ITEMS, "5+ Pasarelas de Pago", "$1.1M+ Entregado", "Ciudad de Panamá, Panamá"],
+};
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -147,7 +152,7 @@ export function HeroSection() {
       {/* Ticker strip */}
       <div className="ticker-container absolute bottom-0 left-0 right-0 overflow-hidden border-t py-4" style={{ borderColor: "rgba(200,169,110,0.12)" }}>
         <div className="ticker-track flex gap-12 whitespace-nowrap" style={{ width: "max-content" }}>
-          {[...TICKER_ITEMS, ...TICKER_ITEMS].map((it, i) => (
+          {[...TICKER_ITEMS[lang], ...TICKER_ITEMS[lang]].map((it, i) => (
             <span key={i} className="text-[9px] font-medium uppercase tracking-[0.5em]" style={{ color: "#6B7B72" }}>
               {it}
             </span>

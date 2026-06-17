@@ -31,7 +31,7 @@ export function ProjectPreview({ project }: { project: Project }) {
       {/* Screen */}
       <div className="relative aspect-[16/10] w-full overflow-hidden">
         {screenshotUrl ? (
-          <img src={screenshotUrl} alt={project.title} className="h-full w-full object-cover object-top" />
+          <img src={screenshotUrl} alt={project.title.en} className="h-full w-full object-cover object-top" />
         ) : (
           <FauxDashboard accentColor={accentColor} initials={initials} />
         )}

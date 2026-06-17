@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo, use } from "react";
+import { useState, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { useLocale } from "next-intl";
 import { NavigationBar } from "@/components/landing/navigation-bar";
 import { LandingFooter } from "@/components/landing/footer";
 import { PortfolioHero } from "@/components/portfolio/portfolio-hero";
@@ -12,6 +13,7 @@ import { ValueBanner } from "@/components/portfolio/value-banner";
 import { InteractiveResume } from "@/components/portfolio/interactive-resume";
 import { getStaticPortfolioItems } from "@/lib/static-portfolio-data";
 import { Icon } from "@iconify/react";
+import type { Locale } from "@/lib/i18n";
 
 function parseJSON<T>(raw: string, fallback: T): T {
   try {
@@ -21,12 +23,9 @@ function parseJSON<T>(raw: string, fallback: T): T {
   }
 }
 
-export default function PortfolioPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const locale = (use(params).locale === "es" ? "es" : "en") as "en" | "es";
+export default function PortfolioPage() {
+  const rawLocale = useLocale();
+  const locale = (rawLocale === "es" ? "es" : "en") as Locale;
 
   const rawItems = getStaticPortfolioItems();
   const projects: ProjectCardData[] = rawItems.map((item) => ({
@@ -63,11 +62,11 @@ export default function PortfolioPage({
   }, [activeFilter, projects]);
 
   const navItems = [
-    { label: locale === "es" ? "Servicios" : "Services", href: `/${locale}#services` },
-    { label: locale === "es" ? "Sectores" : "Sectors", href: `/${locale}#sectors` },
-    { label: locale === "es" ? "Diferenciales" : "Advantages", href: `/${locale}#differentiators` },
-    { label: locale === "es" ? "Portafolio" : "Portfolio", href: `/${locale}/portfolio` },
-    { label: locale === "es" ? "Contacto" : "Contact", href: `/${locale}#contact` },
+    { label: locale === "es" ? "Servicios" : "Services", href: "/#services" },
+    { label: locale === "es" ? "Sectores" : "Sectors", href: "/#sectors" },
+    { label: locale === "es" ? "Diferenciales" : "Advantages", href: "/#differentiators" },
+    { label: locale === "es" ? "Portafolio" : "Portfolio", href: "/portfolio" },
+    { label: locale === "es" ? "Contacto" : "Contact", href: "/#contact" },
   ];
 
   return (
@@ -76,7 +75,6 @@ export default function PortfolioPage({
       <main>
         <PortfolioHero locale={locale} />
 
-        {/* projects section */}
         <section className="border-b border-white/10 bg-[#050505] px-6 py-20 text-white">
           <div className="mx-auto max-w-6xl space-y-10">
             <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
@@ -121,7 +119,6 @@ export default function PortfolioPage({
         <ValueBanner locale={locale} />
         <InteractiveResume locale={locale} />
 
-        {/* CTA */}
         <section className="relative overflow-hidden border-b border-white/10 bg-[#030611] px-6 py-24 text-white">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(37,99,235,0.1),_transparent_70%)]" />
           <div className="relative z-10 mx-auto max-w-2xl space-y-8 text-center">
@@ -136,9 +133,7 @@ export default function PortfolioPage({
                 {locale === "es" ? "¿Tienes un proyecto?" : "Have a project?"}
               </p>
               <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-                {locale === "es"
-                  ? "Construyamos algo juntos"
-                  : "Let's build something together"}
+                {locale === "es" ? "Construyamos algo juntos" : "Let's build something together"}
               </h2>
               <p className="text-base text-white/55">
                 {locale === "es"
@@ -151,7 +146,7 @@ export default function PortfolioPage({
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.15 }}
-              href={`/${locale}#contact`}
+              href="/#contact"
               className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-[#1d4ed8] to-[#2563EB] px-8 py-3.5 text-xs font-semibold uppercase tracking-[0.3em] text-white shadow-[0_0_40px_rgba(37,99,235,0.4)] transition hover:shadow-[0_0_50px_rgba(37,99,235,0.55)]"
             >
               {locale === "es" ? "Contactar" : "Get in touch"}

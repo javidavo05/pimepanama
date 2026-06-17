@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Icon } from "@iconify/react";
+import { useLocale } from "next-intl";
 import { NavigationBar } from "@/components/landing/navigation-bar";
 import { LandingFooter } from "@/components/landing/footer";
 import { TdpSeatSelectorDemo } from "@/components/demos/tdp-seat-selector";
 import { TdpFinancialDashboard } from "@/components/demos/tdp-financial-dashboard";
+import type { Locale } from "@/lib/i18n";
 
 const TABS = [
   { id: "tickets", label: "Compra de Ticket", icon: "ph:ticket" },
@@ -16,30 +18,30 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-export default function TdpDemoPage({ params }: { params: Promise<{ locale: string }> }) {
-  const locale = (use(params).locale === "es" ? "es" : "en") as "en" | "es";
+export default function TdpDemoPage() {
+  const rawLocale = useLocale();
+  const locale = (rawLocale === "es" ? "es" : "en") as Locale;
   const [activeTab, setActiveTab] = useState<TabId>("tickets");
 
   const navItems = [
-    { label: locale === "es" ? "Servicios" : "Services", href: `/${locale}#services` },
-    { label: locale === "es" ? "Portafolio" : "Portfolio", href: `/${locale}/portfolio` },
-    { label: locale === "es" ? "Contacto" : "Contact", href: `/${locale}#contact` },
+    { label: locale === "es" ? "Servicios" : "Services", href: "/#services" },
+    { label: locale === "es" ? "Portafolio" : "Portfolio", href: "/portfolio" },
+    { label: locale === "es" ? "Contacto" : "Contact", href: "/#contact" },
   ];
 
   return (
     <>
       <NavigationBar locale={locale} items={navItems} />
       <main className="min-h-screen bg-[#030611] text-white">
-        {/* header */}
         <div className="relative overflow-hidden border-b border-white/10 px-6 py-16">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(37,99,235,0.12),_transparent_70%)]" />
           <div className="relative z-10 mx-auto max-w-4xl">
             <div className="mb-6 flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.4em] text-white/30">
-              <Link href={`/${locale}`} className="hover:text-white/60 transition-colors">
+              <Link href="/" className="hover:text-white/60 transition-colors">
                 {locale === "es" ? "Inicio" : "Home"}
               </Link>
               <Icon icon="ph:caret-right" className="h-3 w-3" />
-              <Link href={`/${locale}/portfolio`} className="hover:text-white/60 transition-colors">Portfolio</Link>
+              <Link href="/portfolio" className="hover:text-white/60 transition-colors">Portfolio</Link>
               <Icon icon="ph:caret-right" className="h-3 w-3" />
               <span className="text-[#60A5FA]">TDP Demo</span>
             </div>
@@ -64,7 +66,6 @@ export default function TdpDemoPage({ params }: { params: Promise<{ locale: stri
               </div>
             </div>
 
-            {/* tech badges */}
             <div className="mt-5 flex flex-wrap gap-2">
               {["Next.js 14", "Electron", "Supabase", "Yappy", "PagueloFacil", "GPS", "PWA", "TypeScript"].map((t) => (
                 <span key={t} className="rounded-full border border-white/10 bg-white/5 px-2.5 py-0.5 text-[10px] font-medium text-white/50">
@@ -75,7 +76,6 @@ export default function TdpDemoPage({ params }: { params: Promise<{ locale: stri
           </div>
         </div>
 
-        {/* tabs */}
         <div className="border-b border-white/10 px-6">
           <div className="mx-auto flex max-w-4xl gap-1 overflow-x-auto py-2">
             {TABS.map((tab) => (
@@ -102,7 +102,6 @@ export default function TdpDemoPage({ params }: { params: Promise<{ locale: stri
           </div>
         </div>
 
-        {/* demo content */}
         <div className="px-6 py-10">
           <div className="mx-auto max-w-4xl">
             <AnimatePresence mode="wait">
@@ -119,7 +118,6 @@ export default function TdpDemoPage({ params }: { params: Promise<{ locale: stri
               </motion.div>
             </AnimatePresence>
 
-            {/* back CTA */}
             <div className="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-white/8 bg-white/[0.02] p-5">
               <div className="space-y-0.5">
                 <p className="text-sm font-semibold text-white">¿Quieres algo similar para tu negocio?</p>
@@ -127,17 +125,17 @@ export default function TdpDemoPage({ params }: { params: Promise<{ locale: stri
               </div>
               <div className="flex gap-3">
                 <Link
-                  href={`/${locale}/portfolio`}
+                  href="/portfolio"
                   className="rounded-xl border border-white/10 px-4 py-2 text-xs font-semibold text-white/50 hover:text-white transition-colors"
                 >
                   ← Ver más proyectos
                 </Link>
-                <a
-                  href={`/${locale}#contact`}
+                <Link
+                  href="/#contact"
                   className="rounded-xl bg-gradient-to-r from-[#1d4ed8] to-[#2563EB] px-4 py-2 text-xs font-bold uppercase tracking-wider text-white"
                 >
                   Contactar
-                </a>
+                </Link>
               </div>
             </div>
           </div>

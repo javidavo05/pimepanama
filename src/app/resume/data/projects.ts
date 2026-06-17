@@ -2,7 +2,7 @@ import type { Lang } from "./content";
 
 export interface Project {
   id: string;
-  title: string;
+  title: { en: string; es: string };
   category: { en: string; es: string };
   description: { en: string; es: string };
   features: { en: string[]; es: string[] };
@@ -15,7 +15,7 @@ export interface Project {
   initials: string;
   accentColor: string;
   /** Faux preview metric labels shown in the placeholder mockup. */
-  metric: { value: string; label: { en: string; es: string } };
+  metric: { value: { en: string; es: string }; label: { en: string; es: string } };
 }
 
 export function demoUrl(p: Project, lang: Lang): string | undefined {
@@ -25,7 +25,7 @@ export function demoUrl(p: Project, lang: Lang): string | undefined {
 export const projects: Project[] = [
   {
     id: "tdp",
-    title: "TDP — National Transport Ticketing",
+    title: { en: "TDP — National Transport Ticketing", es: "TDP — Boletería Nacional de Transporte" },
     category: { en: "Transport SaaS", es: "SaaS de Transporte" },
     description: {
       en: "Full-stack national bus ticketing system combining a public web portal, Electron-based dual-screen POS terminals, and real-time GPS fleet tracking — integrated with 5+ Panamanian payment gateways.",
@@ -38,11 +38,11 @@ export const projects: Project[] = [
     demoSlug: "tdp",
     initials: "TD",
     accentColor: "#1d4ed8",
-    metric: { value: "5+", label: { en: "Payment gateways", es: "Pasarelas de pago" } },
+    metric: { value: { en: "5+", es: "5+" }, label: { en: "Payment gateways", es: "Pasarelas de pago" } },
   },
   {
     id: "tickets",
-    title: "Enterprise Event Ticketing",
+    title: { en: "Enterprise Event Ticketing", es: "Boletería de Eventos Empresarial" },
     category: { en: "Events SaaS", es: "SaaS de Eventos" },
     description: {
       en: "Multi-tenant event ticketing platform built for 50,000+ daily transactions. Features NFC cashless payments, cryptographically signed QR codes, and an offline-first PWA scanner app.",
@@ -55,11 +55,11 @@ export const projects: Project[] = [
     demoSlug: "tickets",
     initials: "TK",
     accentColor: "#7c3aed",
-    metric: { value: "50K+", label: { en: "Daily transactions", es: "Transacciones diarias" } },
+    metric: { value: { en: "50K+", es: "50K+" }, label: { en: "Daily transactions", es: "Transacciones diarias" } },
   },
   {
     id: "sembradores",
-    title: "Sembradores — Church Management",
+    title: { en: "Sembradores — Church Management", es: "Sembradores — Gestión de Iglesias" },
     category: { en: "Non-profit SaaS", es: "SaaS sin Fines de Lucro" },
     description: {
       en: "White-label church management platform built as a Turborepo monorepo with 12 complete feature phases: member management, pastoral care, double-entry accounting, and a PWA member portal.",
@@ -72,11 +72,11 @@ export const projects: Project[] = [
     demoSlug: "sembradores",
     initials: "SM",
     accentColor: "#059669",
-    metric: { value: "12", label: { en: "Feature phases", es: "Fases de producto" } },
+    metric: { value: { en: "12", es: "12" }, label: { en: "Feature phases", es: "Fases de producto" } },
   },
   {
     id: "academyx",
-    title: "Academyx — Football Academy CRM",
+    title: { en: "Academyx — Football Academy CRM", es: "Academyx — CRM para Academia de Fútbol" },
     category: { en: "Sports SaaS", es: "SaaS Deportivo" },
     description: {
       en: "Comprehensive SaaS for managing a football academy: multi-role enrollment, financial tracking with Stripe, attendance, tournaments, schedules, WhatsApp communications, and real-time dashboards.",
@@ -89,11 +89,11 @@ export const projects: Project[] = [
     demoSlug: "academyx",
     initials: "AX",
     accentColor: "#2563eb",
-    metric: { value: "14K+", label: { en: "TypeScript files", es: "Archivos TypeScript" } },
+    metric: { value: { en: "14K+", es: "14K+" }, label: { en: "TypeScript files", es: "Archivos TypeScript" } },
   },
   {
     id: "bnb-real-estate",
-    title: "B&B Real Estate Marketplace",
+    title: { en: "B&B Real Estate Marketplace", es: "B&B Marketplace Inmobiliario" },
     category: { en: "Real Estate", es: "Bienes Raíces" },
     description: {
       en: "Full-featured real estate marketplace with integrated CMS, buyer/seller portals, 3-language SEO (EN/ES/PT), PDF property documents, and a comprehensive Playwright E2E test suite.",
@@ -106,11 +106,11 @@ export const projects: Project[] = [
     demoSlug: "bnb-real-estate",
     initials: "BB",
     accentColor: "#b45309",
-    metric: { value: "462", label: { en: "React components", es: "Componentes React" } },
+    metric: { value: { en: "462", es: "462" }, label: { en: "React components", es: "Componentes React" } },
   },
   {
     id: "wedding-saas",
-    title: "Wedding SaaS — Multi-Tenant Platform",
+    title: { en: "Wedding SaaS — Multi-Tenant Platform", es: "Wedding SaaS — Plataforma Multi-Tenant" },
     category: { en: "Hospitality SaaS", es: "SaaS de Hospitalidad" },
     description: {
       en: "White-label wedding planning SaaS with 7-locale support, audio invitations, guest galleries, package-based billing, and a Godmode admin control plane — 11,577 TypeScript files.",
@@ -123,11 +123,11 @@ export const projects: Project[] = [
     demoSlug: "wedding-saas",
     initials: "WS",
     accentColor: "#db2777",
-    metric: { value: "708", label: { en: "Application routes", es: "Rutas de aplicación" } },
+    metric: { value: { en: "708", es: "708" }, label: { en: "Application routes", es: "Rutas de aplicación" } },
   },
   {
     id: "wedding-site",
-    title: "Wedding Site — Collaborative App",
+    title: { en: "Wedding Site — Collaborative App", es: "Wedding Site — App Colaborativa" },
     category: { en: "Web App", es: "Aplicación Web" },
     description: {
       en: "Guest collaboration platform for weddings: real-time RSVP tracking, shared photo galleries with drag-and-drop via AWS S3 presigned URLs, Excel export, and offline PWA.",
@@ -140,11 +140,11 @@ export const projects: Project[] = [
     demoSlug: "wedding-site",
     initials: "WA",
     accentColor: "#0891b2",
-    metric: { value: "Real-time", label: { en: "Supabase sync", es: "Sync Supabase" } },
+    metric: { value: { en: "Real-time", es: "Tiempo Real" }, label: { en: "Supabase sync", es: "Sync Supabase" } },
   },
   {
     id: "godmode",
-    title: "Godmode — B2B SaaS Control Center",
+    title: { en: "Godmode — B2B SaaS Control Center", es: "Godmode — Centro de Control SaaS B2B" },
     category: { en: "Business Intelligence", es: "Inteligencia de Negocios" },
     description: {
       en: "Unified B2B dashboard managing digital subscriptions, automotive inventory, and company hierarchies across multiple organizations — with Dodo Payments billing and HMAC-signed webhooks.",
@@ -157,6 +157,6 @@ export const projects: Project[] = [
     demoSlug: "godmode",
     initials: "GM",
     accentColor: "#4f46e5",
-    metric: { value: "Multi-org", label: { en: "RLS isolation", es: "Aislamiento RLS" } },
+    metric: { value: { en: "Multi-org", es: "Multi-org" }, label: { en: "RLS isolation", es: "Aislamiento RLS" } },
   },
 ];

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { getLocale, getTranslations } from "next-intl/server";
 
 import { ContactForm } from "@/components/landing/contact-form";
 import { DifferentiatorsSection } from "@/components/landing/differentiators-section";
@@ -10,91 +10,91 @@ import { PortfolioSection } from "@/components/landing/portfolio-section";
 import { SectorsSection } from "@/components/landing/sectors-section";
 import { ServicesSection } from "@/components/landing/services-section";
 import { ValueSection } from "@/components/landing/value-section";
+import { AffordableSection } from "@/components/landing/affordable-section";
 import { getLandingContent } from "@/lib/content";
-import { defaultLocale, isValidLocale, type Locale } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
 
 export const revalidate = 0;
 export const dynamic = "force-dynamic";
 
-const navLabels = {
-  en: {
-    services: "Services",
-    sectors: "Sectors",
-    differentiators: "Advantages",
-    portfolio: "Portfolio",
-    contact: "Contact",
-  },
-  es: {
-    services: "Servicios",
-    sectors: "Sectores",
-    differentiators: "Diferenciales",
-    portfolio: "Portafolio",
-    contact: "Contacto",
-  },
-} satisfies Record<Locale, Record<string, string>>;
+// SEO TODO: Create a /blog route with articles targeting long-tail keywords:
+// - "¿Cuánto cuesta desarrollar un sistema empresarial en Panama?"
+// - "CRM vs software a medida: ¿qué necesita tu empresa?"
+// - "Cómo digitalizar una academia o instituto en Panama"
+// - "Ventajas de una plataforma SaaS para iglesias y organizaciones sin fines de lucro"
+// - "Desarrollo web en Panama: precios, plazos y qué esperar"
+// Each article should be 1,200–2,000 words, answer a real business question,
+// and include a CTA to contact Pime Panamá.
+
+// SEO TODO: Register and optimize Google Business Profile for Pime Panamá
+// at https://business.google.com — this is critical for local Panama rankings.
+// Add: category "Software Company", service area "Panama City", photos, description.
+
+// SEO TODO: Build backlinks from:
+// - Panama Chamber of Commerce directory
+// - Local tech community sites and directories
+// - LinkedIn articles linking back to pimepanama.com
+// - Guest posts on Latin American tech blogs
+
+// SEO TODO: Add Google Search Console — verify site at https://search.google.com/search-console
+// Submit sitemap.xml after deployment.
+// Monitor: which keywords are generating impressions, click-through rates, page rankings.
+
+// SEO TODO: Consider adding client testimonials with schema markup (Review schema)
+// to improve CTR from search results with star ratings.
 
 function localized<T extends Record<string, unknown>>(entry: T, field: string, locale: Locale) {
   return (entry as Record<string, string | null | undefined>)[`${field}_${locale}`] ?? null;
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
-  const { locale: paramLocale } = await params;
-  const locale = isValidLocale(paramLocale) ? paramLocale : defaultLocale;
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = (await getLocale()) as Locale;
+  const t = await getTranslations({ locale, namespace: "seo" });
   const { seo } = await getLandingContent();
   const seoHome = seo.find((item) => item.page === "home");
 
-  if (!seoHome) {
-    return {};
-  }
+  const title = localized(seoHome ?? {}, "metaTitle", locale) ?? t("home_title");
+  const description = localized(seoHome ?? {}, "metaDescription", locale) ?? t("home_description");
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://pimepanama.com";
 
-  const title = localized(seoHome, "metaTitle", locale);
-  const description = localized(seoHome, "metaDescription", locale);
+  const keywords =
+    locale === "es"
+      ? "desarrollo de software en Panama, empresa de software Panama, software a medida Panama, desarrollador web Panama, sistemas empresariales Panama, aplicaciones web Panama, CRM Panama, plataformas SaaS Panama, transformacion digital Panama, agencia digital Panama"
+      : "software development company Panama, web development Panama, custom software Panama, SaaS development Latin America, Panama software architect, Next.js developer Panama";
 
-  const keywords = locale === "en" 
-    ? "industrial engineering Panama, equipment supply Panama, turnkey projects, engineering consulting, industrial maintenance, Maersk, Svitzer, PIME Panama, industrial solutions, project management, ISO certified, ASME standards"
-    : "ingeniería industrial Panamá, suministro equipos industriales, proyectos llave en mano, consultoría ingeniería, mantenimiento industrial, Maersk, Svitzer, PIME Panama, soluciones industriales, gestión proyectos, certificación ISO, estándares ASME";
-
-  const ogImagePath = `/api/og/${locale}`;
+  // TODO: Replace /public/og-image.png with real branded image (1200×630 px)
+  const ogImage = `${siteUrl}/og-image.png`;
 
   return {
-    title: title ?? undefined,
-    description: description ?? undefined,
+    title,
+    description,
     keywords,
-    authors: [{ name: "PIME Panama" }],
-    creator: "PIME Panama",
-    publisher: "PIME Panama",
-    formatDetection: {
-      email: false,
-      address: false,
-      telephone: false,
-    },
-    metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://pimepanama.com"),
+    authors: [{ name: "Pime Panamá" }],
+    creator: "Pime Panamá",
+    publisher: "Pime Panamá",
+    formatDetection: { email: false, address: false, telephone: false },
+    metadataBase: new URL(siteUrl),
     openGraph: {
-      title: title ?? undefined,
-      description:
-        description ??
-        "Turnkey industrial engineering for LATAM’s critical infrastructure. PIME Panama integrates consulting, premium equipment supply, and predictive maintenance under ISO-certified standards.",
-      url: `/${locale}`,
-      siteName: "PIME Panama",
+      title,
+      description,
+      url: siteUrl,
+      siteName: "Pime Panamá",
       locale: locale === "es" ? "es_PA" : "en_US",
       type: "website",
-      images: seoHome.ogImageUrl
-        ? [{ url: seoHome.ogImageUrl }]
-        : [{ url: ogImagePath, width: 1200, height: 630, alt: "PIME Panama" }],
+      images: [{ url: ogImage, width: 1200, height: 630, alt: "Pime Panamá — Desarrollo de Software en Panama" }],
     },
     twitter: {
       card: "summary_large_image",
-      title: title ?? undefined,
-      description:
-        description ??
-        "Turnkey industrial engineering for LATAM’s critical infrastructure. PIME Panama integrates consulting, premium equipment supply, and predictive maintenance under ISO-certified standards.",
-      images: [seoHome.ogImageUrl ?? ogImagePath],
+      title,
+      description,
+      images: [ogImage],
     },
     alternates: {
-      canonical: `/${locale}`,
+      // Cookie-based i18n: both locales share the same canonical URL
+      canonical: siteUrl,
       languages: {
-        en: "/en",
-        es: "/es",
+        es: siteUrl,
+        en: siteUrl,
       },
     },
     robots: {
@@ -111,16 +111,14 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   };
 }
 
-export default async function LandingPage({ params }: { params: Promise<{ locale: string }> }) {
-  const { locale: paramLocale } = await params;
-  if (!isValidLocale(paramLocale)) {
-    notFound();
-  }
-
-  const locale = paramLocale;
+export default async function HomePage() {
+  const locale = (await getLocale()) as Locale;
+  const t = await getTranslations({ locale, namespace: "nav" });
+  const tp = await getTranslations({ locale, namespace: "portfolio" });
   const content = await getLandingContent();
 
   const sectionsBySlug = new Map(content.sections.map((section) => [section.slug, section]));
+
   const services = content.services.map((service) => ({
     id: service.id,
     order: service.order,
@@ -159,11 +157,12 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
   }));
 
   const navigationItems = [
-    { label: navLabels[locale].services, href: "#services" },
-    { label: navLabels[locale].sectors, href: "#sectors" },
-    { label: navLabels[locale].differentiators, href: "#differentiators" },
-    { label: navLabels[locale].portfolio, href: `/${locale}/portfolio` },
-    { label: navLabels[locale].contact, href: "#contact" },
+    { label: t("services"), href: "#services" },
+    { label: t("sectors"), href: "#sectors" },
+    { label: t("advantages"), href: "#differentiators" },
+    { label: t("portfolio"), href: "/portfolio" },
+    { label: t("websites"), href: "#websites" },
+    { label: t("contact"), href: "#contact" },
   ];
 
   const heroContent = {
@@ -220,15 +219,12 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
         />
       ) : null}
       <PortfolioSection
-        heading={locale === "es" ? "Nuestro Trabajo" : "Our Work"}
-        subheading={
-          locale === "es"
-            ? "Software empresarial construido para escalar. Más de $1.1M en desarrollos entregados."
-            : "Enterprise software built to scale. Over $1.1M in delivered software."
-        }
+        heading={tp("heading")}
+        subheading={tp("subheading")}
         items={portfolioItems}
         locale={locale}
       />
+      <AffordableSection />
       <section id="contact" className="relative overflow-hidden bg-black px-6 py-24">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(5,134,254,0.1),_transparent_70%)]" />
         <div className="relative z-10 mx-auto max-w-3xl">
@@ -239,4 +235,3 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
     </>
   );
 }
-

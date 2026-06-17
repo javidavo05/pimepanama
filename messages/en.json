@@ -1,0 +1,123 @@
+{
+  "nav": {
+    "tagline": "Software Development",
+    "services": "Services",
+    "sectors": "Sectors",
+    "advantages": "Advantages",
+    "portfolio": "Portfolio",
+    "websites": "Websites",
+    "contact": "Contact"
+  },
+  "hero": {
+    "eyebrow": "Software company in Panama",
+    "cta_primary": "Request Assessment",
+    "cta_secondary": "View Portfolio"
+  },
+  "portfolio": {
+    "heading": "Our Work",
+    "subheading": "Enterprise software built to scale. Over $1.1M in delivered software."
+  },
+  "contact": {
+    "title": "Request Free Technical Assessment",
+    "subtitle": "Share your project requirements and receive expert recommendations within 24 hours",
+    "name": "Full Name",
+    "email": "Email Address",
+    "company": "Company Name",
+    "phone": "Phone Number",
+    "message": "Project Details",
+    "submit": "Send Request",
+    "submitting": "Sending...",
+    "success": "Thank you! We'll contact you within 24 hours.",
+    "error": "Error sending message. Please email us directly at info@pimepanama.com",
+    "another": "Send another request",
+    "or_email": "Or email us directly at",
+    "placeholder_name": "John Doe",
+    "placeholder_email": "john@company.com",
+    "placeholder_company": "Company Inc.",
+    "placeholder_message": "Describe your project requirements, timeline, and any specific technical needs..."
+  },
+  "footer": {
+    "tagline": "Software Development",
+    "services": "Services",
+    "sectors": "Sectors",
+    "portfolio": "Portfolio",
+    "contact": "Contact",
+    "rights": "All rights reserved"
+  },
+  "affordable": {
+    "eyebrow": "Professional Websites",
+    "title": "Your digital presence, starting at $750",
+    "subtitle": "Professional web solutions for businesses that need real results without an enterprise investment.",
+    "popular_badge": "Most Popular",
+    "price_note": "one-time payment",
+    "support_label": "Optional monthly support",
+    "packages": {
+      "landing": {
+        "name": "Professional Landing Page",
+        "price": "$750",
+        "support_price": "+$80/mo",
+        "target": "Businesses that need to capture leads online",
+        "description": "A high-converting landing page designed to generate leads, registrations, or sales. Ideal for product launches, services, events, or marketing campaigns.",
+        "features": [
+          "Custom professional design",
+          "Lead capture form with email notifications",
+          "WhatsApp integration",
+          "Services, benefits, and testimonials sections",
+          "Basic SEO",
+          "Domain and hosting (first year)",
+          "Delivery in 5–7 business days"
+        ],
+        "support_includes": "Content updates, form monitoring, technical support."
+      },
+      "booking": {
+        "name": "Booking & Scheduling Website",
+        "price": "$1,200",
+        "support_price": "+$100/mo",
+        "target": "Workshops · Beauty salons · Clinics · Consultations",
+        "description": "A website with an integrated booking system that lets your clients schedule appointments or reserve slots directly from the site. No phone calls, no manual coordination.",
+        "features": [
+          "Custom website design",
+          "Booking system with calendar and time slots",
+          "Automatic confirmations via email or WhatsApp",
+          "Admin panel to view and manage appointments",
+          "Services and pricing page",
+          "Local SEO",
+          "Domain and hosting (first year)",
+          "Delivery in 10–14 business days"
+        ],
+        "use_cases": "Ideal for: craft workshops, beauty salons and spas, nutrition/physio/psychology clinics, yoga or pilates studios, private tutors."
+      },
+      "business": {
+        "name": "Business Website",
+        "price": "$2,500",
+        "support_price": "+$150/mo",
+        "target": "Companies that need a full web presence",
+        "description": "A complete multi-page business website with optional blog, basic payment integration, and a consistent visual identity. The entry point to a serious digital presence.",
+        "features": [
+          "Up to 6 pages",
+          "Custom design and development",
+          "Blog or news section (optional)",
+          "Contact and quote request forms",
+          "Social media integration",
+          "Full SEO + Google Analytics",
+          "Basic payments (optional)",
+          "Domain and hosting (first year)",
+          "Delivery in 15–21 business days"
+        ]
+      }
+    },
+    "cta": {
+      "title": "Not sure which one?",
+      "body": "Every project is different. If you need something specific or want a custom quote, reach out.",
+      "button": "Request a free quote",
+      "whatsapp_message": "Hi, I'd like a quote for my website."
+    },
+    "support_note": "Monthly support includes content updates (text, images, pricing), technical monitoring, minor fixes, and priority attention. It is optional and can be started or cancelled at any time."
+  },
+  "seo": {
+    "home_title": "Software Development in Panama | Pime Panamá",
+    "home_description": "Software development company in Panama specializing in enterprise systems, SaaS, CRM, and digital transformation. Over $1.1M in delivered projects.",
+    "portfolio_title": "Project Portfolio | Pime Panamá — Software Development in Panama",
+    "portfolio_description": "Success stories in enterprise software development: SaaS platforms, management systems, web applications, and mobile apps for companies in Panama and Latin America."
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "nav": {
+    "tagline": "Desarrollo de Software",
+    "services": "Servicios",
+    "sectors": "Sectores",
+    "advantages": "Diferenciales",
+    "portfolio": "Portafolio",
+    "websites": "Sitios Web",
+    "contact": "Contacto"
+  },
+  "hero": {
+    "eyebrow": "Empresa de software en Panamá",
+    "cta_primary": "Solicitar Evaluación",
+    "cta_secondary": "Ver Portafolio"
+  },
+  "portfolio": {
+    "heading": "Nuestro Trabajo",
+    "subheading": "Software empresarial construido para escalar. Más de $1.1M en desarrollos entregados."
+  },
+  "contact": {
+    "title": "Solicite Evaluación Técnica Gratuita",
+    "subtitle": "Comparta los requerimientos de su proyecto y reciba recomendaciones expertas en 24 horas",
+    "name": "Nombre Completo",
+    "email": "Correo Electrónico",
+    "company": "Nombre de la Empresa",
+    "phone": "Número de Teléfono",
+    "message": "Detalles del Proyecto",
+    "submit": "Enviar Solicitud",
+    "submitting": "Enviando...",
+    "success": "¡Gracias! Nos pondremos en contacto en 24 horas.",
+    "error": "Error al enviar mensaje. Por favor escríbanos directamente a info@pimepanama.com",
+    "another": "Enviar otra solicitud",
+    "or_email": "O escríbanos directamente a",
+    "placeholder_name": "Juan Pérez",
+    "placeholder_email": "juan@empresa.com",
+    "placeholder_company": "Empresa S.A.",
+    "placeholder_message": "Describa los requerimientos de su proyecto, cronograma y necesidades técnicas específicas..."
+  },
+  "footer": {
+    "tagline": "Desarrollo de Software",
+    "services": "Servicios",
+    "sectors": "Sectores",
+    "portfolio": "Portafolio",
+    "contact": "Contacto",
+    "rights": "Todos los derechos reservados"
+  },
+  "affordable": {
+    "eyebrow": "Sitios Web Profesionales",
+    "title": "Tu presencia digital, desde $750",
+    "subtitle": "Soluciones web profesionales para negocios que necesitan resultados reales sin una inversión empresarial.",
+    "popular_badge": "Más Popular",
+    "price_note": "pago único",
+    "support_label": "Soporte mensual opcional",
+    "packages": {
+      "landing": {
+        "name": "Landing Page Profesional",
+        "price": "$750",
+        "support_price": "+$80/mes",
+        "target": "Negocios que necesitan capturar leads online",
+        "description": "Una página de aterrizaje de alta conversión, diseñada para generar contactos, registros o ventas. Ideal para lanzar un producto, servicio, evento, o campaña de marketing.",
+        "features": [
+          "Diseño profesional personalizado",
+          "Formulario de captura de leads con notificaciones",
+          "Integración con WhatsApp",
+          "Sección de servicios, beneficios y testimonios",
+          "SEO básico",
+          "Dominio y hosting (primer año)",
+          "Entrega en 5–7 días hábiles"
+        ],
+        "support_includes": "Actualizaciones de contenido, monitoreo de formularios, soporte técnico."
+      },
+      "booking": {
+        "name": "Sitio de Agenda y Reservas",
+        "price": "$1,200",
+        "support_price": "+$100/mes",
+        "target": "Talleres · Salones de belleza · Clínicas · Consultorios",
+        "description": "Un sitio web con sistema de agenda integrado que permite a tus clientes reservar un espacio o cita directamente desde el sitio. Sin llamadas, sin mensajes manuales.",
+        "features": [
+          "Diseño personalizado del sitio",
+          "Sistema de reservas con calendario y slots",
+          "Confirmaciones automáticas por email o WhatsApp",
+          "Panel de administración para ver y gestionar citas",
+          "Página de servicios y precios",
+          "SEO local",
+          "Dominio y hosting (primer año)",
+          "Entrega en 10–14 días hábiles"
+        ],
+        "use_cases": "Ideal para: talleres de manualidades, salones de belleza y spa, clínicas de nutrición, fisioterapia o psicología, estudios de yoga o pilates, tutores y profesores particulares."
+      },
+      "business": {
+        "name": "Sitio Web Empresarial",
+        "price": "$2,500",
+        "support_price": "+$150/mes",
+        "target": "Empresas que necesitan una presencia web completa",
+        "description": "Un sitio web empresarial completo con múltiples páginas, blog opcional, integración de pagos básica, y una identidad visual coherente. El punto de entrada a una presencia digital seria.",
+        "features": [
+          "Hasta 6 páginas",
+          "Diseño y desarrollo a medida",
+          "Blog o sección de noticias (opcional)",
+          "Formularios de contacto y cotización",
+          "Integración con redes sociales",
+          "SEO completo + Google Analytics",
+          "Pagos básicos (opcional)",
+          "Dominio y hosting (primer año)",
+          "Entrega en 15–21 días hábiles"
+        ]
+      }
+    },
+    "cta": {
+      "title": "¿No estás seguro?",
+      "body": "Todos los proyectos son diferentes. Si necesitas algo específico o quieres una cotización personalizada, escríbenos.",
+      "button": "Solicitar cotización gratis",
+      "whatsapp_message": "Hola, quiero una cotización para mi sitio web."
+    },
+    "support_note": "El soporte mensual incluye actualizaciones de contenido (textos, imágenes, precios), monitoreo técnico, correcciones menores, y atención prioritaria. No es obligatorio y puede contratarse o cancelarse en cualquier momento."
+  },
+  "seo": {
+    "home_title": "Desarrollo de Software en Panama | Pime Panamá",
+    "home_description": "Empresa de desarrollo de software en Panama especializada en sistemas empresariales, SaaS, CRM y transformación digital. Más de $1.1M en proyectos entregados.",
+    "portfolio_title": "Portafolio de Proyectos | Pime Panamá — Desarrollo de Software en Panama",
+    "portfolio_description": "Casos de éxito en desarrollo de software empresarial: SaaS, sistemas de gestión, plataformas web y aplicaciones móviles para empresas en Panama y Latinoamérica."
+  }
+}

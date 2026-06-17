@@ -72,9 +72,37 @@ const printCSS = `
 }
 `;
 
+const personSchema = {
+  "@context": "https://schema.org",
+  "@type": "Person",
+  name: "Javier Vallejo",
+  jobTitle: "CEO & Senior Software Developer",
+  worksFor: {
+    "@type": "Organization",
+    name: "Pime Panamá",
+    url: "https://pimepanama.com",
+  },
+  address: {
+    "@type": "PostalAddress",
+    addressLocality: "Panama City",
+    addressCountry: "PA",
+  },
+  knowsAbout: [
+    "Software Architecture",
+    "SaaS Development",
+    "Next.js",
+    "TypeScript",
+    "Enterprise Systems",
+  ],
+};
+
 export default function ResumeLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className={syne.variable}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(personSchema) }}
+      />
       <style dangerouslySetInnerHTML={{ __html: printCSS }} />
       {children}
     </div>
