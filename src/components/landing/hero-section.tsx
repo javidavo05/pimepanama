@@ -21,9 +21,9 @@ type HeroContent = {
 };
 
 const PREVIEW_CARDS = [
-  { label: "Academyx CRM", metric: "847 estudiantes", sub: "activos este mes", color: "#0c1530" },
-  { label: "Tickex", metric: "2,340 tickets", sub: "vendidos en 48h", color: "#080e20" },
-  { label: "Sembradores", metric: "12 iglesias", sub: "en la plataforma", color: "#050a17" },
+  { label: "Tickex", metric: "$84K", sub: "en ventas en 48 h", color: "#0c1530" },
+  { label: "Academyx CRM", metric: "+1,200 h/mes", sub: "ahorradas en gestión", color: "#080e20" },
+  { label: "B&B Real Estate", metric: "3.2× reservas", sub: "tras el lanzamiento", color: "#050a17" },
 ] as const;
 
 const EYEBROW: Record<Locale, string> = {
