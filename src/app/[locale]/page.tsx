@@ -6,6 +6,7 @@ import { DifferentiatorsSection } from "@/components/landing/differentiators-sec
 import { HeroSection } from "@/components/landing/hero-section";
 import { LandingFooter } from "@/components/landing/footer";
 import { NavigationBar } from "@/components/landing/navigation-bar";
+import { PortfolioSection } from "@/components/landing/portfolio-section";
 import { SectorsSection } from "@/components/landing/sectors-section";
 import { ServicesSection } from "@/components/landing/services-section";
 import { ValueSection } from "@/components/landing/value-section";
@@ -20,12 +21,14 @@ const navLabels = {
     services: "Services",
     sectors: "Sectors",
     differentiators: "Advantages",
+    portfolio: "Portfolio",
     contact: "Contact",
   },
   es: {
     services: "Servicios",
     sectors: "Sectores",
     differentiators: "Diferenciales",
+    portfolio: "Portafolio",
     contact: "Contacto",
   },
 } satisfies Record<Locale, Record<string, string>>;
@@ -140,10 +143,26 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
 
   const hero = content.hero;
 
+  const portfolioItems = content.portfolio.map((item) => ({
+    id: item.id,
+    title: localized(item, "title", locale) ?? "",
+    summary: localized(item, "summary", locale) ?? "",
+    outcome: localized(item, "outcome", locale),
+    clientName: item.clientName,
+    industry: localized(item, "industry", locale),
+    imageUrl: item.imageUrl,
+    caseStudyUrl: item.caseStudyUrl,
+    liveUrl: "liveUrl" in item ? (item.liveUrl as string | null) : null,
+    techStack: "techStack" in item ? (item.techStack as string) : undefined,
+    value: "value" in item ? (item.value as number) : 0,
+    category: "category" in item ? (item.category as string) : undefined,
+  }));
+
   const navigationItems = [
     { label: navLabels[locale].services, href: "#services" },
     { label: navLabels[locale].sectors, href: "#sectors" },
     { label: navLabels[locale].differentiators, href: "#differentiators" },
+    { label: navLabels[locale].portfolio, href: `/${locale}/portfolio` },
     { label: navLabels[locale].contact, href: "#contact" },
   ];
 
@@ -200,6 +219,16 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
           items={differentiators}
         />
       ) : null}
+      <PortfolioSection
+        heading={locale === "es" ? "Nuestro Trabajo" : "Our Work"}
+        subheading={
+          locale === "es"
+            ? "Software empresarial construido para escalar. Más de $1.1M en desarrollos entregados."
+            : "Enterprise software built to scale. Over $1.1M in delivered software."
+        }
+        items={portfolioItems}
+        locale={locale}
+      />
       <section id="contact" className="relative overflow-hidden bg-black px-6 py-24">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(5,134,254,0.1),_transparent_70%)]" />
         <div className="relative z-10 mx-auto max-w-3xl">

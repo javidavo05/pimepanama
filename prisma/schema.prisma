@@ -120,6 +120,15 @@ model PortfolioItem {
   outcome_en        String?
   outcome_es        String?
   caseStudyUrl      String?
+  screenshots       String   @default("[]")
+  techStack         String   @default("[]")
+  highlights        String   @default("[]")
+  liveUrl           String?
+  repoUrl           String?
+  category          String   @default("saas")
+  featured          Boolean  @default(false)
+  year              Int      @default(2024)
+  value             Int      @default(0)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }

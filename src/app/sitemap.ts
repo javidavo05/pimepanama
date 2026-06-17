@@ -28,6 +28,28 @@ export default function sitemap(): MetadataRoute.Sitemap {
         },
       },
     },
+    {
+      url: `${baseUrl}/en/portfolio`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+      alternates: {
+        languages: {
+          es: `${baseUrl}/es/portfolio`,
+        },
+      },
+    },
+    {
+      url: `${baseUrl}/es/portfolio`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+      alternates: {
+        languages: {
+          en: `${baseUrl}/en/portfolio`,
+        },
+      },
+    },
   ];
 }
 

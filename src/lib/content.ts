@@ -2,6 +2,7 @@ import { cache } from "react";
 
 import { prisma } from "./prisma";
 import { staticContent } from "./static-content";
+import { getStaticPortfolioItems } from "./static-portfolio-data";
 
 export const getLandingContent = cache(async () => {
   try {
@@ -18,7 +19,7 @@ export const getLandingContent = cache(async () => {
 
     if (!hero) {
       console.warn("Database hero content missing, using static fallback");
-      return staticContent;
+      return { ...staticContent, portfolio: getStaticPortfolioItems() };
     }
 
     return {
@@ -27,13 +28,13 @@ export const getLandingContent = cache(async () => {
       services,
       sectors,
       differentiators,
-      portfolio,
+      portfolio: portfolio.length > 0 ? portfolio : getStaticPortfolioItems(),
       callsToAction,
       seo,
     };
   } catch (error) {
     console.error("Database connection failed, using static content:", error);
-    return staticContent;
+    return { ...staticContent, portfolio: getStaticPortfolioItems() };
   }
 });
 

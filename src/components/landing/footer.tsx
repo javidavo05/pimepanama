@@ -34,7 +34,7 @@ export function LandingFooter({ locale }: { locale: Locale }) {
             <Link href={`/${locale}#sectors`} className="transition hover:text-[#60A5FA]">
               {locale === "es" ? "Sectores" : "Sectors"}
             </Link>
-            <Link href={`/${locale}#portfolio`} className="transition hover:text-[#60A5FA]">
+            <Link href={`/${locale}/portfolio`} className="transition hover:text-[#60A5FA]">
               {locale === "es" ? "Portafolio" : "Portfolio"}
             </Link>
             <Link href={`/${locale}#contact`} className="transition hover:text-[#60A5FA]">
