@@ -60,8 +60,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const keywords =
     locale === "es"
-      ? "desarrollo de software en Panama, empresa de software Panama, software a medida Panama, desarrollador web Panama, sistemas empresariales Panama, aplicaciones web Panama, CRM Panama, plataformas SaaS Panama, transformacion digital Panama, agencia digital Panama"
-      : "software development company Panama, web development Panama, custom software Panama, SaaS development Latin America, Panama software architect, Next.js developer Panama";
+      ? "empresa de desarrollo de software en Panama, desarrollo de software en Panama, empresa de software Panama, software a medida Panama, desarrollador web Panama, sistemas empresariales Panama, aplicaciones web Panama, CRM Panama, plataformas SaaS Panama, transformacion digital Panama, agencia digital Panama"
+      : "software development company in Panama, software development Panama, web development Panama, custom software Panama, SaaS development Latin America, Panama software architect, Next.js developer Panama";
 
   // TODO: Replace /public/og-image.png with real branded image (1200×630 px)
   const ogImage = `${siteUrl}/og-image.png`;

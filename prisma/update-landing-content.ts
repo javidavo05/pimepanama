@@ -9,12 +9,12 @@ async function main() {
   console.log("Hero...");
   await prisma.hero.updateMany({
     data: {
-      headline_es: "Desarrollo de Software Empresarial en Panama",
-      headline_en: "Enterprise Software Development in Panama",
+      headline_es: "Desarrollo de Software en Panama",
+      headline_en: "Software Development in Panama",
       subheadline_es:
-        "Construimos plataformas SaaS, CRMs, CMS, sistemas de gestión y herramientas de automatización que ayudan a organizaciones a operar mejor y crecer con tecnología.",
+        "Somos una empresa de desarrollo de software en Panama. Construimos plataformas SaaS, CRMs, CMS, sistemas de gestión y herramientas de automatización a medida que ayudan a empresas de Panama y la región a operar mejor y crecer con tecnología.",
       subheadline_en:
-        "We build SaaS platforms, CRMs, CMS systems, management tools, and automation workflows that help organizations operate better and grow with technology.",
+        "We are a software development company in Panama. We build custom SaaS platforms, CRMs, CMS systems, management tools, and automation workflows that help businesses across Panama and the region operate better and grow with technology.",
       highlight_es: "Más de 30 sistemas entregados en Panama y la región",
       highlight_en: "30+ systems delivered across Panama and the region",
       ctaPrimaryLabel_es: "Ver Proyectos",
@@ -400,8 +400,8 @@ async function main() {
   await prisma.seoSetting.upsert({
     where: { page: "home" },
     update: {
-      metaTitle_es: "Pime Panamá | Desarrollo de Software Empresarial en Panama",
-      metaTitle_en: "Pime Panamá | Enterprise Software Development in Panama",
+      metaTitle_es: "Empresa de Desarrollo de Software en Panama | Pime Panamá",
+      metaTitle_en: "Software Development Company in Panama | Pime Panamá",
       metaDescription_es:
         "Empresa de desarrollo de software en Panama. Construimos plataformas SaaS, CRM, CMS y sistemas de automatización para empresas en Panama, Latinoamérica y el mundo.",
       metaDescription_en:
@@ -409,8 +409,8 @@ async function main() {
     },
     create: {
       page: "home",
-      metaTitle_es: "Pime Panamá | Desarrollo de Software Empresarial en Panama",
-      metaTitle_en: "Pime Panamá | Enterprise Software Development in Panama",
+      metaTitle_es: "Empresa de Desarrollo de Software en Panama | Pime Panamá",
+      metaTitle_en: "Software Development Company in Panama | Pime Panamá",
       metaDescription_es:
         "Empresa de desarrollo de software en Panama. Construimos plataformas SaaS, CRM, CMS y sistemas de automatización para empresas en Panama, Latinoamérica y el mundo.",
       metaDescription_en:

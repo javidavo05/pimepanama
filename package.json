@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "db:seed": "tsx prisma/seed.ts",
+    "db:update-content": "tsx prisma/update-landing-content.ts",
     "export": "next build"
   },
   "dependencies": {

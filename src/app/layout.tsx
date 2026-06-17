@@ -36,11 +36,12 @@ const orgSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
   name: "Pime Panamá",
-  alternateName: "PIME",
+  alternateName: ["PIME", "Pime Panama", "Empresa de Desarrollo de Software en Panama"],
+  slogan: "Empresa de Desarrollo de Software en Panama",
   url: "https://pimepanama.com",
   logo: "https://pimepanama.com/pime-icon.svg",
   description:
-    "Empresa de desarrollo de software en Panama especializada en sistemas empresariales, SaaS, CRM y transformación digital.",
+    "Empresa de desarrollo de software en Panama especializada en software a medida, sistemas empresariales, SaaS, CRM y transformación digital.",
   email: "info@pimepanama.com",
   address: {
     "@type": "PostalAddress",
@@ -74,10 +75,16 @@ const orgSchema = {
 
 const localBusinessSchema = {
   "@context": "https://schema.org",
-  "@type": "LocalBusiness",
+  "@type": "ProfessionalService",
   name: "Pime Panamá",
   description:
-    "Desarrollo de software empresarial en Panama: sistemas a medida, SaaS, CRM, plataformas web.",
+    "Empresa de desarrollo de software en Panama: software a medida, sistemas empresariales, SaaS, CRM y plataformas web.",
+  serviceType: [
+    "Desarrollo de software a medida",
+    "Desarrollo de plataformas SaaS",
+    "Desarrollo de sistemas empresariales",
+    "Desarrollo web",
+  ],
   url: "https://pimepanama.com",
   email: "info@pimepanama.com",
   address: {
