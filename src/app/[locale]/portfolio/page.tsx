@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, use } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { NavigationBar } from "@/components/landing/navigation-bar";
 import { LandingFooter } from "@/components/landing/footer";
@@ -24,9 +24,9 @@ function parseJSON<T>(raw: string, fallback: T): T {
 export default function PortfolioPage({
   params,
 }: {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 }) {
-  const locale = (params.locale === "es" ? "es" : "en") as "en" | "es";
+  const locale = (use(params).locale === "es" ? "es" : "en") as "en" | "es";
 
   const rawItems = getStaticPortfolioItems();
   const projects: ProjectCardData[] = rawItems.map((item) => ({

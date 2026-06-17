@@ -1,5 +1,7 @@
 "use client";
 
+import { use } from "react";
+
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
@@ -7,8 +9,8 @@ import { TicketsEventDashboard } from "@/components/demos/tickets-event-dashboar
 
 const TECH = ["Next.js 14", "Drizzle ORM", "PostgreSQL", "NFC", "Yappy", "PWA", "IndexedDB", "Resend"];
 
-export default function TicketsDemoPage({ params }: { params: { locale: string } }) {
-  const locale = params.locale === "es" ? "es" : "en";
+export default function TicketsDemoPage({ params }: { params: Promise<{ locale: string }> }) {
+  const locale = use(params).locale === "es" ? "es" : "en";
 
   return (
     <div className="min-h-screen bg-[#030611] text-white">

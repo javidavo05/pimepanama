@@ -1,5 +1,7 @@
 "use client";
 
+import { use } from "react";
+
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
@@ -7,8 +9,8 @@ import { WeddingSiteRSVP } from "@/components/demos/wedding-site-rsvp";
 
 const TECH = ["Next.js 16", "React 19", "Supabase", "AWS S3", "Nodemailer", "dnd-kit", "PWA", "xlsx"];
 
-export default function WeddingSiteDemoPage({ params }: { params: { locale: string } }) {
-  const locale = params.locale === "es" ? "es" : "en";
+export default function WeddingSiteDemoPage({ params }: { params: Promise<{ locale: string }> }) {
+  const locale = use(params).locale === "es" ? "es" : "en";
 
   return (
     <div className="min-h-screen bg-[#030611] text-white">

@@ -1,5 +1,7 @@
 "use client";
 
+import { use } from "react";
+
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
@@ -7,8 +9,8 @@ import { GodmodeControlCenter } from "@/components/demos/godmode-control-center"
 
 const TECH = ["Next.js 16", "React 19", "Supabase", "Tailwind v4", "Recharts", "Dodo Payments", "Resend", "Vitest"];
 
-export default function GodmodeDemoPage({ params }: { params: { locale: string } }) {
-  const locale = params.locale === "es" ? "es" : "en";
+export default function GodmodeDemoPage({ params }: { params: Promise<{ locale: string }> }) {
+  const locale = use(params).locale === "es" ? "es" : "en";
 
   return (
     <div className="min-h-screen bg-[#030611] text-white">

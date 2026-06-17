@@ -1,5 +1,7 @@
 "use client";
 
+import { use } from "react";
+
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
@@ -7,8 +9,8 @@ import { BnbPropertySearch } from "@/components/demos/bnb-property-search";
 
 const TECH = ["Next.js 15", "Supabase", "Stripe", "AWS S3", "Cloudflare R2", "Playwright", "Vitest", "Sharp"];
 
-export default function BnbDemoPage({ params }: { params: { locale: string } }) {
-  const locale = params.locale === "es" ? "es" : "en";
+export default function BnbDemoPage({ params }: { params: Promise<{ locale: string }> }) {
+  const locale = use(params).locale === "es" ? "es" : "en";
 
   return (
     <div className="min-h-screen bg-[#030611] text-white">

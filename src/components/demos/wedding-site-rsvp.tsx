@@ -120,7 +120,7 @@ export function WeddingSiteRSVP() {
                       <span className="text-[10px] text-white/25">{r.timestamp}</span>
                     </div>
                     <p className="text-[10px] text-white/40">{r.guests} persona{r.guests > 1 ? "s" : ""} · {r.meal}</p>
-                    {r.message && <p className="mt-1.5 text-xs italic text-white/35">"{r.message}"</p>}
+                    {r.message && <p className="mt-1.5 text-xs italic text-white/35">&ldquo;{r.message}&rdquo;</p>}
                   </div>
                 </div>
               </motion.div>

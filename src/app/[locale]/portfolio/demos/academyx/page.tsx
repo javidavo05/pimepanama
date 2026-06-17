@@ -1,5 +1,6 @@
 "use client";
 
+import { use } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
@@ -7,8 +8,8 @@ import { AcademyxPlayerRoster } from "@/components/demos/academyx-player-roster"
 
 const TECH = ["Next.js 16", "Supabase", "Stripe", "AWS S3", "WhatsApp", "Brevo", "Redis", "PWA", "Recharts"];
 
-export default function AcademyxDemoPage({ params }: { params: { locale: string } }) {
-  const locale = params.locale === "es" ? "es" : "en";
+export default function AcademyxDemoPage({ params }: { params: Promise<{ locale: string }> }) {
+  const locale = use(params).locale === "es" ? "es" : "en";
 
   return (
     <div className="min-h-screen bg-[#030611] text-white">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, use } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { Icon } from "@iconify/react";
@@ -16,8 +16,8 @@ const TABS = [
 
 type TabId = (typeof TABS)[number]["id"];
 
-export default function TdpDemoPage({ params }: { params: { locale: string } }) {
-  const locale = (params.locale === "es" ? "es" : "en") as "en" | "es";
+export default function TdpDemoPage({ params }: { params: Promise<{ locale: string }> }) {
+  const locale = (use(params).locale === "es" ? "es" : "en") as "en" | "es";
   const [activeTab, setActiveTab] = useState<TabId>("tickets");
 
   const navItems = [
