@@ -18,7 +18,25 @@ Antes de cualquier `git push` a `main` (= antes de cualquier deploy):
 
 Nunca desplegar código que no haya pasado `npm run build` localmente.
 
-## Variables y datos que NO se arreglan con push (viven en Vercel, no en git)
+## Contenido de la landing (home) — es ESTÁTICO, no usa base de datos
+
+Desde la "Opción B", la home pública **no lee de Postgres**. Todo el contenido
+(hero/H1, secciones, servicios, sectores, diferenciadores, SEO meta) vive en código:
+
+- **Archivo:** `src/lib/static-content.ts` (texto es/en del hero, servicios, sectores, etc.)
+- **Portafolio:** `src/lib/static-portfolio-data.ts`
+- **Tarjetas del hero (métricas):** `src/components/landing/hero-section.tsx` (`PREVIEW_CARDS`)
+- `getLandingContent()` en `src/lib/content.ts` solo devuelve ese contenido estático.
+
+**Para editar contenido de la landing:**
+1. Editar `src/lib/static-content.ts` (o el archivo correspondiente arriba).
+2. `npm run build` y confirmar build verde.
+3. `git push origin main` → se despliega.
+
+`prisma/update-landing-content.ts` y `npm run db:seed` quedan obsoletos para la home
+(solo aplicarían si se volviera a conectar la DB). NO usar `db:seed`: reescribe el
+contenido viejo industrial.
+
+## Variables que NO se arreglan con push (viven en Vercel, no en git)
 
 - `NEXT_PUBLIC_SITE_URL` y `DATABASE_URL` son variables de entorno en el dashboard de Vercel. `.env` y `.env.local` están en `.gitignore` y no se despliegan.
-- El contenido del sitio (hero/H1, servicios, sectores, SEO meta) vive en la **base de datos**, no en el código. Para actualizarlo en producción se corre `npm run db:update-content` contra la `DATABASE_URL` de prod (no `db:seed`, que reescribe el contenido viejo industrial).
