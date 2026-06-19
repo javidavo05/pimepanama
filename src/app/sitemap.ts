@@ -1,11 +1,13 @@
 import { MetadataRoute } from "next";
 
+import { getSiteUrl } from "@/lib/site-url";
+
 export const dynamic = "force-static";
 
 const LAUNCH_DATE = new Date("2026-06-17");
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = process.env.NEXT_PUBLIC_SITE_URL || "https://pimepanama.com";
+  const base = getSiteUrl();
 
   // Cookie-based i18n: one canonical URL per page; x-default required by Google for language targeting
   const hreflang = (url: string) => ({ languages: { "x-default": url, es: url, en: url } });

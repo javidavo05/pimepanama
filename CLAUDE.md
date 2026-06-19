@@ -2,11 +2,12 @@
 
 ## Despliegue (Deploy)
 
-- **Mecanismo:** El sitio se despliega por integración **GitHub → Vercel**. NO hay Vercel CLI ni `firebase deploy` en el flujo normal.
-- **Repo:** `https://github.com/javidavo05/pimepanama`
-- **Branch de producción:** `main` → cada `git push origin main` dispara automáticamente un build y deploy en Vercel.
+- **Proyecto Vercel (fijo):** `prj_m8QWgvneB5dDJ9iHLUUQ9VngWlyS` (`pimepanama-wt62`, scope `javier-vallejos-projects`)
 - **Producción:** `https://pimepanama.com`
-- **"Desplegar" = `git push origin main`.** No existe otro paso manual de deploy.
+- **Repo:** `https://github.com/javidavo05/pimepanama`
+- **Deploy manual (CLI):** `npm run deploy:vercel` — valida proyecto, build local, luego `npx vercel deploy`.
+- **Deploy por Git:** `git push origin main` también dispara build en el mismo proyecto Vercel.
+- **NUNCA** desplegar sin `node scripts/verify-vercel-project.cjs` (evita crear/enlazar otro proyecto por error).
 
 ## REGLA: validar SIEMPRE antes de desplegar
 
@@ -39,4 +40,14 @@ contenido viejo industrial.
 
 ## Variables que NO se arreglan con push (viven en Vercel, no en git)
 
-- `NEXT_PUBLIC_SITE_URL` y `DATABASE_URL` son variables de entorno en el dashboard de Vercel. `.env` y `.env.local` están en `.gitignore` y no se despliegan.
+- `NEXT_PUBLIC_SITE_URL`, `DATABASE_URL`, `DIRECT_URL` — Vercel dashboard o `npm run vercel:env-supabase`
+- Supabase proyecto: `onodhoqfybzmpaorhyve` — ver `SUPABASE-SETUP.md`
+- `.env` y `.env.local` están en `.gitignore` y no se despliegan.
+
+## Base de datos (Supabase)
+
+- **Home pública:** estática, no usa Postgres.
+- **Admin + `/api/test-db`:** requieren `DATABASE_URL` + `DIRECT_URL` válidos.
+- **Bootstrap:** `npm run db:setup-supabase` (local con `.env.local`).
+- **RLS:** obligatorio en todas las tablas (`20251107133946_enable_rls_lockdown`). Sin políticas para `anon`/`authenticated`.
+- **Firebase:** deprecado; no usar `firebase.json` ni deploy a Firebase Hosting.

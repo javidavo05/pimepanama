@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import type { Locale } from "@/lib/i18n";
+import { getSiteUrl } from "@/lib/site-url";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://pimepanama.com";
+const SITE_URL = getSiteUrl();
 
 // TODO: Replace /public/og-image.png with a real branded image (1200×630 px)
 const OG_IMAGE = `${SITE_URL}/og-image.png`;

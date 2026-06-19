@@ -1,0 +1,33 @@
+---
+description: Deploy pimepanama solo a prj_m8QWgvneB5dDJ9iHLUUQ9VngWlyS producción
+alwaysApply: true
+---
+
+# Vercel: pimepanama (producción fija)
+
+**projectId:** `prj_m8QWgvneB5dDJ9iHLUUQ9VngWlyS`  
+**projectName:** `pimepanama-wt62`  
+**scope:** `javier-vallejos-projects`  
+**producción:** `https://pimepanama.com`
+
+Cancelar si `node scripts/verify-vercel-project.cjs` falla o el `projectId` local no coincide. **Nunca** desplegar sin validación ni crear un proyecto nuevo.
+
+## Enlazar (solo si falta `.vercel/project.json`)
+
+```bash
+npx vercel link --project pimepanama-wt62 --scope javier-vallejos-projects --yes
+```
+
+## Deploy
+
+```bash
+npm run deploy:vercel
+```
+
+Equivale a: validar proyecto → `npm run build` → `npx vercel deploy --prod --scope javier-vallejos-projects --yes`
+
+## Post-deploy
+
+- `npx vercel inspect <url>` → `target: production` + aliases (`pimepanama.com`).
+- Reportar https://pimepanama.com
+- Si el build falla, no asumir éxito.

@@ -13,6 +13,7 @@ import { SectorsSection } from "@/components/landing/sectors-section";
 import { ServicesSection } from "@/components/landing/services-section";
 import { getLandingContent } from "@/lib/content";
 import type { Locale } from "@/lib/i18n";
+import { getSiteUrl } from "@/lib/site-url";
 import { ScrollProgressBar } from "@/components/ui/scroll-progress";
 
 export const revalidate = 0;
@@ -56,7 +57,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
   const title = localized(seoHome ?? {}, "metaTitle", locale) ?? t("home_title");
   const description = localized(seoHome ?? {}, "metaDescription", locale) ?? t("home_description");
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://pimepanama.com";
+  const siteUrl = getSiteUrl();
 
   const keywords =
     locale === "es"

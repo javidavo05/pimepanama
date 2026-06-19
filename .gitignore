@@ -29,8 +29,9 @@ yarn-error.log*
 .env*.local
 .env
 
-# vercel
-.vercel
+# vercel (project.json se commitea para fijar el proyecto correcto)
+.vercel/*
+!.vercel/project.json
 
 # typescript
 *.tsbuildinfo

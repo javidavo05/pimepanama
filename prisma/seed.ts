@@ -1,6 +1,9 @@
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
+// DEPRECATED: industrial-era content. Use `npm run db:setup-supabase` or
+// `npm run db:update-content` instead. Kept for reference only.
+
 const prisma = new PrismaClient();
 
 async function main() {

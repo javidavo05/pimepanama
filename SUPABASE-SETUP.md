@@ -1,148 +1,109 @@
-# Configuración de Supabase para PIME Panama
+# Supabase — Pime Panamá
 
-## 🎯 Ventajas de Supabase
+Proyecto: **onodhoqfybzmpaorhyve**  
+Dashboard: https://supabase.com/dashboard/project/onodhoqfybzmpaorhyve
 
-✅ **500MB de base de datos GRATIS**
-✅ PostgreSQL completo
-✅ Sin tarjeta de crédito requerida
-✅ Backups automáticos
-✅ Dashboard para ver datos
-✅ API REST automática
+La **home pública** no usa la DB (contenido en `src/lib/static-*.ts`). Postgres alimenta:
 
----
+- `/admin` — panel CMS y autenticación
+- `/api/test-db` — health check
 
-## 📝 Paso 1: Crear Proyecto en Supabase
-
-1. Ve a: https://supabase.com/dashboard/sign-up
-2. Sign up con GitHub (más rápido)
-3. Click en **"New Project"**
-4. Configura:
-   - **Name:** `pimepanama`
-   - **Database Password:** Genera uno seguro (guárdalo)
-   - **Region:** `East US (North Virginia)` (más cercano)
-   - **Pricing Plan:** Free (seleccionado por defecto)
-5. Click en **"Create new project"**
-6. Espera 2-3 minutos mientras se crea
+Firebase está **deprecado**; producción es Vercel + Supabase Postgres.
 
 ---
 
-## 📋 Paso 2: Obtener Connection String
+## 1. Obtener connection strings
 
-Una vez creado el proyecto:
+Supabase → **Settings** → **Database** → **Connection string** → **URI**
 
-1. En el dashboard de Supabase, ve a **Settings** (⚙️ abajo a la izquierda)
-2. Click en **"Database"**
-3. Scroll hasta **"Connection string"**
-4. Selecciona la pestaña **"URI"**
-5. Copia la connection string que se ve así:
-   ```
-   postgresql://postgres:[YOUR-PASSWORD]@db.xxxxxxxxxxxx.supabase.co:5432/postgres
-   ```
-6. **Importante:** Reemplaza `[YOUR-PASSWORD]` con el password que generaste
+Necesitas dos URLs (Prisma + pooler):
+
+| Variable | Modo | Puerto típico |
+|----------|------|----------------|
+| `DATABASE_URL` | Transaction pooler | `6543` + `?pgbouncer=true` |
+| `DIRECT_URL` | Session / direct pooler | `5432` |
+
+Si el host del pooler no es `aws-1-us-east-1`, copia el host exacto del dashboard.
 
 ---
 
-## 🔧 Paso 3: Configurar en Vercel
+## Seguridad (RLS)
 
-Ve a tu proyecto en Vercel → **Settings** → **Environment Variables**
+Todas las tablas tienen **Row Level Security** activado y **sin políticas** para `anon` / `authenticated`.
+Eso bloquea el acceso vía Supabase Data API (PostgREST) con la anon key.
 
-### Actualizar/Agregar:
+La app solo accede por **Prisma** (`DATABASE_URL` → rol `postgres`), que no pasa por la API pública.
 
-```
-Name: DATABASE_URL
-Value: postgresql://postgres:TU-PASSWORD@db.xxxxxxxxxxxx.supabase.co:5432/postgres
-Environment: ✅ Production ✅ Preview ✅ Development
+Migración: `prisma/migrations/20251107133946_enable_rls_lockdown/`
+
+**Nunca** expongas `SUPABASE_SERVICE_ROLE_KEY` en el cliente. Si no usas la API REST de Supabase,
+puedes quitar `NEXT_PUBLIC_SUPABASE_*` de Vercel.
+
+---
+
+## 2. Configurar local
+
+```bash
+cp .env.example .env.local
+# Edita .env.local con DATABASE_URL, DIRECT_URL y ADMIN_SEED_*
 ```
 
-**⚠️ Importante:** Reemplaza con tu connection string real de Supabase
+O solo la contraseña:
+
+```bash
+SUPABASE_DB_PASSWORD=tu-password npm run db:setup-supabase
+```
+
+El script ejecuta: `prisma migrate deploy` → admin user → contenido CMS (software).
 
 ---
 
-## 🗄️ Paso 4: Crear las Tablas en Supabase
+## 3. Subir variables a Vercel
 
-Después de configurar la variable en Vercel, necesitamos crear las tablas.
+Con `.env.local` completo:
 
-### Opción A: Desde Local (Recomendado)
+```bash
+npm run vercel:env-supabase
+npm run deploy:vercel
+```
 
-1. Crea un archivo `.env.local` con tu connection string:
-   ```env
-   DATABASE_URL="postgresql://postgres:TU-PASSWORD@db.xxxx.supabase.co:5432/postgres"
-   ```
+Variables requeridas en Vercel:
 
-2. Genera y aplica las migraciones:
-   ```bash
-   npx prisma migrate dev --name init
-   ```
+- `DATABASE_URL`
+- `DIRECT_URL`
+- `ADMIN_SEED_EMAIL` / `ADMIN_SEED_PASSWORD` (ya deberían existir)
 
-3. Seed la base de datos:
-   ```bash
-   npm run db:seed
-   ```
+Opcionales (API REST de Supabase, no usadas por Prisma hoy):
 
-### Opción B: Desde Supabase SQL Editor
-
-1. En Supabase Dashboard → **SQL Editor**
-2. Copia y pega el SQL de las migraciones
-3. Ejecuta el SQL
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
 
 ---
 
-## 🔄 Paso 5: Redeploy en Vercel
+## 4. Verificar
 
-1. Ve a **Deployments**
-2. Click en **"Redeploy"** del último deployment
-3. Espera 2-3 minutos
+```bash
+curl https://pimepanama.com/api/test-db
+# → {"status":"connected","counts":{"hero":1,"services":6},...}
+```
 
----
-
-## ✅ Verificar que Funciona
-
-### Probar el Admin:
-
-1. Ve a: `https://tu-sitio.vercel.app/admin/login`
-2. Login con:
-   - Email: `founder@pimepanama.com`
-   - Password: `ChangeMe123!`
-3. Deberías poder acceder al panel de admin
-4. Edita contenido y guarda
-5. Verifica que los cambios aparezcan en el sitio
+Admin: https://pimepanama.com/admin/login
 
 ---
 
-## 🎯 Resumen de Pasos
+## Migraciones
 
-- [ ] 1. Crear proyecto en Supabase
-- [ ] 2. Copiar connection string
-- [ ] 3. Agregar DATABASE_URL en Vercel
-- [ ] 4. Ejecutar migraciones localmente
-- [ ] 5. Seed la base de datos
-- [ ] 6. Redeploy en Vercel
-- [ ] 7. Probar admin panel
+```bash
+npm run db:migrate          # solo aplicar migraciones
+npm run db:seed-admin       # solo usuario admin
+npm run db:update-content   # solo contenido CMS (no toca admin password)
+```
 
----
-
-## 💡 Tips
-
-### Ver tus Datos en Supabase:
-- Dashboard → **Table Editor**
-- Puedes ver/editar datos directamente
-
-### Backups:
-- Supabase hace backups automáticos diarios
-- Puedes restaurar desde el dashboard
-
-### Monitoreo:
-- Dashboard → **Database** → **Logs**
-- Ve queries en tiempo real
+**No usar** `prisma/seed.ts` — contenido industrial obsoleto. Usar `db:setup-supabase` o `db:update-content`.
 
 ---
 
-## ❓ ¿Necesitas Ayuda?
+## Rotar secretos
 
-Una vez que tengas el connection string de Supabase, avísame y te ayudo a:
-1. Ejecutar las migraciones
-2. Seed la base de datos
-3. Verificar que todo funcione
-
-**¿Ya creaste el proyecto en Supabase?** 🚀
-
+Si expusiste keys en chat o logs, rótalo en Supabase → Settings → API y Database password.

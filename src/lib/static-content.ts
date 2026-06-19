@@ -19,8 +19,6 @@ export const staticContent = {
     ctaSecondaryLabel_en: "Request a Quote",
     ctaSecondaryLabel_es: "Solicitar Cotización",
     ctaSecondaryLink: "#contact",
-    createdAt: new Date(),
-    updatedAt: new Date(),
   },
   sections: [
     {

@@ -1,0 +1,10 @@
+-- PortfolioItem columns added after initial migration (align with schema.prisma)
+ALTER TABLE "PortfolioItem" ADD COLUMN IF NOT EXISTS "screenshots" TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE "PortfolioItem" ADD COLUMN IF NOT EXISTS "techStack" TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE "PortfolioItem" ADD COLUMN IF NOT EXISTS "highlights" TEXT NOT NULL DEFAULT '[]';
+ALTER TABLE "PortfolioItem" ADD COLUMN IF NOT EXISTS "liveUrl" TEXT;
+ALTER TABLE "PortfolioItem" ADD COLUMN IF NOT EXISTS "repoUrl" TEXT;
+ALTER TABLE "PortfolioItem" ADD COLUMN IF NOT EXISTS "category" TEXT NOT NULL DEFAULT 'saas';
+ALTER TABLE "PortfolioItem" ADD COLUMN IF NOT EXISTS "featured" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "PortfolioItem" ADD COLUMN IF NOT EXISTS "year" INTEGER NOT NULL DEFAULT 2024;
+ALTER TABLE "PortfolioItem" ADD COLUMN IF NOT EXISTS "value" INTEGER NOT NULL DEFAULT 0;

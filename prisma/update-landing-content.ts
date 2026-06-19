@@ -7,23 +7,27 @@ async function main() {
 
   // ─── HERO ───────────────────────────────────────────────────────────────────
   console.log("Hero...");
-  await prisma.hero.updateMany({
-    data: {
-      headline_es: "Desarrollo de Software en Panama",
-      headline_en: "Software Development in Panama",
-      subheadline_es:
-        "Somos una empresa de desarrollo de software en Panama. Construimos plataformas SaaS, CRMs, CMS, sistemas de gestión y herramientas de automatización a medida que ayudan a empresas de Panama y la región a operar mejor y crecer con tecnología.",
-      subheadline_en:
-        "We are a software development company in Panama. We build custom SaaS platforms, CRMs, CMS systems, management tools, and automation workflows that help businesses across Panama and the region operate better and grow with technology.",
-      highlight_es: "Más de 30 sistemas entregados en Panama y la región",
-      highlight_en: "30+ systems delivered across Panama and the region",
-      ctaPrimaryLabel_es: "Ver Proyectos",
-      ctaPrimaryLabel_en: "View Projects",
-      ctaPrimaryLink: "#projects",
-      ctaSecondaryLabel_es: "Solicitar Cotización",
-      ctaSecondaryLabel_en: "Request a Quote",
-      ctaSecondaryLink: "#contact",
-    },
+  const heroData = {
+    headline_es: "Desarrollo de Software en Panama",
+    headline_en: "Software Development in Panama",
+    subheadline_es:
+      "Somos una empresa de desarrollo de software en Panama. Construimos plataformas SaaS, CRMs, CMS, sistemas de gestión y herramientas de automatización a medida que ayudan a empresas de Panama y la región a operar mejor y crecer con tecnología.",
+    subheadline_en:
+      "We are a software development company in Panama. We build custom SaaS platforms, CRMs, CMS systems, management tools, and automation workflows that help businesses across Panama and the region operate better and grow with technology.",
+    highlight_es: "Más de 30 sistemas entregados en Panama y la región",
+    highlight_en: "30+ systems delivered across Panama and the region",
+    ctaPrimaryLabel_es: "Ver Proyectos",
+    ctaPrimaryLabel_en: "View Projects",
+    ctaPrimaryLink: "#projects",
+    ctaSecondaryLabel_es: "Solicitar Cotización",
+    ctaSecondaryLabel_en: "Request a Quote",
+    ctaSecondaryLink: "#contact",
+  };
+
+  await prisma.hero.upsert({
+    where: { id: "hero-main" },
+    update: heroData,
+    create: { id: "hero-main", ...heroData },
   });
   console.log("  ✓ Hero actualizado\n");
 

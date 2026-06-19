@@ -5,12 +5,16 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build && node scripts/postbuild.cjs",
-    "build:firebase": "next build && firebase deploy --only hosting",
     "start": "next start",
     "lint": "next lint",
-    "db:seed": "tsx prisma/seed.ts",
+    "db:migrate": "prisma migrate deploy",
+    "db:seed-admin": "tsx prisma/seed-admin.ts",
     "db:update-content": "tsx prisma/update-landing-content.ts",
-    "export": "next build"
+    "db:setup-supabase": "node scripts/setup-supabase-db.cjs",
+    "vercel:env-supabase": "node scripts/vercel-env-supabase.cjs",
+    "export": "next build",
+    "deploy:vercel": "node scripts/deploy-vercel.cjs",
+    "verify:vercel": "node scripts/verify-vercel-project.cjs"
   },
   "dependencies": {
     "@iconify/react": "^6.0.2",
