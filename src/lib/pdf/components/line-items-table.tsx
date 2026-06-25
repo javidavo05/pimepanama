@@ -1,8 +1,7 @@
 import { View, Text, StyleSheet } from "@react-pdf/renderer";
 import { COLORS, FONTS, SPACING } from "../tokens";
 import type { PdfTranslations } from "../translations";
-import { fmtCurrency } from "../translations";
-import type { PdfLang } from "../translations";
+import { fmtCurrency, type PdfLang } from "../translations";
 
 const COL_WIDTHS = {
   desc: "45%",
@@ -17,8 +16,8 @@ const s = StyleSheet.create({
   container: { marginBottom: SPACING.lg },
   headerRow: {
     flexDirection: "row",
-    backgroundColor: COLORS.bgCard,
-    paddingVertical: 6,
+    backgroundColor: COLORS.blueLight,
+    paddingVertical: 7,
     paddingHorizontal: SPACING.md,
     borderTopLeftRadius: 4,
     borderTopRightRadius: 4,
@@ -26,7 +25,7 @@ const s = StyleSheet.create({
   headerCell: {
     fontFamily: FONTS.bold,
     fontSize: 6.5,
-    color: COLORS.goldDim,
+    color: COLORS.blueDim,
     letterSpacing: 1.2,
     textTransform: "uppercase",
   },
@@ -37,10 +36,15 @@ const s = StyleSheet.create({
     borderBottomWidth: 0.5,
     borderBottomColor: COLORS.border,
   },
-  rowAlt: { backgroundColor: "rgba(255,255,255,0.015)" },
+  rowAlt: { backgroundColor: COLORS.bgCard },
   cell: { fontSize: 8.5, color: COLORS.textMuted, lineHeight: 1.4 },
   cellRight: { textAlign: "right" },
-  cellAmount: { fontFamily: FONTS.mono, fontSize: 8.5, color: COLORS.text, textAlign: "right" },
+  cellAmount: {
+    fontFamily: FONTS.mono,
+    fontSize: 8.5,
+    color: COLORS.text,
+    textAlign: "right",
+  },
   totalsContainer: {
     alignItems: "flex-end",
     paddingTop: SPACING.md,
@@ -53,18 +57,36 @@ const s = StyleSheet.create({
     marginBottom: 4,
   },
   totalLabel: { fontSize: 8, color: COLORS.textDim, width: 90, textAlign: "right" },
-  totalValue: { fontFamily: FONTS.mono, fontSize: 9, color: COLORS.textMuted, width: 80, textAlign: "right" },
+  totalValue: {
+    fontFamily: FONTS.mono,
+    fontSize: 9,
+    color: COLORS.textMuted,
+    width: 80,
+    textAlign: "right",
+  },
   grandTotalRow: {
     flexDirection: "row",
     justifyContent: "flex-end",
     gap: SPACING.xl,
     marginTop: 6,
     paddingTop: 6,
-    borderTopWidth: 0.5,
-    borderTopColor: COLORS.gold,
+    borderTopWidth: 1.5,
+    borderTopColor: COLORS.blue,
   },
-  grandTotalLabel: { fontFamily: FONTS.bold, fontSize: 9, color: COLORS.gold, width: 90, textAlign: "right" },
-  grandTotalValue: { fontFamily: FONTS.monoBold, fontSize: 13, color: COLORS.gold, width: 80, textAlign: "right" },
+  grandTotalLabel: {
+    fontFamily: FONTS.bold,
+    fontSize: 9,
+    color: COLORS.blue,
+    width: 90,
+    textAlign: "right",
+  },
+  grandTotalValue: {
+    fontFamily: FONTS.monoBold,
+    fontSize: 13,
+    color: COLORS.blue,
+    width: 80,
+    textAlign: "right",
+  },
 });
 
 interface LineItem {
@@ -103,7 +125,6 @@ export function LineItemsTable({ tr, lang, items, currency = "USD" }: LineItemsT
 
   return (
     <View style={s.container}>
-      {/* Header */}
       <View style={s.headerRow}>
         <Text style={[s.headerCell, { width: COL_WIDTHS.desc }]}>{tr.description}</Text>
         <Text style={[s.headerCell, { width: COL_WIDTHS.qty, textAlign: "right" }]}>{tr.quantity}</Text>
@@ -113,7 +134,6 @@ export function LineItemsTable({ tr, lang, items, currency = "USD" }: LineItemsT
         <Text style={[s.headerCell, { width: COL_WIDTHS.amount, textAlign: "right" }]}>{tr.amount}</Text>
       </View>
 
-      {/* Rows */}
       {rows.map(({ description, quantity, unitPrice, taxPercent, discount, lineTotal, i }) => (
         <View key={i} style={[s.row, i % 2 === 1 ? s.rowAlt : {}]} wrap={false}>
           <Text style={[s.cell, { width: COL_WIDTHS.desc }]}>{description}</Text>
@@ -125,7 +145,6 @@ export function LineItemsTable({ tr, lang, items, currency = "USD" }: LineItemsT
         </View>
       ))}
 
-      {/* Totals */}
       <View style={s.totalsContainer}>
         <View style={s.totalRow}>
           <Text style={s.totalLabel}>{tr.subtotal}</Text>

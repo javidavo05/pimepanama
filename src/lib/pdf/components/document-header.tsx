@@ -1,24 +1,55 @@
-import { View, Text, StyleSheet } from "@react-pdf/renderer";
+import { View, Text, Image, StyleSheet } from "@react-pdf/renderer";
+import path from "path";
 import { COLORS, FONTS, SPACING } from "../tokens";
 import type { CompanyConfig } from "@prisma/client";
 
+const LOGO_SRC = path.join(process.cwd(), "public/logo-pime.png");
+
 const s = StyleSheet.create({
   container: { marginBottom: SPACING.lg },
-  goldRule: { height: 2, backgroundColor: COLORS.gold, marginBottom: SPACING.lg },
-  row: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
-  company: { flex: 1 },
-  companyName: { fontFamily: FONTS.bold, fontSize: 16, color: COLORS.text, letterSpacing: 1 },
-  legalName: { fontSize: 8, color: COLORS.textMuted, marginTop: 2 },
-  detail: { fontSize: 7.5, color: COLORS.textDim, marginTop: 1.5 },
-  badge: {
-    backgroundColor: COLORS.bgHeader,
-    borderRadius: 3,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    alignItems: "flex-end",
+  blueStripe: { height: 4, backgroundColor: COLORS.blue, width: "100%" },
+  content: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: SPACING.page,
+    paddingVertical: SPACING.md,
   },
-  badgeLabel: { fontFamily: FONTS.mono, fontSize: 7, color: COLORS.goldDim, letterSpacing: 1.5 },
-  badgeValue: { fontFamily: FONTS.bold, fontSize: 20, color: COLORS.gold, letterSpacing: -0.5 },
+  left: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  logo: {
+    width: 88,
+    height: 48,
+    objectFit: "contain",
+    marginRight: SPACING.md,
+  },
+  companyCol: { flexDirection: "column" },
+  companyName: {
+    fontFamily: FONTS.bold,
+    fontSize: 12,
+    color: COLORS.text,
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  detail: { fontSize: 7.5, color: COLORS.textMuted, lineHeight: 1.5 },
+  right: { alignItems: "flex-end" },
+  docLabel: {
+    fontFamily: FONTS.bold,
+    fontSize: 7,
+    color: COLORS.blue,
+    letterSpacing: 2.5,
+    marginBottom: 3,
+  },
+  docNumber: {
+    fontFamily: FONTS.monoBold,
+    fontSize: 18,
+    color: COLORS.text,
+    letterSpacing: -0.5,
+  },
+  divider: { height: 1, backgroundColor: COLORS.border, width: "100%" },
 });
 
 interface DocumentHeaderProps {
@@ -28,27 +59,37 @@ interface DocumentHeaderProps {
 }
 
 export function DocumentHeader({ config, docLabel, docNumber }: DocumentHeaderProps) {
-  const company = config?.name ?? "Pime Panamá";
+  const company = config?.name ?? "PIME PANAMA";
+  const ruc = config?.ruc ?? "1-NT-2-739436 DV71";
 
   return (
     <View style={s.container} fixed>
-      {/* Gold top rule */}
-      <View style={s.goldRule} />
-      <View style={s.row}>
-        <View style={s.company}>
-          <Text style={s.companyName}>{company.toUpperCase()}</Text>
-          {config?.legalName && <Text style={s.legalName}>{config.legalName}</Text>}
-          {config?.ruc && <Text style={s.detail}>RUC: {config.ruc}</Text>}
-          {config?.address && <Text style={s.detail}>{config.address}{config.city ? `, ${config.city}` : ""}{config.country ? `, ${config.country}` : ""}</Text>}
-          {config?.phone && <Text style={s.detail}>Tel: {config.phone}</Text>}
-          {config?.email && <Text style={s.detail}>{config.email}</Text>}
-          {config?.website && <Text style={s.detail}>{config.website}</Text>}
+      <View style={s.blueStripe} />
+      <View style={s.content}>
+        <View style={s.left}>
+          {/* eslint-disable-next-line jsx-a11y/alt-text */}
+          <Image style={s.logo} src={LOGO_SRC} />
+          <View style={s.companyCol}>
+            <Text style={s.companyName}>{company.toUpperCase()}</Text>
+            {ruc && <Text style={s.detail}>RUC: {ruc}</Text>}
+            {config?.address && (
+              <Text style={s.detail}>
+                {config.address}
+                {config.city ? `, ${config.city}` : ""}
+                {config.country ? `, ${config.country}` : ""}
+              </Text>
+            )}
+            {config?.phone && <Text style={s.detail}>Tel: {config.phone}</Text>}
+            {config?.email && <Text style={s.detail}>{config.email}</Text>}
+            {config?.website && <Text style={s.detail}>{config.website}</Text>}
+          </View>
         </View>
-        <View style={s.badge}>
-          <Text style={s.badgeLabel}>{docLabel}</Text>
-          {docNumber && <Text style={s.badgeValue}>{docNumber}</Text>}
+        <View style={s.right}>
+          <Text style={s.docLabel}>{docLabel}</Text>
+          {docNumber && <Text style={s.docNumber}>{docNumber}</Text>}
         </View>
       </View>
+      <View style={s.divider} />
     </View>
   );
 }

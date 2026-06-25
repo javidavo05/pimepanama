@@ -9,16 +9,21 @@ const s = StyleSheet.create({
     bottom: SPACING.page,
     left: SPACING.page,
     right: SPACING.page,
-    borderTopWidth: 0.5,
-    borderTopColor: COLORS.gold,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.blue,
     paddingTop: SPACING.xs + 2,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
   left: { fontSize: 7, color: COLORS.textDim, flex: 1 },
-  center: { fontSize: 7, color: COLORS.textDim, textAlign: "center", flex: 1 },
-  right: { fontSize: 7.5, fontFamily: FONTS.mono, color: COLORS.goldDim, textAlign: "right" },
+  center: { fontSize: 7, color: COLORS.textMuted, textAlign: "center", flex: 1 },
+  right: {
+    fontSize: 7.5,
+    fontFamily: FONTS.mono,
+    color: COLORS.blue,
+    textAlign: "right",
+  },
 });
 
 interface DocumentFooterProps {
@@ -34,7 +39,7 @@ export function DocumentFooter({ tr, config, notes }: DocumentFooterProps) {
         `${tr.page} ${pageNumber} ${tr.of} ${totalPages}`
       } />
       <Text style={s.center}>
-        {notes ?? config?.footerNotes_es ?? `${config?.name ?? "Pime Panamá"} · ${tr.thankyou}`}
+        {notes ?? config?.footerNotes_es ?? `${config?.name ?? "PIME PANAMA"} · ${tr.thankyou}`}
       </Text>
       <Text style={s.right}>
         {config?.website ?? "pimepanama.com"}

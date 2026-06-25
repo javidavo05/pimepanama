@@ -1,17 +1,35 @@
 import { StyleSheet } from "@react-pdf/renderer";
 
 export const COLORS = {
-  bg: "#050508",
-  bgCard: "#0c0c14",
-  bgHeader: "#0a0a12",
-  gold: "#C8A96E",
-  goldDim: "#a8895a",
-  goldLight: "#d4b87a",
-  text: "#FFFFFF",
-  textMuted: "rgba(255,255,255,0.55)",
-  textDim: "rgba(255,255,255,0.35)",
-  border: "rgba(255,255,255,0.07)",
-  borderLight: "rgba(255,255,255,0.04)",
+  // Backgrounds
+  bg: "#FFFFFF",
+  bgCard: "#F8FAFC",
+  bgAlt: "#F1F5F9",
+  bgDark: "#0A0E1A",
+
+  // PIME Brand
+  blue: "#1AA7F0",
+  blueDim: "#0E87C8",
+  blueLight: "#EBF6FE",
+  purple: "#6344E8",
+  purpleLight: "#EEEBFB",
+
+  // Text
+  text: "#111827",
+  textMuted: "#6B7280",
+  textDim: "#9CA3AF",
+  textInverse: "#FFFFFF",
+
+  // Borders
+  border: "#E5E7EB",
+  borderMid: "#D1D5DB",
+
+  // Backwards-compat aliases (any code still referencing gold/bgHeader gets PIME colors)
+  gold: "#1AA7F0",
+  goldDim: "#0E87C8",
+  goldLight: "#EBF6FE",
+  bgHeader: "#0A0E1A",
+  bgCard2: "#F8FAFC",
 };
 
 export const FONTS = {
@@ -30,27 +48,24 @@ export const SPACING = {
   page: 40,
 };
 
-// Shared page styles
 export const pageStyles = StyleSheet.create({
+  // LAW: size must always be LETTER (8.5" × 11"). NEVER A4.
   page: {
-    size: "LETTER",
     backgroundColor: COLORS.bg,
-    paddingTop: SPACING.page,
-    paddingBottom: SPACING.page + 20, // extra for footer
-    paddingHorizontal: SPACING.page,
+    paddingTop: 0,
+    paddingBottom: 0,
+    paddingHorizontal: 0,
     fontFamily: FONTS.regular,
     color: COLORS.text,
   },
-  goldRule: {
-    width: "100%",
-    height: 1.5,
-    backgroundColor: COLORS.gold,
-    marginBottom: SPACING.lg,
+  body: {
+    paddingHorizontal: SPACING.page,
+    flex: 1,
   },
   sectionTitle: {
     fontFamily: FONTS.bold,
     fontSize: 7,
-    color: COLORS.gold,
+    color: COLORS.blue,
     letterSpacing: 2,
     textTransform: "uppercase",
     marginBottom: SPACING.sm,
