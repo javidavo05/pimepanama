@@ -164,3 +164,112 @@ model SeoSetting {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
+
+// ─── Pime Communications Suite ───────────────────────────────────────────────
+
+enum EmpresaRole {
+  OWNER
+  USER
+}
+
+enum DocumentType {
+  FACTURA
+  COTIZACION
+  BITACORA
+  CORREO
+}
+
+enum DocumentStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  PAID
+  CANCELLED
+}
+
+model EmpresaUser {
+  id          String         @id @default(cuid())
+  supabaseUid String         @unique
+  email       String         @unique
+  fullName    String?
+  role        EmpresaRole    @default(USER)
+  documents   Document[]
+  config      CompanyConfig? @relation(fields: [configId], references: [id])
+  configId    String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model CompanyConfig {
+  id               String        @id @default(cuid())
+  name             String        @default("Pime Panamá")
+  legalName        String?
+  ruc              String?
+  address          String?
+  city             String?
+  country          String        @default("Panamá")
+  phone            String?
+  email            String?
+  logoUrl          String?
+  website          String?
+  currency         String        @default("USD")
+  defaultLocale    String        @default("es")
+  invoicePrefix    String        @default("INV")
+  quotePrefix      String        @default("COT")
+  paymentTermsDays Int           @default(30)
+  taxRatePercent   Decimal       @default(7)
+  footerNotes_en   String?
+  footerNotes_es   String?
+  users            EmpresaUser[]
+  documents        Document[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+}
+
+model Document {
+  id            String         @id @default(cuid())
+  type          DocumentType
+  status        DocumentStatus @default(DRAFT)
+  language      String         @default("es")
+  number        String?
+  title         String
+  clientName    String?
+  clientEmail   String?
+  clientCompany String?
+  clientAddress String?
+  clientRuc     String?
+  content       Json           @default("{}")
+  aiEnhanced    Boolean        @default(false)
+  aiTokensUsed  Int            @default(0)
+  issueDate     DateTime       @default(now())
+  dueDate       DateTime?
+  validUntil    DateTime?
+  subtotal      Decimal?
+  taxAmount     Decimal?
+  total         Decimal?
+  currency      String         @default("USD")
+  user          EmpresaUser    @relation(fields: [userId], references: [id])
+  userId        String
+  company       CompanyConfig? @relation(fields: [companyId], references: [id])
+  companyId     String?
+  pdfUrl        String?
+  sentAt        DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([type, userId])
+  @@index([status, userId])
+}
+
+model AiUsageLog {
+  id           String   @id @default(cuid())
+  supabaseUid  String
+  documentId   String?
+  operation    String
+  model        String
+  inputTokens  Int      @default(0)
+  outputTokens Int      @default(0)
+  durationMs   Int      @default(0)
+  createdAt    DateTime @default(now())
+}
