@@ -5,32 +5,12 @@ import { usePathname } from "next/navigation";
 import { signOutAction } from "@/app/(empresa)/empresa/actions";
 
 const NAV_ITEMS = [
-  {
-    href: "/empresa",
-    label: "Dashboard",
-    icon: "⬛",
-    exact: true,
-  },
-  {
-    href: "/empresa/facturas",
-    label: "Facturas",
-    icon: "📄",
-  },
-  {
-    href: "/empresa/cotizaciones",
-    label: "Cotizaciones",
-    icon: "📋",
-  },
-  {
-    href: "/empresa/bitacoras",
-    label: "Bitácoras",
-    icon: "📝",
-  },
-  {
-    href: "/empresa/correos",
-    label: "Correos",
-    icon: "✉️",
-  },
+  { href: "/empresa", label: "Dashboard", icon: "⬛", exact: true },
+  { href: "/empresa/clientes", label: "Clientes", icon: "👥" },
+  { href: "/empresa/cotizaciones", label: "Cotizaciones", icon: "📋" },
+  { href: "/empresa/facturas", label: "Facturas", icon: "📄" },
+  { href: "/empresa/bitacoras", label: "Bitácoras", icon: "📝" },
+  { href: "/empresa/correos", label: "Correos", icon: "✉️" },
 ];
 
 const BOTTOM_ITEMS = [
@@ -59,14 +39,14 @@ export function SidebarNav({ userEmail, companyName }: SidebarNavProps) {
       {/* Brand */}
       <div className="px-5 py-6 border-b border-white/[0.05]">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-md bg-[#C8A96E]/10 border border-[#C8A96E]/25 flex items-center justify-center shrink-0">
-            <span className="text-[#C8A96E] font-bold text-sm">P</span>
+          <div className="w-8 h-8 rounded-md bg-[#1AA7F0]/10 border border-[#1AA7F0]/25 flex items-center justify-center shrink-0">
+            <span className="text-[#1AA7F0] font-bold text-sm">P</span>
           </div>
           <div>
             <p className="text-white text-xs font-semibold tracking-widest uppercase">
               {companyName}
             </p>
-            <p className="text-[#C8A96E] text-[10px] tracking-[0.25em] uppercase mt-0.5">
+            <p className="text-[#1AA7F0] text-[10px] tracking-[0.25em] uppercase mt-0.5">
               Suite
             </p>
           </div>
@@ -81,7 +61,7 @@ export function SidebarNav({ userEmail, companyName }: SidebarNavProps) {
             href={item.href}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
               isActive(item.href, item.exact)
-                ? "bg-[#C8A96E]/10 text-[#C8A96E] border border-[#C8A96E]/20"
+                ? "bg-[#1AA7F0]/10 text-[#1AA7F0] border border-[#1AA7F0]/20"
                 : "text-white/50 hover:text-white/80 hover:bg-white/[0.04]"
             }`}
           >
@@ -99,7 +79,7 @@ export function SidebarNav({ userEmail, companyName }: SidebarNavProps) {
             href={item.href}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
               isActive(item.href)
-                ? "bg-[#C8A96E]/10 text-[#C8A96E] border border-[#C8A96E]/20"
+                ? "bg-[#1AA7F0]/10 text-[#1AA7F0] border border-[#1AA7F0]/20"
                 : "text-white/50 hover:text-white/80 hover:bg-white/[0.04]"
             }`}
           >

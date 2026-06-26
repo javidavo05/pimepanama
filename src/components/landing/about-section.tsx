@@ -10,7 +10,7 @@ const CONTENT = {
     heading: "Tecnología que conoce tu negocio",
     body: "Pime Panamá es una empresa de desarrollo de software fundada en 2019 en Ciudad de Panamá. Somos un equipo de 5 desarrolladores especializados en construir sistemas empresariales — plataformas SaaS, CRMs, CMS, sistemas de gestión y automatización digital.",
     body2:
-      "Javier Vallejo, CEO y desarrollador principal, combina 10+ años de experiencia en desarrollo de software con un MBA en E-commerce (ENEB, España). Cada proyecto pasa por sus manos directamente — sin intermediarios, sin promesas vacías. El código que entregamos es tuyo para siempre.",
+      "Contamos con más de 10 años de experiencia en desarrollo de software y un enfoque empresarial respaldado por formación en E-commerce (MBA, ENEB, España). Sin intermediarios, sin promesas vacías. El código que entregamos es tuyo para siempre.",
     stats: [
       { value: 5, label: "Desarrolladores", suffix: "" },
       { value: 30, label: "Sistemas entregados", suffix: "+" },
@@ -23,7 +23,7 @@ const CONTENT = {
     heading: "Technology that knows your business",
     body: "Pime Panamá is a software development company founded in 2019 in Panama City. We are a team of 5 developers specialized in building enterprise systems — SaaS platforms, CRMs, CMS, management systems, and digital automation.",
     body2:
-      "Javier Vallejo, CEO and lead developer, combines 10+ years of software development experience with an MBA in E-commerce (ENEB, Spain). Every project goes through his hands directly — no middlemen, no empty promises. The code we deliver is yours to keep forever.",
+      "With 10+ years of software development experience and a business-focused approach backed by E-commerce training (MBA, ENEB, Spain). No middlemen, no empty promises. The code we deliver is yours to keep forever.",
     stats: [
       { value: 5, label: "Developers", suffix: "" },
       { value: 30, label: "Systems delivered", suffix: "+" },

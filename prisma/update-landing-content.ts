@@ -207,18 +207,8 @@ async function main() {
         "We don't charge a percentage of your transactions or mandatory monthly licenses. You pay for the project, period. What you generate with your system is completely yours.",
     },
     {
-      slug: "ceo-codes",
-      order: 3,
-      title_es: "CEO que también codifica",
-      title_en: "CEO who also codes",
-      description_es:
-        "Javier Vallejo, CEO de Pime Panamá, es también el desarrollador principal. Tu proyecto no pasa por intermediarios — la persona que te cotiza es la misma que construye.",
-      description_en:
-        "Javier Vallejo, CEO of Pime Panamá, is also the lead developer. Your project doesn't go through middlemen — the person who quotes you is the same one who builds it.",
-    },
-    {
       slug: "ai-accelerated",
-      order: 4,
+      order: 3,
       title_es: "Desarrollo acelerado con IA",
       title_en: "AI-accelerated development",
       description_es:
@@ -228,7 +218,7 @@ async function main() {
     },
     {
       slug: "dedicated-team",
-      order: 5,
+      order: 4,
       title_es: "Equipo dedicado",
       title_en: "Dedicated team",
       description_es:

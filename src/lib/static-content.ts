@@ -162,20 +162,9 @@ export const staticContent = {
         "No cobramos porcentaje de tus transacciones ni licencias mensuales obligatorias. Pagas el proyecto, punto. Lo que generas con tu sistema es completamente tuyo.",
     },
     {
-      id: "diff-ceo-codes",
-      slug: "ceo-codes",
-      order: 3,
-      title_en: "CEO who also codes",
-      title_es: "CEO que también codifica",
-      description_en:
-        "Javier Vallejo, CEO of Pime Panamá, is also the lead developer. Your project doesn't go through middlemen — the person who quotes you is the same one who builds it.",
-      description_es:
-        "Javier Vallejo, CEO de Pime Panamá, es también el desarrollador principal. Tu proyecto no pasa por intermediarios — la persona que te cotiza es la misma que construye.",
-    },
-    {
       id: "diff-ai-accelerated",
       slug: "ai-accelerated",
-      order: 4,
+      order: 3,
       title_en: "AI-accelerated development",
       title_es: "Desarrollo acelerado con IA",
       description_en:
@@ -186,7 +175,7 @@ export const staticContent = {
     {
       id: "diff-dedicated-team",
       slug: "dedicated-team",
-      order: 5,
+      order: 4,
       title_en: "Dedicated team",
       title_es: "Equipo dedicado",
       description_en:

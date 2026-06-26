@@ -13,6 +13,63 @@ export async function signOutAction() {
   redirect("/empresa/login");
 }
 
+export async function createClientAction(data: {
+  name: string;
+  company?: string;
+  ruc?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  notes?: string;
+}) {
+  const user = await getEmpresaUser();
+  const client = await prisma.client.create({ data: { ...data, userId: user.id } });
+  revalidatePath("/empresa/clientes");
+  return client;
+}
+
+export async function updateClientAction(
+  id: string,
+  data: Partial<{
+    name: string;
+    company: string;
+    ruc: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    country: string;
+    notes: string;
+  }>
+) {
+  const user = await getEmpresaUser();
+  const existing = await prisma.client.findFirst({ where: { id, userId: user.id } });
+  if (!existing) throw new Error("Client not found");
+  const client = await prisma.client.update({ where: { id }, data });
+  revalidatePath("/empresa/clientes");
+  revalidatePath(`/empresa/clientes/${id}`);
+  return client;
+}
+
+export async function createPaymentMethodAction(data: {
+  name: string;
+  type: string;
+  commissionPct?: number;
+  commissionFlat?: number;
+  commissionTax?: number;
+  bankName?: string;
+  accountNumber?: string;
+  accountType?: string;
+  accountHolder?: string;
+}) {
+  const user = await getEmpresaUser();
+  const method = await prisma.paymentMethod.create({ data: { ...data, userId: user.id } as never });
+  revalidatePath("/empresa/configuracion");
+  return method;
+}
+
 export async function createDocumentAction(data: {
   type: DocumentType;
   title: string;
@@ -22,6 +79,7 @@ export async function createDocumentAction(data: {
   clientCompany?: string;
   clientAddress?: string;
   clientRuc?: string;
+  clientId?: string;
   content?: object;
   issueDate?: Date;
   dueDate?: Date;
@@ -29,7 +87,12 @@ export async function createDocumentAction(data: {
   subtotal?: number;
   taxAmount?: number;
   total?: number;
+  commissionAmt?: number;
+  netAmount?: number;
   currency?: string;
+  status?: DocumentStatus;
+  paymentMethodId?: string;
+  r2Key?: string;
 }) {
   const user = await getEmpresaUser();
 
@@ -51,14 +114,31 @@ export async function createDocumentAction(data: {
 
   const doc = await prisma.document.create({
     data: {
-      ...data,
-      number,
-      userId: user.id,
-      companyId: user.configId ?? undefined,
+      type: data.type,
+      title: data.title,
+      language: data.language,
+      clientName: data.clientName,
+      clientEmail: data.clientEmail,
+      clientCompany: data.clientCompany,
+      clientAddress: data.clientAddress,
+      clientRuc: data.clientRuc,
+      clientId: data.clientId,
       content: (data.content as object) ?? {},
+      issueDate: data.issueDate,
+      dueDate: data.dueDate,
+      validUntil: data.validUntil,
       subtotal: data.subtotal ?? undefined,
       taxAmount: data.taxAmount ?? undefined,
       total: data.total ?? undefined,
+      commissionAmt: data.commissionAmt ?? undefined,
+      netAmount: data.netAmount ?? undefined,
+      currency: data.currency,
+      status: data.status ?? "DRAFT",
+      paymentMethodId: data.paymentMethodId,
+      r2Key: data.r2Key,
+      number,
+      userId: user.id,
+      companyId: user.configId ?? undefined,
     },
   });
 
@@ -78,6 +158,7 @@ export async function updateDocumentAction(
     clientCompany: string;
     clientAddress: string;
     clientRuc: string;
+    clientId: string;
     content: object;
     issueDate: Date;
     dueDate: Date;
@@ -85,7 +166,11 @@ export async function updateDocumentAction(
     subtotal: number;
     taxAmount: number;
     total: number;
+    commissionAmt: number;
+    netAmount: number;
     currency: string;
+    paymentMethodId: string;
+    r2Key: string;
     aiEnhanced: boolean;
     aiTokensUsed: number;
   }>

@@ -14,17 +14,22 @@ export interface LineItem {
 export interface DocumentFormValues {
   title: string;
   language: "es" | "en";
+  clientId: string;
   clientName: string;
   clientEmail: string;
   clientCompany: string;
   clientAddress: string;
   clientRuc: string;
+  clientPhone: string;
   currency: string;
   issueDate: string;
   dueDate: string;
   validUntil: string;
   notes: string;
   terms: string;
+  quoteStatus: "DRAFT" | "SENT" | "ACCEPTED" | "REJECTED" | "PAID" | "CANCELLED";
+  paymentMethodId: string;
+  saveAsNewClient: boolean;
   lineItems: LineItem[];
   // bitacora fields
   attendees: string;
