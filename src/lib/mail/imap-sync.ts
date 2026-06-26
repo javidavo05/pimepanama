@@ -77,8 +77,11 @@ export async function syncAccount(account: MailAccount): Promise<{ fetched: numb
           });
         }
 
-        const htmlBody = typeof parsed.html === "string" ? parsed.html.replace(/<[^>]+>/g, " ") : "";
-        const bodyText = parsed.text ?? htmlBody ?? "";
+        // Store the HTML body when available; keep plain text as fallback for AI
+        const bodyHtml = typeof parsed.html === "string" ? parsed.html : null;
+        const bodyPlain = parsed.text ?? (bodyHtml ? bodyHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "");
+        // bodyText stores HTML when available so the UI can render it properly
+        const bodyText = bodyHtml ?? bodyPlain;
 
         // AI analysis
         let aiSummary: string | undefined;
@@ -87,7 +90,9 @@ export async function syncAccount(account: MailAccount): Promise<{ fetched: numb
         let shouldNotify = false;
 
         try {
-          const analysis = await analyzeEmail(parsed.subject ?? "", bodyText);
+          // Pass plain text to AI (strip HTML if we stored it)
+          const textForAi = bodyPlain.slice(0, 2000);
+          const analysis = await analyzeEmail(parsed.subject ?? "", textForAi);
           aiSummary = analysis.summary;
           aiTags = analysis.tags;
           urgency = analysis.urgency;

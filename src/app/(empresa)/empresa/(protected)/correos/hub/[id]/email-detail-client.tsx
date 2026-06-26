@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { EmailReplyModal } from "@/components/empresa/mail/email-reply-modal";
+import { EmailBodyRenderer } from "@/components/empresa/mail/email-body-renderer";
 
 const TAG_COLORS: Record<string, string> = {
   urgent: "bg-red-500/15 text-red-400 border-red-500/20",
@@ -128,7 +129,7 @@ export function EmailDetailClient({ email }: { email: EmailData }) {
 
         {/* Body */}
         <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
-          <pre className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap font-sans">{email.bodyText ?? "(Sin contenido de texto)"}</pre>
+          <EmailBodyRenderer body={email.bodyText} />
         </div>
 
         {/* Attachments */}
