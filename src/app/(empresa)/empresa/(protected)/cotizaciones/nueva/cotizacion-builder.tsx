@@ -2,22 +2,23 @@
 
 import { useForm, useWatch } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { createDocumentAction, updateDocumentAction, createClientAction } from "@/app/(empresa)/empresa/actions";
 import { LanguageToggle } from "@/components/empresa/document-builder/language-toggle";
 import { LineItemsEditor, type DocumentFormValues } from "@/components/empresa/document-builder/line-items-editor";
 import { AiEnhanceButton } from "@/components/empresa/document-builder/ai-enhance-button";
 import { ClientCombobox } from "@/components/empresa/client-combobox";
 import { PaymentSelector } from "@/components/empresa/payment-selector";
-import type { Client, Document as PrismaDocument, PaymentMethod } from "@prisma/client";
+import type { Client } from "@prisma/client";
+import type { SerializedPaymentMethod, SerializedDocument } from "@/lib/serializers";
 
 interface CotizacionBuilderProps {
   taxRateDefault: number;
   currency: string;
   clients: Client[];
-  paymentMethods: PaymentMethod[];
+  paymentMethods: SerializedPaymentMethod[];
   mode?: "create" | "edit";
-  initialDocument?: PrismaDocument;
+  initialDocument?: SerializedDocument;
 }
 
 const STATUS_OPTS = [
@@ -27,7 +28,7 @@ const STATUS_OPTS = [
   { value: "REJECTED", label: "Rechazada", labelEn: "Rejected", color: "border-red-500/30 text-red-400" },
 ];
 
-function getInitialValues(doc?: PrismaDocument, currency = "USD", taxRate = 7): Partial<DocumentFormValues> {
+function getInitialValues(doc?: SerializedDocument, currency = "USD", taxRate = 7): Partial<DocumentFormValues> {
   if (!doc) {
     return {
       language: "es", currency,
@@ -64,6 +65,8 @@ export function CotizacionBuilder({
 }: CotizacionBuilderProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [translating, setTranslating] = useState(false);
+  const [lastTranslateCost, setLastTranslateCost] = useState<number | null>(null);
 
   const { register, control, setValue, handleSubmit, watch } = useForm<DocumentFormValues>({
     defaultValues: getInitialValues(initialDocument, currency, taxRateDefault) as DocumentFormValues,
@@ -86,8 +89,54 @@ export function CotizacionBuilder({
     return acc + base * (1 + tax / 100);
   }, 0);
 
-  function handleClientSelect(client: Client | null) {
-    if (!client) return;
+  const translateAll = useCallback(async () => {
+    const currentItems = watch("lineItems") ?? [];
+    const currentNotes = watch("notes") ?? "";
+    const currentTerms = watch("terms") ?? "";
+
+    // Collect all non-empty strings with their position key
+    const slots: { key: string; text: string }[] = [];
+    currentItems.forEach((item, i) => {
+      if (item.description?.trim()) slots.push({ key: `item_${i}`, text: item.description });
+    });
+    if (currentNotes.trim()) slots.push({ key: "notes", text: currentNotes });
+    if (currentTerms.trim()) slots.push({ key: "terms", text: currentTerms });
+
+    if (slots.length === 0) return;
+
+    setTranslating(true);
+    setLastTranslateCost(null);
+    try {
+      const res = await fetch("/api/empresa/ai/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texts: slots.map((s) => s.text), to: "en" }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const translated: string[] = data.texts ?? [];
+
+      // Write back in order
+      translated.forEach((text, i) => {
+        const slot = slots[i];
+        if (!slot) return;
+        if (slot.key.startsWith("item_")) {
+          const idx = parseInt(slot.key.split("_")[1]);
+          setValue(`lineItems.${idx}.description`, text);
+        } else if (slot.key === "notes") {
+          setValue("notes", text);
+        } else if (slot.key === "terms") {
+          setValue("terms", text);
+        }
+      });
+
+      if (data.costUSD != null) setLastTranslateCost(data.costUSD);
+    } finally {
+      setTranslating(false);
+    }
+  }, [watch, setValue]);
+
+  function handleClientSelect(client: Client) {
     setValue("clientId", client.id);
     setValue("clientName", client.name);
     setValue("clientEmail", client.email ?? "");
@@ -95,6 +144,7 @@ export function CotizacionBuilder({
     setValue("clientAddress", client.address ?? "");
     setValue("clientRuc", client.ruc ?? "");
     setValue("clientPhone", client.phone ?? "");
+    setValue("saveAsNewClient", false);
   }
 
   async function onSubmit(data: DocumentFormValues) {
@@ -193,7 +243,30 @@ export function CotizacionBuilder({
             <p className="text-white/40 text-sm mt-1 font-mono">{initialDocument.number}</p>
           )}
         </div>
-        <LanguageToggle value={language} onChange={(l) => setValue("language", l)} />
+        <div className="flex items-center gap-3">
+          {language === "en" && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={translateAll}
+                disabled={translating}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#6344E8]/10 border border-[#6344E8]/25 text-[#6344E8] text-xs font-medium hover:bg-[#6344E8]/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              >
+                {translating ? (
+                  <><span className="w-2 h-2 rounded-full bg-[#6344E8] animate-pulse" /> Traduciendo...</>
+                ) : (
+                  <>✦ Traducir al inglés</>
+                )}
+              </button>
+              {lastTranslateCost != null && !translating && (
+                <span className="text-[10px] text-white/25 font-mono">
+                  ${lastTranslateCost.toFixed(4)}
+                </span>
+              )}
+            </div>
+          )}
+          <LanguageToggle value={language} onChange={(l) => setValue("language", l)} />
+        </div>
       </div>
 
       {/* Status selector */}
@@ -224,16 +297,30 @@ export function CotizacionBuilder({
         <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">
           {isEs ? "Cliente" : "Client"}
         </h3>
-        <div className="mb-4">
-          <ClientCombobox
-            clients={clients}
-            onSelect={handleClientSelect}
-            initialName={initialDocument?.clientName ?? ""}
-          />
-        </div>
         <div className="grid grid-cols-2 gap-4">
+          <div>
+            <ClientCombobox
+              clients={clients}
+              value={watch("clientName") ?? ""}
+              onChange={(name) => {
+                setValue("clientName", name);
+                setValue("clientId", "");
+                setValue("saveAsNewClient", false);
+              }}
+              onSelect={handleClientSelect}
+              onNewClient={() => setValue("saveAsNewClient", true)}
+              label={isEs ? "Nombre completo" : "Full name"}
+              placeholder="Juan Pérez"
+              selectedClientId={watch("clientId") || undefined}
+            />
+            {watch("saveAsNewClient") && (
+              <p className="mt-1.5 text-[10px] text-[#1AA7F0]/70 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#1AA7F0]/60 inline-block" />
+                {isEs ? "Se guardará como nuevo cliente" : "Will be saved as new client"}
+              </p>
+            )}
+          </div>
           {[
-            { name: "clientName", label: isEs ? "Nombre completo" : "Full name", placeholder: "Juan Pérez" },
             { name: "clientCompany", label: isEs ? "Empresa" : "Company", placeholder: "Empresa S.A." },
             { name: "clientRuc", label: "RUC / Cédula", placeholder: "8-123-456" },
             { name: "clientEmail", label: isEs ? "Correo electrónico" : "Email", placeholder: "cliente@empresa.com", type: "email" },
@@ -257,7 +344,7 @@ export function CotizacionBuilder({
               className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 transition-all"
             />
           </div>
-          <div className="col-span-2 flex items-center gap-3 pt-1">
+          <div className="col-span-2 flex items-center gap-3 pt-1 hidden">
             <input
               {...register("saveAsNewClient")}
               type="checkbox"

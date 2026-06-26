@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { fmtCost } from "@/lib/ai-pricing";
 
 interface AiEnhanceButtonProps {
   text: string;
@@ -9,17 +10,14 @@ interface AiEnhanceButtonProps {
   onEnhanced: (text: string) => void;
 }
 
-export function AiEnhanceButton({
-  text,
-  language,
-  context,
-  onEnhanced,
-}: AiEnhanceButtonProps) {
+export function AiEnhanceButton({ text, language, context, onEnhanced }: AiEnhanceButtonProps) {
   const [loading, setLoading] = useState(false);
+  const [lastCost, setLastCost] = useState<number | null>(null);
 
   async function enhance() {
     if (!text.trim() || loading) return;
     setLoading(true);
+    setLastCost(null);
     try {
       const res = await fetch("/api/empresa/ai/enhance", {
         method: "POST",
@@ -29,6 +27,7 @@ export function AiEnhanceButton({
       if (res.ok) {
         const data = await res.json();
         onEnhanced(data.enhanced);
+        if (data.costUSD != null) setLastCost(data.costUSD);
       }
     } finally {
       setLoading(false);
@@ -36,21 +35,31 @@ export function AiEnhanceButton({
   }
 
   return (
-    <button
-      type="button"
-      onClick={enhance}
-      disabled={loading || !text.trim()}
-      title="Mejorar con IA"
-      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#C8A96E]/10 border border-[#C8A96E]/20 text-[#C8A96E] text-xs font-medium hover:bg-[#C8A96E]/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-    >
-      {loading ? (
-        <>
-          <span className="w-2.5 h-2.5 rounded-full bg-[#C8A96E] animate-pulse" />
-          Mejorando...
-        </>
-      ) : (
-        <>✦ IA</>
+    <div className="inline-flex items-center gap-1.5">
+      <button
+        type="button"
+        onClick={enhance}
+        disabled={loading || !text.trim()}
+        title="Mejorar con IA"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#6344E8]/10 border border-[#6344E8]/25 text-[#6344E8] text-xs font-medium hover:bg-[#6344E8]/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+      >
+        {loading ? (
+          <>
+            <span className="w-2 h-2 rounded-full bg-[#6344E8] animate-pulse" />
+            Mejorando...
+          </>
+        ) : (
+          <>✦ IA</>
+        )}
+      </button>
+      {lastCost != null && !loading && (
+        <span
+          className="text-[10px] text-white/25 font-mono"
+          title={`Costo real: $${lastCost.toFixed(6)}`}
+        >
+          {fmtCost(lastCost)}
+        </span>
       )}
-    </button>
+    </div>
   );
 }

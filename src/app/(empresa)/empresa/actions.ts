@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
+import { serializeDocument } from "@/lib/serializers";
 import { DocumentType, DocumentStatus } from "@prisma/client";
 
 export async function signOutAction() {
@@ -144,7 +145,7 @@ export async function createDocumentAction(data: {
 
   revalidatePath("/empresa");
   revalidatePath(`/empresa/${data.type.toLowerCase()}s`);
-  return doc;
+  return serializeDocument(doc);
 }
 
 export async function updateDocumentAction(
@@ -194,7 +195,7 @@ export async function updateDocumentAction(
 
   revalidatePath(`/empresa/${existing.type.toLowerCase()}s/${id}`);
   revalidatePath("/empresa");
-  return doc;
+  return serializeDocument(doc);
 }
 
 export async function deleteDocumentAction(id: string) {

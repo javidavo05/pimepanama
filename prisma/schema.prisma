@@ -205,6 +205,7 @@ model EmpresaUser {
   documents      Document[]
   clients        Client[]
   paymentMethods PaymentMethod[]
+  mailAccounts   MailAccount[]
   config         CompanyConfig?  @relation(fields: [configId], references: [id])
   configId       String?
   createdAt      DateTime        @default(now())
@@ -331,4 +332,82 @@ model AiUsageLog {
   outputTokens Int      @default(0)
   durationMs   Int      @default(0)
   createdAt    DateTime @default(now())
+}
+
+// ─── Mail Hub ────────────────────────────────────────────────────────────────
+
+model MailAccount {
+  id          String       @id @default(cuid())
+  userId      String
+  user        EmpresaUser  @relation(fields: [userId], references: [id])
+  label       String
+  host        String
+  port        Int          @default(993)
+  tls         Boolean      @default(true)
+  username    String
+  passwordEnc String
+  credType    String       @default("PASSWORD_APP")
+  smtpHost    String?
+  smtpPort    Int?         @default(587)
+  smtpTls     Boolean      @default(true)
+  active      Boolean      @default(true)
+  lastSyncAt  DateTime?
+  emails      InboxEmail[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([userId])
+}
+
+model InboxEmail {
+  id          String            @id @default(cuid())
+  accountId   String
+  account     MailAccount       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  userId      String
+  uid         Int
+  messageId   String?
+  subject     String?
+  fromName    String?
+  fromEmail   String
+  toAddresses String[]
+  ccAddresses String[]
+  bodyText    String?
+  receivedAt  DateTime
+  isRead      Boolean           @default(false)
+  isStarred   Boolean           @default(false)
+  folder      String            @default("INBOX")
+  aiSummary   String?
+  aiTags      String[]
+  aiNotified  Boolean           @default(false)
+  attachments EmailAttachment[]
+  createdAt   DateTime          @default(now())
+
+  @@unique([accountId, uid, folder])
+  @@index([userId])
+  @@index([accountId])
+  @@index([receivedAt])
+}
+
+model EmailAttachment {
+  id          String     @id @default(cuid())
+  emailId     String
+  email       InboxEmail @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  filename    String
+  contentType String
+  size        Int
+  r2Key       String?
+  r2Url       String?
+  createdAt   DateTime   @default(now())
+}
+
+model MailNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  emailId   String?
+  title     String
+  body      String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
 }

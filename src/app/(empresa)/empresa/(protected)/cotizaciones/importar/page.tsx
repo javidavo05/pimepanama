@@ -1,5 +1,6 @@
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
+import { serializePaymentMethod } from "@/lib/serializers";
 import { ImportarCotizacionForm } from "./importar-form";
 
 export const metadata = { title: "Importar Cotización — Pime Suite" };
@@ -19,7 +20,7 @@ export default async function ImportarCotizacionPage() {
           Digitaliza el registro de una cotización anterior. Sube el PDF (opcional) y completa los datos.
         </p>
       </div>
-      <ImportarCotizacionForm clients={clients} paymentMethods={paymentMethods} />
+      <ImportarCotizacionForm clients={clients} paymentMethods={paymentMethods.map(serializePaymentMethod)} />
     </div>
   );
 }

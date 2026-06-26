@@ -15,6 +15,7 @@ export default async function EmpresaProtectedLayout({
       <SidebarNav
         userEmail={user.email}
         companyName={user.config?.name ?? "Pime Panamá"}
+        logoUrl={user.config?.logoUrl ?? undefined}
       />
       <main className="ml-60 min-h-screen">
         <div className="p-8">{children}</div>

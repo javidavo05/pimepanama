@@ -2,7 +2,8 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import type { Client, PaymentMethod } from "@prisma/client";
+import type { Client } from "@prisma/client";
+import type { SerializedPaymentMethod } from "@/lib/serializers";
 import { ClientCombobox } from "@/components/empresa/client-combobox";
 import { PaymentSelector } from "@/components/empresa/payment-selector";
 import { createDocumentAction, createClientAction } from "@/app/(empresa)/empresa/actions";
@@ -10,7 +11,7 @@ import { calcCommission, fmtUSD } from "@/lib/commission";
 
 interface ImportarFormProps {
   clients: Client[];
-  paymentMethods: PaymentMethod[];
+  paymentMethods: SerializedPaymentMethod[];
 }
 
 const STATUS_OPTS = [
@@ -47,14 +48,13 @@ export function ImportarCotizacionForm({ clients, paymentMethods }: ImportarForm
     ? calcCommission(grossAmount, Number(pm.commissionPct), Number(pm.commissionFlat), Number(pm.commissionTax))
     : null;
 
-  function handleClientSelect(c: Client | null) {
+  function handleClientSelect(c: Client) {
     setSelectedClient(c);
-    if (c) {
-      setClientName(c.name);
-      setClientCompany(c.company ?? "");
-      setClientRuc(c.ruc ?? "");
-      setClientEmail(c.email ?? "");
-    }
+    setClientName(c.name);
+    setClientCompany(c.company ?? "");
+    setClientRuc(c.ruc ?? "");
+    setClientEmail(c.email ?? "");
+    setSaveNewClient(false);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -145,11 +145,24 @@ export function ImportarCotizacionForm({ clients, paymentMethods }: ImportarForm
       {/* Client */}
       <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
         <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">Cliente</h3>
-        <ClientCombobox clients={clients} onSelect={handleClientSelect} initialName="" />
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-white/40 text-xs uppercase tracking-widest mb-1.5">Nombre *</label>
-            <input required value={clientName} onChange={(e) => setClientName(e.target.value)} placeholder="Juan Pérez" className={inputCls} />
+            <ClientCombobox
+              clients={clients}
+              value={clientName}
+              onChange={(name) => { setClientName(name); setSelectedClient(null); setSaveNewClient(false); }}
+              onSelect={handleClientSelect}
+              onNewClient={() => setSaveNewClient(true)}
+              label="Nombre *"
+              placeholder="Juan Pérez"
+              selectedClientId={selectedClient?.id}
+            />
+            {saveNewClient && !selectedClient && (
+              <p className="mt-1.5 text-[10px] text-[#1AA7F0]/70 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#1AA7F0]/60 inline-block" />
+                Se guardará como nuevo cliente
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-white/40 text-xs uppercase tracking-widest mb-1.5">Empresa</label>
@@ -164,12 +177,6 @@ export function ImportarCotizacionForm({ clients, paymentMethods }: ImportarForm
             <input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} placeholder="cliente@empresa.com" className={inputCls} />
           </div>
         </div>
-        {!selectedClient && (
-          <label className="flex items-center gap-3 text-white/50 text-sm">
-            <input type="checkbox" checked={saveNewClient} onChange={(e) => setSaveNewClient(e.target.checked)} className="accent-[#1AA7F0]" />
-            Guardar como nuevo cliente en el historial
-          </label>
-        )}
       </div>
 
       {/* Meta */}

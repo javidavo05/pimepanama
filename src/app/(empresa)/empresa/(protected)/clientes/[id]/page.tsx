@@ -3,7 +3,8 @@ import Link from "next/link";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { StatusBadge } from "@/components/empresa/document-builder/status-badge";
-import { RevenueChart, buildMonthlyRevenue } from "@/components/empresa/revenue-chart";
+import { RevenueChart } from "@/components/empresa/revenue-chart";
+import { buildMonthlyRevenue } from "@/lib/revenue-helpers";
 
 export default async function ClienteDetailPage({
   params,

@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
+import { serializePaymentMethod, serializeDocument } from "@/lib/serializers";
 import { CotizacionBuilder } from "../nueva/cotizacion-builder";
 import { PdfDownloadButton } from "@/components/empresa/document-builder/pdf-download-button";
 import { StatusBadge } from "@/components/empresa/document-builder/status-badge";
@@ -22,8 +23,11 @@ export default async function EditarCotizacionPage({
 
   if (!doc) notFound();
 
-  const netAmount = doc.netAmount ? Number(doc.netAmount) : null;
-  const gross = Number(doc.total ?? 0);
+  const serializedDoc = serializeDocument(doc);
+  const serializedMethods = paymentMethods.map(serializePaymentMethod);
+
+  const netAmount = serializedDoc.netAmount;
+  const gross = serializedDoc.total ?? 0;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -54,9 +58,9 @@ export default async function EditarCotizacionPage({
         taxRateDefault={Number(user.config?.taxRatePercent ?? 7)}
         currency={user.config?.currency ?? "USD"}
         clients={clients}
-        paymentMethods={paymentMethods}
+        paymentMethods={serializedMethods}
         mode="edit"
-        initialDocument={doc}
+        initialDocument={serializedDoc}
       />
     </div>
   );

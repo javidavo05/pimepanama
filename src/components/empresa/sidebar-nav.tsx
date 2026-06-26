@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOutAction } from "@/app/(empresa)/empresa/actions";
+import { NotificationBell } from "@/components/empresa/mail/notification-bell";
 
 const NAV_ITEMS = [
   { href: "/empresa", label: "Dashboard", icon: "⬛", exact: true },
@@ -10,7 +11,7 @@ const NAV_ITEMS = [
   { href: "/empresa/cotizaciones", label: "Cotizaciones", icon: "📋" },
   { href: "/empresa/facturas", label: "Facturas", icon: "📄" },
   { href: "/empresa/bitacoras", label: "Bitácoras", icon: "📝" },
-  { href: "/empresa/correos", label: "Correos", icon: "✉️" },
+  { href: "/empresa/correos/hub", label: "Correos", icon: "✉️" },
 ];
 
 const BOTTOM_ITEMS = [
@@ -24,9 +25,10 @@ const BOTTOM_ITEMS = [
 interface SidebarNavProps {
   userEmail: string;
   companyName: string;
+  logoUrl?: string;
 }
 
-export function SidebarNav({ userEmail, companyName }: SidebarNavProps) {
+export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps) {
   const pathname = usePathname();
 
   function isActive(href: string, exact = false) {
@@ -39,8 +41,13 @@ export function SidebarNav({ userEmail, companyName }: SidebarNavProps) {
       {/* Brand */}
       <div className="px-5 py-6 border-b border-white/[0.05]">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-md bg-[#1AA7F0]/10 border border-[#1AA7F0]/25 flex items-center justify-center shrink-0">
-            <span className="text-[#1AA7F0] font-bold text-sm">P</span>
+          <div className="w-8 h-8 rounded-md bg-[#1AA7F0]/10 border border-[#1AA7F0]/25 flex items-center justify-center shrink-0 overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={logoUrl ?? "/logo-pime.png"}
+              alt={companyName}
+              className="w-full h-full object-contain p-0.5"
+            />
           </div>
           <div>
             <p className="text-white text-xs font-semibold tracking-widest uppercase">
@@ -66,7 +73,8 @@ export function SidebarNav({ userEmail, companyName }: SidebarNavProps) {
             }`}
           >
             <span className="text-base w-5 text-center">{item.icon}</span>
-            {item.label}
+            <span className="flex-1">{item.label}</span>
+            {item.href === "/empresa/correos/hub" && <NotificationBell />}
           </Link>
         ))}
       </nav>

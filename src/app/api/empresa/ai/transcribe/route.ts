@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI, { toFile } from "openai";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
+import { calcWhisperCost } from "@/lib/ai-pricing";
 
 export const runtime = "nodejs";
 
@@ -29,6 +30,9 @@ export async function POST(request: Request) {
       response_format: "text",
     });
 
+    const durationMs = Date.now() - start;
+    const costUSD = calcWhisperCost(durationMs);
+
     await prisma.aiUsageLog.create({
       data: {
         supabaseUid: user.supabaseUid,
@@ -36,11 +40,11 @@ export async function POST(request: Request) {
         model: "whisper-1",
         inputTokens: 0,
         outputTokens: 0,
-        durationMs: Date.now() - start,
+        durationMs,
       },
     });
 
-    return NextResponse.json({ transcript: response });
+    return NextResponse.json({ transcript: response, costUSD });
   } catch (err) {
     if (err instanceof Response) return err;
     console.error("Transcribe error:", err);

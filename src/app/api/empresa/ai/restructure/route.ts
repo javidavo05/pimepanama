@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
+import { calcGptCost } from "@/lib/ai-pricing";
 
 export const runtime = "nodejs";
 
@@ -33,6 +34,9 @@ export async function POST(request: Request) {
     });
 
     const usage = response.usage;
+    const inputTokens = usage?.prompt_tokens ?? 0;
+    const outputTokens = usage?.completion_tokens ?? 0;
+    const costUSD = calcGptCost(inputTokens, outputTokens);
     const content = JSON.parse(response.choices[0]?.message?.content ?? "{}");
 
     await prisma.aiUsageLog.create({
@@ -40,13 +44,13 @@ export async function POST(request: Request) {
         supabaseUid: user.supabaseUid,
         operation: "restructure",
         model: "gpt-4o",
-        inputTokens: usage?.prompt_tokens ?? 0,
-        outputTokens: usage?.completion_tokens ?? 0,
+        inputTokens,
+        outputTokens,
         durationMs: Date.now() - start,
       },
     });
 
-    return NextResponse.json(content);
+    return NextResponse.json({ ...content, _meta: { costUSD, tokensUsed: inputTokens + outputTokens } });
   } catch (err) {
     if (err instanceof Response) return err;
     console.error("Restructure error:", err);

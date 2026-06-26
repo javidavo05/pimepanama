@@ -40,6 +40,7 @@ export type PdfTranslations = {
   thankyou: string;
   acceptance: string;
   acceptanceText: string;
+  paymentMethods: string;
 };
 
 const translations: Record<PdfLang, PdfTranslations> = {
@@ -83,6 +84,7 @@ const translations: Record<PdfLang, PdfTranslations> = {
     thankyou: "Gracias por su confianza.",
     acceptance: "ACEPTACIÓN",
     acceptanceText: "Al firmar el presente documento, el cliente acepta los términos y condiciones de esta cotización.",
+    paymentMethods: "FORMAS DE PAGO",
   },
   en: {
     invoice: "INVOICE",
@@ -124,6 +126,7 @@ const translations: Record<PdfLang, PdfTranslations> = {
     thankyou: "Thank you for your trust.",
     acceptance: "ACCEPTANCE",
     acceptanceText: "By signing this document, the client accepts the terms and conditions of this quote.",
+    paymentMethods: "PAYMENT METHODS",
   },
 };
 

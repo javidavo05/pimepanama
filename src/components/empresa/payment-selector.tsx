@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { PaymentMethod } from "@prisma/client";
+import type { SerializedPaymentMethod } from "@/lib/serializers";
 import { calcCommission, fmtUSD } from "@/lib/commission";
 
 interface PaymentSelectorProps {
-  methods: PaymentMethod[];
+  methods: SerializedPaymentMethod[];
   selectedId: string;
   grossAmount: number;
   onChange: (id: string) => void;

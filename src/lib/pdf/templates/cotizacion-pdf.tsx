@@ -5,6 +5,7 @@ import { DocumentHeader } from "../components/document-header";
 import { ClientBlock } from "../components/client-block";
 import { LineItemsTable } from "../components/line-items-table";
 import { NotesBlock } from "../components/notes-block";
+import { PaymentInfoBlock } from "../components/payment-info-block";
 import { SignatureBlock } from "../components/signature-block";
 import { DocumentFooter } from "../components/document-footer";
 import type { Document as PrismaDocument, CompanyConfig } from "@prisma/client";
@@ -21,7 +22,10 @@ const s = StyleSheet.create({
   body: {
     paddingHorizontal: SPACING.page,
     paddingTop: SPACING.lg,
+    flex: 1,
+    flexDirection: "column",
   },
+  spacer: { flexGrow: 1 },
 });
 
 interface CotizacionPdfProps {
@@ -71,6 +75,8 @@ export function CotizacionPdf({ doc, company }: CotizacionPdfProps) {
           />
           <NotesBlock label={tr.notes} text={notes} />
           <NotesBlock label={tr.terms} text={terms} />
+          <View style={s.spacer} />
+          <PaymentInfoBlock tr={tr} />
           <SignatureBlock
             tr={tr}
             showAcceptance

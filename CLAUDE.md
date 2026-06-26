@@ -9,15 +9,17 @@
 - **Deploy por Git:** `git push origin main` también dispara build en el mismo proyecto Vercel.
 - **NUNCA** desplegar sin `node scripts/verify-vercel-project.cjs` (evita crear/enlazar otro proyecto por error).
 
-## REGLA: validar SIEMPRE antes de desplegar
+## REGLA: NO desplegar sin que el usuario lo pida explícitamente
 
-Antes de cualquier `git push` a `main` (= antes de cualquier deploy):
+**NUNCA** hacer `git push origin main` ni ningún deploy a menos que el usuario
+lo indique de forma explícita en el mensaje. El flujo obligatorio es:
 
-1. Ejecutar `npm run build` y confirmar que **termina sin errores**.
-2. Si el build falla, **NO** hacer push. Arreglar primero.
-3. Solo después de un build verde se hace `git push origin main`.
+1. Hacer los cambios en el código.
+2. Ejecutar `npm run build` local y confirmar build verde.
+3. **Esperar a que el usuario diga "despliega" / "push" / "sube".**
+4. Solo entonces hacer `git push origin main`.
 
-Nunca desplegar código que no haya pasado `npm run build` localmente.
+Primero se prueba en local; el usuario decide cuándo subir a producción.
 
 ## Contenido de la landing (home) — es ESTÁTICO, no usa base de datos
 
@@ -43,6 +45,27 @@ contenido viejo industrial.
 - `NEXT_PUBLIC_SITE_URL`, `DATABASE_URL`, `DIRECT_URL` — Vercel dashboard o `npm run vercel:env-supabase`
 - Supabase proyecto: `onodhoqfybzmpaorhyve` — ver `SUPABASE-SETUP.md`
 - `.env` y `.env.local` están en `.gitignore` y no se despliegan.
+
+## Migraciones de base de datos — REGLA DE ORDEN
+
+Todas las migraciones SQL manuales (las que se corren en Supabase directamente)
+se guardan en **`supabase/migrations/`** con orden cíclico:
+
+```
+supabase/migrations/
+  0001_initial_empresa_schema.sql
+  0002_mail_hub.sql
+  0003_proxima_migracion.sql
+  ...
+```
+
+**Reglas obligatorias:**
+- Nombre: `NNNN_descripcion_snake_case.sql` (4 dígitos, cero-rellenados)
+- Cada archivo es idempotente — usa `CREATE TABLE IF NOT EXISTS`, `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`
+- Al crear un archivo nuevo, incrementar el contador del último archivo existente
+- Registrar en `supabase/migrations/README.md` (fecha, descripción, estado: ✅ aplicado / ⏳ pendiente)
+- **NUNCA** modificar un archivo ya aplicado (crear uno nuevo con los cambios)
+- **NUNCA** usar `prisma db push` ni `prisma migrate` — solo SQL manual en Supabase
 
 ## Base de datos (Supabase)
 
