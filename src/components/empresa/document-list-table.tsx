@@ -1,6 +1,13 @@
 import Link from "next/link";
 import type { Document } from "@prisma/client";
 
+const TYPE_PATHS: Record<string, string> = {
+  FACTURA: "facturas",
+  COTIZACION: "cotizaciones",
+  BITACORA: "bitacoras",
+  CORREO: "correos",
+};
+
 const TYPE_LABELS: Record<string, string> = {
   FACTURA: "Factura",
   COTIZACION: "Cotización",
@@ -83,7 +90,7 @@ export function DocumentListTable({
         <tbody className="divide-y divide-white/[0.04]">
           {documents.map((doc) => {
             const basePath =
-              editBasePath ?? `/empresa/${doc.type.toLowerCase()}s`;
+              editBasePath ?? `/empresa/${TYPE_PATHS[doc.type]}`;
             return (
               <tr key={doc.id} className="group hover:bg-white/[0.02] transition-colors">
                 <td className="py-3 pr-4">
