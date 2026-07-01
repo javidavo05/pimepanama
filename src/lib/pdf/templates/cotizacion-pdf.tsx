@@ -31,9 +31,10 @@ const s = StyleSheet.create({
 interface CotizacionPdfProps {
   doc: PrismaDocument;
   company: Partial<CompanyConfig> | null;
+  logoSrc: string;
 }
 
-export function CotizacionPdf({ doc, company }: CotizacionPdfProps) {
+export function CotizacionPdf({ doc, company, logoSrc }: CotizacionPdfProps) {
   const lang = (doc.language as PdfLang) ?? "es";
   const tr = t(lang);
   const content = doc.content as Record<string, unknown>;
@@ -53,6 +54,7 @@ export function CotizacionPdf({ doc, company }: CotizacionPdfProps) {
           config={company}
           docLabel={tr.quote}
           docNumber={doc.number}
+          logoSrc={logoSrc}
         />
         <View style={s.body}>
           <ClientBlock

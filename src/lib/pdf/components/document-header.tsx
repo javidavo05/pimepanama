@@ -1,9 +1,6 @@
 import { View, Text, Image, StyleSheet } from "@react-pdf/renderer";
-import path from "path";
 import { COLORS, FONTS, SPACING } from "../tokens";
 import type { CompanyConfig } from "@prisma/client";
-
-const LOGO_SRC = path.join(process.cwd(), "public/logo-pime.png");
 
 const s = StyleSheet.create({
   container: { marginBottom: SPACING.lg },
@@ -56,9 +53,11 @@ interface DocumentHeaderProps {
   config: Partial<CompanyConfig> | null;
   docLabel: string;
   docNumber: string | null;
+  /** Pre-fetched base64 data URL — avoids network fetch inside react-pdf. */
+  logoSrc: string;
 }
 
-export function DocumentHeader({ config, docLabel, docNumber }: DocumentHeaderProps) {
+export function DocumentHeader({ config, docLabel, docNumber, logoSrc }: DocumentHeaderProps) {
   const company = config?.name ?? "PIME PANAMA";
   const ruc = config?.ruc ?? "1-NT-2-739436 DV71";
 
@@ -68,7 +67,7 @@ export function DocumentHeader({ config, docLabel, docNumber }: DocumentHeaderPr
       <View style={s.content}>
         <View style={s.left}>
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
-          <Image style={s.logo} src={LOGO_SRC} />
+          <Image style={s.logo} src={logoSrc} />
           <View style={s.companyCol}>
             <Text style={s.companyName}>{company.toUpperCase()}</Text>
             {ruc && <Text style={s.detail}>RUC: {ruc}</Text>}

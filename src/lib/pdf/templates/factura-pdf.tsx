@@ -21,15 +21,19 @@ const s = StyleSheet.create({
   body: {
     paddingHorizontal: SPACING.page,
     paddingTop: SPACING.lg,
+    flex: 1,
+    flexDirection: "column",
   },
+  spacer: { flexGrow: 1 },
 });
 
 interface FacturaPdfProps {
   doc: PrismaDocument;
   company: Partial<CompanyConfig> | null;
+  logoSrc: string;
 }
 
-export function FacturaPdf({ doc, company }: FacturaPdfProps) {
+export function FacturaPdf({ doc, company, logoSrc }: FacturaPdfProps) {
   const lang = (doc.language as PdfLang) ?? "es";
   const tr = t(lang);
   const content = doc.content as Record<string, unknown>;
@@ -48,6 +52,7 @@ export function FacturaPdf({ doc, company }: FacturaPdfProps) {
           config={company}
           docLabel={tr.invoice}
           docNumber={doc.number}
+          logoSrc={logoSrc}
         />
         <View style={s.body}>
           <ClientBlock
@@ -68,6 +73,7 @@ export function FacturaPdf({ doc, company }: FacturaPdfProps) {
             currency={currency}
           />
           <NotesBlock label={tr.notes} text={notes} />
+          <View style={s.spacer} />
           <SignatureBlock tr={tr} />
         </View>
         <DocumentFooter tr={tr} config={company} />

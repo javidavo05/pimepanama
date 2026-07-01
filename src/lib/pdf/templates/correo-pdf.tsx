@@ -69,9 +69,10 @@ const s = StyleSheet.create({
 interface CorreoPdfProps {
   doc: PrismaDocument;
   company: Partial<CompanyConfig> | null;
+  logoSrc: string;
 }
 
-export function CorreoPdf({ doc, company }: CorreoPdfProps) {
+export function CorreoPdf({ doc, company, logoSrc }: CorreoPdfProps) {
   const lang = (doc.language as PdfLang) ?? "es";
   const tr = t(lang);
   const content = doc.content as Record<string, string>;
@@ -87,6 +88,7 @@ export function CorreoPdf({ doc, company }: CorreoPdfProps) {
           config={company}
           docLabel={tr.email}
           docNumber={fmtDate(doc.issueDate, lang)}
+          logoSrc={logoSrc}
         />
         <View style={s.body}>
           <View style={s.metaCard} wrap={false}>
