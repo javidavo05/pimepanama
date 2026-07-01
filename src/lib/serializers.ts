@@ -1,4 +1,4 @@
-import type { PaymentMethod, Document } from "@prisma/client";
+import type { PaymentMethod, Document, Project, Contract, PaymentSchedule } from "@prisma/client";
 
 // Prisma Decimal cannot cross the Server→Client boundary in Next.js.
 // These serialized types replace Decimal with number so they can be passed as props.
@@ -14,13 +14,29 @@ export type SerializedPaymentMethod = Omit<
 
 export type SerializedDocument = Omit<
   Document,
-  "subtotal" | "taxAmount" | "total" | "commissionAmt" | "netAmount"
+  | "subtotal"
+  | "taxAmount"
+  | "total"
+  | "commissionAmt"
+  | "netAmount"
+  | "issueDate"
+  | "dueDate"
+  | "validUntil"
+  | "sentAt"
+  | "createdAt"
+  | "updatedAt"
 > & {
   subtotal: number | null;
   taxAmount: number | null;
   total: number | null;
   commissionAmt: number | null;
   netAmount: number | null;
+  issueDate: string;
+  dueDate: string | null;
+  validUntil: string | null;
+  sentAt: string | null;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export function serializePaymentMethod(pm: PaymentMethod): SerializedPaymentMethod {
@@ -32,9 +48,72 @@ export function serializePaymentMethod(pm: PaymentMethod): SerializedPaymentMeth
   };
 }
 
+export type SerializedProject = Omit<Project, "totalBudget" | "startDate" | "endDate" | "createdAt" | "updatedAt"> & {
+  totalBudget: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export function serializeProject(p: Project): SerializedProject {
+  return {
+    ...p,
+    totalBudget: p.totalBudget != null ? Number(p.totalBudget) : null,
+    startDate: p.startDate?.toISOString() ?? null,
+    endDate: p.endDate?.toISOString() ?? null,
+    createdAt: p.createdAt.toISOString(),
+    updatedAt: p.updatedAt.toISOString(),
+  };
+}
+
+export type SerializedContract = Omit<Contract, "value" | "signedAt" | "startsAt" | "endsAt" | "createdAt" | "updatedAt"> & {
+  value: number | null;
+  signedAt: string | null;
+  startsAt: string | null;
+  endsAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export function serializeContract(c: Contract): SerializedContract {
+  return {
+    ...c,
+    value: c.value != null ? Number(c.value) : null,
+    signedAt: c.signedAt?.toISOString() ?? null,
+    startsAt: c.startsAt?.toISOString() ?? null,
+    endsAt: c.endsAt?.toISOString() ?? null,
+    createdAt: c.createdAt.toISOString(),
+    updatedAt: c.updatedAt.toISOString(),
+  };
+}
+
+export type SerializedSchedule = Omit<PaymentSchedule, "amount" | "dueDate" | "paidAt" | "createdAt"> & {
+  amount: number;
+  dueDate: string;
+  paidAt: string | null;
+  createdAt: string;
+};
+
+export function serializeSchedule(s: PaymentSchedule): SerializedSchedule {
+  return {
+    ...s,
+    amount: Number(s.amount),
+    dueDate: s.dueDate.toISOString(),
+    paidAt: s.paidAt?.toISOString() ?? null,
+    createdAt: s.createdAt.toISOString(),
+  };
+}
+
 export function serializeDocument(doc: Document): SerializedDocument {
   return {
     ...doc,
+    issueDate: doc.issueDate.toISOString(),
+    dueDate: doc.dueDate?.toISOString() ?? null,
+    validUntil: doc.validUntil?.toISOString() ?? null,
+    sentAt: doc.sentAt?.toISOString() ?? null,
+    createdAt: doc.createdAt.toISOString(),
+    updatedAt: doc.updatedAt.toISOString(),
     subtotal: doc.subtotal != null ? Number(doc.subtotal) : null,
     taxAmount: doc.taxAmount != null ? Number(doc.taxAmount) : null,
     total: doc.total != null ? Number(doc.total) : null,

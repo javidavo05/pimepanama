@@ -2,14 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { signOutAction } from "@/app/(empresa)/empresa/actions";
 import { NotificationBell } from "@/components/empresa/mail/notification-bell";
 
 const NAV_ITEMS = [
   { href: "/empresa", label: "Dashboard", icon: "⬛", exact: true },
   { href: "/empresa/clientes", label: "Clientes", icon: "👥" },
+  { href: "/empresa/proyectos", label: "Proyectos", icon: "🗂️" },
+  { href: "/empresa/contratos", label: "Contratos", icon: "📑" },
   { href: "/empresa/cotizaciones", label: "Cotizaciones", icon: "📋" },
   { href: "/empresa/facturas", label: "Facturas", icon: "📄" },
+  { href: "/empresa/cuentas-por-cobrar", label: "Por Cobrar", icon: "💰" },
   { href: "/empresa/bitacoras", label: "Bitácoras", icon: "📝" },
   { href: "/empresa/correos/hub", label: "Correos", icon: "✉️" },
 ];
@@ -30,6 +34,8 @@ interface SidebarNavProps {
 
 export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps) {
   const pathname = usePathname();
+  const [logoFailed, setLogoFailed] = useState(false);
+  const logoSrc = logoFailed ? "/logo-pime.png" : (logoUrl ?? "/logo-pime.png");
 
   function isActive(href: string, exact = false) {
     if (exact) return pathname === href;
@@ -44,9 +50,10 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
           <div className="w-8 h-8 rounded-md bg-[#1AA7F0]/10 border border-[#1AA7F0]/25 flex items-center justify-center shrink-0 overflow-hidden">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={logoUrl ?? "/logo-pime.png"}
+              src={logoSrc}
               alt={companyName}
               className="w-full h-full object-contain p-0.5"
+              onError={() => setLogoFailed(true)}
             />
           </div>
           <div>

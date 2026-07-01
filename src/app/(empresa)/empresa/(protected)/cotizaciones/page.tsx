@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { DocumentListTable } from "@/components/empresa/document-list-table";
+import { getQuoteLinkedInvoiceId } from "@/lib/quote-to-invoice";
 
 export const metadata = { title: "Cotizaciones — Pime Suite" };
 
@@ -11,6 +12,10 @@ export default async function CotizacionesPage() {
     where: { userId: user.id, type: "COTIZACION" },
     orderBy: { createdAt: "desc" },
   });
+
+  const linkedInvoices = Object.fromEntries(
+    documents.map((d) => [d.id, getQuoteLinkedInvoiceId(d.content)])
+  );
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -27,7 +32,11 @@ export default async function CotizacionesPage() {
         </Link>
       </div>
       <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
-        <DocumentListTable documents={documents} editBasePath="/empresa/cotizaciones" />
+        <DocumentListTable
+          documents={documents}
+          editBasePath="/empresa/cotizaciones"
+          linkedInvoices={linkedInvoices}
+        />
       </div>
     </div>
   );

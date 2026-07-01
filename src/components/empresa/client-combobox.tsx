@@ -84,13 +84,14 @@ export function ClientCombobox({
   const inputId = useId();
 
   const filtered = value.trim().length === 0
-    ? clients.slice(0, 8)
+    ? clients.slice(0, 12)
     : clients.filter(
         (c) =>
           c.name.toLowerCase().includes(value.toLowerCase()) ||
           (c.company ?? "").toLowerCase().includes(value.toLowerCase()) ||
+          (c.email ?? "").toLowerCase().includes(value.toLowerCase()) ||
           (c.ruc ?? "").includes(value)
-      ).slice(0, 8);
+      ).slice(0, 12);
 
   const hasExactMatch = clients.some((c) => c.name.toLowerCase() === value.toLowerCase());
   const canCreate = value.trim().length > 1 && !hasExactMatch;

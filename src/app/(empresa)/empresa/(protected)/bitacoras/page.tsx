@@ -24,7 +24,13 @@ export default async function BitacorasPage() {
         </Link>
       </div>
       <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
-        <DocumentListTable documents={documents} editBasePath="/empresa/bitacoras" />
+        <DocumentListTable
+          documents={documents}
+          editBasePath="/empresa/bitacoras"
+          showDelete
+          deleteRedirect="/empresa/bitacoras"
+          deleteLabel="la bitácora"
+        />
       </div>
     </div>
   );

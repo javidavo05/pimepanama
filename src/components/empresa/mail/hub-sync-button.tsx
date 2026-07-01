@@ -20,8 +20,36 @@ export function HubSyncButton({ accounts }: HubSyncButtonProps) {
       const data = await res.json();
       if (data.error) {
         setResults((r) => ({ ...r, [id]: `Error: ${data.error}` }));
+        return;
+      }
+
+      const bodyRes = await fetch(`/api/empresa/mail/accounts/${id}/resync-bodies`, { method: "POST" });
+      const bodyData = bodyRes.ok ? await bodyRes.json() : null;
+      const htmlPart =
+        bodyData?.upgraded > 0 ? ` · ${bodyData.upgraded} HTML` : "";
+
+      setResults((r) => ({ ...r, [id]: `+${data.fetched}${htmlPart}` }));
+      router.refresh();
+    } catch {
+      setResults((r) => ({ ...r, [id]: "Error de red" }));
+    } finally {
+      setSyncing(null);
+    }
+  }
+
+  async function resyncBodiesOnly(id: string) {
+    setSyncing(id);
+    setResults((r) => ({ ...r, [id]: "" }));
+    try {
+      const res = await fetch(`/api/empresa/mail/accounts/${id}/resync-bodies`, { method: "POST" });
+      const data = await res.json();
+      if (data.error) {
+        setResults((r) => ({ ...r, [id]: `Error: ${data.error}` }));
       } else {
-        setResults((r) => ({ ...r, [id]: `+${data.fetched}` }));
+        setResults((r) => ({
+          ...r,
+          [id]: data.upgraded > 0 ? `${data.upgraded} HTML` : "0 HTML",
+        }));
         router.refresh();
       }
     } catch {
@@ -59,27 +87,37 @@ export function HubSyncButton({ accounts }: HubSyncButtonProps) {
       )}
 
       {accounts.map((acc) => (
-        <button
-          key={acc.id}
-          onClick={() => syncAccount(acc.id)}
-          disabled={syncing !== null}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-[#1AA7F0]/[0.06] border border-[#1AA7F0]/20 hover:bg-[#1AA7F0]/[0.12] disabled:opacity-40 text-[#1AA7F0]/70 rounded-lg transition-all"
-        >
-          {syncing === acc.id ? (
-            <span className="w-3 h-3 border border-[#1AA7F0]/30 border-t-[#1AA7F0] rounded-full animate-spin" />
-          ) : (
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          )}
-          {results[acc.id] ? (
-            <span className={results[acc.id].startsWith("Error") ? "text-red-400" : "text-green-400"}>
-              {results[acc.id]}
-            </span>
-          ) : (
-            acc.label
-          )}
-        </button>
+        <div key={acc.id} className="flex items-center gap-1">
+          <button
+            onClick={() => syncAccount(acc.id)}
+            disabled={syncing !== null}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-[#1AA7F0]/[0.06] border border-[#1AA7F0]/20 hover:bg-[#1AA7F0]/[0.12] disabled:opacity-40 text-[#1AA7F0]/70 rounded-lg transition-all"
+          >
+            {syncing === acc.id ? (
+              <span className="w-3 h-3 border border-[#1AA7F0]/30 border-t-[#1AA7F0] rounded-full animate-spin" />
+            ) : (
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            )}
+            {results[acc.id] ? (
+              <span className={results[acc.id].startsWith("Error") ? "text-red-400" : "text-green-400"}>
+                {results[acc.id]}
+              </span>
+            ) : (
+              acc.label
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={() => resyncBodiesOnly(acc.id)}
+            disabled={syncing !== null}
+            title="Recuperar HTML de correos guardados como texto"
+            className="px-2 py-1.5 text-[10px] bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 disabled:opacity-40 text-amber-400/80 rounded-lg transition-all"
+          >
+            HTML
+          </button>
+        </div>
       ))}
     </div>
   );

@@ -25,7 +25,7 @@ export default async function EmailDetailPage({ params }: { params: Promise<{ id
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-0">
+    <div className="w-full space-y-0">
       <div className="flex items-center gap-3 mb-5">
         <Link href="/empresa/correos/hub" className="text-white/30 text-sm hover:text-white/60 transition-colors">
           ← Bandeja

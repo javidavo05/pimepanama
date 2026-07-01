@@ -14,7 +14,8 @@
     "vercel:env-supabase": "node scripts/vercel-env-supabase.cjs",
     "export": "next build",
     "deploy:vercel": "node scripts/deploy-vercel.cjs",
-    "verify:vercel": "node scripts/verify-vercel-project.cjs"
+    "verify:vercel": "node scripts/verify-vercel-project.cjs",
+    "upload:logo": "node scripts/upload-company-logo.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1075.0",

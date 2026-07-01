@@ -3,20 +3,23 @@
 import { useForm, useWatch } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { useState, useCallback } from "react";
-import { createDocumentAction, updateDocumentAction, createClientAction } from "@/app/(empresa)/empresa/actions";
+import { createDocumentAction, updateDocumentAction, createClientAction, createPaymentSchedulesAction } from "@/app/(empresa)/empresa/actions";
 import { LanguageToggle } from "@/components/empresa/document-builder/language-toggle";
 import { LineItemsEditor, type DocumentFormValues } from "@/components/empresa/document-builder/line-items-editor";
 import { AiEnhanceButton } from "@/components/empresa/document-builder/ai-enhance-button";
 import { ClientCombobox } from "@/components/empresa/client-combobox";
 import { PaymentSelector } from "@/components/empresa/payment-selector";
+import { useFieldArray } from "react-hook-form";
 import type { Client } from "@prisma/client";
-import type { SerializedPaymentMethod, SerializedDocument } from "@/lib/serializers";
+import type { SerializedPaymentMethod, SerializedDocument, SerializedProject, SerializedContract } from "@/lib/serializers";
 
 interface CotizacionBuilderProps {
   taxRateDefault: number;
   currency: string;
   clients: Client[];
   paymentMethods: SerializedPaymentMethod[];
+  projects?: SerializedProject[];
+  contracts?: SerializedContract[];
   mode?: "create" | "edit";
   initialDocument?: SerializedDocument;
 }
@@ -61,7 +64,7 @@ function getInitialValues(doc?: SerializedDocument, currency = "USD", taxRate = 
 }
 
 export function CotizacionBuilder({
-  taxRateDefault, currency, clients, paymentMethods, mode = "create", initialDocument,
+  taxRateDefault, currency, clients, paymentMethods, projects = [], contracts = [], mode = "create", initialDocument,
 }: CotizacionBuilderProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
@@ -69,12 +72,31 @@ export function CotizacionBuilder({
   const [lastTranslateCost, setLastTranslateCost] = useState<number | null>(null);
 
   const { register, control, setValue, handleSubmit, watch } = useForm<DocumentFormValues>({
-    defaultValues: getInitialValues(initialDocument, currency, taxRateDefault) as DocumentFormValues,
+    defaultValues: {
+      ...(getInitialValues(initialDocument, currency, taxRateDefault) as DocumentFormValues),
+      projectId: "",
+      contractId: "",
+      paymentSchedules: [],
+    },
   });
 
   const language = useWatch({ control, name: "language" });
   const quoteStatus = useWatch({ control, name: "quoteStatus" });
   const paymentMethodId = useWatch({ control, name: "paymentMethodId" });
+  const selectedProjectId = useWatch({ control, name: "projectId" });
+  const selectedContractId = useWatch({ control, name: "contractId" });
+
+  const { fields: scheduleFields, append: appendSchedule, remove: removeSchedule } = useFieldArray({
+    control,
+    name: "paymentSchedules",
+  });
+
+  const selectedProject = projects.find((p) => p.id === selectedProjectId);
+  const filteredContracts = contracts.filter((c) =>
+    !selectedProjectId || c.projectId === selectedProjectId || !c.projectId
+  );
+  const activeContract = filteredContracts.find((c) => c.status === "ACTIVE") ??
+    (selectedContractId ? contracts.find((c) => c.id === selectedContractId) : null);
   const notes = watch("notes");
   const terms = watch("terms");
   const lineItems = watch("lineItems") ?? [];
@@ -215,13 +237,21 @@ export function CotizacionBuilder({
         currency: data.currency,
         status: (data.quoteStatus ?? "DRAFT") as "DRAFT" | "SENT" | "ACCEPTED" | "REJECTED",
         paymentMethodId: data.paymentMethodId || undefined,
+        projectId: data.projectId || undefined,
+        contractId: data.contractId || undefined,
       };
 
       if (mode === "edit" && initialDocument) {
         await updateDocumentAction(initialDocument.id, payload);
+        if (data.paymentSchedules?.length) {
+          await createPaymentSchedulesAction(initialDocument.id, data.paymentSchedules);
+        }
         router.push(`/empresa/cotizaciones/${initialDocument.id}`);
       } else {
         const doc = await createDocumentAction(payload);
+        if (data.paymentSchedules?.length) {
+          await createPaymentSchedulesAction(doc.id, data.paymentSchedules);
+        }
         router.push(`/empresa/cotizaciones/${doc.id}`);
       }
     } finally {
@@ -291,6 +321,59 @@ export function CotizacionBuilder({
           ))}
         </div>
       </div>
+
+      {/* Proyecto + Contrato */}
+      {(projects.length > 0 || contracts.length > 0) && (
+        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
+          <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">
+            {isEs ? "Proyecto y contrato" : "Project and contract"}
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            {projects.length > 0 && (
+              <div>
+                <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">
+                  {isEs ? "Proyecto vinculado" : "Linked project"}
+                </label>
+                <select {...register("projectId")}
+                  className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all">
+                  <option value="">{isEs ? "Sin proyecto" : "No project"}</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                {selectedProject && (
+                  <p className="text-[#1AA7F0]/50 text-xs mt-1 truncate">🗂️ {selectedProject.name}</p>
+                )}
+              </div>
+            )}
+            {(contracts.length > 0 || filteredContracts.length > 0) && (
+              <div>
+                <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">
+                  {isEs ? "Contrato aplicable" : "Applicable contract"}
+                </label>
+                <select {...register("contractId")}
+                  className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all">
+                  <option value="">{isEs ? "Sin contrato" : "No contract"}</option>
+                  {filteredContracts.map((c) => (
+                    <option key={c.id} value={c.id}>{c.title} {c.status === "ACTIVE" ? "✓" : ""}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+          {activeContract && (
+            <div className="bg-green-500/[0.05] border border-green-500/15 rounded-lg p-3">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-green-400 text-xs">📑 Contrato activo:</span>
+                <span className="text-white/70 text-xs font-medium">{activeContract.title}</span>
+              </div>
+              {activeContract.responsibilities && (
+                <p className="text-white/40 text-xs leading-relaxed">{activeContract.responsibilities.slice(0, 200)}{activeContract.responsibilities.length > 200 ? "..." : ""}</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Client picker */}
       <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
@@ -399,6 +482,62 @@ export function CotizacionBuilder({
           <textarea {...register("terms")} rows={3} placeholder={isEs ? "Condiciones generales, garantías..." : "General conditions, warranties..."} className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 resize-none transition-all" />
         </div>
       </div>
+
+      {/* Plan de pagos — solo si hay proyecto vinculado */}
+      {selectedProjectId && (
+        <div className="bg-[#0a0a10] border border-[#6344E8]/20 rounded-xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">
+              {isEs ? "Plan de pagos (cuotas)" : "Payment schedule (installments)"}
+            </h3>
+            <button type="button"
+              onClick={() => appendSchedule({ description: "", amount: 0, dueDate: "" })}
+              className="text-[#6344E8] text-xs font-medium hover:text-[#8B6FFF] transition-colors">
+              + {isEs ? "Agregar cuota" : "Add installment"}
+            </button>
+          </div>
+          {scheduleFields.length === 0 ? (
+            <p className="text-white/25 text-sm text-center py-3">
+              {isEs ? "Sin cuotas — agrega para habilitar pagos parciales" : "No installments — add to enable partial payments"}
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {scheduleFields.map((field, i) => (
+                <div key={field.id} className="grid grid-cols-[1fr_120px_140px_24px] gap-2 items-end">
+                  <div>
+                    {i === 0 && <label className="block text-white/30 text-[10px] uppercase tracking-widest mb-1">{isEs ? "Descripción" : "Description"}</label>}
+                    <input {...register(`paymentSchedules.${i}.description`)}
+                      placeholder={isEs ? `Cuota ${i + 1}` : `Installment ${i + 1}`}
+                      className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#6344E8]/40 transition-all" />
+                  </div>
+                  <div>
+                    {i === 0 && <label className="block text-white/30 text-[10px] uppercase tracking-widest mb-1">{isEs ? "Monto" : "Amount"}</label>}
+                    <input {...register(`paymentSchedules.${i}.amount`, { valueAsNumber: true })}
+                      type="number" min="0" step="0.01" placeholder="0.00"
+                      className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#6344E8]/40 transition-all" />
+                  </div>
+                  <div>
+                    {i === 0 && <label className="block text-white/30 text-[10px] uppercase tracking-widest mb-1">{isEs ? "Vencimiento" : "Due date"}</label>}
+                    <input {...register(`paymentSchedules.${i}.dueDate`)}
+                      type="date"
+                      className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#6344E8]/40 transition-all" />
+                  </div>
+                  <button type="button" onClick={() => removeSchedule(i)}
+                    className="text-white/20 hover:text-red-400 transition-colors text-sm pb-1.5">×</button>
+                </div>
+              ))}
+              <div className="flex justify-end pt-1">
+                <span className="text-white/30 text-xs font-mono">
+                  {isEs ? "Total cuotas:" : "Total installments:"}{" "}
+                  <span className="text-[#C8A96E]">
+                    ${(watch("paymentSchedules") ?? []).reduce((s, sc) => s + (Number(sc.amount) || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                  </span>
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Payment method (shown when Accepted or Paid) */}
       {(quoteStatus === "ACCEPTED" || quoteStatus === "PAID") && paymentMethods.length > 0 && (

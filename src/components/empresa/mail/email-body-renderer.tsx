@@ -1,43 +1,24 @@
 "use client";
 
 import { useRef, useEffect, useState, useCallback } from "react";
+import { buildEmailSrcDoc, htmlToPlainText, isHtmlEmail } from "@/lib/mail/email-html";
 
 interface EmailBodyRendererProps {
   body: string | null;
+  emailId?: string;
+  onBodyUpdated?: (body: string) => void;
 }
 
-const isHtml = (s: string) => /<(html|body|div|table|p|span|a|img|br|h[1-6])\b/i.test(s.slice(0, 2000));
-
-const WRAPPER = (html: string) => `<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<base target="_blank">
-<style>
-*{box-sizing:border-box;}
-html,body{margin:0;padding:0;}
-body{padding:16px 20px;font-family:-apple-system,Arial,sans-serif;font-size:14px;line-height:1.6;color:#222;background:#fff;word-break:break-word;}
-img{max-width:100%!important;height:auto;}
-a{color:#1AA7F0;text-decoration:none;}
-a:hover{text-decoration:underline;}
-table{max-width:100%!important;border-collapse:collapse;}
-td,th{max-width:100%!important;word-break:break-word;}
-pre{white-space:pre-wrap;word-break:break-all;}
-/* Hide tracking pixels */
-img[width="1"],img[height="1"]{display:none!important;}
-</style>
-</head>
-<body>${html}</body>
-</html>`;
-
-export function EmailBodyRenderer({ body }: EmailBodyRendererProps) {
+export function EmailBodyRenderer({ body, emailId, onBodyUpdated }: EmailBodyRendererProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [height, setHeight] = useState(480);
   const [viewMode, setViewMode] = useState<"html" | "text">("html");
+  const [resyncing, setResyncing] = useState(false);
+  const [resyncError, setResyncError] = useState<string | null>(null);
 
-  const html = body && isHtml(body) ? body : null;
+  const html = body && isHtmlEmail(body) ? body : null;
   const showModeToggle = !!html;
+  const showResync = !!emailId && !html;
 
   const updateHeight = useCallback(() => {
     try {
@@ -50,35 +31,78 @@ export function EmailBodyRenderer({ body }: EmailBodyRendererProps) {
 
   useEffect(() => {
     const iframe = iframeRef.current;
-    if (!iframe) return;
+    if (!iframe || !html) return;
     iframe.addEventListener("load", updateHeight);
-    // Also update after images load
     const timer = setTimeout(updateHeight, 800);
+    const timer2 = setTimeout(updateHeight, 2000);
     return () => {
       iframe.removeEventListener("load", updateHeight);
       clearTimeout(timer);
+      clearTimeout(timer2);
     };
   }, [updateHeight, html]);
+
+  async function handleResyncBody() {
+    if (!emailId) return;
+    setResyncing(true);
+    setResyncError(null);
+    try {
+      const res = await fetch(`/api/empresa/mail/inbox/${emailId}/resync-body`, { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setResyncError(data.error ?? "No se pudo recuperar el HTML");
+        return;
+      }
+      if (data.bodyText && isHtmlEmail(data.bodyText)) {
+        onBodyUpdated?.(data.bodyText);
+        setViewMode("html");
+      } else if (data.upgraded === 0) {
+        setResyncError(
+          data.noHtml > 0
+            ? "El servidor no tiene parte HTML para este correo"
+            : "No se encontró el mensaje en el buzón IMAP"
+        );
+      }
+    } catch {
+      setResyncError("Error de red al re-sincronizar");
+    } finally {
+      setResyncing(false);
+    }
+  }
 
   if (!body) {
     return <p className="text-white/25 text-sm italic">(Sin contenido)</p>;
   }
 
   if (!html || viewMode === "text") {
-    const plainText = html
-      ? html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-             .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-             .replace(/<[^>]+>/g, " ")
-             .replace(/\s+/g, " ")
-             .trim()
-      : body;
+    const plainText = html ? htmlToPlainText(html) : body;
 
     return (
       <div>
+        {showResync && (
+          <div className="mb-3 text-xs text-amber-400/80 border border-amber-500/20 bg-amber-500/10 rounded-lg px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <span>Este correo se guardó sin HTML. Recupéralo desde el buzón IMAP.</span>
+            <button
+              type="button"
+              onClick={handleResyncBody}
+              disabled={resyncing}
+              className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 disabled:opacity-50 transition-all"
+            >
+              {resyncing ? "Recuperando…" : "Recuperar formato"}
+            </button>
+          </div>
+        )}
+        {resyncError && (
+          <p className="mb-3 text-xs text-red-400/80 border border-red-500/20 bg-red-500/10 rounded-lg px-3 py-2">
+            {resyncError}
+          </p>
+        )}
         {showModeToggle && (
           <div className="flex justify-end mb-3">
-            <button onClick={() => setViewMode("html")}
-              className="text-[10px] text-[#1AA7F0]/60 hover:text-[#1AA7F0] transition-colors">
+            <button
+              onClick={() => setViewMode("html")}
+              className="text-[10px] text-[#1AA7F0]/60 hover:text-[#1AA7F0] transition-colors"
+            >
               Ver con formato →
             </button>
           </div>
@@ -95,18 +119,21 @@ export function EmailBodyRenderer({ body }: EmailBodyRendererProps) {
       {showModeToggle && (
         <div className="flex items-center justify-between mb-3">
           <span className="text-white/25 text-xs">Correo HTML</span>
-          <button onClick={() => setViewMode("text")}
-            className="text-[10px] text-white/30 hover:text-white/60 transition-colors">
+          <button
+            onClick={() => setViewMode("text")}
+            className="text-[10px] text-white/30 hover:text-white/60 transition-colors"
+          >
             Ver texto plano
           </button>
         </div>
       )}
-      <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white">
+      <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white w-full min-w-0">
         <iframe
           ref={iframeRef}
-          srcDoc={WRAPPER(html)}
+          srcDoc={buildEmailSrcDoc(html)}
           sandbox="allow-same-origin allow-popups"
-          style={{ width: "100%", height: `${height}px`, border: "none", display: "block" }}
+          className="w-full min-w-0"
+          style={{ height: `${height}px`, border: "none", display: "block" }}
           title="Contenido del correo"
         />
       </div>

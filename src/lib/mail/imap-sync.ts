@@ -3,6 +3,7 @@ import { simpleParser } from "mailparser";
 import { prisma } from "@/lib/prisma";
 import { decryptPassword } from "./crypto";
 import { analyzeEmail } from "./ai-analyze";
+import { isHtmlEmail, extractEmailHtml } from "./email-html";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { randomUUID } from "crypto";
 import type { MailAccount } from "@prisma/client";
@@ -44,13 +45,20 @@ export async function syncAccount(account: MailAccount): Promise<{ fetched: numb
         const existing = await prisma.inboxEmail.findUnique({
           where: { accountId_uid_folder: { accountId: account.id, uid, folder: "INBOX" } },
         });
-        if (existing) continue;
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const msg: any = await client.fetchOne(String(uid), { source: true });
         if (!msg?.source) continue;
 
         const parsed = await simpleParser(msg.source as Buffer);
+
+        const bodyHtml = extractEmailHtml(parsed);
+        const bodyPlain =
+          parsed.text ??
+          (bodyHtml ? bodyHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "");
+        const bodyText = bodyHtml ?? bodyPlain;
+
+        if (existing) continue;
 
         const fromAddr = Array.isArray(parsed.from?.value)
           ? parsed.from!.value[0]
@@ -77,13 +85,7 @@ export async function syncAccount(account: MailAccount): Promise<{ fetched: numb
           });
         }
 
-        // Store the HTML body when available; keep plain text as fallback for AI
-        const bodyHtml = typeof parsed.html === "string" ? parsed.html : null;
-        const bodyPlain = parsed.text ?? (bodyHtml ? bodyHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim() : "");
-        // bodyText stores HTML when available so the UI can render it properly
-        const bodyText = bodyHtml ?? bodyPlain;
-
-        // AI analysis
+        // Store HTML when available so the UI can render formatted email
         let aiSummary: string | undefined;
         let aiTags: string[] = [];
         let urgency: string = "low";
@@ -147,6 +149,92 @@ export async function syncAccount(account: MailAccount): Promise<{ fetched: numb
   });
 
   return { fetched };
+}
+
+export type ResyncBodiesResult = {
+  scanned: number;
+  upgraded: number;
+  failed: number;
+  notFound: number;
+  noHtml: number;
+};
+
+/** Re-fetch stored messages by IMAP UID and replace plain-text bodies with HTML. */
+export async function resyncEmailBodies(
+  account: MailAccount,
+  options?: { emailId?: string; limit?: number }
+): Promise<ResyncBodiesResult> {
+  const password = decryptPassword(account.passwordEnc);
+  const limit = options?.limit ?? 100;
+
+  const candidates = await prisma.inboxEmail.findMany({
+    where: {
+      accountId: account.id,
+      folder: "INBOX",
+      ...(options?.emailId ? { id: options.emailId } : {}),
+    },
+    orderBy: { receivedAt: "desc" },
+    take: options?.emailId ? 1 : limit,
+    select: { id: true, uid: true, bodyText: true },
+  });
+
+  const toUpgrade = candidates.filter((e) => e.bodyText && !isHtmlEmail(e.bodyText));
+  const result: ResyncBodiesResult = {
+    scanned: toUpgrade.length,
+    upgraded: 0,
+    failed: 0,
+    notFound: 0,
+    noHtml: 0,
+  };
+
+  if (toUpgrade.length === 0) return result;
+
+  const client = new ImapFlow({
+    host: account.host,
+    port: account.port,
+    secure: account.tls,
+    auth: { user: account.username, pass: password },
+    logger: false,
+  });
+
+  await client.connect();
+
+  try {
+    const lock = await client.getMailboxLock("INBOX");
+    try {
+      for (const email of toUpgrade) {
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const msg: any = await client.fetchOne(String(email.uid), { source: true });
+          if (!msg?.source) {
+            result.notFound++;
+            continue;
+          }
+
+          const parsed = await simpleParser(msg.source as Buffer);
+          const bodyHtml = extractEmailHtml(parsed);
+          if (!bodyHtml) {
+            result.noHtml++;
+            continue;
+          }
+
+          await prisma.inboxEmail.update({
+            where: { id: email.id },
+            data: { bodyText: bodyHtml.slice(0, 50000) },
+          });
+          result.upgraded++;
+        } catch {
+          result.failed++;
+        }
+      }
+    } finally {
+      lock.release();
+    }
+  } finally {
+    await client.logout();
+  }
+
+  return result;
 }
 
 export async function testConnection(

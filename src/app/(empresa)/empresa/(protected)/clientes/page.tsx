@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
+import { computeClientStats } from "@/lib/client-stats";
 
 export const metadata = { title: "Clientes — Pime Suite" };
 
@@ -12,28 +13,26 @@ export default async function ClientesPage() {
     orderBy: { name: "asc" },
     include: {
       documents: {
-        where: { type: "COTIZACION" },
-        select: { status: true, total: true, netAmount: true },
+        where: { type: { in: ["COTIZACION", "FACTURA"] } },
+        select: { type: true, status: true, total: true, netAmount: true },
       },
     },
   });
 
-  const stats = clients.map((c) => {
-    const accepted = c.documents.filter((d) => d.status === "ACCEPTED" || d.status === "PAID");
-    const gross = accepted.reduce((s, d) => s + Number(d.total ?? 0), 0);
-    const net = accepted.reduce((s, d) => s + Number(d.netAmount ?? d.total ?? 0), 0);
-    return { ...c, totalQuotes: c.documents.length, accepted: accepted.length, gross, net };
-  });
+  const stats = clients.map((c) => ({
+    ...c,
+    ...computeClientStats(c.documents),
+  }));
 
   const totalGross = stats.reduce((s, c) => s + c.gross, 0);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-white text-2xl font-semibold tracking-tight">Clientes</h1>
           <p className="text-white/40 text-sm mt-1">
-            {clients.length} clientes · Ingresos totales:{" "}
+            {clients.length} clientes · Ingresos (facturas pagadas):{" "}
             <span className="text-[#1AA7F0] font-mono">
               ${totalGross.toLocaleString("en-US", { minimumFractionDigits: 2 })}
             </span>
@@ -50,17 +49,29 @@ export default async function ClientesPage() {
       {clients.length === 0 ? (
         <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-16 text-center">
           <p className="text-white/30 text-sm">
-            Los clientes se crean automáticamente al guardar cotizaciones con
-            &ldquo;Guardar como nuevo cliente&rdquo; o puedes agregarlos al importar cotizaciones antiguas.
+            Los clientes se crean automáticamente al guardar cotizaciones o facturas con
+            &ldquo;Guardar como nuevo cliente&rdquo;, o puedes agregarlos al importar cotizaciones antiguas.
           </p>
         </div>
       ) : (
-        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl overflow-hidden">
-          <table className="w-full text-sm">
+        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl overflow-hidden overflow-x-auto">
+          <table className="w-full text-sm min-w-[800px]">
             <thead>
               <tr className="border-b border-white/[0.06]">
-                {["Cliente", "Empresa", "Cotizaciones", "Aceptadas", "Ingresos brutos", "Neto recibido", ""].map((h) => (
-                  <th key={h} className="text-left text-white/40 text-xs uppercase tracking-widest font-medium px-5 py-3">
+                {[
+                  "Cliente",
+                  "Empresa",
+                  "Cotizaciones",
+                  "Facturas",
+                  "Pagadas",
+                  "Ingresos brutos",
+                  "Neto recibido",
+                  "",
+                ].map((h) => (
+                  <th
+                    key={h}
+                    className="text-left text-white/40 text-xs uppercase tracking-widest font-medium px-5 py-3"
+                  >
                     {h}
                   </th>
                 ))}
@@ -75,11 +86,12 @@ export default async function ClientesPage() {
                   </td>
                   <td className="px-5 py-4 text-white/50 text-sm">{c.company ?? "—"}</td>
                   <td className="px-5 py-4 text-white/50 font-mono text-sm">{c.totalQuotes}</td>
+                  <td className="px-5 py-4 text-white/50 font-mono text-sm">{c.totalInvoices}</td>
                   <td className="px-5 py-4">
-                    <span className="text-green-400 font-mono text-sm">{c.accepted}</span>
-                    {c.totalQuotes > 0 && (
+                    <span className="text-green-400 font-mono text-sm">{c.paidInvoices}</span>
+                    {c.totalInvoices > 0 && (
                       <span className="text-white/20 text-xs ml-1">
-                        ({Math.round((c.accepted / c.totalQuotes) * 100)}%)
+                        ({Math.round((c.paidInvoices / c.totalInvoices) * 100)}%)
                       </span>
                     )}
                   </td>

@@ -1,5 +1,6 @@
-import Link from "next/link";
 import type { Document } from "@prisma/client";
+import { DocumentRowActions } from "./document-row-actions";
+import { ConvertToInvoiceButton } from "./convert-to-invoice-button";
 
 const TYPE_PATHS: Record<string, string> = {
   FACTURA: "facturas",
@@ -44,12 +45,21 @@ interface DocumentListTableProps {
   documents: Document[];
   showType?: boolean;
   editBasePath?: string;
+  showDelete?: boolean;
+  deleteRedirect?: string;
+  deleteLabel?: string;
+  /** quoteId → linked factura id (cotizaciones list) */
+  linkedInvoices?: Record<string, string | undefined>;
 }
 
 export function DocumentListTable({
   documents,
   showType = false,
   editBasePath,
+  showDelete = false,
+  deleteRedirect,
+  deleteLabel = "esta bitácora",
+  linkedInvoices,
 }: DocumentListTableProps) {
   if (documents.length === 0) {
     return (
@@ -153,19 +163,30 @@ export function DocumentListTable({
                 </td>
                 <td className="py-3 text-right">
                   <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Link
-                      href={`${basePath}/${doc.id}`}
-                      className="text-white/40 hover:text-white/80 text-xs transition-colors"
-                    >
-                      Editar
-                    </Link>
-                    <Link
-                      href={`/api/empresa/documents/${doc.id}/pdf`}
-                      target="_blank"
-                      className="text-[#C8A96E] hover:text-[#d4b87a] text-xs font-medium transition-colors"
-                    >
-                      PDF
-                    </Link>
+                    {doc.type === "COTIZACION" && (
+                      <ConvertToInvoiceButton
+                        quoteId={doc.id}
+                        quoteStatus={doc.status}
+                        linkedInvoiceId={linkedInvoices?.[doc.id]}
+                        variant="row"
+                      />
+                    )}
+                    <DocumentRowActions
+                      documentId={doc.id}
+                      editHref={`${basePath}/${doc.id}`}
+                      editLabel={
+                        doc.type === "FACTURA" && doc.status === "PAID"
+                          ? "Ver"
+                          : "Editar"
+                      }
+                      showDelete={showDelete}
+                      deleteRedirect={deleteRedirect ?? basePath}
+                      documentLabel={
+                        doc.number
+                          ? `${deleteLabel} ${doc.number}`
+                          : deleteLabel
+                      }
+                    />
                   </div>
                 </td>
               </tr>

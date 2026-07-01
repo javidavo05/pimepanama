@@ -28,6 +28,8 @@ export type PdfTranslations = {
   page: string;
   of: string;
   attendees: string;
+  clientAttendees: string;
+  pimeAttendees: string;
   agenda: string;
   decisions: string;
   actionItems: string;
@@ -72,6 +74,8 @@ const translations: Record<PdfLang, PdfTranslations> = {
     page: "Página",
     of: "de",
     attendees: "PARTICIPANTES",
+    clientAttendees: "PARTICIPANTES — CLIENTE",
+    pimeAttendees: "PARTICIPANTES — PIME",
     agenda: "RESUMEN",
     decisions: "ACUERDOS Y DECISIONES",
     actionItems: "TAREAS PENDIENTES",
@@ -114,6 +118,8 @@ const translations: Record<PdfLang, PdfTranslations> = {
     page: "Page",
     of: "of",
     attendees: "ATTENDEES",
+    clientAttendees: "ATTENDEES — CLIENT",
+    pimeAttendees: "ATTENDEES — PIME",
     agenda: "SUMMARY",
     decisions: "DECISIONS",
     actionItems: "ACTION ITEMS",

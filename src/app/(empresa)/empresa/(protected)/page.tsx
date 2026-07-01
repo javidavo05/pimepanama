@@ -6,6 +6,11 @@ import { DashboardStatCard } from "@/components/empresa/dashboard-stat-card";
 import { DocumentListTable } from "@/components/empresa/document-list-table";
 import { DashboardRevenueChart } from "@/components/empresa/revenue-chart";
 import { buildMonthlyRevenue, buildYearlyRevenue } from "@/lib/revenue-helpers";
+import {
+  PAID_INVOICE_REVENUE_SELECT,
+  paidInvoiceWhere,
+  sumInvoiceRevenue,
+} from "@/lib/invoice-revenue";
 
 export const metadata = { title: "Dashboard — Pime Suite" };
 
@@ -16,7 +21,7 @@ function fmtUSD(n: number) {
 export default async function EmpresaDashboardPage() {
   const user = await getEmpresaUser();
 
-  const [facturas, cotizaciones, bitacoras, correos, recent, tokensResult, acceptedDocs] =
+  const [facturas, cotizaciones, bitacoras, correos, recent, tokensResult, paidInvoices, acceptedCotizaciones, arDocs, activeProjects, overdueSchedules] =
     await Promise.all([
       prisma.document.count({ where: { userId: user.id, type: "FACTURA" } }),
       prisma.document.count({ where: { userId: user.id, type: "COTIZACION" } }),
@@ -37,14 +42,19 @@ export default async function EmpresaDashboardPage() {
         _sum: { inputTokens: true, outputTokens: true },
       }),
       prisma.document.findMany({
-        where: {
-          userId: user.id,
-          status: { in: ["ACCEPTED", "PAID"] },
-          total: { not: null },
-        },
-        select: { issueDate: true, total: true, netAmount: true, type: true },
+        where: paidInvoiceWhere(user.id),
+        select: PAID_INVOICE_REVENUE_SELECT,
         orderBy: { issueDate: "asc" },
       }),
+      prisma.document.count({
+        where: { userId: user.id, type: "COTIZACION", status: "ACCEPTED" },
+      }),
+      prisma.document.findMany({
+        where: { userId: user.id, type: { in: ["FACTURA", "COTIZACION"] }, status: { in: ["SENT", "ACCEPTED"] }, total: { not: null, gt: 0 } },
+        select: { type: true, total: true, content: true, linkedDocumentId: true },
+      }),
+      prisma.project.count({ where: { userId: user.id, status: "ACTIVE" } }),
+      prisma.paymentSchedule.count({ where: { userId: user.id, status: "OVERDUE" } }),
     ]);
 
   const inputTokens = tokensResult._sum.inputTokens ?? 0;
@@ -55,16 +65,24 @@ export default async function EmpresaDashboardPage() {
   const now = new Date();
   const monthName = now.toLocaleDateString("es-PA", { month: "long", year: "numeric" });
 
-  // Economic KPIs
-  const totalBruto = acceptedDocs.reduce((s, d) => s + Number(d.total ?? 0), 0);
-  const totalNeto = acceptedDocs.reduce((s, d) => s + Number(d.netAmount ?? d.total ?? 0), 0);
-  const totalComisiones = totalBruto - totalNeto;
-  const acceptedCotizaciones = acceptedDocs.filter((d) => d.type === "COTIZACION").length;
+  // Economic KPIs — solo facturas pagadas (fuente de verdad)
+  const { gross: totalBruto, net: totalNeto, commission: totalComisiones } = sumInvoiceRevenue(paidInvoices);
   const tasaCierre = cotizaciones > 0 ? Math.round((acceptedCotizaciones / cotizaciones) * 100) : 0;
 
   // Chart data
-  const monthlyData = buildMonthlyRevenue(acceptedDocs);
-  const yearlyData = buildYearlyRevenue(acceptedDocs);
+  const monthlyData = buildMonthlyRevenue(paidInvoices);
+  const yearlyData = buildYearlyRevenue(paidInvoices);
+
+  const totalPorCobrar = arDocs
+    .filter((d) => {
+      if (d.type === "COTIZACION") {
+        if (d.linkedDocumentId) return false;
+        const c = d.content as Record<string, unknown> | null;
+        return !c?.linkedInvoiceId;
+      }
+      return true;
+    })
+    .reduce((s, d) => s + Number(d.total ?? 0), 0);
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -95,11 +113,35 @@ export default async function EmpresaDashboardPage() {
         <DashboardStatCard label="Correos" count={correos} href="/empresa/correos" newHref="/empresa/correos/nueva" color="#F59E0B" />
       </div>
 
+      {/* Proyectos + AR KPIs */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+        <Link href="/empresa/cuentas-por-cobrar"
+          className="bg-[#0a0a10] border border-white/[0.06] hover:border-[#1AA7F0]/20 rounded-2xl p-5 transition-all group">
+          <p className="text-white/40 text-xs uppercase tracking-widest font-medium mb-3">Cuentas por cobrar</p>
+          <p className="font-mono text-2xl font-semibold text-[#1AA7F0]">${fmtUSD(totalPorCobrar)}</p>
+          <p className="text-white/20 text-xs mt-1.5 group-hover:text-white/40 transition-colors">facturas + cotizaciones enviadas →</p>
+        </Link>
+        <Link href="/empresa/proyectos"
+          className="bg-[#0a0a10] border border-white/[0.06] hover:border-green-500/20 rounded-2xl p-5 transition-all group">
+          <p className="text-white/40 text-xs uppercase tracking-widest font-medium mb-3">Proyectos activos</p>
+          <p className="font-mono text-2xl font-semibold text-green-400">{activeProjects}</p>
+          <p className="text-white/20 text-xs mt-1.5 group-hover:text-white/40 transition-colors">en curso →</p>
+        </Link>
+        <Link href="/empresa/cuentas-por-cobrar"
+          className={`bg-[#0a0a10] border rounded-2xl p-5 transition-all group ${overdueSchedules > 0 ? "border-red-500/20 hover:border-red-500/40" : "border-white/[0.06] hover:border-white/[0.12]"}`}>
+          <p className="text-white/40 text-xs uppercase tracking-widest font-medium mb-3">Pagos vencidos</p>
+          <p className={`font-mono text-2xl font-semibold ${overdueSchedules > 0 ? "text-red-400" : "text-white/30"}`}>{overdueSchedules}</p>
+          <p className={`text-xs mt-1.5 ${overdueSchedules > 0 ? "text-red-400/50" : "text-white/20"} group-hover:opacity-80 transition-opacity`}>
+            {overdueSchedules > 0 ? "requieren atención →" : "al día"}
+          </p>
+        </Link>
+      </div>
+
       {/* Economic KPIs */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
         {[
-          { label: "Ingresos brutos", value: `$${fmtUSD(totalBruto)}`, color: "text-[#1AA7F0]", sub: "acumulado total" },
-          { label: "Neto recibido", value: `$${fmtUSD(totalNeto)}`, color: "text-green-400", sub: "después de comisiones" },
+          { label: "Ingresos brutos", value: `$${fmtUSD(totalBruto)}`, color: "text-[#1AA7F0]", sub: "facturas pagadas" },
+          { label: "Neto recibido", value: `$${fmtUSD(totalNeto)}`, color: "text-green-400", sub: "facturas pagadas" },
           { label: "Comisiones", value: `$${fmtUSD(totalComisiones)}`, color: "text-amber-400", sub: "pagadas a pasarelas" },
           { label: "Tasa de cierre", value: `${tasaCierre}%`, color: "text-[#6344E8]", sub: `${acceptedCotizaciones} de ${cotizaciones} cot.` },
         ].map(({ label, value, color, sub }) => (

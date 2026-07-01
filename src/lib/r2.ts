@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const ACCOUNT_ID = process.env.R2_ACCOUNT_ID ?? "424b9d75b07a19b5f754d6445667b7b4";
@@ -25,4 +25,19 @@ export async function deleteR2Object(key: string): Promise<void> {
 
 export function r2PublicUrl(key: string): string {
   return `${R2_PUBLIC_URL}/${key}`;
+}
+
+export function extractR2Key(urlOrKey: string): string | null {
+  const trimmed = urlOrKey.trim();
+  if (!trimmed) return null;
+  if (!trimmed.includes("://")) return trimmed;
+  try {
+    return new URL(trimmed).pathname.replace(/^\//, "");
+  } catch {
+    return null;
+  }
+}
+
+export async function getR2Object(key: string) {
+  return r2.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: key }));
 }

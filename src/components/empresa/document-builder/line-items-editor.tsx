@@ -33,6 +33,7 @@ export interface DocumentFormValues {
   lineItems: LineItem[];
   // bitacora fields
   attendees: string;
+  pimeAttendees: string;
   meetingDate: string;
   project: string;
   rawNotes: string;
@@ -46,6 +47,10 @@ export interface DocumentFormValues {
   subject: string;
   body: string;
   tone: string;
+  // project/contract
+  projectId: string;
+  contractId: string;
+  paymentSchedules: { description: string; amount: number; dueDate: string }[];
 }
 
 interface LineItemsEditorProps {
@@ -131,6 +136,15 @@ export function LineItemsEditor({
       maximumFractionDigits: 2,
     });
 
+  const numInputCls =
+    "no-number-spinner bg-transparent border-b border-white/[0.07] pb-1 text-white/70 text-sm text-right focus:outline-none focus:border-[#C8A96E]/40 w-full transition-all";
+
+  function blockArrowIncrement(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      e.preventDefault();
+    }
+  }
+
   return (
     <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl overflow-hidden">
       {/* Table header */}
@@ -180,7 +194,8 @@ export function LineItemsEditor({
               min="0"
               step="0.01"
               defaultValue={1}
-              className="bg-transparent border-b border-white/[0.07] pb-1 text-white/70 text-sm text-right focus:outline-none focus:border-[#C8A96E]/40 w-full transition-all"
+              onKeyDown={blockArrowIncrement}
+              className={numInputCls}
             />
 
             {/* Unit price */}
@@ -190,7 +205,8 @@ export function LineItemsEditor({
               min="0"
               step="0.01"
               defaultValue={0}
-              className="bg-transparent border-b border-white/[0.07] pb-1 text-white/70 text-sm text-right focus:outline-none focus:border-[#C8A96E]/40 w-full transition-all"
+              onKeyDown={blockArrowIncrement}
+              className={numInputCls}
             />
 
             {/* Tax */}
@@ -200,7 +216,8 @@ export function LineItemsEditor({
               min="0"
               step="0.01"
               defaultValue={taxRateDefault}
-              className="bg-transparent border-b border-white/[0.07] pb-1 text-white/70 text-sm text-right focus:outline-none focus:border-[#C8A96E]/40 w-full transition-all"
+              onKeyDown={blockArrowIncrement}
+              className={numInputCls}
             />
 
             {/* Discount */}
@@ -211,7 +228,8 @@ export function LineItemsEditor({
               max="100"
               step="0.01"
               defaultValue={0}
-              className="bg-transparent border-b border-white/[0.07] pb-1 text-white/70 text-sm text-right focus:outline-none focus:border-[#C8A96E]/40 w-full transition-all"
+              onKeyDown={blockArrowIncrement}
+              className={numInputCls}
             />
 
             {/* Line total */}

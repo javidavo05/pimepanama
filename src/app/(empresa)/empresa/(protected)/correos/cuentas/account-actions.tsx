@@ -10,6 +10,22 @@ export function AccountActions({ accountId }: { accountId: string }) {
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<string | null>(null);
 
+  async function handleResyncBodies() {
+    setSyncing(true);
+    try {
+      const res = await fetch(`/api/empresa/mail/accounts/${accountId}/resync-bodies`, { method: "POST" });
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error);
+      } else {
+        alert(`HTML recuperado en ${data.upgraded} de ${data.scanned} correos.`);
+        router.refresh();
+      }
+    } finally {
+      setSyncing(false);
+    }
+  }
+
   async function handleSync() {
     setSyncing(true);
     try {
@@ -17,10 +33,13 @@ export function AccountActions({ accountId }: { accountId: string }) {
       const data = await res.json();
       if (data.error) {
         alert(data.error);
-      } else {
-        alert(`Sincronizado. ${data.fetched} correos nuevos.`);
-        router.refresh();
+        return;
       }
+      const bodyRes = await fetch(`/api/empresa/mail/accounts/${accountId}/resync-bodies`, { method: "POST" });
+      const bodyData = bodyRes.ok ? await bodyRes.json() : null;
+      const htmlMsg = bodyData?.upgraded > 0 ? ` · ${bodyData.upgraded} con HTML recuperado` : "";
+      alert(`Sincronizado. ${data.fetched} correos nuevos${htmlMsg}.`);
+      router.refresh();
     } finally {
       setSyncing(false);
     }
@@ -56,6 +75,10 @@ export function AccountActions({ accountId }: { accountId: string }) {
       <button onClick={handleSync} disabled={syncing}
         className="px-3 py-1.5 text-xs bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] disabled:opacity-40 text-white/60 rounded-lg transition-all">
         {syncing ? "Sync..." : "Sincronizar"}
+      </button>
+      <button onClick={handleResyncBodies} disabled={syncing}
+        className="px-3 py-1.5 text-xs bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 disabled:opacity-40 text-amber-400/80 rounded-lg transition-all">
+        Recuperar HTML
       </button>
       <Link href={`/empresa/correos/cuentas/${accountId}`}
         className="px-3 py-1.5 text-xs bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] text-white/60 rounded-lg transition-all">

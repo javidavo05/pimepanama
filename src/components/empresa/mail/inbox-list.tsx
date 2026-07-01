@@ -80,6 +80,8 @@ export function InboxList({
 
   const [emails, setEmails] = useState(initialEmails);
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   // Local filter state (mirrors searchParams)
   const [q, setQ] = useState(initialQ);
@@ -127,6 +129,118 @@ export function InboxList({
   // Sync from server re-render
   useEffect(() => { setEmails(initialEmails); }, [initialEmails]);
 
+  // Clear selection when list changes from server
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const ids = new Set(initialEmails.map((e) => e.id));
+      const next = new Set([...prev].filter((id) => ids.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [initialEmails]);
+
+  const visible = selectedAccount
+    ? emails.filter((e) => e.account.id === selectedAccount)
+    : emails;
+
+  const selectedCount = selectedIds.size;
+  const allVisibleSelected = visible.length > 0 && visible.every((e) => selectedIds.has(e.id));
+  const someVisibleSelected = visible.some((e) => selectedIds.has(e.id));
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAllVisible() {
+    if (allVisibleSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        visible.forEach((e) => next.delete(e.id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        visible.forEach((e) => next.add(e.id));
+        return next;
+      });
+    }
+  }
+
+  function clearSelection() {
+    setSelectedIds(new Set());
+  }
+
+  async function bulkMarkRead(isRead: boolean) {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setBulkBusy(true);
+    try {
+      const res = await fetch("/api/empresa/mail/inbox/bulk", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids, isRead }),
+      });
+      if (!res.ok) return;
+      setEmails((list) => list.map((m) => (selectedIds.has(m.id) ? { ...m, isRead } : m)));
+      if (isRead) clearSelection();
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function bulkDelete() {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    const msg = ids.length === 1
+      ? "¿Eliminar este correo de la bandeja?"
+      : `¿Eliminar ${ids.length} correos de la bandeja?`;
+    if (!window.confirm(msg)) return;
+
+    setBulkBusy(true);
+    try {
+      const res = await fetch("/api/empresa/mail/inbox/bulk", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) return;
+      setEmails((list) => list.filter((m) => !selectedIds.has(m.id)));
+      clearSelection();
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  // Hotkeys: R = mark read, Delete/Backspace = delete (when not typing in input)
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (selectedCount === 0) return;
+
+      if (e.key === "r" || e.key === "R") {
+        e.preventDefault();
+        bulkMarkRead(true);
+      } else if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        bulkDelete();
+      } else if ((e.metaKey || e.ctrlKey) && e.key === "a") {
+        e.preventDefault();
+        setSelectedIds(new Set(visible.map((em) => em.id)));
+      } else if (e.key === "Escape") {
+        clearSelection();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedCount, selectedIds, visible]);
+
   async function handleStar(ev: React.MouseEvent, emailId: string, current: boolean) {
     ev.preventDefault(); ev.stopPropagation();
     await fetch(`/api/empresa/mail/inbox/${emailId}`, {
@@ -136,10 +250,6 @@ export function InboxList({
     });
     setEmails((list) => list.map((m) => m.id === emailId ? { ...m, isStarred: !current } : m));
   }
-
-  const visible = selectedAccount
-    ? emails.filter((e) => e.account.id === selectedAccount)
-    : emails;
 
   const countAll = emails.length;
   const unreadAll = emails.filter((e) => !e.isRead).length;
@@ -251,6 +361,52 @@ export function InboxList({
         </div>
       )}
 
+      {/* Bulk actions bar */}
+      {selectedCount > 0 && (
+        <div className="flex items-center gap-3 px-4 py-2.5 border-b border-[#1AA7F0]/20 bg-[#1AA7F0]/[0.06] flex-wrap">
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={allVisibleSelected}
+              ref={(el) => { if (el) el.indeterminate = someVisibleSelected && !allVisibleSelected; }}
+              onChange={toggleSelectAllVisible}
+              className="rounded border-white/20 bg-white/5 text-[#1AA7F0] focus:ring-[#1AA7F0]/30"
+            />
+            <span className="text-xs text-white/70">
+              {selectedCount} seleccionado{selectedCount !== 1 ? "s" : ""}
+            </span>
+          </label>
+          <div className="flex items-center gap-2 ml-auto flex-wrap">
+            <button
+              type="button"
+              disabled={bulkBusy}
+              onClick={() => bulkMarkRead(true)}
+              className="px-3 py-1.5 text-xs rounded-lg bg-white/[0.06] border border-white/[0.08] text-white/70 hover:text-white hover:bg-white/[0.1] disabled:opacity-40 transition-all"
+              title="Atajo: R"
+            >
+              Marcar leídos <kbd className="ml-1 text-[10px] text-white/30 font-mono">R</kbd>
+            </button>
+            <button
+              type="button"
+              disabled={bulkBusy}
+              onClick={bulkDelete}
+              className="px-3 py-1.5 text-xs rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/15 disabled:opacity-40 transition-all"
+              title="Atajo: Supr"
+            >
+              Eliminar <kbd className="ml-1 text-[10px] text-red-400/50 font-mono">⌫</kbd>
+            </button>
+            <button
+              type="button"
+              onClick={clearSelection}
+              className="px-2 py-1.5 text-xs text-white/30 hover:text-white/60 transition-colors"
+              title="Atajo: Esc"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Email rows */}
       {visible.length === 0 ? (
         <div className="text-center py-20 text-white/20 text-sm space-y-1">
@@ -261,14 +417,33 @@ export function InboxList({
         <div className="divide-y divide-white/[0.03]">
           {visible.map((email) => {
             const acc = colorMap[email.account.id];
+            const isSelected = selectedIds.has(email.id);
             return (
-              <Link key={email.id} href={`/empresa/correos/hub/${email.id}`}
-                className={`flex items-start gap-0 pr-4 py-3.5 hover:bg-white/[0.03] transition-colors group relative ${!email.isRead ? "bg-[#1AA7F0]/[0.02]" : ""}`}>
-
+              <div
+                key={email.id}
+                className={`flex items-stretch gap-0 pr-4 py-3.5 hover:bg-white/[0.03] transition-colors group relative ${!email.isRead ? "bg-[#1AA7F0]/[0.02]" : ""} ${isSelected ? "bg-[#1AA7F0]/[0.08]" : ""}`}
+              >
                 {/* Account color bar */}
-                <div className={`w-0.5 self-stretch shrink-0 ${acc?.borderColor ?? "bg-white/10"}`} />
+                <div className={`w-0.5 shrink-0 ${acc?.borderColor ?? "bg-white/10"}`} />
 
-                <div className="flex items-start gap-3 flex-1 pl-3 min-w-0">
+                {/* Checkbox — centered in row */}
+                <label
+                  className="flex w-9 shrink-0 items-center justify-center cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => toggleSelect(email.id)}
+                    className="h-4 w-4 rounded border-white/20 bg-white/5 text-[#1AA7F0] focus:ring-[#1AA7F0]/30 cursor-pointer"
+                    aria-label={`Seleccionar ${email.subject ?? "correo"}`}
+                  />
+                </label>
+
+                <Link
+                  href={`/empresa/correos/hub/${email.id}`}
+                  className="flex items-start gap-3 flex-1 min-w-0 pl-2"
+                >
                   {/* Read dot */}
                   <div className="mt-1.5 flex-none w-3 flex justify-center">
                     <div className={`w-1.5 h-1.5 rounded-full ${!email.isRead ? "bg-[#1AA7F0]" : "bg-transparent"}`} />
@@ -320,16 +495,16 @@ export function InboxList({
                       )}
                     </div>
                   </div>
-                </div>
+                </Link>
 
                 {/* Star */}
                 <button onClick={(e) => handleStar(e, email.id, email.isStarred)}
-                  className={`mt-1.5 ml-2 flex-none transition-all ${email.isStarred ? "text-amber-400" : "text-white/15 opacity-0 group-hover:opacity-100 hover:text-amber-400"}`}>
+                  className={`self-center ml-2 flex-none transition-all ${email.isStarred ? "text-amber-400" : "text-white/15 opacity-0 group-hover:opacity-100 hover:text-amber-400"}`}>
                   <svg className="w-4 h-4" fill={email.isStarred ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
                   </svg>
                 </button>
-              </Link>
+              </div>
             );
           })}
         </div>

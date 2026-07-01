@@ -1,4 +1,5 @@
 // Pure data helpers — no "use client", importable from server and client components
+// Entrada esperada: facturas pagadas (ver invoice-revenue.ts). No pasar cotizaciones.
 
 export interface RevenueDataPoint {
   month: string;
@@ -14,6 +15,7 @@ export interface YearlyRevenuePoint {
   count: number;
 }
 
+/** Agrupa ingresos por mes. `documents` debe ser solo FACTURA + PAID. */
 export function buildMonthlyRevenue(documents: {
   issueDate: Date;
   total: unknown;
@@ -41,6 +43,7 @@ export function buildMonthlyRevenue(documents: {
     });
 }
 
+/** Agrupa ingresos por año. `documents` debe ser solo FACTURA + PAID. */
 export function buildYearlyRevenue(documents: {
   issueDate: Date;
   total: unknown;
