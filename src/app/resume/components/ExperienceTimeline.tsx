@@ -43,8 +43,7 @@ export function ExperienceTimeline() {
           {t.entries.map((entry, i) => (
             <motion.div
               key={i}
-              className="grid gap-4 sm:gap-6"
-              style={{ gridTemplateColumns: "110px 1fr" }}
+              className="grid grid-cols-[70px_1fr] gap-4 sm:grid-cols-[110px_1fr] sm:gap-6"
               initial={{ opacity: 0, x: 24 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true, amount: 0.3 }}

@@ -9,11 +9,11 @@ export default async function NuevaCuentaPage() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <Link href="/empresa/correos/cuentas" className="text-white/30 text-sm hover:text-white/60 transition-colors">
+        <Link href="/empresa/correos/cuentas" className="text-white/55 text-sm hover:text-white/60 transition-colors">
           ← Cuentas
         </Link>
         <h1 className="text-white text-2xl font-semibold tracking-tight mt-2">Agregar cuenta de correo</h1>
-        <p className="text-white/40 text-sm mt-1">Conecta una cuenta IMAP para recibir y gestionar correos.</p>
+        <p className="text-white/60 text-sm mt-1">Conecta una cuenta IMAP para recibir y gestionar correos.</p>
       </div>
       <MailAccountForm mode="create" />
     </div>

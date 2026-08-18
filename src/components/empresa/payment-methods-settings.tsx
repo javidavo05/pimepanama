@@ -113,7 +113,7 @@ function MethodRow({
           </div>
         )}
         <div className="flex gap-2 justify-end">
-          <button type="button" onClick={() => setEditing(false)} className="text-white/40 text-xs hover:text-white/70">Cancelar</button>
+          <button type="button" onClick={() => setEditing(false)} className="text-white/60 text-xs hover:text-white/70">Cancelar</button>
           <button type="button" disabled={saving} onClick={() => void handleSave()} className="px-3 py-1.5 bg-[#C8A96E]/15 text-[#C8A96E] text-xs font-medium rounded-lg">
             {saving ? "..." : "Guardar"}
           </button>
@@ -126,13 +126,13 @@ function MethodRow({
     <div className="flex items-start justify-between gap-4 py-3 border-b border-white/[0.04] last:border-0">
       <div className="min-w-0">
         <p className="text-white/80 text-sm font-medium">{method.name}</p>
-        <p className="text-white/30 text-xs mt-0.5">{TYPE_LABELS[method.type] ?? method.type}</p>
+        <p className="text-white/55 text-xs mt-0.5">{TYPE_LABELS[method.type] ?? method.type}</p>
         {isBank ? (
-          <p className="text-white/40 text-xs mt-1 font-mono">
+          <p className="text-white/60 text-xs mt-1 font-mono">
             {[method.bankName, method.accountNumber, method.accountType, method.accountHolder].filter(Boolean).join(" · ")}
           </p>
         ) : (
-          <p className="text-white/40 text-xs mt-1">
+          <p className="text-white/60 text-xs mt-1">
             {Number(method.commissionPct) > 0 || Number(method.commissionFlat) > 0
               ? `${Number(method.commissionPct)}% + $${Number(method.commissionFlat).toFixed(2)} · ITBMS ${Number(method.commissionTax)}%`
               : "Sin comisión"}
@@ -140,7 +140,7 @@ function MethodRow({
         )}
       </div>
       <div className="flex gap-3 shrink-0">
-        <button type="button" onClick={() => setEditing(true)} className="text-white/40 hover:text-white/70 text-xs">Editar</button>
+        <button type="button" onClick={() => setEditing(true)} className="text-white/60 hover:text-white/70 text-xs">Editar</button>
         <button type="button" onClick={() => void handleDelete()} className="text-red-400/50 hover:text-red-400 text-xs">Eliminar</button>
       </div>
     </div>
@@ -208,7 +208,7 @@ function AddBankForm({ onAdded }: { onAdded: () => void }) {
         </div>
         <div>
           <FieldLabel>Tipo de cuenta</FieldLabel>
-          <select className={selectCls} value={form.accountType} onChange={(e) => setForm({ ...form, accountType: e.target.value })}>
+          <select className={selectCls} aria-label="Tipo de cuenta" value={form.accountType} onChange={(e) => setForm({ ...form, accountType: e.target.value })}>
             <option className={optionCls} value="Ahorros">Ahorros</option>
             <option className={optionCls} value="Corriente">Corriente</option>
           </select>
@@ -280,7 +280,7 @@ function AddCommissionForm({ onAdded }: { onAdded: () => void }) {
         </div>
         <div>
           <FieldLabel>Tipo</FieldLabel>
-          <select className={selectCls} value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as typeof form.type })}>
+          <select className={selectCls} aria-label="Tipo" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value as typeof form.type })}>
             <option className={optionCls} value="CARD">Tarjeta / punto de pago</option>
             <option className={optionCls} value="CASH">Efectivo</option>
             <option className={optionCls} value="OTHER">Otro</option>
@@ -328,7 +328,7 @@ export function PaymentMethodsSettings({
         <h2 className="text-[#C8A96E] text-xs uppercase tracking-widest font-medium mb-2">
           Cuentas bancarias
         </h2>
-        <p className="text-white/30 text-xs mb-4">
+        <p className="text-white/55 text-xs mb-4">
           Cuentas para transferencias que aparecen en cotizaciones y facturas.
         </p>
         {bankMethods.length > 0 ? (
@@ -338,7 +338,7 @@ export function PaymentMethodsSettings({
             ))}
           </div>
         ) : (
-          <p className="text-white/25 text-sm mb-4">No hay cuentas registradas.</p>
+          <p className="text-white/50 text-sm mb-4">No hay cuentas registradas.</p>
         )}
         <AddBankForm onAdded={refresh} />
       </div>
@@ -347,7 +347,7 @@ export function PaymentMethodsSettings({
         <h2 className="text-[#C8A96E] text-xs uppercase tracking-widest font-medium mb-2">
           Tarjetas y puntos de pago — comisiones
         </h2>
-        <p className="text-white/30 text-xs mb-4">
+        <p className="text-white/55 text-xs mb-4">
           Define el costo de procesamiento para calcular el neto recibido en cotizaciones y facturas.
         </p>
         {cardMethods.length > 0 ? (
@@ -357,7 +357,7 @@ export function PaymentMethodsSettings({
             ))}
           </div>
         ) : (
-          <p className="text-white/25 text-sm mb-4">No hay métodos con comisión registrados.</p>
+          <p className="text-white/50 text-sm mb-4">No hay métodos con comisión registrados.</p>
         )}
         <AddCommissionForm onAdded={refresh} />
       </div>

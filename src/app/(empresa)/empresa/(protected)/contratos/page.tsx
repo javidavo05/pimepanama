@@ -9,9 +9,9 @@ const STATUS_LABEL: Record<string, string> = {
   DRAFT: "Borrador", ACTIVE: "Activo", EXPIRED: "Vencido", TERMINATED: "Terminado",
 };
 const STATUS_COLOR: Record<string, string> = {
-  DRAFT: "bg-white/[0.05] text-white/30 border-white/[0.08]",
+  DRAFT: "bg-white/[0.05] text-white/55 border-white/[0.08]",
   ACTIVE: "bg-green-500/15 text-green-400 border-green-500/20",
-  EXPIRED: "bg-white/[0.05] text-white/40 border-white/[0.10]",
+  EXPIRED: "bg-white/[0.05] text-white/60 border-white/[0.10]",
   TERMINATED: "bg-red-500/15 text-red-400 border-red-500/20",
 };
 
@@ -33,21 +33,23 @@ export default async function ContratosPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-white text-2xl font-semibold tracking-tight">Contratos</h1>
-          <p className="text-white/40 text-sm mt-0.5">{contracts.length} contrato{contracts.length !== 1 ? "s" : ""}</p>
+          <p className="text-white/60 text-sm mt-0.5">{contracts.length} contrato{contracts.length !== 1 ? "s" : ""}</p>
         </div>
-        <Link href="/empresa/contratos/nuevo"
+        <Link href="/empresa/proyectos/nuevo"
           className="px-4 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] text-white text-sm font-semibold rounded-lg transition-all">
-          + Nuevo contrato
+          + Proyecto y contrato
         </Link>
       </div>
 
       {contracts.length === 0 ? (
         <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-12 text-center space-y-4">
           <p className="text-white/60 font-medium">No tienes contratos aún</p>
-          <p className="text-white/30 text-sm">Los contratos definen responsabilidades y se vinculan a proyectos y cotizaciones.</p>
-          <Link href="/empresa/contratos/nuevo"
+          <p className="text-white/55 text-sm">
+            El contrato se crea junto con su proyecto, en una sola pantalla.
+          </p>
+          <Link href="/empresa/proyectos/nuevo"
             className="inline-block px-5 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] text-white text-sm font-semibold rounded-lg transition-all">
-            Crear primer contrato
+            Crear proyecto y contrato
           </Link>
         </div>
       ) : (
@@ -66,27 +68,27 @@ export default async function ContratosPage() {
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
-                  {c.client && <span className="text-white/40">{c.client.name}{c.client.company ? ` — ${c.client.company}` : ""}</span>}
+                  {c.client && <span className="text-white/60">{c.client.name}{c.client.company ? ` — ${c.client.company}` : ""}</span>}
                   {c.project && (
                     <span className="text-[#1AA7F0]/50 text-xs">🗂️ {c.project.name}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-4 mt-2">
-                  <span className="text-white/25 text-xs">{c._count.documents} doc.</span>
+                  <span className="text-white/50 text-xs">{c._count.documents} doc.</span>
                   {c.value != null && (
                     <span className="text-[#C8A96E]/60 text-xs font-mono">
                       ${Number(c.value).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
                   )}
                   {c.startsAt && (
-                    <span className="text-white/20 text-xs">
+                    <span className="text-white/50 text-xs">
                       {new Date(c.startsAt).toLocaleDateString("es-PA")}
                       {c.endsAt ? ` → ${new Date(c.endsAt).toLocaleDateString("es-PA")}` : ""}
                     </span>
                   )}
                 </div>
               </div>
-              <svg className="w-4 h-4 text-white/20 group-hover:text-white/50 transition-colors shrink-0 mt-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-white/50 group-hover:text-white/50 transition-colors shrink-0 mt-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>

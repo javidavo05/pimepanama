@@ -1,19 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { assertR2Configured, R2_BUCKET, r2 } from "@/lib/r2";
 
 export const runtime = "nodejs";
-
-const r2 = new S3Client({
-  region: "auto",
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-  },
-});
 
 export async function GET(
   request: Request,
@@ -31,10 +23,12 @@ export async function GET(
 
     if (!att.r2Key) return NextResponse.json({ error: "File not stored" }, { status: 404 });
 
+    assertR2Configured();
+
     const url = await getSignedUrl(
       r2,
       new GetObjectCommand({
-        Bucket: process.env.R2_BUCKET_NAME!,
+        Bucket: R2_BUCKET,
         Key: att.r2Key,
         ResponseContentDisposition: `attachment; filename="${att.filename}"`,
       }),
@@ -44,6 +38,9 @@ export async function GET(
     return NextResponse.redirect(url);
   } catch (err) {
     if (err instanceof Response) return err;
-    return NextResponse.json({ error: "Error" }, { status: 500 });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Error" },
+      { status: 500 }
+    );
   }
 }

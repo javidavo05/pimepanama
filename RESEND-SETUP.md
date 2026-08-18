@@ -1,156 +1,74 @@
 # Configuración de Resend para PIME Panama
 
-## 📧 Estado Actual
+Todo el **envío saliente** usa Resend API (Mail Hub, contacto, PimeSign, PimeBook). La **recepción** sigue por IMAP.
 
-✅ API Key configurado en Vercel: `re_L7jFVjAQ_4UGxqde3C83t7oEnYoyfV...`
-✅ Templates de email creados
-⚠️ Usando dominio de desarrollo: `onboarding@resend.dev`
+## Variables de entorno
 
-## 🚨 Limitaciones del Dominio de Desarrollo
+En `.env.local` (local) y Vercel → Environment Variables:
 
-Con `onboarding@resend.dev`:
-- ✅ Puedes enviar emails
-- ❌ Solo a emails verificados en Resend
-- ❌ No puedes enviar a clientes reales
-- ❌ Límite de 100 emails/día
-
-## ✅ Solución: Verificar tu Dominio
-
-### Opción 1: Usar un subdominio (Recomendado)
-
-**Ejemplo:** `mail.pimepanama.com`
-
-#### Pasos:
-
-1. **En Resend Dashboard:**
-   - Ve a: https://resend.com/domains
-   - Click en "Add Domain"
-   - Ingresa: `mail.pimepanama.com`
-   - Resend te dará registros DNS
-
-2. **En tu proveedor de DNS** (GoDaddy, Cloudflare, etc.):
-   
-   Agrega estos registros DNS (Resend te los dará exactamente):
-   
-   ```
-   Tipo: TXT
-   Nombre: mail._domainkey.pimepanama.com
-   Valor: [valor que te da Resend]
-   
-   Tipo: TXT  
-   Nombre: mail.pimepanama.com
-   Valor: [valor que te da Resend]
-   
-   Tipo: MX
-   Nombre: mail.pimepanama.com
-   Valor: feedback-smtp.us-east-1.amazonses.com (prioridad 10)
-   ```
-
-3. **Espera 24-48 horas** para que se propague el DNS
-
-4. **Verifica en Resend** que el dominio esté activo
-
-5. **Actualiza el código:**
-   - Cambia `onboarding@resend.dev` 
-   - Por `noreply@mail.pimepanama.com`
-
-### Opción 2: Usar el dominio principal
-
-**Ejemplo:** `pimepanama.com`
-
-⚠️ **No recomendado** porque afecta tu email actual si ya tienes uno configurado.
-
----
-
-## 🔧 Mientras Tanto: Verificar Emails de Prueba
-
-Para probar AHORA sin esperar el DNS:
-
-1. **En Resend Dashboard:**
-   - Ve a: https://resend.com/settings/emails
-   - Agrega tu email personal para verificarlo
-   - Verifica haciendo click en el link que te envían
-
-2. **Prueba el formulario:**
-   - Usa tu email verificado
-   - Deberías recibir el email de agradecimiento
-
----
-
-## 📨 Tipos de Emails Configurados
-
-### 1. Email al Admin (info@pimepanama.com)
-```
-Asunto: [PIME Panama] Nueva solicitud de [Nombre]
-Contenido:
-- Datos del cliente
-- Mensaje completo
-- Timestamp
-- Idioma de preferencia
+```env
+RESEND_API_KEY=re_xxxxxxxxx
+RESEND_FROM="PIME Panama <noreply@mail.pimepanama.com>"
+RESEND_WEBHOOK_SECRET=whsec_...
 ```
 
-### 2. Email de Agradecimiento al Cliente
-```
-Asunto: Gracias por contactar a PIME Panama
-Contenido:
-- Saludo personalizado
-- Confirmación de recepción
-- Promesa de respuesta en 24h
-- Datos de contacto directo
-```
+- `RESEND_FROM` debe ser un email del **dominio verificado** en Resend.
+- Opcional: `RESEND_ALLOWED_DOMAINS=mail.pimepanama.com,pimepanama.com`
 
-### 3. Emails Promocionales (Endpoint `/api/send-promotional`)
-```
-- Diseño branded
-- Personalización por nombre
-- CTA button
-- Unsubscribe link
-```
+**Nunca** commitees la API key en git.
 
----
+## Webhook (tracking entrega / apertura / rebotes)
 
-## 🎯 Próximos Pasos
+1. Resend Dashboard → [Webhooks](https://resend.com/webhooks) → Add Webhook
+2. **URL:** `https://pimepanama.com/api/webhooks/resend`
+3. **Eventos:** `email.sent`, `email.delivered`, `email.opened`, `email.bounced`, `email.complained`
+4. Copia el **Signing Secret** → `RESEND_WEBHOOK_SECRET` en Vercel
+5. Redeploy después de añadir la variable
 
-### Ahora:
-1. ✅ Verifica tu email personal en Resend
-2. ✅ Prueba el formulario con ese email
-3. ✅ Deberías recibir el email de agradecimiento
+El panel **Conversación** en cada correo muestra: Enviado → Entregado → Abierto / Rebote.
 
-### Después (cuando tengas dominio):
-1. Configura `mail.pimepanama.com` en Resend
-2. Actualiza el código con el nuevo dominio
-3. Push a GitHub
-4. Redeploy en Vercel
+## Mail Hub
 
----
+| Acción | Proveedor |
+|--------|-----------|
+| Recibir / sincronizar bandeja | IMAP (cuenta configurada) |
+| Enviar / responder | Resend |
+| Copia en Enviados (app) | Postgres (`InboxEmail` folder SENT) |
+| Copia en Sent del servidor | No automática (usar "Recuperar enviados" si el servidor la guarda) |
 
-## 🧪 Cómo Probar Emails Promocionales
+El **username** de cada cuenta debe ser `@dominio-verificado` para enviar como esa dirección. Si no, se usa `RESEND_FROM` con `reply_to` al username de la cuenta.
 
-Usa Postman, Insomnia, o curl:
+## Dominio verificado
 
-```bash
-curl -X POST https://tu-sitio.vercel.app/api/send-promotional \
-  -H "Content-Type: application/json" \
-  -d '{
-    "recipients": [
-      {"name": "Juan Pérez", "email": "tu-email-verificado@gmail.com"}
-    ],
-    "subject": "Promoción Especial PIME Panama",
-    "title": "20% de Descuento en Equipos Industriales",
-    "content": "Estimado cliente,\n\nTenemos una oferta especial para usted...",
-    "ctaText": "Ver Oferta",
-    "ctaLink": "https://pimepanama.com/es#contact",
-    "locale": "es"
-  }'
-```
+1. [resend.com/domains](https://resend.com/domains) → Add Domain → `mail.pimepanama.com`
+2. Añade registros DNS (TXT, DKIM, etc.)
+3. Espera verificación
+4. Actualiza `RESEND_FROM` en Vercel
 
----
+### Desarrollo con `onboarding@resend.dev`
 
-## ❓ ¿Necesitas ayuda?
+Solo para pruebas: destinatarios deben estar verificados en Resend Settings → Emails.
 
-1. **Para verificar tu email en Resend:** Ve a Settings → Emails
-2. **Para ver logs de emails enviados:** Ve a Resend Dashboard → Emails
-3. **Para configurar dominio:** Ve a Domains → Add Domain
+## Migraciones Supabase
 
-**¿Ya verificaste tu email en Resend para hacer pruebas?** 📧
+Aplicar en orden:
 
+- `supabase/migrations/0018_mail_threading.sql`
+- `supabase/migrations/0019_resend_tracking.sql`
+
+## Probar envío
+
+- Cuenta de correo → **Probar envío Resend**
+- O desde el hub: redactar un correo de prueba
+
+## Módulos que usan Resend
+
+- `/api/empresa/mail/accounts/[id]/send` — redactar
+- `/api/empresa/mail/inbox/[id]/reply` — responder
+- `/api/contact` — formulario público
+- `/api/send-promotional` — promocionales
+- PimeSign / PimeBook — notificaciones
+
+## Logs
+
+Resend Dashboard → Emails: ver estado de cada envío.

@@ -17,7 +17,7 @@ export default async function BitacorasPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-white text-2xl font-semibold tracking-tight">Bitácoras</h1>
-          <p className="text-white/40 text-sm mt-1">{documents.length} registros</p>
+          <p className="text-white/60 text-sm mt-1">{documents.length} registros</p>
         </div>
         <Link href="/empresa/bitacoras/nueva" className="px-4 py-2.5 bg-[#C8A96E] hover:bg-[#d4b87a] text-[#030611] text-sm font-semibold rounded-lg transition-all">
           + Nueva bitácora

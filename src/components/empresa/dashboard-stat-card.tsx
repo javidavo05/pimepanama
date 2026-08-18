@@ -32,7 +32,7 @@ export function DashboardStatCard({
       <div className="flex gap-3">
         <Link
           href={href}
-          className="text-white/40 hover:text-white/70 text-xs transition-colors"
+          className="text-white/60 hover:text-white/70 text-xs transition-colors"
         >
           Ver todos →
         </Link>

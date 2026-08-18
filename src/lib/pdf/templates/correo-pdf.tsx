@@ -1,5 +1,5 @@
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
-import { pageStyles, COLORS, FONTS, SPACING } from "../tokens";
+import { pageStyles, COLORS, FONTS, SPACING, RADIUS } from "../tokens";
 import { t, fmtDate, type PdfLang } from "../translations";
 import { DocumentHeader } from "../components/document-header";
 import { DocumentFooter } from "../components/document-footer";
@@ -9,9 +9,9 @@ const s = StyleSheet.create({
   // LAW: size must be LETTER (8.5" × 11"). NEVER A4.
   page: {
     ...pageStyles.page,
-    fontFamily: FONTS.regular,
-    backgroundColor: COLORS.bg,
-    color: COLORS.text,
+    fontFamily: FONTS.body,
+    backgroundColor: COLORS.white,
+    color: COLORS.ink,
     paddingBottom: 70,
   },
   body: {
@@ -19,51 +19,54 @@ const s = StyleSheet.create({
     paddingTop: SPACING.lg,
   },
   metaCard: {
-    backgroundColor: COLORS.bgCard,
-    borderRadius: 4,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.purple,
+    backgroundColor: COLORS.panel,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    borderRadius: RADIUS.card,
     padding: SPACING.md,
     marginBottom: SPACING.lg,
   },
   metaRow: { flexDirection: "row", marginBottom: 5 },
   metaLabel: {
-    fontFamily: FONTS.bold,
+    fontFamily: FONTS.body,
+    fontWeight: 700,
     fontSize: 7,
-    color: COLORS.blueDim,
+    color: COLORS.blue,
     width: 50,
-    letterSpacing: 1,
+    letterSpacing: 0.8,
   },
-  metaValue: { fontSize: 8.5, color: COLORS.text, flex: 1 },
+  metaValue: { fontFamily: FONTS.body, fontSize: 8.5, color: COLORS.ink, flex: 1 },
   subjectDivider: {
-    borderTopWidth: 0.5,
-    borderTopColor: COLORS.border,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.line,
     marginTop: 6,
     paddingTop: 6,
   },
   subjectLabel: {
-    fontFamily: FONTS.bold,
+    fontFamily: FONTS.body,
+    fontWeight: 700,
     fontSize: 7,
     color: COLORS.blue,
-    letterSpacing: 2,
+    letterSpacing: 1.4,
     marginBottom: 4,
   },
-  subject: { fontFamily: FONTS.bold, fontSize: 12, color: COLORS.text },
+  subject: { fontFamily: FONTS.heading, fontWeight: 700, fontSize: 12, color: COLORS.ink },
   bodyCard: {
-    backgroundColor: COLORS.bgCard,
-    borderRadius: 4,
-    borderLeftWidth: 2,
-    borderLeftColor: COLORS.border,
+    backgroundColor: COLORS.panel,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    borderRadius: RADIUS.card,
     padding: SPACING.md,
   },
   bodyLabel: {
-    fontFamily: FONTS.bold,
+    fontFamily: FONTS.body,
+    fontWeight: 700,
     fontSize: 7,
     color: COLORS.blue,
-    letterSpacing: 2,
+    letterSpacing: 1.4,
     marginBottom: SPACING.sm,
   },
-  emailBodyText: { fontSize: 9, color: COLORS.textMuted, lineHeight: 1.7 },
+  emailBodyText: { fontFamily: FONTS.body, fontSize: 9, color: COLORS.slate, lineHeight: 1.7 },
 });
 
 interface CorreoPdfProps {

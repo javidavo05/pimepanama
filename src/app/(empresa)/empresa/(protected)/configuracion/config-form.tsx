@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useFormState, useFormStatus } from "react-dom";
+import { useActionState, useEffect, useState } from "react";
+import { useFormStatus } from "react-dom";
 import {
   saveCompanyConfigFormAction,
   type CompanyConfigFormState,
 } from "@/app/(empresa)/empresa/actions";
-import type { CompanyConfig } from "@prisma/client";
+import type { SerializedCompanyConfig } from "@/lib/serializers";
 import { LogoUploader } from "@/components/empresa/logo-uploader";
 
 const initialState: CompanyConfigFormState = {};
@@ -54,8 +54,8 @@ function SubmitButton() {
   );
 }
 
-export function ConfigForm({ config }: { config: CompanyConfig | null }) {
-  const [state, formAction] = useFormState(
+export function ConfigForm({ config }: { config: SerializedCompanyConfig | null }) {
+  const [state, formAction] = useActionState(
     saveCompanyConfigFormAction,
     initialState
   );
@@ -205,6 +205,31 @@ export function ConfigForm({ config }: { config: CompanyConfig | null }) {
             />
           </div>
         </div>
+      </div>
+
+      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
+        <h2 className="text-[#1AA7F0] text-xs uppercase tracking-widest font-medium mb-3">
+          Integraciones
+        </h2>
+        <p className="text-white/55 text-sm mb-4">
+          PimeSign y PimeBook usan tu cuenta de correo con SMTP para notificaciones.
+        </p>
+        <ul className="text-sm text-white/60 space-y-2 list-disc pl-5">
+          <li>
+            <a href="/empresa/citas/config" className="text-[#1AA7F0] hover:underline">
+              Configurar horarios de citas (PimeBook)
+            </a>
+          </li>
+          <li>
+            <a href="/agendar" target="_blank" rel="noreferrer" className="text-[#1AA7F0] hover:underline">
+              Página pública de agendamiento
+            </a>
+          </li>
+        </ul>
+        <p className="text-white/40 text-xs mt-4">
+          Variables: <code className="text-white/50">SIGNING_TOKEN_SECRET</code>,{" "}
+          <code className="text-white/50">BOOKING_OWNER_EMAIL</code> (opcional)
+        </p>
       </div>
 
       <div className="flex justify-end">

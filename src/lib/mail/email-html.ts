@@ -1,3 +1,5 @@
+import { rewriteEmailExternalImages } from "@/lib/mail/email-image-proxy";
+
 /** True when the string looks like HTML email content (not plain text). */
 export function isHtmlEmail(s: string): boolean {
   const sample = s.trim().slice(0, 16000);
@@ -71,9 +73,13 @@ function injectResponsiveStyles(html: string): string {
   return html;
 }
 
+export type BuildEmailSrcDocOptions = {
+  proxyImages?: boolean;
+};
+
 /** Build a safe srcDoc for sandboxed iframe — avoid nesting full documents. */
-export function buildEmailSrcDoc(html: string): string {
-  const trimmed = html.trim();
+export function buildEmailSrcDoc(html: string, options?: BuildEmailSrcDocOptions): string {
+  const trimmed = (options?.proxyImages !== false ? rewriteEmailExternalImages(html) : html).trim();
   if (/^<!DOCTYPE\s+html/i.test(trimmed) || /^<html[\s>]/i.test(trimmed)) {
     return injectResponsiveStyles(trimmed);
   }
@@ -101,8 +107,27 @@ img[width="1"],img[height="1"]{display:none!important;}
 </html>`;
 }
 
+/** Decode common HTML entities (including double-encoded &amp;nbsp;). */
+export function decodeHtmlEntities(text: string): string {
+  let s = text;
+  for (let i = 0; i < 2; i++) {
+    s = s.replace(/&amp;/g, "&");
+  }
+  return s
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&#160;/g, " ")
+    .replace(/&middot;/gi, "·")
+    .replace(/&#183;/g, "·")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)));
+}
+
 export function htmlToPlainText(html: string): string {
-  return html
+  const stripped = html
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
     .replace(/<br\s*\/?>/gi, "\n")
@@ -110,4 +135,5 @@ export function htmlToPlainText(html: string): string {
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
+  return decodeHtmlEntities(stripped);
 }

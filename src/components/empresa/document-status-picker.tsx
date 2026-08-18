@@ -10,6 +10,7 @@ const STATUSES: DocumentStatus[] = [
   "SENT",
   "ACCEPTED",
   "PAID",
+  "PARTIALLY_PAID",
   "REJECTED",
   "CANCELLED",
 ];
@@ -19,6 +20,7 @@ const LABELS: Record<DocumentStatus, string> = {
   SENT: "Enviada",
   ACCEPTED: "Aceptada",
   PAID: "Pagada",
+  PARTIALLY_PAID: "Pago parcial",
   REJECTED: "Rechazada",
   CANCELLED: "Cancelada",
 };
@@ -40,7 +42,7 @@ export function DocumentStatusPicker({
 
   if (locked) {
     return (
-      <p className="text-white/30 text-xs">
+      <p className="text-white/55 text-xs">
         Factura pagada: el estado y los montos están bloqueados. Puede asociar
         un cliente en la sección de abajo.
       </p>
@@ -71,7 +73,7 @@ export function DocumentStatusPicker({
           className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all disabled:opacity-50 ${
             currentStatus === s
               ? "bg-[#C8A96E]/10 border-[#C8A96E]/30 text-[#C8A96E]"
-              : "border-white/[0.07] text-white/40 hover:text-white/70 hover:border-white/20"
+              : "border-white/[0.07] text-white/60 hover:text-white/70 hover:border-white/20"
           }`}
         >
           {saving === s ? "..." : LABELS[s]}

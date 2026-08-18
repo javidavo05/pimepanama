@@ -17,7 +17,7 @@ export default async function FacturasPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-white text-2xl font-semibold tracking-tight">Facturas</h1>
-          <p className="text-white/40 text-sm mt-1">{documents.length} documentos</p>
+          <p className="text-white/60 text-sm mt-1">{documents.length} documentos</p>
         </div>
         <Link
           href="/empresa/facturas/nueva"

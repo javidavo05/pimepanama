@@ -65,10 +65,54 @@ export function HubSyncButton({ accounts }: HubSyncButtonProps) {
     }
   }
 
+  async function backfillSent() {
+    setSyncing("backfill");
+    setResults((r) => ({ ...r, backfill: "" }));
+    try {
+      const res = await fetch("/api/empresa/mail/backfill-sent", { method: "POST" });
+      const data = await res.json();
+      if (data.error) {
+        setResults((r) => ({ ...r, backfill: `Error: ${data.error}` }));
+        return;
+      }
+      setResults((r) => ({
+        ...r,
+        backfill: `+${data.totalFetched ?? 0} enviados (${data.sinceDays ?? 90}d)`,
+      }));
+      router.refresh();
+    } catch {
+      setResults((r) => ({ ...r, backfill: "Error de red" }));
+    } finally {
+      setSyncing(null);
+    }
+  }
+
   if (accounts.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 flex-wrap">
+      <button
+        type="button"
+        onClick={backfillSent}
+        disabled={syncing !== null}
+        title="Importar historial de enviados desde el servidor de correo (últimos 90 días)"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/15 disabled:opacity-40 text-emerald-400/90 rounded-lg transition-all"
+      >
+        {syncing === "backfill" ? (
+          <span className="w-3 h-3 border border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
+        ) : (
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        )}
+        {results.backfill ? (
+          <span className={results.backfill.startsWith("Error") ? "text-red-400" : "text-green-400"}>
+            {results.backfill}
+          </span>
+        ) : (
+          "Recuperar enviados"
+        )}
+      </button>
       {accounts.length > 1 && (
         <button
           onClick={syncAll}

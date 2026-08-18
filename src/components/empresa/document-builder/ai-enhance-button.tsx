@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { fmtCost } from "@/lib/ai-pricing";
+import { coerceAiText } from "@/lib/ai-text";
 
 interface AiEnhanceButtonProps {
   text: string;
@@ -13,20 +14,21 @@ interface AiEnhanceButtonProps {
 export function AiEnhanceButton({ text, language, context, onEnhanced }: AiEnhanceButtonProps) {
   const [loading, setLoading] = useState(false);
   const [lastCost, setLastCost] = useState<number | null>(null);
+  const safeText = String(text ?? "");
 
   async function enhance() {
-    if (!text.trim() || loading) return;
+    if (!safeText.trim() || loading) return;
     setLoading(true);
     setLastCost(null);
     try {
       const res = await fetch("/api/empresa/ai/enhance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text, language, context }),
+        body: JSON.stringify({ text: safeText, language, context }),
       });
       if (res.ok) {
         const data = await res.json();
-        onEnhanced(data.enhanced);
+        onEnhanced(coerceAiText(data.enhanced));
         if (data.costUSD != null) setLastCost(data.costUSD);
       }
     } finally {
@@ -39,7 +41,7 @@ export function AiEnhanceButton({ text, language, context, onEnhanced }: AiEnhan
       <button
         type="button"
         onClick={enhance}
-        disabled={loading || !text.trim()}
+        disabled={loading || !safeText.trim()}
         title="Mejorar con IA"
         className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#6344E8]/10 border border-[#6344E8]/25 text-[#6344E8] text-xs font-medium hover:bg-[#6344E8]/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
       >
@@ -54,7 +56,7 @@ export function AiEnhanceButton({ text, language, context, onEnhanced }: AiEnhan
       </button>
       {lastCost != null && !loading && (
         <span
-          className="text-[10px] text-white/25 font-mono"
+          className="text-[10px] text-white/50 font-mono"
           title={`Costo real: $${lastCost.toFixed(6)}`}
         >
           {fmtCost(lastCost)}

@@ -154,3 +154,36 @@ export function fmtDate(date: Date | string, lang: PdfLang): string {
     year: "numeric",
   });
 }
+
+const DOCUMENT_STATUS_LABEL: Record<PdfLang, Record<string, string>> = {
+  es: {
+    DRAFT: "BORRADOR",
+    SENT: "ENVIADA",
+    ACCEPTED: "ACEPTADA",
+    REJECTED: "RECHAZADA",
+    PAID: "PAGADA",
+    PARTIALLY_PAID: "PAGO PARCIAL",
+    CANCELLED: "CANCELADA",
+  },
+  en: {
+    DRAFT: "DRAFT",
+    SENT: "SENT",
+    ACCEPTED: "ACCEPTED",
+    REJECTED: "REJECTED",
+    PAID: "PAID",
+    PARTIALLY_PAID: "PARTIALLY PAID",
+    CANCELLED: "CANCELLED",
+  },
+};
+
+/** Pill label for a Document.status value — shared by factura/cotización so the status badge reads consistently across every transactional document. */
+export function documentStatusLabel(status: string, lang: PdfLang): string {
+  return DOCUMENT_STATUS_LABEL[lang][status] ?? status;
+}
+
+/** Pill visual weight per status — PAID/ACCEPTED get the solid (most emphasized) treatment, DRAFT the lightest. */
+export function documentStatusVariant(status: string): "solid" | "outline" | "grad" {
+  if (status === "PAID" || status === "ACCEPTED") return "solid";
+  if (status === "REJECTED" || status === "CANCELLED") return "outline";
+  return "outline";
+}

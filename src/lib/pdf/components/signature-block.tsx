@@ -5,22 +5,23 @@ import type { PdfTranslations } from "../translations";
 const s = StyleSheet.create({
   container: { marginTop: SPACING.xl },
   acceptanceText: {
-    fontSize: 7.5,
-    color: COLORS.textMuted,
+    fontFamily: FONTS.body,
+    fontWeight: 500,
+    fontSize: 7.6,
+    color: COLORS.slate,
     marginBottom: SPACING.md,
-    lineHeight: 1.5,
-    fontStyle: "italic",
+    lineHeight: 1.6,
   },
   row: { flexDirection: "row", gap: SPACING.xl },
   block: { flex: 1 },
   line: {
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.borderMid,
+    borderBottomColor: COLORS.line,
     height: 32,
     marginBottom: SPACING.xs,
   },
-  label: { fontSize: 7, color: COLORS.blue, letterSpacing: 1, fontFamily: FONTS.bold },
-  subLabel: { fontSize: 6.5, color: COLORS.textDim, marginTop: 2 },
+  label: { fontFamily: FONTS.body, fontWeight: 700, fontSize: 7, color: COLORS.blue, letterSpacing: 1 },
+  subLabel: { fontFamily: FONTS.body, fontSize: 6.6, color: COLORS.slateLight, marginTop: 2 },
 });
 
 interface SignatureBlockProps {

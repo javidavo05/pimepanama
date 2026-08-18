@@ -3,6 +3,8 @@ import OpenAI from "openai";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { calcGptCost } from "@/lib/ai-pricing";
+import { normalizeComposeAiResult } from "@/lib/mail/compose-ai";
+import { brandSystemPrompt } from "@/lib/ai/pime-brand-voice";
 
 export const runtime = "nodejs";
 
@@ -16,6 +18,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "intent is required" }, { status: 400 });
     }
 
+    const brandLang = language === "en" ? "en" : "es";
     const lang = language === "en" ? "professional English" : "formal Panamanian Spanish";
     const toneDesc = tone === "friendly" ? "warm and approachable yet professional" : "formal and corporate";
 
@@ -25,7 +28,17 @@ export async function POST(request: Request) {
       messages: [
         {
           role: "system",
-          content: `You are a corporate communications expert for Pime Panamá, a technology company. Write a ${toneDesc} business email in ${lang}. Return a JSON object with "subject" (string) and "body" (string — the full email body without greeting/signature placeholders, just the core content). Keep it concise and professional.`,
+          content: brandSystemPrompt(
+            `The user gives you a short intent (what they want to say) — write a complete, ${toneDesc} business email in ${lang} from it.
+
+Structure:
+- Subject: specific and useful on its own in an inbox — never generic ("Follow up", "Información"). Reference the actual topic.
+- Body: open with the concrete reason for writing (no throat-clearing like "I hope this finds you well"), give the necessary context in 1-2 sentences, then a clear ask or next step. End with a natural, brief close appropriate to the tone — no name/title/signature block, that's added separately.
+- Do not invent prices, dates, or commitments the user didn't mention in their intent.
+
+Return a JSON object with "subject" (string) and "body" (string — the email body only, no greeting/signature placeholders).`,
+            brandLang
+          ),
         },
         { role: "user", content: intent },
       ],
@@ -39,6 +52,7 @@ export async function POST(request: Request) {
     const outputTokens = usage?.completion_tokens ?? 0;
     const costUSD = calcGptCost(inputTokens, outputTokens);
     const content = JSON.parse(response.choices[0]?.message?.content ?? "{}");
+    const { subject, body } = normalizeComposeAiResult(content);
 
     await prisma.aiUsageLog.create({
       data: {
@@ -51,7 +65,7 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({ ...content, _meta: { costUSD, tokensUsed: inputTokens + outputTokens } });
+    return NextResponse.json({ subject, body, _meta: { costUSD, tokensUsed: inputTokens + outputTokens } });
   } catch (err) {
     if (err instanceof Response) return err;
     console.error("Compose error:", err);

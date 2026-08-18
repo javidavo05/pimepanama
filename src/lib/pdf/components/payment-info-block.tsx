@@ -1,91 +1,89 @@
 import { View, Text, StyleSheet } from "@react-pdf/renderer";
-import { COLORS, FONTS, SPACING } from "../tokens";
+import { COLORS, FONTS, SPACING, RADIUS } from "../tokens";
 import type { PdfTranslations } from "../translations";
+import type { PdfPaymentMethod } from "../payment-methods";
 
 const s = StyleSheet.create({
   container: {
     marginTop: SPACING.md,
     marginBottom: SPACING.sm,
-    backgroundColor: COLORS.bgCard,
-    borderRadius: 6,
+    backgroundColor: COLORS.panel,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    borderRadius: RADIUS.card,
     padding: SPACING.md,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.blue,
   },
   title: {
+    fontFamily: FONTS.body,
+    fontWeight: 700,
     fontSize: 7,
-    fontFamily: FONTS.bold,
     color: COLORS.blue,
-    letterSpacing: 1.5,
+    letterSpacing: 1.4,
     marginBottom: SPACING.sm,
   },
   row: {
     flexDirection: "row",
     gap: SPACING.lg,
+    flexWrap: "wrap",
   },
   method: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: "28%",
+    minWidth: 120,
     paddingRight: SPACING.sm,
   },
   methodLabel: {
-    fontSize: 6.5,
-    fontFamily: FONTS.bold,
-    color: COLORS.textMuted,
-    letterSpacing: 0.8,
+    fontFamily: FONTS.body,
+    fontWeight: 700,
+    fontSize: 6.6,
+    color: COLORS.slateLight,
+    letterSpacing: 0.6,
     textTransform: "uppercase",
     marginBottom: 3,
   },
   methodValue: {
-    fontSize: 8.5,
-    color: COLORS.text,
-    fontFamily: FONTS.mono,
+    fontFamily: FONTS.heading,
+    fontWeight: 700,
+    fontSize: 9,
+    color: COLORS.ink,
     lineHeight: 1.5,
   },
   methodSub: {
+    fontFamily: FONTS.body,
     fontSize: 7.5,
-    color: COLORS.textMuted,
+    color: COLORS.slate,
     lineHeight: 1.5,
   },
   divider: {
     width: 1,
-    backgroundColor: COLORS.border,
+    backgroundColor: COLORS.line,
     marginHorizontal: SPACING.sm,
+    alignSelf: "stretch",
   },
 });
 
 interface PaymentInfoBlockProps {
   tr: PdfTranslations;
+  methods: PdfPaymentMethod[];
 }
 
-export function PaymentInfoBlock({ tr }: PaymentInfoBlockProps) {
+export function PaymentInfoBlock({ tr, methods }: PaymentInfoBlockProps) {
+  if (methods.length === 0) return null;
+
   return (
     <View style={s.container} wrap={false}>
       <Text style={s.title}>{tr.paymentMethods}</Text>
       <View style={s.row}>
-        {/* Tarjeta */}
-        <View style={s.method}>
-          <Text style={s.methodLabel}>Tarjeta de Crédito / Débito</Text>
-          <Text style={s.methodValue}>Link de Pago</Text>
-          <Text style={s.methodSub}>Procesado por Paguelo Fácil</Text>
-        </View>
-
-        <View style={s.divider} />
-
-        {/* Banco */}
-        <View style={s.method}>
-          <Text style={s.methodLabel}>Transferencia Bancaria</Text>
-          <Text style={s.methodValue}>Banco General</Text>
-          <Text style={s.methodSub}>04-4444999991-783{"\n"}Pime Panamá · Cta. de Ahorros</Text>
-        </View>
-
-        <View style={s.divider} />
-
-        {/* Yappy */}
-        <View style={s.method}>
-          <Text style={s.methodLabel}>Yappy</Text>
-          <Text style={s.methodValue}>6479-5352</Text>
-          <Text style={s.methodSub}>Pime Panamá</Text>
-        </View>
+        {methods.map((method, index) => (
+          <View key={method.id} style={{ flexDirection: "row", flexGrow: 1, flexBasis: "28%" }}>
+            {index > 0 ? <View style={s.divider} /> : null}
+            <View style={s.method}>
+              <Text style={s.methodLabel}>{method.label}</Text>
+              <Text style={s.methodValue}>{method.title}</Text>
+              {method.subtitle ? <Text style={s.methodSub}>{method.subtitle}</Text> : null}
+            </View>
+          </View>
+        ))}
       </View>
     </View>
   );

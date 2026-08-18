@@ -12,17 +12,42 @@ type CTA = {
   buttonLink?: string | null;
 };
 
+export const DEFAULT_BOOKING_CTAS: Record<"es" | "en", CTA[]> = {
+  es: [
+    {
+      id: "book-consultation",
+      eyebrow: "PimeBook",
+      title: "Agenda una consulta",
+      description: "Elige un horario disponible y cuéntanos sobre tu proyecto. Sin compromiso.",
+      buttonLabel: "Agendar cita",
+      buttonLink: "/agendar",
+    },
+  ],
+  en: [
+    {
+      id: "book-consultation",
+      eyebrow: "PimeBook",
+      title: "Schedule a consultation",
+      description: "Pick an available time and tell us about your project. No commitment.",
+      buttonLabel: "Book a meeting",
+      buttonLink: "/agendar",
+    },
+  ],
+};
+
 export function CallToActionSection({
   heading,
   subheading,
-  ctas,
+  ctas = [],
+  sectionId = "engage",
 }: {
   heading: string;
   subheading?: string | null;
-  ctas: CTA[];
+  ctas?: CTA[];
+  sectionId?: string;
 }) {
   return (
-    <section id="contact" className="border-b border-white/10 bg-gradient-to-b from-[#010712] via-[#02030a] to-[#010103] px-6 py-24 text-white">
+    <section id={sectionId} className="border-b border-white/10 bg-gradient-to-b from-[#010712] via-[#02030a] to-[#010103] px-6 py-24 text-white">
       <div className="mx-auto max-w-6xl space-y-12">
         <div className="space-y-4">
           <p className="text-xs uppercase tracking-[0.5em] text-[#60A5FA]">Engage</p>

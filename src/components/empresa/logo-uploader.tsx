@@ -70,7 +70,7 @@ export function LogoUploader({ value, onChange }: LogoUploaderProps) {
               unoptimized
             />
           ) : (
-            <span className="text-white/20 text-[10px] text-center px-2">Sin logo</span>
+            <span className="text-white/50 text-[10px] text-center px-2">Sin logo</span>
           )}
         </div>
         <div className="flex-1 space-y-2">
@@ -92,7 +92,7 @@ export function LogoUploader({ value, onChange }: LogoUploaderProps) {
           >
             {uploading ? "Subiendo..." : value ? "Cambiar logo" : "Subir logo"}
           </button>
-          <p className="text-white/35 text-[10px] leading-relaxed">
+          <p className="text-white/55 text-[10px] leading-relaxed">
             PNG, JPG o SVG. Se guarda en R2. Después de subir, pulsa{" "}
             <span className="text-white/55">Guardar configuración</span>.
           </p>

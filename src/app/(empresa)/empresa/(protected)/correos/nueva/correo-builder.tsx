@@ -6,6 +6,7 @@ import { useState } from "react";
 import { createDocumentAction } from "@/app/(empresa)/empresa/actions";
 import { LanguageToggle } from "@/components/empresa/document-builder/language-toggle";
 import { AiEnhanceButton } from "@/components/empresa/document-builder/ai-enhance-button";
+import { DraftPdfPreview } from "@/components/empresa/document-builder/draft-pdf-preview";
 import type { DocumentFormValues } from "@/components/empresa/document-builder/line-items-editor";
 
 const EMAIL_TYPES_ES = [
@@ -33,6 +34,20 @@ export function CorreoBuilder() {
   const body = watch("body");
   const subject = watch("subject");
   const isEs = language === "es";
+
+  const allValues = useWatch({ control });
+  const previewPayload = {
+    type: "CORREO" as const,
+    title: allValues.subject || "Correo",
+    language: allValues.language,
+    content: {
+      to: allValues.toEmail,
+      cc: allValues.ccEmail,
+      subject: allValues.subject,
+      body: allValues.body,
+      type: emailType,
+    },
+  };
 
   async function composeWithAI() {
     if (!intent.trim()) return;
@@ -86,7 +101,7 @@ export function CorreoBuilder() {
           <h1 className="text-white text-2xl font-semibold tracking-tight">
             {isEs ? "Nuevo Correo" : "New Email"}
           </h1>
-          <p className="text-white/40 text-sm mt-1">
+          <p className="text-white/60 text-sm mt-1">
             {isEs ? "Redacción corporativa asistida por IA" : "AI-assisted corporate email"}
           </p>
         </div>
@@ -132,6 +147,7 @@ export function CorreoBuilder() {
           />
           <select
             {...register("tone")}
+            aria-label={isEs ? "Tono" : "Tone"}
             className="bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#C8A96E]/40 transition-all"
           >
             <option value="formal">{isEs ? "Formal" : "Formal"}</option>
@@ -192,6 +208,8 @@ export function CorreoBuilder() {
           className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/40 resize-none transition-all font-mono"
         />
       </div>
+
+      <DraftPdfPreview endpoint="/api/empresa/documents/preview" payload={previewPayload} title={isEs ? "Vista previa del documento" : "Document preview"} />
 
       <div className="flex justify-end gap-3 pt-2">
         <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-white/50 hover:text-white/80 text-sm transition-colors">

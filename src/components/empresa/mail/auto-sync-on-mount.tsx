@@ -27,7 +27,7 @@ export function AutoSyncOnMount({ accountIds }: { accountIds: string[] }) {
   if (!syncing) return null;
 
   return (
-    <span className="flex items-center gap-1.5 text-white/30 text-xs">
+    <span className="flex items-center gap-1.5 text-white/55 text-xs">
       <span className="w-2.5 h-2.5 border border-white/20 border-t-white/50 rounded-full animate-spin" />
       Sincronizando…
     </span>

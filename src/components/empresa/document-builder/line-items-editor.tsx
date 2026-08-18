@@ -15,6 +15,7 @@ export interface DocumentFormValues {
   title: string;
   language: "es" | "en";
   clientId: string;
+  leadId: string;
   clientName: string;
   clientEmail: string;
   clientCompany: string;
@@ -29,6 +30,8 @@ export interface DocumentFormValues {
   terms: string;
   quoteStatus: "DRAFT" | "SENT" | "ACCEPTED" | "REJECTED" | "PAID" | "CANCELLED";
   paymentMethodId: string;
+  /** Cotización: métodos que aparecen en el PDF (multi-select) */
+  pdfPaymentMethodIds?: string[];
   saveAsNewClient: boolean;
   lineItems: LineItem[];
   // bitacora fields
@@ -147,8 +150,8 @@ export function LineItemsEditor({
 
   return (
     <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl overflow-hidden">
-      {/* Table header */}
-      <div className="grid grid-cols-[1fr_80px_120px_80px_80px_100px_32px] gap-2 px-4 py-3 border-b border-white/[0.06] bg-[#C8A96E]/5">
+      {/* Table header (desktop only — mobile rows show inline labels instead) */}
+      <div className="hidden sm:grid grid-cols-[1fr_80px_120px_80px_80px_100px_32px] gap-2 px-4 py-3 border-b border-white/[0.06] bg-[#C8A96E]/5">
         {[t.description, t.qty, t.price, t.tax, t.discount, t.amount, ""].map(
           (h, i) => (
             <span
@@ -166,10 +169,11 @@ export function LineItemsEditor({
         {fields.map((field, index) => (
           <div
             key={field.id}
-            className="grid grid-cols-[1fr_80px_120px_80px_80px_100px_32px] gap-2 px-4 py-3 items-start"
+            className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_80px_120px_80px_80px_100px_32px] sm:gap-2 px-4 py-3 sm:items-start"
           >
             {/* Description + AI */}
-            <div className="flex flex-col gap-1">
+            <div className="col-span-2 sm:col-span-1 flex flex-col gap-1">
+              <span className="sm:hidden text-white/55 text-[10px] uppercase tracking-widest">{t.description}</span>
               <input
                 {...register(`lineItems.${index}.description`)}
                 placeholder={language === "es" ? "Descripción del servicio" : "Service description"}
@@ -188,63 +192,80 @@ export function LineItemsEditor({
             </div>
 
             {/* Quantity */}
-            <input
-              {...register(`lineItems.${index}.quantity`, { valueAsNumber: true })}
-              type="number"
-              min="0"
-              step="0.01"
-              defaultValue={1}
-              onKeyDown={blockArrowIncrement}
-              className={numInputCls}
-            />
+            <div className="flex flex-col gap-1">
+              <span className="sm:hidden text-white/55 text-[10px] uppercase tracking-widest">{t.qty}</span>
+              <input
+                {...register(`lineItems.${index}.quantity`, { valueAsNumber: true })}
+                type="number"
+                min="0"
+                step="0.01"
+                defaultValue={1}
+                onKeyDown={blockArrowIncrement}
+                className={numInputCls}
+              />
+            </div>
 
             {/* Unit price */}
-            <input
-              {...register(`lineItems.${index}.unitPrice`, { valueAsNumber: true })}
-              type="number"
-              min="0"
-              step="0.01"
-              defaultValue={0}
-              onKeyDown={blockArrowIncrement}
-              className={numInputCls}
-            />
+            <div className="flex flex-col gap-1">
+              <span className="sm:hidden text-white/55 text-[10px] uppercase tracking-widest">{t.price}</span>
+              <input
+                {...register(`lineItems.${index}.unitPrice`, { valueAsNumber: true })}
+                type="number"
+                min="0"
+                step="0.01"
+                defaultValue={0}
+                onKeyDown={blockArrowIncrement}
+                className={numInputCls}
+              />
+            </div>
 
             {/* Tax */}
-            <input
-              {...register(`lineItems.${index}.taxPercent`, { valueAsNumber: true })}
-              type="number"
-              min="0"
-              step="0.01"
-              defaultValue={taxRateDefault}
-              onKeyDown={blockArrowIncrement}
-              className={numInputCls}
-            />
+            <div className="flex flex-col gap-1">
+              <span className="sm:hidden text-white/55 text-[10px] uppercase tracking-widest">{t.tax}</span>
+              <input
+                {...register(`lineItems.${index}.taxPercent`, { valueAsNumber: true })}
+                type="number"
+                min="0"
+                step="0.01"
+                defaultValue={taxRateDefault}
+                onKeyDown={blockArrowIncrement}
+                className={numInputCls}
+              />
+            </div>
 
             {/* Discount */}
-            <input
-              {...register(`lineItems.${index}.discount`, { valueAsNumber: true })}
-              type="number"
-              min="0"
-              max="100"
-              step="0.01"
-              defaultValue={0}
-              onKeyDown={blockArrowIncrement}
-              className={numInputCls}
-            />
+            <div className="flex flex-col gap-1">
+              <span className="sm:hidden text-white/55 text-[10px] uppercase tracking-widest">{t.discount}</span>
+              <input
+                {...register(`lineItems.${index}.discount`, { valueAsNumber: true })}
+                type="number"
+                min="0"
+                max="100"
+                step="0.01"
+                defaultValue={0}
+                onKeyDown={blockArrowIncrement}
+                className={numInputCls}
+              />
+            </div>
 
             {/* Line total */}
-            <span className="text-white/70 text-sm font-mono text-right pt-1">
-              {fmt(calcLineTotal(lineItems[index] ?? {}))}
-            </span>
+            <div className="flex flex-col gap-1">
+              <span className="sm:hidden text-white/55 text-[10px] uppercase tracking-widest">{t.amount}</span>
+              <span className="text-white/70 text-sm font-mono text-right sm:pt-1">
+                {fmt(calcLineTotal(lineItems[index] ?? {}))}
+              </span>
+            </div>
 
             {/* Remove */}
-            <button
-              type="button"
-              onClick={() => remove(index)}
-              className="text-white/20 hover:text-red-400 transition-colors text-sm mt-1"
-            >
-              ×
-            </button>
+            <div className="flex items-center justify-end sm:block">
+              <button
+                type="button"
+                onClick={() => remove(index)}
+                className="text-white/50 hover:text-red-400 transition-colors text-sm sm:mt-1"
+              >
+                ×
+              </button>
+            </div>
           </div>
         ))}
       </div>
@@ -271,13 +292,13 @@ export function LineItemsEditor({
       {/* Totals */}
       <div className="border-t border-white/[0.06] px-4 py-4 space-y-2">
         <div className="flex justify-end gap-8">
-          <span className="text-white/40 text-sm">{t.subtotal}</span>
+          <span className="text-white/60 text-sm">{t.subtotal}</span>
           <span className="text-white/70 font-mono text-sm w-28 text-right">
             {fmt(subtotal)}
           </span>
         </div>
         <div className="flex justify-end gap-8">
-          <span className="text-white/40 text-sm">{t.totalTax}</span>
+          <span className="text-white/60 text-sm">{t.totalTax}</span>
           <span className="text-white/70 font-mono text-sm w-28 text-right">
             {fmt(taxTotal)}
           </span>

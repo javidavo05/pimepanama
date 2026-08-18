@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pime Disk Recovery</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div>
+        <h1>Pime Disk Recovery</h1>
+        <p class="sub">Analiza discos externos y restaura archivos borrados</p>
+      </div>
+      <div class="urls" id="urls"></div>
+    </header>
+
+    <section class="ok-banner" id="system-ok" hidden>
+      <strong>Listo.</strong> PhotoRec instalado · sudo activo.
+      Solo lectura en el disco — los archivos restaurados se copian a tu Mac.
+    </section>
+
+    <section class="warn" id="system-hints" hidden>
+      <div id="system-hints-body"></div>
+      <button type="button" class="btn ghost btn-inline" id="btn-fda" hidden>Abrir Ajustes FDA</button>
+      <button type="button" class="btn ghost btn-inline" id="btn-unmount-hint" hidden>Desmontar disco seleccionado</button>
+    </section>
+
+    <section class="card">
+      <h2>1. Disco externo</h2>
+      <div class="toolbar">
+        <button type="button" class="btn ghost" id="btn-refresh-volumes">Actualizar lista</button>
+        <span class="spacer"></span>
+        <span id="photorec-status" class="pill">PhotoRec: …</span>
+        <span id="sudo-status" class="pill">sudo: …</span>
+      </div>
+      <div id="volumes" class="volumes-grid"></div>
+      <p id="volume-perm-hint" class="perm-hint" hidden></p>
+    </section>
+
+    <section class="card">
+      <h2>2. Tipo de escaneo</h2>
+      <div class="scan-modes">
+        <label class="mode-card">
+          <input type="radio" name="mode" value="zip" checked />
+          <div>
+            <strong>.zip rápido (recomendado)</strong>
+            <span>Papelera + índice HFS + espacio libre · minutos a horas</span>
+          </div>
+        </label>
+        <label class="mode-card">
+          <input type="radio" name="mode" value="zip-full" />
+          <div>
+            <strong>.zip exhaustivo</strong>
+            <span>Todo lo anterior + disco completo · días en 930 GB</span>
+          </div>
+        </label>
+        <label class="mode-card">
+          <input type="radio" name="mode" value="trash" />
+          <div>
+            <strong>Papelera del volumen</strong>
+            <span>Solo .Trashes y $RECYCLE.BIN · segundos</span>
+          </div>
+        </label>
+        <label class="mode-card">
+          <input type="radio" name="mode" value="orphan" />
+          <div>
+            <strong>Restos ocultos</strong>
+            <span>Carpetas temporales y metadatos macOS</span>
+          </div>
+        </label>
+        <label class="mode-card">
+          <input type="radio" name="mode" value="full" />
+          <div>
+            <strong>Completo (rápido)</strong>
+            <span>Papelera + restos ocultos</span>
+          </div>
+        </label>
+        <label class="mode-card">
+          <input type="radio" name="mode" value="deep" />
+          <div>
+            <strong>Profundo (espacio libre)</strong>
+            <span>Índice HFS + PhotoRec en zonas borradas · horas</span>
+          </div>
+        </label>
+      </div>
+      <button type="button" class="btn primary" id="btn-scan" disabled>Iniciar escaneo</button>
+      <p class="deep-hint" id="deep-hint" hidden>
+        Escaneo profundo: papelera + índice HFS + PhotoRec en espacio libre.
+        Desmonta el disco. En 930 GB suele tardar horas, no días.
+      </p>
+      <p class="deep-hint" id="zip-hint">
+        <strong>Fase 1</strong> (minutos): papelera, restos e índice HFS+.
+        <strong>Fase 1</strong> también lee el catálogo HFS (como Wondershare): .zip aún en el índice del disco.
+        <strong>Fase 2</strong>: PhotoRec en espacio libre (disco desmontado). Los fragmentos se purgan al instante — solo queda el índice en <code>photorec.log</code> hasta pulsar Restaurar.
+      </p>
+      <p class="deep-hint" id="zip-full-hint" hidden>
+        Igual que .zip rápido, pero la fase 2 lee <strong>todo el disco</strong> (días en 930 GB).
+        Solo si el rápido no encontró nada.
+      </p>
+    </section>
+
+    <section class="card" id="scan-progress-card" hidden>
+      <div class="toolbar">
+        <h2>Escaneando…</h2>
+        <span class="spacer"></span>
+        <button type="button" class="btn ghost" id="btn-cancel-scan">Detener escaneo</button>
+      </div>
+      <div class="progress-bar"><div id="scan-progress-fill" class="progress-fill indeterminate"></div></div>
+      <pre id="scan-log" class="log"></pre>
+    </section>
+
+    <section class="card" id="results-card" hidden>
+      <div class="toolbar toolbar-wrap">
+        <h2>3. Archivos encontrados <span id="results-count" class="muted-num">0</span></h2>
+      </div>
+
+      <div class="filter-panel">
+        <div class="filter-row">
+          <label class="filter-field">
+            <span>Nombre</span>
+            <input type="search" id="filter-name" placeholder="ej. factura, IMG_0042…" class="search" />
+          </label>
+          <label class="filter-field">
+            <span>Extensión</span>
+            <input type="search" id="filter-ext" placeholder="ej. pdf, jpg, docx…" class="search" />
+          </label>
+          <button type="button" class="btn ghost" id="btn-clear-filters">Limpiar filtros</button>
+        </div>
+        <div class="ext-chips" id="ext-chips">
+          <span class="ext-chips-label">Rápido:</span>
+          <button type="button" class="chip" data-ext="jpg">.jpg</button>
+          <button type="button" class="chip" data-ext="png">.png</button>
+          <button type="button" class="chip" data-ext="pdf">.pdf</button>
+          <button type="button" class="chip" data-ext="docx">.docx</button>
+          <button type="button" class="chip" data-ext="xlsx">.xlsx</button>
+          <button type="button" class="chip" data-ext="mp4">.mp4</button>
+          <button type="button" class="chip" data-ext="mov">.mov</button>
+          <button type="button" class="chip" data-ext="mp3">.mp3</button>
+          <button type="button" class="chip" data-ext="zip">.zip</button>
+        </div>
+        <p class="filter-summary" id="filter-summary">Mostrando todos los archivos</p>
+      </div>
+
+      <div class="toolbar">
+        <button type="button" class="btn ghost" id="btn-select-all">Seleccionar visibles</button>
+        <button type="button" class="btn ghost" id="btn-select-none">Ninguno</button>
+        <span class="spacer"></span>
+        <button type="button" class="btn gold" id="btn-restore-stop" hidden>Restaurar y detener</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th class="w-check"><input type="checkbox" id="check-all" /></th>
+              <th>Nombre</th>
+              <th>Ext.</th>
+              <th>Origen</th>
+              <th>Tamaño</th>
+              <th>Confianza</th>
+              <th>Modificado</th>
+              <th class="w-action"></th>
+            </tr>
+          </thead>
+          <tbody id="results-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card" id="restore-card" hidden>
+      <h2>4. Restaurar seleccionados</h2>
+      <div class="restore-bar">
+        <label>
+          Carpeta destino
+          <input type="text" id="restore-dir" />
+        </label>
+        <span id="selected-count" class="count">0 seleccionados</span>
+        <button type="button" class="btn gold" id="btn-restore" disabled>Restaurar archivos</button>
+      </div>
+      <pre id="restore-log" class="log" hidden></pre>
+    </section>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="/app.js" type="module"></script>
+</body>
+</html>

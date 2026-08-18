@@ -1,43 +1,41 @@
 import { StyleSheet } from "@react-pdf/renderer";
+import { registerPdfFonts } from "./fonts";
 
+registerPdfFonts();
+
+// Brand tokens ported 1:1 from design-system/PROMPT_CLAUDE_CODE.md §1.
+// Do not invent new colors here — anything outside this palette breaks the shared visual system.
 export const COLORS = {
-  // Backgrounds
-  bg: "#FFFFFF",
-  bgCard: "#F8FAFC",
-  bgAlt: "#F1F5F9",
-  bgDark: "#0A0E1A",
-
-  // PIME Brand
-  blue: "#1AA7F0",
-  blueDim: "#0E87C8",
-  blueLight: "#EBF6FE",
-  purple: "#6344E8",
-  purpleLight: "#EEEBFB",
-
-  // Text
-  text: "#111827",
-  textMuted: "#6B7280",
-  textDim: "#9CA3AF",
-  textInverse: "#FFFFFF",
-
-  // Borders
-  border: "#E5E7EB",
-  borderMid: "#D1D5DB",
-
-  // Backwards-compat aliases (any code still referencing gold/bgHeader gets PIME colors)
-  gold: "#1AA7F0",
-  goldDim: "#0E87C8",
-  goldLight: "#EBF6FE",
-  bgHeader: "#0A0E1A",
-  bgCard2: "#F8FAFC",
+  blue: "#0586FE",
+  purple: "#552EFF",
+  ink: "#0B0D14",
+  inkSoft: "#1B1F2B",
+  slate: "#4B5468",
+  slateLight: "#8A93A6",
+  line: "#E7E9EF",
+  paper: "#FCFCFD",
+  panel: "#F5F6F9",
+  white: "#FFFFFF",
 };
 
+export const GRADIENT_STOPS: [string, string] = [COLORS.blue, COLORS.purple];
+
+// react-pdf resolves weight via the `fontWeight` style prop against the registered family
+// (see fonts.ts) — components set `fontFamily: FONTS.body, fontWeight: 600` etc, no per-weight family names needed.
 export const FONTS = {
-  regular: "Helvetica",
-  bold: "Helvetica-Bold",
-  mono: "Courier",
-  monoBold: "Courier-Bold",
+  body: "Inter",
+  heading: "Manrope",
 };
+
+export const RADIUS = {
+  card: 8,
+  block: 10,
+  pill: 20,
+  chip: 6,
+};
+
+// LETTER page in pt (8.5in x 11in @ 72dpi). Used by full-bleed elements (gradient stripes, cover/closing pages).
+export const PAGE = { width: 612, height: 792 };
 
 export const SPACING = {
   xs: 4,
@@ -51,38 +49,11 @@ export const SPACING = {
 export const pageStyles = StyleSheet.create({
   // LAW: size must always be LETTER (8.5" × 11"). NEVER A4.
   page: {
-    backgroundColor: COLORS.bg,
+    backgroundColor: COLORS.white,
     paddingTop: 0,
     paddingBottom: 0,
     paddingHorizontal: 0,
-    fontFamily: FONTS.regular,
-    color: COLORS.text,
+    fontFamily: FONTS.body,
+    color: COLORS.ink,
   },
-  body: {
-    paddingHorizontal: SPACING.page,
-    flex: 1,
-  },
-  sectionTitle: {
-    fontFamily: FONTS.bold,
-    fontSize: 7,
-    color: COLORS.blue,
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    marginBottom: SPACING.sm,
-  },
-  card: {
-    backgroundColor: COLORS.bgCard,
-    borderRadius: 4,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-  },
-  row: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-  flex1: { flex: 1 },
-  textSm: { fontSize: 8.5, color: COLORS.textMuted, lineHeight: 1.5 },
-  textBase: { fontSize: 9.5, color: COLORS.text, lineHeight: 1.5 },
-  textMono: { fontFamily: FONTS.mono, fontSize: 9 },
-  textMonoBold: { fontFamily: FONTS.monoBold, fontSize: 9 },
 });

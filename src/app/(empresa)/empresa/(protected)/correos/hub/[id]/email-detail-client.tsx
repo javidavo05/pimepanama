@@ -1,8 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { EmailReplyModal } from "@/components/empresa/mail/email-reply-modal";
+import { EmailThreadPanel } from "@/components/empresa/mail/email-thread-panel";
 import { EmailBodyRenderer } from "@/components/empresa/mail/email-body-renderer";
+import { MailDeliveryStatusBadge } from "@/components/empresa/mail/mail-delivery-status";
+import type { ComposeAccount, CompanyPreview } from "@/components/empresa/mail/email-compose-modal";
+import { formatEmailReceivedAt } from "@/lib/format-datetime";
+import { resolveReplyRecipient } from "@/lib/mail/reply-recipient";
 
 const TAG_COLORS: Record<string, string> = {
   urgent: "bg-red-500/15 text-red-400 border-red-500/20",
@@ -10,13 +16,14 @@ const TAG_COLORS: Record<string, string> = {
   payment: "bg-green-500/15 text-green-400 border-green-500/20",
   "follow-up": "bg-blue-500/15 text-blue-400 border-blue-500/20",
   support: "bg-purple-500/15 text-purple-400 border-purple-500/20",
-  spam: "bg-white/10 text-white/30 border-white/10",
-  general: "bg-white/[0.04] text-white/30 border-white/[0.08]",
+  spam: "bg-white/10 text-white/55 border-white/10",
+  general: "bg-white/[0.04] text-white/55 border-white/[0.08]",
 };
 
 interface EmailData {
   id: string;
   subject: string;
+  folder: string;
   fromName: string | null;
   fromEmail: string;
   toAddresses: string[];
@@ -26,8 +33,17 @@ interface EmailData {
   isStarred: boolean;
   aiSummary: string | null;
   aiTags: string[];
-  account: { id: string; label: string; smtpHost: string | null };
+  deliveryStatus?: string | null;
+  resendId?: string | null;
+  bounceReason?: string | null;
+  account: { id: string; label: string; smtpHost: string | null; username: string };
   attachments: { id: string; filename: string; contentType: string; size: number }[];
+}
+
+interface EmailDetailClientProps {
+  email: EmailData;
+  accounts: ComposeAccount[];
+  company: CompanyPreview | null;
 }
 
 function fmtBytes(b: number): string {
@@ -36,8 +52,10 @@ function fmtBytes(b: number): string {
   return `${(b / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export function EmailDetailClient({ email }: { email: EmailData }) {
+export function EmailDetailClient({ email, accounts, company }: EmailDetailClientProps) {
+  const router = useRouter();
   const [replyOpen, setReplyOpen] = useState(false);
+  const [threadRefreshKey, setThreadRefreshKey] = useState(0);
   const [bodyText, setBodyText] = useState(email.bodyText);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<{ aiSummary: string | null; aiTags: string[]; urgency?: string; suggestedAction?: string; costUSD?: number } | null>(
@@ -69,20 +87,39 @@ export function EmailDetailClient({ email }: { email: EmailData }) {
 
   const tags = analysis?.aiTags ?? email.aiTags;
   const summary = analysis?.aiSummary ?? email.aiSummary;
+  const replyToEmail = resolveReplyRecipient(
+    { folder: email.folder, fromEmail: email.fromEmail, toAddresses: email.toAddresses },
+    email.account.username
+  );
 
   return (
     <div className="space-y-5">
       {/* Header */}
       <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
         <div className="flex items-start justify-between gap-3 mb-4">
-          <h1 className="text-white text-lg font-semibold leading-snug">{email.subject}</h1>
+          <div className="min-w-0">
+            <h1 className="text-white text-lg font-semibold leading-snug">{email.subject}</h1>
+            {email.folder === "SENT" && (
+              <div className="mt-2">
+                <MailDeliveryStatusBadge
+                  email={{
+                    folder: email.folder,
+                    deliveryStatus: email.deliveryStatus,
+                    resendId: email.resendId,
+                    bounceReason: email.bounceReason,
+                  }}
+                  size="md"
+                />
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-2 flex-none">
-            <button onClick={handleStar} className={`p-1.5 rounded-lg transition-colors ${isStarred ? "text-amber-400" : "text-white/25 hover:text-amber-400"}`}>
+            <button onClick={handleStar} className={`p-1.5 rounded-lg transition-colors ${isStarred ? "text-amber-400" : "text-white/50 hover:text-amber-400"}`}>
               <svg className="w-4 h-4" fill={isStarred ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
               </svg>
             </button>
-            {email.account.smtpHost && (
+            {email.account.id && (
               <button onClick={() => setReplyOpen(true)}
                 className="px-3 py-1.5 bg-[#1AA7F0]/10 border border-[#1AA7F0]/20 text-[#1AA7F0] text-xs font-medium rounded-lg hover:bg-[#1AA7F0]/15 transition-all inline-flex items-center gap-1.5">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -96,24 +133,24 @@ export function EmailDetailClient({ email }: { email: EmailData }) {
 
         <div className="space-y-1.5 text-sm">
           <div className="flex gap-2">
-            <span className="text-white/30 w-8 shrink-0">De</span>
+            <span className="text-white/55 w-8 shrink-0">De</span>
             <span className="text-white/80">{email.fromName ? `${email.fromName} <${email.fromEmail}>` : email.fromEmail}</span>
           </div>
           {email.toAddresses.length > 0 && (
             <div className="flex gap-2">
-              <span className="text-white/30 w-8 shrink-0">Para</span>
+              <span className="text-white/55 w-8 shrink-0">Para</span>
               <span className="text-white/60">{email.toAddresses.join(", ")}</span>
             </div>
           )}
           {email.ccAddresses.length > 0 && (
             <div className="flex gap-2">
-              <span className="text-white/30 w-8 shrink-0">CC</span>
+              <span className="text-white/55 w-8 shrink-0">CC</span>
               <span className="text-white/60">{email.ccAddresses.join(", ")}</span>
             </div>
           )}
           <div className="flex gap-2">
-            <span className="text-white/30 w-8 shrink-0">Fecha</span>
-            <span className="text-white/50 text-xs">{new Date(email.receivedAt).toLocaleString("es-PA", { dateStyle: "full", timeStyle: "short" })}</span>
+            <span className="text-white/55 w-8 shrink-0">Fecha</span>
+            <span className="text-white/50 text-xs">{formatEmailReceivedAt(email.receivedAt)}</span>
           </div>
         </div>
 
@@ -128,6 +165,8 @@ export function EmailDetailClient({ email }: { email: EmailData }) {
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_280px] gap-5 items-start">
         <div className="space-y-5 min-w-0">
+          <EmailThreadPanel emailId={email.id} refreshKey={threadRefreshKey} />
+
           {/* Body — full width of main column */}
           <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 min-w-0">
             <EmailBodyRenderer
@@ -152,9 +191,9 @@ export function EmailDetailClient({ email }: { email: EmailData }) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-white/80 text-sm truncate group-hover:text-white transition-colors">{att.filename}</p>
-                      <p className="text-white/30 text-xs">{fmtBytes(att.size)} · {att.contentType}</p>
+                      <p className="text-white/55 text-xs">{fmtBytes(att.size)} · {att.contentType}</p>
                     </div>
-                    <svg className="w-4 h-4 text-white/20 group-hover:text-white/50 transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 text-white/50 group-hover:text-white/50 transition-colors" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
                   </a>
@@ -182,38 +221,36 @@ export function EmailDetailClient({ email }: { email: EmailData }) {
           {summary ? (
             <div className="space-y-3">
               <div>
-                <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1">Resumen</p>
+                <p className="text-white/55 text-[10px] uppercase tracking-widest mb-1">Resumen</p>
                 <p className="text-white/70 text-sm leading-relaxed">{summary}</p>
               </div>
               {analysis?.urgency && (
                 <div>
-                  <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1">Urgencia</p>
-                  <span className={`text-xs px-2 py-0.5 rounded border ${analysis.urgency === "high" ? "bg-red-500/15 text-red-400 border-red-500/20" : analysis.urgency === "medium" ? "bg-amber-500/15 text-amber-400 border-amber-500/20" : "bg-white/[0.04] text-white/40 border-white/[0.08]"}`}>
+                  <p className="text-white/55 text-[10px] uppercase tracking-widest mb-1">Urgencia</p>
+                  <span className={`text-xs px-2 py-0.5 rounded border ${analysis.urgency === "high" ? "bg-red-500/15 text-red-400 border-red-500/20" : analysis.urgency === "medium" ? "bg-amber-500/15 text-amber-400 border-amber-500/20" : "bg-white/[0.04] text-white/60 border-white/[0.08]"}`}>
                     {analysis.urgency === "high" ? "Alta" : analysis.urgency === "medium" ? "Media" : "Baja"}
                   </span>
                 </div>
               )}
               {analysis?.suggestedAction && (
                 <div>
-                  <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1">Acción sugerida</p>
+                  <p className="text-white/55 text-[10px] uppercase tracking-widest mb-1">Acción sugerida</p>
                   <p className="text-white/60 text-xs">{analysis.suggestedAction}</p>
                 </div>
               )}
               {analysis?.costUSD != null && (
-                <p className="text-white/15 text-[10px] font-mono">${analysis.costUSD.toFixed(4)}</p>
+                <p className="text-white/50 text-[10px] font-mono">${analysis.costUSD.toFixed(4)}</p>
               )}
             </div>
           ) : (
-            <p className="text-white/25 text-sm">Haz clic en &quot;Analizar&quot; para que la IA clasifique y resuma este correo.</p>
+            <p className="text-white/50 text-sm">Haz clic en &quot;Analizar&quot; para que la IA clasifique y resuma este correo.</p>
           )}
         </div>
 
         <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-4 space-y-2">
-          <p className="text-white/30 text-[10px] uppercase tracking-widest">Cuenta</p>
+          <p className="text-white/55 text-[10px] uppercase tracking-widest">Cuenta</p>
           <p className="text-white/60 text-sm">{email.account.label}</p>
-          {!email.account.smtpHost && (
-            <p className="text-amber-400/60 text-xs">Sin SMTP — no se puede responder. Configura en <a href={`/empresa/correos/cuentas/${email.account.id}`} className="underline">ajustes de la cuenta</a>.</p>
-          )}
+          <p className="text-white/45 text-xs">Envío saliente vía Resend · recepción por IMAP</p>
         </div>
         </div>
       </div>
@@ -221,11 +258,18 @@ export function EmailDetailClient({ email }: { email: EmailData }) {
       {replyOpen && (
         <EmailReplyModal
           emailId={email.id}
-          toEmail={email.fromEmail}
+          toEmail={replyToEmail}
           subject={email.subject}
           originalBody={email.bodyText ?? ""}
-          hasSmtp={!!email.account.smtpHost}
-          onClose={() => setReplyOpen(false)}
+          hasSmtp={true}
+          accountId={email.account.id}
+          accounts={accounts}
+          company={company}
+          onClose={() => {
+            setReplyOpen(false);
+            setThreadRefreshKey((k) => k + 1);
+            router.refresh();
+          }}
         />
       )}
     </div>

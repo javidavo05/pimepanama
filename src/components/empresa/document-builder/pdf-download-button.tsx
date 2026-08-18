@@ -3,13 +3,21 @@
 import { useState } from "react";
 
 interface PdfDownloadButtonProps {
-  documentId: string;
+  documentId?: string;
+  /** Overrides the default `/api/empresa/documents/{id}/pdf` route — e.g. for contracts/proposals. */
+  url?: string;
+  /** POST draft form state to this endpoint (same as live preview). Takes priority over documentId/url. */
+  draftEndpoint?: string;
+  draftPayload?: unknown;
   filename?: string;
   label?: string;
 }
 
 export function PdfDownloadButton({
   documentId,
+  url,
+  draftEndpoint,
+  draftPayload,
   filename,
   label = "Descargar PDF",
 }: PdfDownloadButtonProps) {
@@ -19,16 +27,25 @@ export function PdfDownloadButton({
     if (loading) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/empresa/documents/${documentId}/pdf`);
+      let res: Response;
+      if (draftEndpoint && draftPayload != null) {
+        res = await fetch(draftEndpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(draftPayload),
+        });
+      } else {
+        res = await fetch(url ?? `/api/empresa/documents/${documentId}/pdf`);
+      }
       if (!res.ok) throw new Error("Error generando PDF");
 
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+      const objectUrl = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url;
-      a.download = filename ?? `documento-${documentId}.pdf`;
+      a.href = objectUrl;
+      a.download = filename ?? `documento-${documentId ?? Date.now()}.pdf`;
       a.click();
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(objectUrl);
     } catch (err) {
       console.error(err);
       alert("Error al generar el PDF. Intenta de nuevo.");

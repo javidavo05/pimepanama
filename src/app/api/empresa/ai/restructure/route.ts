@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { calcGptCost } from "@/lib/ai-pricing";
+import { brandSystemPrompt } from "@/lib/ai/pime-brand-voice";
 
 export const runtime = "nodejs";
 
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "rawNotes is required" }, { status: 400 });
     }
 
+    const brandLang = language === "en" ? "en" : "es";
     const lang = language === "en" ? "professional English" : "formal Panamanian Spanish";
 
     const start = Date.now();
@@ -24,12 +26,23 @@ export async function POST(request: Request) {
       messages: [
         {
           role: "system",
-          content: `You are a corporate secretary for a Panamanian technology company. Restructure the provided meeting notes into a formal business log. Respond entirely in ${lang}. Return a JSON object with these exact keys: "agenda" (string — summary of topics discussed), "decisions" (array of strings — key decisions made), "actionItems" (array of objects with "task", "owner", "due" keys), "nextMeeting" (string — next steps or next meeting info). Be concise and professional.`,
+          content: brandSystemPrompt(
+            `Actúas como la persona que redacta la minuta oficial de una reunión con cliente. El usuario te da notas crudas (a veces dictadas, desordenadas); tu trabajo es convertirlas en una bitácora formal que el cliente pueda leer como registro del acuerdo. Responde enteramente en ${lang}.
+
+Devuelve un JSON con estas claves exactas:
+- "agenda" (string): resumen de 2-4 oraciones de los temas tratados — no una lista de palabras sueltas, prosa real que dé contexto.
+- "decisions" (array de strings): cada decisión como una afirmación completa y verificable ("Se aprobó X", "Se acordó posponer Y hasta Z") — no fragmentos.
+- "actionItems" (array de objetos con "task", "owner", "due"): tareas concretas y accionables. Si las notas no especifican responsable o fecha, usa "Por definir" en vez de inventar un nombre o fecha.
+- "nextMeeting" (string): próximos pasos o fecha de la siguiente reunión si se mencionó; si no se mencionó, indica "Por agendar" en vez de inventar una fecha.
+
+No inventes decisiones, tareas, responsables ni fechas que no estén en las notas. Si las notas son ambiguas, refleja esa ambigüedad en vez de resolverla por tu cuenta.`,
+            brandLang
+          ),
         },
         { role: "user", content: rawNotes },
       ],
       response_format: { type: "json_object" },
-      max_tokens: 1000,
+      max_tokens: 1200,
       temperature: 0.3,
     });
 

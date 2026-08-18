@@ -1,23 +1,24 @@
 import { View, Text, StyleSheet } from "@react-pdf/renderer";
-import { COLORS, FONTS, SPACING } from "../tokens";
+import { COLORS, FONTS, SPACING, RADIUS } from "../tokens";
 
 const s = StyleSheet.create({
   container: { marginBottom: SPACING.lg },
   label: {
-    fontFamily: FONTS.bold,
+    fontFamily: FONTS.body,
+    fontWeight: 700,
     fontSize: 7,
     color: COLORS.blue,
-    letterSpacing: 2,
+    letterSpacing: 1.4,
     marginBottom: SPACING.xs,
   },
   card: {
-    backgroundColor: COLORS.bgCard,
-    borderRadius: 4,
-    borderLeftWidth: 2,
-    borderLeftColor: COLORS.border,
+    backgroundColor: COLORS.panel,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    borderRadius: RADIUS.card,
     padding: SPACING.md,
   },
-  text: { fontSize: 8.5, color: COLORS.textMuted, lineHeight: 1.6 },
+  text: { fontFamily: FONTS.body, fontSize: 8.5, color: COLORS.slate, lineHeight: 1.65 },
 });
 
 interface NotesBlockProps {

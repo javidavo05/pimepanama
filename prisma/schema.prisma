@@ -185,6 +185,7 @@ enum DocumentStatus {
   ACCEPTED
   REJECTED
   PAID
+  PARTIALLY_PAID
   CANCELLED
 }
 
@@ -210,6 +211,27 @@ enum ContractStatus {
   TERMINATED
 }
 
+enum SigningStatus {
+  DRAFT
+  PENDING_CLIENT
+  PENDING_COMPANY
+  COMPLETED
+  DECLINED
+  EXPIRED
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+  RESCHEDULED
+}
+
+enum BookingSource {
+  PUBLIC
+  EMPRESA
+  LEAD_LINK
+}
+
 enum ScheduleStatus {
   PENDING
   OVERDUE
@@ -228,7 +250,15 @@ model EmpresaUser {
   paymentMethods PaymentMethod[]
   mailAccounts   MailAccount[]
   projects       Project[]
-  contracts      Contract[]
+  contracts           Contract[]
+  signingRequests     ContractSigningRequest[]
+  bookingEventTypes   BookingEventType[]
+  bookingAvailabilities BookingAvailability[]
+  bookings            Booking[]
+  leads               Lead[]
+  tasks          Task[]
+  platforms      Platform[]
+  expenses       Expense[]
   config         CompanyConfig?  @relation(fields: [configId], references: [id])
   configId       String?
   createdAt      DateTime        @default(now())
@@ -250,11 +280,60 @@ model Client {
   user      EmpresaUser @relation(fields: [userId], references: [id])
   documents Document[]
   projects  Project[]
+  projectLinks ProjectClient[]
   contracts Contract[]
-  createdAt DateTime    @default(now())
+  convertedFromLeads Lead[]
+  createdAt          DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
   @@index([userId])
+}
+
+enum LeadStatus {
+  NUEVO
+  CONTACTADO
+  COTIZANDO
+  NEGOCIACION
+  GANADO
+  PERDIDO
+}
+
+enum LeadSource {
+  REFERIDO
+  WEB
+  REDES_SOCIALES
+  FERIA
+  LLAMADA_FRIA
+  OTRO
+}
+
+model Lead {
+  id                String      @id @default(cuid())
+  name              String
+  company           String?
+  email             String?
+  phone             String?
+  address           String?
+  city              String?
+  country           String      @default("Panamá")
+  source            LeadSource  @default(OTRO)
+  status            LeadStatus  @default(NUEVO)
+  estimatedValue    Decimal?
+  notes             String?
+  nextFollowUpAt    DateTime?
+  lostReason        String?
+  userId            String
+  user              EmpresaUser @relation(fields: [userId], references: [id])
+  documents         Document[]
+  convertedClientId String?
+  convertedClient   Client?     @relation(fields: [convertedClientId], references: [id])
+  convertedAt       DateTime?
+  bookings          Booking[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([userId, status])
 }
 
 model PaymentMethod {
@@ -296,9 +375,11 @@ model CompanyConfig {
   quotePrefix      String        @default("COT")
   paymentTermsDays Int           @default(30)
   taxRatePercent   Decimal       @default(7)
-  footerNotes_en   String?
-  footerNotes_es   String?
-  users            EmpresaUser[]
+  footerNotes_en       String?
+  footerNotes_es       String?
+  bookingAutoLead      Boolean       @default(true)
+  signingMailAccountId String?
+  users                EmpresaUser[]
   documents        Document[]
   createdAt        DateTime      @default(now())
   updatedAt        DateTime      @updatedAt
@@ -327,11 +408,14 @@ model Document {
   total           Decimal?
   commissionAmt   Decimal?
   netAmount       Decimal?
+  amountPaid      Decimal?
   currency        String         @default("USD")
   user            EmpresaUser    @relation(fields: [userId], references: [id])
   userId          String
   client          Client?        @relation(fields: [clientId], references: [id])
   clientId        String?
+  lead            Lead?          @relation(fields: [leadId], references: [id])
+  leadId          String?
   company         CompanyConfig? @relation(fields: [companyId], references: [id])
   companyId       String?
   paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
@@ -347,12 +431,15 @@ model Document {
   linkedDocument   Document?       @relation("DocumentLink", fields: [linkedDocumentId], references: [id])
   linkedBy         Document[]      @relation("DocumentLink")
   paymentSchedules PaymentSchedule[]
+  tasks            Task[]
+  auditLogs        DocumentAuditLog[]
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
   @@index([type, userId])
   @@index([status, userId])
   @@index([clientId])
+  @@index([leadId])
   @@index([projectId])
   @@index([linkedDocumentId])
 }
@@ -375,8 +462,11 @@ model Project {
   id          String        @id @default(cuid())
   userId      String
   user        EmpresaUser   @relation(fields: [userId], references: [id])
+  /// Espejo legacy del cliente principal. La fuente de verdad de "qué clientes
+  /// pertenecen al proyecto" es la relación `clients` (tabla ProjectClient).
   clientId    String?
   client      Client?       @relation(fields: [clientId], references: [id])
+  clients     ProjectClient[]
   name        String
   description String?
   scope       String?
@@ -386,6 +476,12 @@ model Project {
   totalBudget Decimal?
   aiSummary   String?
   aiTags      String[]
+  /// Contenido estructurado generado por IA para el PDF de propuesta (pilares, arquitectura, fases, alcance, cierre)
+  proposalContent Json?
+  /// Plan de financiación: abono inicial + cuotas mensuales/quincenales.
+  /// Se materializa en PaymentSchedule al emitir la factura del proyecto.
+  financingPlan   Json?
+  deliverables    Deliverable[]
   documents   Document[]
   contracts   Contract[]
   createdAt   DateTime      @default(now())
@@ -395,29 +491,174 @@ model Project {
   @@index([userId, status])
 }
 
+model Deliverable {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  dueDate     DateTime?
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  sortOrder   Int       @default(0)
+  /// MANUAL | AI_CONTRACT — de dónde salió el entregable
+  source      String    @default("MANUAL")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([projectId])
+  @@index([projectId, sortOrder])
+}
+
+model ProjectClient {
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([projectId, clientId])
+  @@index([clientId])
+  @@index([projectId])
+}
+
 model Contract {
-  id               String         @id @default(cuid())
-  userId           String
-  user             EmpresaUser    @relation(fields: [userId], references: [id])
-  projectId        String?
-  project          Project?       @relation(fields: [projectId], references: [id])
-  clientId         String?
-  client           Client?        @relation(fields: [clientId], references: [id])
-  title            String
-  description      String?
-  responsibilities String?
-  terms            String?
-  status           ContractStatus @default(DRAFT)
-  signedAt         DateTime?
-  startsAt         DateTime?
-  endsAt           DateTime?
-  value            Decimal?
-  documents        Document[]
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  id                 String         @id @default(cuid())
+  userId             String
+  user               EmpresaUser    @relation(fields: [userId], references: [id])
+  projectId          String?
+  project            Project?       @relation(fields: [projectId], references: [id])
+  clientId           String?
+  client             Client?        @relation(fields: [clientId], references: [id])
+  title              String
+  description        String?
+  responsibilities   String?
+  terms              String?
+  htmlContent        String?        @db.Text
+  status             ContractStatus @default(DRAFT)
+  signedAt           DateTime?
+  signingStatus      SigningStatus?
+  signingCompletedAt DateTime?
+  startsAt           DateTime?
+  endsAt             DateTime?
+  value              Decimal?
+  documents          Document[]
+  signingRequest     ContractSigningRequest?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
 
   @@index([userId])
   @@index([projectId])
+}
+
+model ContractSigningRequest {
+  id                    String                 @id @default(cuid())
+  contractId            String                 @unique
+  contract              Contract               @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  userId                String
+  user                  EmpresaUser            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  status                SigningStatus          @default(DRAFT)
+  clientEmail           String
+  companyEmail          String
+  clientName            String?
+  companyName           String?
+  basePdfR2Key          String?
+  clientSignatureR2Key  String?
+  companySignatureR2Key String?
+  signedPdfR2Key        String?
+  expiresAt             DateTime
+  tokens                ContractSigningToken[]
+  events                ContractSigningEvent[]
+  createdAt             DateTime               @default(now())
+  updatedAt             DateTime               @updatedAt
+
+  @@index([userId])
+}
+
+model ContractSigningToken {
+  id        String                 @id @default(cuid())
+  requestId String
+  request   ContractSigningRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  role      String
+  tokenHash String                 @unique
+  usedAt    DateTime?
+  expiresAt DateTime
+  createdAt DateTime               @default(now())
+
+  @@index([requestId])
+}
+
+model ContractSigningEvent {
+  id         String                 @id @default(cuid())
+  requestId  String
+  request    ContractSigningRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  action     String
+  actorEmail String?
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json?
+  createdAt  DateTime               @default(now())
+
+  @@index([requestId])
+}
+
+model BookingEventType {
+  id          String    @id @default(cuid())
+  userId      String
+  user        EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  slug        String
+  title       String
+  durationMin Int       @default(30)
+  bufferMin   Int       @default(10)
+  description String?
+  active      Boolean   @default(true)
+  bookings    Booking[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([userId, slug])
+  @@index([userId])
+}
+
+model BookingAvailability {
+  id        String      @id @default(cuid())
+  userId    String
+  user      EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weekday   Int
+  startTime String
+  endTime   String
+  timezone  String      @default("America/Panama")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@index([userId])
+}
+
+model Booking {
+  id            String           @id @default(cuid())
+  userId        String
+  user          EmpresaUser      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventTypeId   String
+  eventType     BookingEventType @relation(fields: [eventTypeId], references: [id])
+  leadId        String?
+  lead          Lead?            @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  attendeeName  String
+  attendeeEmail String
+  attendeePhone String?
+  startTime     DateTime
+  endTime       DateTime
+  status        BookingStatus    @default(CONFIRMED)
+  notes         String?
+  meetingUrl    String?
+  source        BookingSource    @default(PUBLIC)
+  taskId        String?
+  task          Task?            @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@unique([userId, startTime])
+  @@index([userId])
+  @@index([leadId])
 }
 
 model PaymentSchedule {
@@ -432,11 +673,114 @@ model PaymentSchedule {
   paidAt       DateTime?
   invoiceId    String?
   reminderSent Boolean        @default(false)
+  tasks        Task[]
   createdAt    DateTime       @default(now())
 
   @@index([userId, status])
   @@index([documentId])
   @@index([dueDate])
+}
+
+// ─── Tareas ──────────────────────────────────────────────────────────────────
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Task {
+  id                String           @id @default(cuid())
+  userId            String
+  user              EmpresaUser      @relation(fields: [userId], references: [id])
+  title             String
+  description       String?
+  assignee          String?
+  priority          TaskPriority     @default(MEDIUM)
+  dueDate           DateTime?
+  endDate           DateTime?
+  allDay            Boolean          @default(true)
+  completed         Boolean          @default(false)
+  completedAt       DateTime?
+  reminderSent      Boolean          @default(false)
+  documentId        String?
+  document          Document?        @relation(fields: [documentId], references: [id])
+  paymentScheduleId String?
+  paymentSchedule   PaymentSchedule? @relation(fields: [paymentScheduleId], references: [id])
+  bookings          Booking[]
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@index([userId, completed])
+  @@index([dueDate])
+  @@index([documentId])
+  @@index([paymentScheduleId])
+}
+
+// ─── Platforms registry ──────────────────────────────────────────────────────
+
+model Platform {
+  id              String      @id @default(cuid())
+  userId          String
+  user            EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  accessUrl       String?
+  supabaseEmail   String?
+  supabaseSlot    Int?
+  vercelEmail     String?
+  vercelSlot      Int?
+  linkUrl         String?
+  githubEmail     String?
+  brevoEmail      String?
+  notes           String?
+  confidentialVault String?
+  sortOrder       Int         @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([userId, sortOrder])
+}
+
+// ─── Por pagar (gastos) ──────────────────────────────────────────────────────
+
+enum ExpenseStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum ExpenseCategory {
+  HOSTING
+  SAAS
+  SALARIOS
+  SERVICIOS
+  MARKETING
+  IMPUESTOS
+  COMISIONES
+  SOFTWARE
+  OTRO
+}
+
+model Expense {
+  id          String          @id @default(cuid())
+  userId      String
+  user        EmpresaUser     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  category    ExpenseCategory @default(OTRO)
+  amount      Decimal
+  currency    String          @default("USD")
+  dueDate     DateTime?
+  paidAt      DateTime?
+  status      ExpenseStatus   @default(PENDING)
+  isRecurring Boolean         @default(false)
+  vendor      String?
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([userId, status])
+  @@index([userId, dueDate])
 }
 
 // ─── Mail Hub ────────────────────────────────────────────────────────────────
@@ -454,10 +798,15 @@ model MailAccount {
   credType    String       @default("PASSWORD_APP")
   smtpHost    String?
   smtpPort    Int?         @default(587)
-  smtpTls     Boolean      @default(true)
-  active      Boolean      @default(true)
-  lastSyncAt  DateTime?
-  emails      InboxEmail[]
+  smtpTls            Boolean      @default(true)
+  fromName           String?
+  signatureName      String?
+  signatureTitle     String?
+  signatureEnabled   Boolean      @default(true)
+  signatureHtml      String?
+  active             Boolean      @default(true)
+  lastSyncAt         DateTime?
+  emails             InboxEmail[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
@@ -471,6 +820,19 @@ model InboxEmail {
   userId      String
   uid         Int
   messageId   String?
+  inReplyTo   String?
+  referencesHeader String?
+  threadKey   String?
+  repliedToEmailId String?
+  deliveryStatus String?
+  smtpAccepted String[] @default([])
+  smtpRejected String[] @default([])
+  smtpResponse String?
+  resendId    String?
+  deliveredAt DateTime?
+  openedAt    DateTime?
+  bouncedAt   DateTime?
+  bounceReason String?
   subject     String?
   fromName    String?
   fromEmail   String
@@ -489,6 +851,9 @@ model InboxEmail {
 
   @@unique([accountId, uid, folder])
   @@index([userId])
+  @@index([userId, folder, receivedAt])
+  @@index([userId, threadKey])
+  @@index([resendId])
   @@index([accountId])
   @@index([receivedAt])
 }
@@ -505,10 +870,25 @@ model EmailAttachment {
   createdAt   DateTime   @default(now())
 }
 
+// ─── Auditoría de ediciones a documentos ─────────────────────────────────────
+
+model DocumentAuditLog {
+  id         String   @id @default(cuid())
+  documentId String
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  actorEmail String
+  actorName  String?
+  summary    String
+  createdAt  DateTime @default(now())
+
+  @@index([documentId])
+}
+
 model MailNotification {
   id        String   @id @default(cuid())
   userId    String
   emailId   String?
+  link      String?
   title     String
   body      String
   read      Boolean  @default(false)

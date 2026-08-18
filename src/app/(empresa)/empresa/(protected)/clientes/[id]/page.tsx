@@ -3,10 +3,10 @@ import Link from "next/link";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { StatusBadge } from "@/components/empresa/document-builder/status-badge";
-import { RevenueChart } from "@/components/empresa/revenue-chart";
+import { LazyRevenueChart as RevenueChart } from "@/components/empresa/revenue-chart-lazy";
 import { buildMonthlyRevenue } from "@/lib/revenue-helpers";
 import { computeClientStats } from "@/lib/client-stats";
-import { filterPaidInvoices } from "@/lib/invoice-revenue";
+import { filterPaidInvoices, effectiveInvoiceAmount } from "@/lib/invoice-revenue";
 import type { DocumentStatus } from "@prisma/client";
 
 export default async function ClienteDetailPage({
@@ -40,16 +40,12 @@ export default async function ClienteDetailPage({
   const totalCommission = totalGross - totalNet;
 
   const chartData = buildMonthlyRevenue(
-    paidInvoices.map((d) => ({
-      issueDate: d.issueDate,
-      total: d.total,
-      netAmount: d.netAmount,
-    }))
+    paidInvoices.map((d) => ({ issueDate: d.issueDate, ...effectiveInvoiceAmount(d) }))
   );
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center gap-2 text-sm text-white/40">
+      <div className="flex items-center gap-2 text-sm text-white/60">
         <Link href="/empresa/clientes" className="hover:text-white/70 transition-colors">
           Clientes
         </Link>
@@ -63,10 +59,10 @@ export default async function ClienteDetailPage({
             <h1 className="text-white text-2xl font-semibold">{client.name}</h1>
             {client.company && <p className="text-white/50 text-sm mt-1">{client.company}</p>}
             <div className="flex flex-wrap gap-4 mt-3">
-              {client.ruc && <span className="text-white/30 text-xs font-mono">RUC: {client.ruc}</span>}
-              {client.email && <span className="text-white/30 text-xs">{client.email}</span>}
-              {client.phone && <span className="text-white/30 text-xs">{client.phone}</span>}
-              {client.address && <span className="text-white/30 text-xs">{client.address}</span>}
+              {client.ruc && <span className="text-white/55 text-xs font-mono">RUC: {client.ruc}</span>}
+              {client.email && <span className="text-white/55 text-xs">{client.email}</span>}
+              {client.phone && <span className="text-white/55 text-xs">{client.phone}</span>}
+              {client.address && <span className="text-white/55 text-xs">{client.address}</span>}
             </div>
           </div>
           <div className="flex gap-2 shrink-0">
@@ -110,7 +106,7 @@ export default async function ClienteDetailPage({
           },
         ].map(({ label, value, mono, color }) => (
           <div key={label} className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-4">
-            <p className="text-white/40 text-xs uppercase tracking-widest mb-2">{label}</p>
+            <p className="text-white/60 text-xs uppercase tracking-widest mb-2">{label}</p>
             <p className={`text-lg font-semibold ${mono ? "font-mono" : ""} ${color ?? "text-white"}`}>
               {value}
             </p>
@@ -119,7 +115,7 @@ export default async function ClienteDetailPage({
       </div>
 
       <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-4 flex items-center justify-between">
-        <p className="text-white/40 text-xs uppercase tracking-widest">Neto recibido (facturas pagadas)</p>
+        <p className="text-white/60 text-xs uppercase tracking-widest">Neto recibido (facturas pagadas)</p>
         <p className="text-green-400 font-mono text-xl font-semibold">
           ${totalNet.toLocaleString("en-US", { minimumFractionDigits: 2 })}
         </p>
@@ -179,7 +175,7 @@ function DocumentHistoryTable({
         <h2 className="text-white/70 text-sm font-medium uppercase tracking-widest">{title}</h2>
       </div>
       {documents.length === 0 ? (
-        <div className="p-10 text-center text-white/30 text-sm">{emptyMessage}</div>
+        <div className="p-10 text-center text-white/55 text-sm">{emptyMessage}</div>
       ) : (
         <table className="w-full text-sm">
           <thead>
@@ -187,7 +183,7 @@ function DocumentHistoryTable({
               {["Número", "Fecha", "Total bruto", "Neto", "Método pago", "Estado", ""].map((h) => (
                 <th
                   key={h}
-                  className="text-left text-white/30 text-xs uppercase tracking-widest font-medium px-5 py-3"
+                  className="text-left text-white/55 text-xs uppercase tracking-widest font-medium px-5 py-3"
                 >
                   {h}
                 </th>
@@ -198,7 +194,7 @@ function DocumentHistoryTable({
             {documents.map((doc) => (
               <tr key={doc.id} className="group hover:bg-white/[0.02] transition-colors">
                 <td className="px-5 py-3 font-mono text-white/60 text-xs">{doc.number ?? "—"}</td>
-                <td className="px-5 py-3 text-white/40 text-xs">
+                <td className="px-5 py-3 text-white/60 text-xs">
                   {new Date(doc.issueDate).toLocaleDateString("es-PA", {
                     day: "2-digit",
                     month: "short",
@@ -214,17 +210,17 @@ function DocumentHistoryTable({
                       ${Number(doc.netAmount).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
                   ) : (
-                    <span className="text-white/20">—</span>
+                    <span className="text-white/50">—</span>
                   )}
                 </td>
-                <td className="px-5 py-3 text-white/40 text-xs">{doc.paymentMethod?.name ?? "—"}</td>
+                <td className="px-5 py-3 text-white/60 text-xs">{doc.paymentMethod?.name ?? "—"}</td>
                 <td className="px-5 py-3">
                   <StatusBadge status={doc.status} />
                 </td>
                 <td className="px-5 py-3">
                   <Link
                     href={`${basePath}/${doc.id}`}
-                    className="text-[#1AA7F0]/60 hover:text-[#1AA7F0] text-xs opacity-0 group-hover:opacity-100 transition-all"
+                    className="text-[#1AA7F0]/60 hover:text-[#1AA7F0] text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all"
                   >
                     {doc.status === "PAID" && basePath.includes("facturas") ? "Ver →" : "Abrir →"}
                   </Link>

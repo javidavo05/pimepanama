@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { renderDocumentPdf } from "@/lib/pdf/render";
+import { resolveDocumentPdfPaymentMethods } from "@/lib/pdf/payment-methods";
 import { Readable } from "stream";
 
 export const runtime = "nodejs";
@@ -26,7 +27,13 @@ export async function GET(
       ? await prisma.companyConfig.findUnique({ where: { id: user.configId } })
       : null;
 
-    const stream = await renderDocumentPdf(doc, company);
+    const allMethods = await prisma.paymentMethod.findMany({
+      where: { userId: user.id, isActive: true },
+      orderBy: [{ type: "asc" }, { name: "asc" }],
+    });
+    const paymentMethods = resolveDocumentPdfPaymentMethods(doc, allMethods);
+
+    const stream = await renderDocumentPdf(doc, company, paymentMethods);
 
     const filename = `${doc.number ?? doc.id}.pdf`
       .replace(/\s+/g, "-")
@@ -34,11 +41,12 @@ export async function GET(
 
     // Convert Node.js Readable stream to web ReadableStream
     const webStream = Readable.toWeb(stream as Readable) as ReadableStream;
+    const inline = new URL(request.url).searchParams.get("inline") === "1";
 
     return new Response(webStream, {
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${filename}"`,
+        "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${filename}"`,
         "Cache-Control": "private, no-cache",
       },
     });

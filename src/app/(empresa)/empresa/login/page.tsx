@@ -31,7 +31,7 @@ export default async function EmpresaLoginPage() {
           <h1 className="text-white text-2xl font-semibold tracking-tight">
             Communications Suite
           </h1>
-          <p className="text-white/40 text-sm mt-2">
+          <p className="text-white/60 text-sm mt-2">
             Plataforma interna · Acceso corporativo
           </p>
         </div>
@@ -41,7 +41,7 @@ export default async function EmpresaLoginPage() {
           <EmpresaLoginForm />
         </div>
 
-        <p className="text-center text-white/20 text-xs mt-6">
+        <p className="text-center text-white/50 text-xs mt-6">
           © {new Date().getFullYear()} Pime Panamá. Sistema de uso interno.
         </p>
       </div>

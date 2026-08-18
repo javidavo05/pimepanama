@@ -13,7 +13,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (!account) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const body = await request.json();
-    const { label, host, port, tls, username, password, credType, smtpHost, smtpPort, smtpTls, active } = body;
+    const {
+      label, host, port, tls, username, password, credType, smtpHost, smtpPort, smtpTls, active,
+      fromName, signatureName, signatureTitle, signatureEnabled, signatureHtml,
+    } = body;
 
     const updated = await prisma.mailAccount.update({
       where: { id },
@@ -29,11 +32,18 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         ...(smtpPort !== undefined && { smtpPort }),
         ...(smtpTls !== undefined && { smtpTls }),
         ...(active !== undefined && { active }),
+        ...(fromName !== undefined && { fromName }),
+        ...(signatureName !== undefined && { signatureName }),
+        ...(signatureTitle !== undefined && { signatureTitle }),
+        ...(signatureEnabled !== undefined && { signatureEnabled }),
+        ...(signatureHtml !== undefined && { signatureHtml }),
       },
       select: {
         id: true, label: true, host: true, port: true, tls: true,
         username: true, credType: true, smtpHost: true, smtpPort: true,
         smtpTls: true, active: true, lastSyncAt: true,
+        fromName: true, signatureName: true, signatureTitle: true,
+        signatureEnabled: true, signatureHtml: true,
       },
     });
     return NextResponse.json(updated);

@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from "@react-pdf/renderer";
-import { COLORS, FONTS, SPACING } from "../tokens";
+import { COLORS, FONTS, SPACING, RADIUS } from "../tokens";
 import type { PdfTranslations } from "../translations";
 
 const s = StyleSheet.create({
@@ -7,32 +7,25 @@ const s = StyleSheet.create({
   row: { flexDirection: "row", gap: SPACING.md },
   block: {
     flex: 1,
-    backgroundColor: COLORS.bgCard,
-    borderRadius: 4,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.blue,
+    backgroundColor: COLORS.panel,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    borderRadius: RADIUS.card,
     padding: SPACING.md,
   },
   label: {
-    fontFamily: FONTS.bold,
-    fontSize: 6.5,
+    fontFamily: FONTS.body,
+    fontWeight: 700,
+    fontSize: 7,
     color: COLORS.blue,
-    letterSpacing: 2,
+    letterSpacing: 1.4,
     marginBottom: SPACING.xs,
   },
-  name: { fontFamily: FONTS.bold, fontSize: 10, color: COLORS.text, marginBottom: 2 },
-  detail: { fontSize: 8, color: COLORS.textMuted, lineHeight: 1.5 },
-  dateBlock: {
-    flex: 1,
-    backgroundColor: COLORS.bgCard,
-    borderRadius: 4,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.purple,
-    padding: SPACING.md,
-  },
+  name: { fontFamily: FONTS.heading, fontWeight: 700, fontSize: 10.5, color: COLORS.ink, marginBottom: 2 },
+  detail: { fontFamily: FONTS.body, fontSize: 8, color: COLORS.slate, lineHeight: 1.55 },
   dateRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
-  dateLabel: { fontSize: 7, color: COLORS.textDim },
-  dateValue: { fontFamily: FONTS.mono, fontSize: 8.5, color: COLORS.text },
+  dateLabel: { fontFamily: FONTS.body, fontSize: 7, color: COLORS.slateLight },
+  dateValue: { fontFamily: FONTS.body, fontWeight: 600, fontSize: 8.5, color: COLORS.ink },
 });
 
 interface ClientBlockProps {
@@ -71,7 +64,7 @@ export function ClientBlock({
           {clientAddress && <Text style={s.detail}>{clientAddress}</Text>}
           {clientEmail && <Text style={s.detail}>{clientEmail}</Text>}
         </View>
-        <View style={s.dateBlock}>
+        <View style={s.block}>
           <View style={s.dateRow}>
             <Text style={s.dateLabel}>{tr.issueDate}</Text>
             <Text style={s.dateValue}>{issueDate}</Text>

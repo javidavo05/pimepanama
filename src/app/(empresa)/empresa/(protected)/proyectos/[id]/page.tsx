@@ -13,7 +13,7 @@ const STATUS_COLOR: Record<string, string> = {
   ACTIVE: "bg-green-500/15 text-green-400 border-green-500/20",
   PAUSED: "bg-amber-500/15 text-amber-400 border-amber-500/20",
   COMPLETED: "bg-blue-500/15 text-blue-400 border-blue-500/20",
-  CANCELLED: "bg-white/[0.05] text-white/30 border-white/[0.08]",
+  CANCELLED: "bg-white/[0.05] text-white/55 border-white/[0.08]",
 };
 
 export default async function ProyectoDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -41,6 +41,7 @@ export default async function ProyectoDetailPage({ params }: { params: Promise<{
     endDate: project.endDate?.toISOString() ?? null,
     createdAt: project.createdAt.toISOString(),
     updatedAt: project.updatedAt.toISOString(),
+    hasProposal: project.proposalContent != null,
     contracts: project.contracts.map((c) => ({
       ...c,
       value: c.value != null ? Number(c.value) : null,
@@ -68,8 +69,8 @@ export default async function ProyectoDetailPage({ params }: { params: Promise<{
     <div className="max-w-5xl mx-auto">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-5 text-sm">
-        <Link href="/empresa/proyectos" className="text-white/40 hover:text-white/70 transition-colors">Proyectos</Link>
-        <span className="text-white/20">/</span>
+        <Link href="/empresa/proyectos" className="text-white/60 hover:text-white/70 transition-colors">Proyectos</Link>
+        <span className="text-white/50">/</span>
         <span className="text-white/60 truncate max-w-xs">{project.name}</span>
       </div>
 
@@ -84,7 +85,7 @@ export default async function ProyectoDetailPage({ params }: { params: Promise<{
           </div>
           {project.client && (
             <Link href={`/empresa/clientes/${project.client.id}`}
-              className="text-white/40 text-sm hover:text-[#1AA7F0] transition-colors">
+              className="text-white/60 text-sm hover:text-[#1AA7F0] transition-colors">
               {project.client.name}{project.client.company ? ` — ${project.client.company}` : ""}
             </Link>
           )}

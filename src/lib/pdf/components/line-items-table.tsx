@@ -4,45 +4,45 @@ import type { PdfTranslations } from "../translations";
 import { fmtCurrency, type PdfLang } from "../translations";
 
 const COL_WIDTHS = {
-  desc: "45%",
-  qty: "10%",
-  price: "16%",
-  tax: "9%",
-  disc: "9%",
-  amount: "11%",
+  desc: "40%",
+  qty: "8%",
+  price: "15%",
+  tax: "8%",
+  disc: "8%",
+  amount: "21%",
 };
 
 const s = StyleSheet.create({
   container: { marginBottom: SPACING.lg },
   headerRow: {
     flexDirection: "row",
-    backgroundColor: COLORS.blueLight,
     paddingVertical: 7,
     paddingHorizontal: SPACING.md,
-    borderTopLeftRadius: 4,
-    borderTopRightRadius: 4,
+    borderBottomWidth: 1.4,
+    borderBottomColor: COLORS.ink,
   },
   headerCell: {
-    fontFamily: FONTS.bold,
-    fontSize: 6.5,
-    color: COLORS.blueDim,
-    letterSpacing: 1.2,
+    fontFamily: FONTS.body,
+    fontWeight: 700,
+    fontSize: 6.8,
+    color: COLORS.slateLight,
+    letterSpacing: 1,
     textTransform: "uppercase",
   },
   row: {
     flexDirection: "row",
-    paddingVertical: 7,
+    paddingVertical: 8,
     paddingHorizontal: SPACING.md,
-    borderBottomWidth: 0.5,
-    borderBottomColor: COLORS.border,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.line,
   },
-  rowAlt: { backgroundColor: COLORS.bgCard },
-  cell: { fontSize: 8.5, color: COLORS.textMuted, lineHeight: 1.4 },
+  cell: { fontFamily: FONTS.body, fontSize: 8.5, color: COLORS.slate, lineHeight: 1.4 },
   cellRight: { textAlign: "right" },
   cellAmount: {
-    fontFamily: FONTS.mono,
+    fontFamily: FONTS.body,
+    fontWeight: 600,
     fontSize: 8.5,
-    color: COLORS.text,
+    color: COLORS.inkSoft,
     textAlign: "right",
   },
   totalsContainer: {
@@ -56,11 +56,12 @@ const s = StyleSheet.create({
     gap: SPACING.xl,
     marginBottom: 4,
   },
-  totalLabel: { fontSize: 8, color: COLORS.textDim, width: 90, textAlign: "right" },
+  totalLabel: { fontFamily: FONTS.body, fontSize: 8, color: COLORS.slateLight, width: 90, textAlign: "right" },
   totalValue: {
-    fontFamily: FONTS.mono,
+    fontFamily: FONTS.body,
+    fontWeight: 500,
     fontSize: 9,
-    color: COLORS.textMuted,
+    color: COLORS.slate,
     width: 80,
     textAlign: "right",
   },
@@ -69,21 +70,23 @@ const s = StyleSheet.create({
     justifyContent: "flex-end",
     gap: SPACING.xl,
     marginTop: 6,
-    paddingTop: 6,
-    borderTopWidth: 1.5,
-    borderTopColor: COLORS.blue,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.line,
   },
   grandTotalLabel: {
-    fontFamily: FONTS.bold,
-    fontSize: 9,
+    fontFamily: FONTS.body,
+    fontWeight: 700,
+    fontSize: 8.5,
     color: COLORS.blue,
     width: 90,
     textAlign: "right",
   },
   grandTotalValue: {
-    fontFamily: FONTS.monoBold,
-    fontSize: 13,
-    color: COLORS.blue,
+    fontFamily: FONTS.heading,
+    fontWeight: 800,
+    fontSize: 15,
+    color: COLORS.ink,
     width: 80,
     textAlign: "right",
   },
@@ -135,7 +138,7 @@ export function LineItemsTable({ tr, lang, items, currency = "USD" }: LineItemsT
       </View>
 
       {rows.map(({ description, quantity, unitPrice, taxPercent, discount, lineTotal, i }) => (
-        <View key={i} style={[s.row, i % 2 === 1 ? s.rowAlt : {}]} wrap={false}>
+        <View key={i} style={s.row} wrap={false}>
           <Text style={[s.cell, { width: COL_WIDTHS.desc }]}>{description}</Text>
           <Text style={[s.cell, s.cellRight, { width: COL_WIDTHS.qty }]}>{quantity}</Text>
           <Text style={[s.cell, s.cellRight, { width: COL_WIDTHS.price }]}>{fmtCurrency(Number(unitPrice), lang, currency)}</Text>

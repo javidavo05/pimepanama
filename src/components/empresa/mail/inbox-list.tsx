@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useTransition } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
+import { MailDeliveryStatusBadge } from "@/components/empresa/mail/mail-delivery-status";
 
 interface ClientMatch { id: string; name: string; email: string | null }
 
@@ -11,12 +12,18 @@ interface InboxEmailRow {
   subject: string | null;
   fromName: string | null;
   fromEmail: string;
+  toAddresses: string[];
   receivedAt: string;
   isRead: boolean;
   isStarred: boolean;
   aiTags: string[];
   aiSummary: string | null;
   messageId: string | null;
+  folder?: string;
+  deliveryStatus?: string | null;
+  resendId?: string | null;
+  bounceReason?: string | null;
+  bodyPreview?: string | null;
   account: { id: string; label: string };
   _count: { attachments: number };
   clientMatch: ClientMatch | null;
@@ -40,6 +47,8 @@ interface InboxListProps {
   initialDateTo?: string;
   initialTag?: string;
   initialFilter?: string;
+  initialFolder?: string;
+  showAccountPills?: boolean;
 }
 
 const TAG_COLORS: Record<string, string> = {
@@ -48,8 +57,8 @@ const TAG_COLORS: Record<string, string> = {
   payment:    "bg-green-500/15 text-green-400 border-green-500/20",
   "follow-up":"bg-blue-500/15 text-blue-400 border-blue-500/20",
   support:    "bg-purple-500/15 text-purple-400 border-purple-500/20",
-  spam:       "bg-white/10 text-white/30 border-white/10",
-  general:    "bg-white/[0.04] text-white/30 border-white/[0.08]",
+  spam:       "bg-white/10 text-white/55 border-white/10",
+  general:    "bg-white/[0.04] text-white/55 border-white/[0.08]",
 };
 
 const ALL_TAGS = ["urgent","invoice","payment","follow-up","support"];
@@ -65,6 +74,21 @@ function fmtDate(iso: string) {
   return d.toLocaleDateString("es-PA", { year: "2-digit", month: "short", day: "numeric" });
 }
 
+function displayAddress(raw: string): string {
+  const trimmed = raw.trim();
+  const nameMatch = trimmed.match(/^(.+?)\s*<[^>]+>$/);
+  if (nameMatch) return nameMatch[1].replace(/^["']|["']$/g, "").trim();
+  const emailMatch = trimmed.match(/<([^>]+)>/);
+  return (emailMatch?.[1] ?? trimmed).trim();
+}
+
+function formatRecipients(to: string[], maxVisible = 2): string {
+  if (to.length === 0) return "(Sin destinatario)";
+  const shown = to.slice(0, maxVisible).map(displayAddress);
+  const rest = to.length - maxVisible;
+  return rest > 0 ? `${shown.join(", ")} +${rest}` : shown.join(", ");
+}
+
 export function InboxList({
   initialEmails,
   accounts,
@@ -73,7 +97,10 @@ export function InboxList({
   initialDateTo = "",
   initialTag = "",
   initialFilter = "",
+  initialFolder = "INBOX",
+  showAccountPills = true,
 }: InboxListProps) {
+  const isSentFolder = initialFolder === "SENT";
   const router = useRouter();
   const pathname = usePathname();
   const [, startTransition] = useTransition();
@@ -123,11 +150,17 @@ export function InboxList({
   function toggleFilter(f: string) {
     const next = activeFilter === f ? "" : f;
     setActiveFilter(next);
+    if (next === "unread") setSelectedAccount(null);
     pushSearch({ filter: next });
   }
 
   // Sync from server re-render
   useEffect(() => { setEmails(initialEmails); }, [initialEmails]);
+
+  // Global unread filter: always show all accounts
+  useEffect(() => {
+    if (activeFilter === "unread") setSelectedAccount(null);
+  }, [activeFilter]);
 
   // Clear selection when list changes from server
   useEffect(() => {
@@ -262,7 +295,7 @@ export function InboxList({
         <div className="flex items-center gap-2">
           {/* Search */}
           <div className="flex-1 relative">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/55 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
@@ -272,7 +305,7 @@ export function InboxList({
               className="w-full bg-white/[0.03] border border-white/[0.06] rounded-lg pl-8 pr-3 py-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/30 transition-all"
             />
             {q && (
-              <button onClick={() => { setQ(""); pushSearch({ q: "" }); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/60">
+              <button onClick={() => { setQ(""); pushSearch({ q: "" }); }} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/50 hover:text-white/60">
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
               </button>
             )}
@@ -280,7 +313,7 @@ export function InboxList({
           {/* Filter toggle */}
           <button
             onClick={() => setShowFilters((v) => !v)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs border transition-all ${showFilters || hasActiveFilters ? "bg-[#1AA7F0]/10 border-[#1AA7F0]/25 text-[#1AA7F0]" : "border-white/[0.07] text-white/40 hover:text-white/70"}`}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs border transition-all ${showFilters || hasActiveFilters ? "bg-[#1AA7F0]/10 border-[#1AA7F0]/25 text-[#1AA7F0]" : "border-white/[0.07] text-white/60 hover:text-white/70"}`}
           >
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z" /></svg>
             Filtros{hasActiveFilters ? " ·" : ""}
@@ -296,7 +329,7 @@ export function InboxList({
                 onChange={(e) => { setDateFrom(e.target.value); pushSearch({ dateFrom: e.target.value }); }}
                 className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-2 py-1.5 text-xs text-white/60 focus:outline-none focus:border-[#1AA7F0]/30"
               />
-              <span className="text-white/20 text-xs">→</span>
+              <span className="text-white/50 text-xs">→</span>
               <input type="date" value={dateTo}
                 onChange={(e) => { setDateTo(e.target.value); pushSearch({ dateTo: e.target.value }); }}
                 className="bg-white/[0.03] border border-white/[0.06] rounded-lg px-2 py-1.5 text-xs text-white/60 focus:outline-none focus:border-[#1AA7F0]/30"
@@ -308,7 +341,7 @@ export function InboxList({
             {/* Quick filters */}
             {[["unread","No leídos"], ["starred","Destacados"]].map(([f, l]) => (
               <button key={f} onClick={() => toggleFilter(f)}
-                className={`px-2.5 py-1 rounded-lg text-xs border transition-all ${activeFilter === f ? "bg-[#1AA7F0]/10 border-[#1AA7F0]/25 text-[#1AA7F0]" : "border-white/[0.07] text-white/40 hover:text-white/60"}`}>
+                className={`px-2.5 py-1 rounded-lg text-xs border transition-all ${activeFilter === f ? "bg-[#1AA7F0]/10 border-[#1AA7F0]/25 text-[#1AA7F0]" : "border-white/[0.07] text-white/60 hover:text-white/60"}`}>
                 {l}
               </button>
             ))}
@@ -318,7 +351,7 @@ export function InboxList({
             {/* Tags */}
             {ALL_TAGS.map((t) => (
               <button key={t} onClick={() => toggleTag(t)}
-                className={`px-2.5 py-1 rounded-lg text-xs border transition-all ${activeTag === t ? TAG_COLORS[t] : "border-white/[0.07] text-white/30 hover:text-white/60"}`}>
+                className={`px-2.5 py-1 rounded-lg text-xs border transition-all ${activeTag === t ? TAG_COLORS[t] : "border-white/[0.07] text-white/55 hover:text-white/60"}`}>
                 {t}
               </button>
             ))}
@@ -327,7 +360,7 @@ export function InboxList({
               <button onClick={() => {
                 setQ(""); setDateFrom(""); setDateTo(""); setActiveTag(""); setActiveFilter("");
                 startTransition(() => router.push(pathname));
-              }} className="text-xs text-white/25 hover:text-white/60 transition-colors ml-auto">
+              }} className="text-xs text-white/50 hover:text-white/60 transition-colors ml-auto">
                 Limpiar filtros
               </button>
             )}
@@ -336,12 +369,12 @@ export function InboxList({
       </div>
 
       {/* Account filter pills */}
-      {accounts.length > 0 && (
+      {showAccountPills && accounts.length > 0 && (
         <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-white/[0.04] flex-wrap">
           <button onClick={() => setSelectedAccount(null)}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs transition-all ${selectedAccount === null ? "bg-white/[0.08] text-white font-medium" : "text-white/40 hover:text-white/70 hover:bg-white/[0.04]"}`}>
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs transition-all ${selectedAccount === null ? "bg-white/[0.08] text-white font-medium" : "text-white/60 hover:text-white/70 hover:bg-white/[0.04]"}`}>
             Todos
-            <span className={`text-[10px] px-1 rounded-full ${selectedAccount === null ? "bg-white/15 text-white/70" : "bg-white/[0.06] text-white/30"}`}>{countAll}</span>
+            <span className={`text-[10px] px-1 rounded-full ${selectedAccount === null ? "bg-white/15 text-white/70" : "bg-white/[0.06] text-white/55"}`}>{countAll}</span>
             {unreadAll > 0 && <span className="w-1.5 h-1.5 rounded-full bg-[#1AA7F0]" />}
           </button>
           {accounts.map((acc) => {
@@ -350,10 +383,10 @@ export function InboxList({
             const active = selectedAccount === acc.id;
             return (
               <button key={acc.id} onClick={() => setSelectedAccount(active ? null : acc.id)}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs transition-all ${active ? acc.activeBg + " font-medium" : "text-white/40 hover:text-white/70 hover:bg-white/[0.04]"}`}>
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs transition-all ${active ? acc.activeBg + " font-medium" : "text-white/60 hover:text-white/70 hover:bg-white/[0.04]"}`}>
                 <span className={`w-2 h-2 rounded-full ${acc.dotColor}`} />
                 <span className={active ? acc.badgeText : ""}>{acc.label}</span>
-                <span className={`text-[10px] px-1 rounded-full ${active ? acc.badgeBg : "bg-white/[0.06] text-white/30"}`}>{cnt}</span>
+                <span className={`text-[10px] px-1 rounded-full ${active ? acc.badgeBg : "bg-white/[0.06] text-white/55"}`}>{cnt}</span>
                 {unread > 0 && <span className={`w-1.5 h-1.5 rounded-full ${acc.dotColor}`} />}
               </button>
             );
@@ -384,7 +417,7 @@ export function InboxList({
               className="px-3 py-1.5 text-xs rounded-lg bg-white/[0.06] border border-white/[0.08] text-white/70 hover:text-white hover:bg-white/[0.1] disabled:opacity-40 transition-all"
               title="Atajo: R"
             >
-              Marcar leídos <kbd className="ml-1 text-[10px] text-white/30 font-mono">R</kbd>
+              Marcar leídos <kbd className="ml-1 text-[10px] text-white/55 font-mono">R</kbd>
             </button>
             <button
               type="button"
@@ -398,7 +431,7 @@ export function InboxList({
             <button
               type="button"
               onClick={clearSelection}
-              className="px-2 py-1.5 text-xs text-white/30 hover:text-white/60 transition-colors"
+              className="px-2 py-1.5 text-xs text-white/55 hover:text-white/60 transition-colors"
               title="Atajo: Esc"
             >
               Cancelar
@@ -409,7 +442,7 @@ export function InboxList({
 
       {/* Email rows */}
       {visible.length === 0 ? (
-        <div className="text-center py-20 text-white/20 text-sm space-y-1">
+        <div className="text-center py-20 text-white/50 text-sm space-y-1">
           <p>{hasActiveFilters ? "Sin resultados para este filtro." : "No hay correos."}</p>
           {!hasActiveFilters && <p className="text-xs">El sync corre automáticamente al entrar.</p>}
         </div>
@@ -418,6 +451,9 @@ export function InboxList({
           {visible.map((email) => {
             const acc = colorMap[email.account.id];
             const isSelected = selectedIds.has(email.id);
+            const listLabel = isSentFolder
+              ? formatRecipients(email.toAddresses ?? [])
+              : (email.fromName || email.fromEmail);
             return (
               <div
                 key={email.id}
@@ -451,7 +487,7 @@ export function InboxList({
 
                   {/* Avatar */}
                   <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0 mt-0.5 ${acc?.badgeBg ?? "bg-white/[0.06]"} ${acc?.badgeText ?? "text-white/50"}`}>
-                    {(email.fromName || email.fromEmail).charAt(0).toUpperCase()}
+                    {listLabel.charAt(0).toUpperCase()}
                   </div>
 
                   {/* Content */}
@@ -459,31 +495,53 @@ export function InboxList({
                     <div className="flex items-center justify-between gap-2 mb-0.5">
                       <div className="flex items-center gap-2 min-w-0">
                         <p className={`text-sm truncate ${!email.isRead ? "text-white font-medium" : "text-white/65"}`}>
-                          {email.fromName || email.fromEmail}
+                          {isSentFolder && <span className="text-white/45 font-normal">Para: </span>}
+                          {listLabel}
                         </p>
                         {/* Client link */}
                         {email.clientMatch && (
-                          <Link href={`/empresa/clientes/${email.clientMatch.id}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="text-[10px] px-1.5 py-0.5 rounded bg-[#C8A96E]/15 text-[#C8A96E] border border-[#C8A96E]/20 hover:bg-[#C8A96E]/25 shrink-0 transition-colors">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              router.push(`/empresa/clientes/${email.clientMatch!.id}`);
+                            }}
+                            className="text-[10px] px-1.5 py-0.5 rounded bg-[#C8A96E]/15 text-[#C8A96E] border border-[#C8A96E]/20 hover:bg-[#C8A96E]/25 shrink-0 transition-colors"
+                          >
                             👤 {email.clientMatch.name}
-                          </Link>
+                          </button>
                         )}
                       </div>
-                      <span className="text-white/25 text-xs shrink-0">{fmtDate(email.receivedAt)}</span>
+                      <span className="text-white/50 text-xs shrink-0">{fmtDate(email.receivedAt)}</span>
                     </div>
                     <p className={`text-xs truncate mb-1 ${!email.isRead ? "text-white/80" : "text-white/45"}`}>
                       {email.subject ?? "(Sin asunto)"}
                     </p>
-                    {email.aiSummary && (
-                      <p className="text-white/28 text-xs truncate">{email.aiSummary}</p>
+                    {isSentFolder && email.bodyPreview && (
+                      <p className="text-white/50 text-xs leading-relaxed line-clamp-2 mb-1">
+                        {email.bodyPreview}
+                      </p>
+                    )}
+                    {!isSentFolder && email.aiSummary && (
+                      <p className="text-white/50 text-xs truncate">{email.aiSummary}</p>
                     )}
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                      {isSentFolder && (
+                        <MailDeliveryStatusBadge
+                          email={{
+                            folder: "SENT",
+                            deliveryStatus: email.deliveryStatus,
+                            resendId: email.resendId,
+                            bounceReason: email.bounceReason,
+                          }}
+                        />
+                      )}
                       {email.aiTags.filter((t) => t !== "general").slice(0, 3).map((tag) => (
                         <span key={tag} className={`px-1.5 py-0.5 text-[10px] rounded border ${TAG_COLORS[tag] ?? TAG_COLORS.general}`}>{tag}</span>
                       ))}
                       {email._count.attachments > 0 && (
-                        <span className="text-white/25 text-[10px] flex items-center gap-0.5">
+                        <span className="text-white/50 text-[10px] flex items-center gap-0.5">
                           <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                           </svg>
@@ -499,7 +557,7 @@ export function InboxList({
 
                 {/* Star */}
                 <button onClick={(e) => handleStar(e, email.id, email.isStarred)}
-                  className={`self-center ml-2 flex-none transition-all ${email.isStarred ? "text-amber-400" : "text-white/15 opacity-0 group-hover:opacity-100 hover:text-amber-400"}`}>
+                  className={`self-center ml-2 flex-none transition-all ${email.isStarred ? "text-amber-400" : "text-white/50 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:text-amber-400"}`}>
                   <svg className="w-4 h-4" fill={email.isStarred ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
                   </svg>

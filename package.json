@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
+    "dev:turbo": "next dev --turbopack",
     "build": "prisma generate && next build && node scripts/postbuild.cjs",
     "start": "next start",
     "lint": "next lint",
@@ -15,7 +16,13 @@
     "export": "next build",
     "deploy:vercel": "node scripts/deploy-vercel.cjs",
     "verify:vercel": "node scripts/verify-vercel-project.cjs",
-    "upload:logo": "node scripts/upload-company-logo.cjs"
+    "upload:logo": "node scripts/upload-company-logo.cjs",
+    "git-id": "node tools/git-identity/cli.mjs",
+    "pime-git": "node tools/git-identity/cli.mjs menu",
+    "pime-git:web": "node tools/git-identity/server.mjs",
+    "pime-git:install": "bash tools/git-identity/install-mac.sh",
+    "disk-recovery:web": "node tools/disk-recovery/server.mjs",
+    "disk-recovery:install": "bash tools/disk-recovery/install-mac.sh"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1075.0",
@@ -24,6 +31,7 @@
     "@iconify/react": "^6.0.2",
     "@prisma/client": "^6.19.0",
     "@react-pdf/renderer": "^4.5.1",
+    "@sparticuz/chromium": "^149.0.0",
     "@supabase/ssr": "^0.12.0",
     "@supabase/supabase-js": "^2.108.2",
     "bcryptjs": "^3.0.3",
@@ -35,12 +43,15 @@
     "next-intl": "^4.13.0",
     "nodemailer": "^9.0.0",
     "openai": "^6.45.0",
+    "pdf-lib": "^1.17.1",
     "prisma": "^6.19.0",
+    "puppeteer-core": "^25.3.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.80.0",
     "recharts": "^3.9.0",
     "resend": "^6.4.1",
+    "svix": "^1.98.0",
     "uuid": "^13.0.0",
     "zod": "^4.1.12"
   },
@@ -56,7 +67,8 @@
     "postcss": "^8.5.15",
     "tailwindcss": "^3.4.1",
     "tsx": "^4.20.6",
-    "typescript": "^5"
+    "typescript": "^5",
+    "xlsx": "^0.18.5"
   },
   "overrides": {
     "postcss": "$postcss"

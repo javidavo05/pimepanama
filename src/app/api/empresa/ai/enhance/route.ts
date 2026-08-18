@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { calcGptCost } from "@/lib/ai-pricing";
+import { brandSystemPrompt } from "@/lib/ai/pime-brand-voice";
 
 export const runtime = "nodejs";
 
@@ -22,8 +23,21 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "text is required" }, { status: 400 });
     }
 
+    const brandLang = language === "en" ? "en" : "es";
     const lang = language === "en" ? "professional English" : "formal Panamanian Spanish";
-    const systemPrompt = `You are a corporate communications expert for a Panamanian technology company. Enhance the following text to be professional, precise, and appropriate for formal business documents (invoices, quotes, proposals). Context: ${context || "corporate document"}. Respond entirely in ${lang}. Return only the enhanced text, no explanations.`;
+    const systemPrompt = brandSystemPrompt(
+      `Reescribe el texto del usuario para que suene a un documento comercial de alto nivel — piensa en cómo lo redactaría un socio senior antes de enviarlo a un cliente que está evaluando invertir una cifra importante. Contexto del documento: ${context || "documento corporativo"}.
+
+Qué hacer:
+- Conserva TODOS los hechos, cifras, plazos y compromisos del texto original — no los cambies ni los omitas.
+- Elimina redundancias, muletillas y frases vagas; reemplázalas por lenguaje directo y específico.
+- Si el texto es una lista de ideas sueltas, dale estructura de prosa profesional (o de lista, si eso comunica mejor).
+- Ajusta el tono a exactamente lo que pide el contexto (ej. una nota de factura es más seca/directa que la introducción de una propuesta).
+- Responde enteramente en ${lang}.
+
+Devuelve SOLO el texto mejorado, sin comillas, explicaciones ni notas.`,
+      brandLang
+    );
 
     const start = Date.now();
     const response = await openai.chat.completions.create({
@@ -32,7 +46,7 @@ export async function POST(request: Request) {
         { role: "system", content: systemPrompt },
         { role: "user", content: text },
       ],
-      max_tokens: 500,
+      max_tokens: 900,
       temperature: 0.4,
     });
 

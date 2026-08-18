@@ -36,7 +36,7 @@ export default async function CorreosPage() {
           { href: "/empresa/correos/cuentas", label: `⚙️ Cuentas${accountsCount > 0 ? ` (${accountsCount})` : ""}` },
         ].map((tab) => (
           <Link key={tab.href} href={tab.href}
-            className="px-4 py-2 rounded-lg text-sm font-medium transition-all text-white/40 hover:text-white/70 hover:bg-white/[0.04] flex items-center gap-1.5">
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-all text-white/60 hover:text-white/70 hover:bg-white/[0.04] flex items-center gap-1.5">
             {tab.label}
             {tab.badge != null && (
               <span className="bg-[#1AA7F0]/20 text-[#1AA7F0] text-[10px] rounded-full px-1.5">{tab.badge}</span>
@@ -50,7 +50,7 @@ export default async function CorreosPage() {
         <div className="bg-gradient-to-r from-[#1AA7F0]/[0.07] to-[#6344E8]/[0.07] border border-[#1AA7F0]/15 rounded-xl p-5 flex items-center justify-between gap-4">
           <div>
             <p className="text-white/80 font-medium text-sm">Conecta tu bandeja de entrada</p>
-            <p className="text-white/40 text-xs mt-1">Agrega una cuenta IMAP para leer, clasificar con IA y responder correos directamente desde aquí.</p>
+            <p className="text-white/60 text-xs mt-1">Agrega una cuenta IMAP para leer, clasificar con IA y responder correos directamente desde aquí.</p>
           </div>
           <Link href="/empresa/correos/cuentas/nueva"
             className="px-4 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] text-white text-sm font-semibold rounded-lg transition-all whitespace-nowrap">
@@ -61,7 +61,7 @@ export default async function CorreosPage() {
 
       {/* Archived emails table */}
       <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
-        <p className="text-white/40 text-xs uppercase tracking-widest font-medium mb-4">Archivos de correo ({documents.length})</p>
+        <p className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">Archivos de correo ({documents.length})</p>
         <DocumentListTable documents={documents} editBasePath="/empresa/correos" />
       </div>
     </div>

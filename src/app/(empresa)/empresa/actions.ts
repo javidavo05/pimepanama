@@ -7,8 +7,24 @@ import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { serializeDocument, serializePaymentMethod } from "@/lib/serializers";
 import { createInvoiceFromQuote } from "@/lib/quote-to-invoice";
-import { DocumentType, DocumentStatus, ProjectStatus, ContractStatus } from "@prisma/client";
-import { serializeProject, serializeContract, serializeSchedule } from "@/lib/serializers";
+import { syncQuoteInvoiceBalance } from "@/lib/quote-balance";
+import {
+  clearLegacyPartialSchedules,
+  settleDocumentSchedules,
+} from "@/lib/invoice-settlement";
+import {
+  collectSchedule,
+  markDocumentPaid,
+  registerInvoicePayment,
+  resetInvoicePayment,
+} from "@/lib/invoice-payments";
+import {
+  collectScheduleWithInvoice,
+  collectQuoteWithInvoice,
+  type CollectResult,
+} from "@/lib/collect-receivable";
+import { DocumentType, DocumentStatus, ProjectStatus, ContractStatus, LeadStatus, LeadSource } from "@prisma/client";
+import { serializeProject, serializeContract, serializeSchedule, serializeLead } from "@/lib/serializers";
 
 const DOCUMENT_LIST_PATH: Record<DocumentType, string> = {
   FACTURA: "facturas",
@@ -16,6 +32,90 @@ const DOCUMENT_LIST_PATH: Record<DocumentType, string> = {
   BITACORA: "bitacoras",
   CORREO: "correos",
 };
+
+const AUDITED_FIELD_LABELS: Record<string, string> = {
+  title: "Título",
+  clientName: "Cliente",
+  clientEmail: "Email cliente",
+  clientCompany: "Empresa cliente",
+  clientAddress: "Dirección cliente",
+  clientRuc: "RUC cliente",
+  clientId: "Cliente vinculado",
+  issueDate: "Fecha de emisión",
+  dueDate: "Fecha de vencimiento",
+  subtotal: "Subtotal",
+  taxAmount: "Impuesto",
+  total: "Total",
+  commissionAmt: "Comisión",
+  netAmount: "Neto",
+  currency: "Moneda",
+  paymentMethodId: "Método de pago",
+  projectId: "Proyecto",
+  contractId: "Contrato",
+  content: "Contenido (líneas/notas)",
+};
+
+const AUDITED_NUMERIC_FIELDS = new Set(["subtotal", "taxAmount", "total", "commissionAmt", "netAmount"]);
+const AUDITED_DATE_FIELDS = new Set(["issueDate", "dueDate", "validUntil"]);
+
+function formatAuditValue(key: string, value: unknown): string {
+  if (value == null) return "—";
+  if (AUDITED_DATE_FIELDS.has(key)) return new Date(value as string | Date).toLocaleDateString("es-PA");
+  if (AUDITED_NUMERIC_FIELDS.has(key)) return `$${Number(value).toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+  return String(value);
+}
+
+/**
+ * Si el documento ya está PAID/PARTIALLY_PAID, cada edición queda registrada
+ * con quién y qué cambió — es el único resguardo ya que la edición no tiene
+ * restricciones de campo (ver decisión del usuario).
+ */
+async function logDocumentEditIfNeeded(
+  existing: { id: string; status: DocumentStatus },
+  data: Record<string, unknown>,
+  actorEmail: string,
+  actorName: string | null | undefined
+) {
+  if (existing.status !== "PAID" && existing.status !== "PARTIALLY_PAID") return;
+
+  const changedParts: string[] = [];
+  for (const [key, after] of Object.entries(data)) {
+    if (key === "status" || !(key in AUDITED_FIELD_LABELS)) continue;
+    const before = (existing as Record<string, unknown>)[key];
+
+    let changed: boolean;
+    if (key === "content") {
+      changed = JSON.stringify(before ?? {}) !== JSON.stringify(after ?? {});
+    } else if (AUDITED_NUMERIC_FIELDS.has(key)) {
+      changed = Number(before ?? 0) !== Number(after ?? 0);
+    } else if (AUDITED_DATE_FIELDS.has(key)) {
+      const beforeTime = before ? new Date(before as string).getTime() : null;
+      const afterTime = after ? new Date(after as string).getTime() : null;
+      changed = beforeTime !== afterTime;
+    } else {
+      changed = String(before ?? "") !== String(after ?? "");
+    }
+
+    if (changed) {
+      changedParts.push(
+        key === "content"
+          ? AUDITED_FIELD_LABELS[key]
+          : `${AUDITED_FIELD_LABELS[key]}: ${formatAuditValue(key, before)} → ${formatAuditValue(key, after)}`
+      );
+    }
+  }
+
+  if (changedParts.length === 0) return;
+
+  await prisma.documentAuditLog.create({
+    data: {
+      documentId: existing.id,
+      actorEmail,
+      actorName: actorName ?? undefined,
+      summary: changedParts.join("; "),
+    },
+  });
+}
 
 export async function signOutAction() {
   const supabase = await createSupabaseServerClient();
@@ -130,6 +230,7 @@ export async function createDocumentAction(data: {
   clientAddress?: string;
   clientRuc?: string;
   clientId?: string;
+  leadId?: string;
   content?: object;
   issueDate?: Date | string;
   dueDate?: Date | string;
@@ -177,6 +278,7 @@ export async function createDocumentAction(data: {
       clientAddress: data.clientAddress,
       clientRuc: data.clientRuc,
       clientId: data.clientId,
+      leadId: data.leadId,
       content: (data.content as object) ?? {},
       issueDate: toDate(data.issueDate),
       dueDate: toDate(data.dueDate),
@@ -221,6 +323,7 @@ export async function updateDocumentAction(
     clientAddress: string;
     clientRuc: string;
     clientId: string;
+    leadId: string;
     content: object;
     issueDate: Date;
     dueDate: Date;
@@ -256,7 +359,34 @@ export async function updateDocumentAction(
     },
   });
 
+  await logDocumentEditIfNeeded(existing, data, user.email, user.fullName);
+
   const newStatus = data.status ?? existing.status;
+
+  // Cambiar el estado a mano debe cerrar el ciclo igual que registrar el pago:
+  // sin esto la factura sale de "por cobrar" pero sus cuotas quedan vivas.
+  if (data.status && data.status !== existing.status) {
+    if (data.status === "PAID") {
+      const total = existing.total != null ? Number(existing.total) : null;
+      if (total != null) {
+        await prisma.document.update({ where: { id }, data: { amountPaid: total } });
+      }
+      await settleDocumentSchedules(id);
+    } else if (data.status === "CANCELLED" || data.status === "REJECTED") {
+      await clearLegacyPartialSchedules(id);
+      await prisma.paymentSchedule.updateMany({
+        where: { documentId: id, status: { in: ["PENDING", "OVERDUE"] } },
+        data: { status: "CANCELLED" },
+      });
+    } else if (existing.status === "PAID" || existing.status === "PARTIALLY_PAID") {
+      // Reabrir: el cobro deja de estar registrado.
+      await prisma.document.update({ where: { id }, data: { amountPaid: null } });
+    }
+    if (existing.type === "FACTURA" && existing.linkedDocumentId) {
+      await syncQuoteInvoiceBalance(existing.linkedDocumentId, user.id);
+    }
+    revalidatePath("/empresa/cuentas-por-cobrar");
+  }
   if (
     existing.type === "COTIZACION" &&
     newStatus === "ACCEPTED" &&
@@ -371,6 +501,139 @@ export async function createProjectAction(data: {
   return serializeProject(project);
 }
 
+/**
+ * Crea un proyecto, sus clientes y (opcionalmente) su contrato en una sola
+ * operación. Proyecto y contrato se levantaban por separado en dos pantallas
+ * distintas, lo que hacía que casi siempre quedara uno sin el otro.
+ */
+export async function createProjectWithContractAction(data: {
+  name: string;
+  clientIds: string[];
+  description?: string;
+  scope?: string;
+  status?: ProjectStatus;
+  startDate?: string;
+  endDate?: string;
+  totalBudget?: number;
+  contract?: {
+    title: string;
+    value?: number;
+    startsAt?: string;
+    endsAt?: string;
+    responsibilities?: string;
+    terms?: string;
+    description?: string;
+  } | null;
+  /** Entregables (los suele extraer el análisis del contrato adjunto). */
+  deliverables?: { name: string; description?: string; dueDate?: string }[];
+  /** Plan de financiación: abono inicial + cuotas. */
+  financingPlan?: {
+    total: number;
+    downPayment: number;
+    installments: number;
+    frequency: "MONTHLY" | "BIWEEKLY" | "WEEKLY";
+    firstDueDate: string;
+  } | null;
+}) {
+  const user = await getEmpresaUser();
+  if (!data.name.trim()) throw new Error("El proyecto necesita un nombre");
+  if (data.clientIds.length === 0) throw new Error("El proyecto necesita al menos un cliente");
+
+  // Solo clientes que de verdad son de este usuario.
+  const validClients = await prisma.client.findMany({
+    where: { id: { in: data.clientIds }, userId: user.id },
+    select: { id: true },
+  });
+  if (validClients.length === 0) throw new Error("Los clientes indicados no existen");
+  const clientIds = validClients.map((c) => c.id);
+
+  const toDate = (v?: string) => (v ? new Date(v) : undefined);
+
+  const project = await prisma.project.create({
+    data: {
+      userId: user.id,
+      name: data.name,
+      description: data.description,
+      scope: data.scope,
+      status: data.status ?? "ACTIVE",
+      startDate: toDate(data.startDate),
+      endDate: toDate(data.endDate),
+      totalBudget: data.totalBudget ?? undefined,
+      // clientId queda como espejo legacy del cliente principal.
+      clientId: clientIds[0],
+      clients: { createMany: { data: clientIds.map((clientId) => ({ clientId })) } },
+      financingPlan: data.financingPlan ?? undefined,
+      aiTags: [],
+    },
+  });
+
+  const deliverables = (data.deliverables ?? []).filter((d) => d.name?.trim());
+  if (deliverables.length > 0) {
+    await prisma.deliverable.createMany({
+      data: deliverables.map((d, i) => ({
+        projectId: project.id,
+        name: d.name.trim(),
+        description: d.description?.trim() || null,
+        dueDate: d.dueDate ? new Date(d.dueDate) : null,
+        sortOrder: i,
+        source: "AI_CONTRACT",
+      })),
+    });
+  }
+
+  let contract = null;
+  if (data.contract?.title?.trim()) {
+    contract = await prisma.contract.create({
+      data: {
+        userId: user.id,
+        projectId: project.id,
+        clientId: clientIds[0],
+        title: data.contract.title,
+        description: data.contract.description,
+        responsibilities: data.contract.responsibilities,
+        terms: data.contract.terms,
+        value: data.contract.value ?? undefined,
+        startsAt: toDate(data.contract.startsAt),
+        endsAt: toDate(data.contract.endsAt),
+        status: "ACTIVE",
+      },
+    });
+  }
+
+  revalidatePath("/empresa/proyectos");
+  revalidatePath("/empresa/contratos");
+  revalidatePath("/empresa");
+
+  return {
+    project: serializeProject(project),
+    contractId: contract?.id ?? null,
+  };
+}
+
+/** Reemplaza la lista de clientes de un proyecto. */
+export async function setProjectClientsAction(projectId: string, clientIds: string[]) {
+  const user = await getEmpresaUser();
+  const project = await prisma.project.findFirst({ where: { id: projectId, userId: user.id } });
+  if (!project) throw new Error("Proyecto no encontrado");
+  if (clientIds.length === 0) throw new Error("El proyecto necesita al menos un cliente");
+
+  const valid = await prisma.client.findMany({
+    where: { id: { in: clientIds }, userId: user.id },
+    select: { id: true },
+  });
+  const ids = valid.map((c) => c.id);
+  if (ids.length === 0) throw new Error("Los clientes indicados no existen");
+
+  await prisma.$transaction([
+    prisma.projectClient.deleteMany({ where: { projectId } }),
+    prisma.projectClient.createMany({ data: ids.map((clientId) => ({ projectId, clientId })) }),
+    prisma.project.update({ where: { id: projectId }, data: { clientId: ids[0] } }),
+  ]);
+
+  revalidatePath("/empresa/proyectos");
+  revalidatePath(`/empresa/proyectos/${projectId}`);
+}
+
 export async function updateProjectAction(
   id: string,
   data: Partial<{
@@ -421,6 +684,7 @@ export async function createContractAction(data: {
   description?: string;
   responsibilities?: string;
   terms?: string;
+  htmlContent?: string;
   status?: ContractStatus;
   signedAt?: string;
   startsAt?: string;
@@ -452,6 +716,7 @@ export async function updateContractAction(
     description: string;
     responsibilities: string;
     terms: string;
+    htmlContent: string;
     status: ContractStatus;
     signedAt: string;
     startsAt: string;
@@ -485,6 +750,146 @@ export async function deleteContractAction(id: string) {
   revalidatePath("/empresa/contratos");
 }
 
+// ─── Leads (CRM) ────────────────────────────────────────────────────────────────
+
+export async function createLeadAction(data: {
+  name: string;
+  company?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  source?: LeadSource;
+  estimatedValue?: number;
+  notes?: string;
+  nextFollowUpAt?: string;
+}) {
+  const user = await getEmpresaUser();
+  const lead = await prisma.lead.create({
+    data: {
+      ...data,
+      userId: user.id,
+      nextFollowUpAt: data.nextFollowUpAt ? new Date(data.nextFollowUpAt) : undefined,
+    },
+  });
+  revalidatePath("/empresa/leads");
+  return serializeLead(lead);
+}
+
+export async function updateLeadAction(
+  id: string,
+  data: Partial<{
+    name: string;
+    company: string;
+    email: string;
+    phone: string;
+    address: string;
+    city: string;
+    country: string;
+    source: LeadSource;
+    estimatedValue: number;
+    notes: string;
+    nextFollowUpAt: string;
+    lostReason: string;
+  }>
+) {
+  const user = await getEmpresaUser();
+  const existing = await prisma.lead.findFirst({ where: { id, userId: user.id } });
+  if (!existing) throw new Error("Lead no encontrado");
+  const lead = await prisma.lead.update({
+    where: { id },
+    data: {
+      ...data,
+      nextFollowUpAt: data.nextFollowUpAt ? new Date(data.nextFollowUpAt) : undefined,
+    },
+  });
+  revalidatePath("/empresa/leads");
+  revalidatePath(`/empresa/leads/${id}`);
+  return serializeLead(lead);
+}
+
+export async function updateLeadStatusAction(id: string, status: LeadStatus) {
+  const user = await getEmpresaUser();
+  const existing = await prisma.lead.findFirst({ where: { id, userId: user.id } });
+  if (!existing) throw new Error("Lead no encontrado");
+
+  if (status === "GANADO" && !existing.convertedClientId) {
+    const [, lead] = await prisma.$transaction(async (tx) => {
+      const client = await tx.client.create({
+        data: {
+          name: existing.name,
+          company: existing.company,
+          email: existing.email,
+          phone: existing.phone,
+          address: existing.address,
+          city: existing.city,
+          country: existing.country,
+          userId: user.id,
+        },
+      });
+      const updatedLead = await tx.lead.update({
+        where: { id },
+        data: { status, convertedClientId: client.id, convertedAt: new Date() },
+      });
+      await tx.document.updateMany({
+        where: { leadId: id },
+        data: { clientId: client.id },
+      });
+      return [client, updatedLead];
+    });
+    revalidatePath("/empresa/leads");
+    revalidatePath(`/empresa/leads/${id}`);
+    revalidatePath("/empresa/clientes");
+    return serializeLead(lead);
+  }
+
+  const lead = await prisma.lead.update({ where: { id }, data: { status } });
+  revalidatePath("/empresa/leads");
+  revalidatePath(`/empresa/leads/${id}`);
+  return serializeLead(lead);
+}
+
+export async function deleteLeadAction(id: string) {
+  const user = await getEmpresaUser();
+  const existing = await prisma.lead.findFirst({ where: { id, userId: user.id } });
+  if (!existing) throw new Error("Lead no encontrado");
+  if (existing.convertedClientId) throw new Error("No se puede eliminar un lead ya convertido a cliente");
+  await prisma.lead.delete({ where: { id } });
+  revalidatePath("/empresa/leads");
+}
+
+// Rellena hacia atrás: crea un Lead a partir de un documento (cotización/factura)
+// que se originó sin pasar por el CRM. Queda GANADO de inmediato porque el
+// negocio ya existe — es solo para completar el historial de pipeline.
+export async function createRetroactiveLeadAction(documentId: string) {
+  const user = await getEmpresaUser();
+  const doc = await prisma.document.findFirst({ where: { id: documentId, userId: user.id } });
+  if (!doc) throw new Error("Documento no encontrado");
+  if (doc.leadId) throw new Error("El documento ya tiene un lead vinculado");
+  if (!doc.clientName) throw new Error("El documento no tiene datos de cliente para crear el lead");
+
+  const lead = await prisma.lead.create({
+    data: {
+      userId: user.id,
+      name: doc.clientName,
+      company: doc.clientCompany,
+      email: doc.clientEmail,
+      address: doc.clientAddress,
+      status: "GANADO",
+      source: "OTRO",
+      convertedClientId: doc.clientId ?? undefined,
+      convertedAt: new Date(),
+    },
+  });
+
+  await prisma.document.update({ where: { id: documentId }, data: { leadId: lead.id } });
+
+  revalidatePath("/empresa/leads");
+  revalidatePath(`/empresa/${DOCUMENT_LIST_PATH[doc.type]}/${documentId}`);
+  return serializeLead(lead);
+}
+
 // ─── Payment Schedules ────────────────────────────────────────────────────────
 
 export async function createPaymentSchedulesAction(
@@ -516,24 +921,97 @@ export async function createPaymentSchedulesAction(
   return schedules.map(serializeSchedule);
 }
 
-export async function markSchedulePaidAction(id: string) {
+/**
+ * Cobra cualquier ítem de Cuentas por Cobrar. Si el saldo no tiene factura
+ * detrás (cotización o cuota de cotización), la factura se emite en el acto.
+ */
+export async function collectReceivableAction(input: {
+  kind: "invoice" | "quote" | "schedule";
+  documentId: string;
+  scheduleId?: string | null;
+  amount: number;
+}): Promise<CollectResult> {
   const user = await getEmpresaUser();
-  const existing = await prisma.paymentSchedule.findFirst({ where: { id, userId: user.id } });
-  if (!existing) throw new Error("Cuota no encontrada");
-  await prisma.paymentSchedule.update({
-    where: { id },
-    data: { status: "PAID", paidAt: new Date() },
-  });
+  let result: CollectResult;
 
-  // Si todas las cuotas del documento están pagadas → marcar el documento como PAID
-  const pendingCount = await prisma.paymentSchedule.count({
-    where: { documentId: existing.documentId, status: { in: ["PENDING", "OVERDUE"] } },
-  });
-  if (pendingCount === 0) {
-    await markDocumentPaidAction(existing.documentId);
+  if (input.kind === "schedule") {
+    if (!input.scheduleId) throw new Error("Falta la cuota a cobrar");
+    result = await collectScheduleWithInvoice(user.id, input.scheduleId, input.amount);
+  } else if (input.kind === "quote") {
+    result = await collectQuoteWithInvoice(user.id, input.documentId, input.amount);
+  } else {
+    const paid = await registerInvoicePayment(user.id, input.documentId, input.amount);
+    const doc = await prisma.document.findFirst({
+      where: { id: input.documentId, userId: user.id },
+      select: { number: true },
+    });
+    result = {
+      invoiceId: input.documentId,
+      invoiceNumber: doc?.number ?? null,
+      invoiceCreated: false,
+      amountCollected: paid.amountPaid,
+    };
   }
 
   revalidatePath("/empresa/cuentas-por-cobrar");
+  revalidatePath("/empresa/facturas");
+  revalidatePath("/empresa/cotizaciones");
+  revalidatePath("/empresa/por-pagar");
+  revalidatePath(`/empresa/facturas/${result.invoiceId}`);
+  revalidatePath("/empresa");
+  return result;
+}
+
+export async function markSchedulePaidAction(id: string) {
+  const user = await getEmpresaUser();
+  const schedule = await prisma.paymentSchedule.findFirst({
+    where: { id, userId: user.id },
+    select: { documentId: true },
+  });
+  if (!schedule) throw new Error("Cuota no encontrada");
+
+  await collectSchedule(user.id, id);
+
+  revalidatePath("/empresa/cuentas-por-cobrar");
+  revalidatePath("/empresa/facturas");
+  revalidatePath(`/empresa/facturas/${schedule.documentId}`);
+  revalidatePath("/empresa/por-pagar");
+  revalidatePath("/empresa");
+}
+
+export async function registerInvoicePaymentAction(
+  documentId: string,
+  paymentAmount: number,
+  remainderDueDate?: string
+) {
+  const user = await getEmpresaUser();
+  const result = await registerInvoicePayment(user.id, documentId, paymentAmount, remainderDueDate);
+
+  const linkedId = (
+    await prisma.document.findFirst({
+      where: { id: documentId, userId: user.id },
+      select: { linkedDocumentId: true },
+    })
+  )?.linkedDocumentId;
+
+  revalidatePath("/empresa/facturas");
+  revalidatePath("/empresa/cotizaciones");
+  revalidatePath("/empresa/cuentas-por-cobrar");
+  revalidatePath("/empresa/por-pagar");
+  revalidatePath(`/empresa/facturas/${documentId}`);
+  if (linkedId) revalidatePath(`/empresa/cotizaciones/${linkedId}`);
+  revalidatePath("/empresa");
+
+  return result;
+}
+
+export async function resetInvoicePaymentAction(documentId: string) {
+  const user = await getEmpresaUser();
+  await resetInvoicePayment(user.id, documentId);
+
+  revalidatePath("/empresa/facturas");
+  revalidatePath("/empresa/cuentas-por-cobrar");
+  revalidatePath(`/empresa/facturas/${documentId}`);
   revalidatePath("/empresa");
 }
 
@@ -541,24 +1019,19 @@ export async function markDocumentPaidAction(id: string) {
   const user = await getEmpresaUser();
   const doc = await prisma.document.findFirst({
     where: { id, userId: user.id },
-    select: { id: true, type: true, linkedDocumentId: true },
+    select: { type: true, linkedDocumentId: true },
   });
   if (!doc) throw new Error("Documento no encontrado");
 
-  await prisma.document.update({ where: { id }, data: { status: "PAID" } });
-
-  // Cuando se marca una FACTURA como pagada, marcar también la COTIZACION vinculada
-  if (doc.type === "FACTURA" && doc.linkedDocumentId) {
-    await prisma.document.update({
-      where: { id: doc.linkedDocumentId },
-      data: { status: "PAID" },
-    });
-  }
+  await markDocumentPaid(user.id, id);
 
   revalidatePath("/empresa/facturas");
   revalidatePath("/empresa/cotizaciones");
   revalidatePath("/empresa/cuentas-por-cobrar");
   revalidatePath(`/empresa/facturas/${id}`);
+  if (doc.type === "FACTURA" && doc.linkedDocumentId) {
+    revalidatePath(`/empresa/cotizaciones/${doc.linkedDocumentId}`);
+  }
   revalidatePath("/empresa");
 }
 
@@ -584,14 +1057,62 @@ export async function linkDocumentsAction(facturaId: string, cotizacionId: strin
     prisma.document.update({
       where: { id: cotizacionId },
       data: {
-        linkedDocumentId: facturaId,
-        content: { ...cotizacionContent, linkedInvoiceId: facturaId },
+        ...(cotizacion.linkedDocumentId ? {} : { linkedDocumentId: facturaId }),
+        content: {
+          ...cotizacionContent,
+          linkedInvoiceId: cotizacion.linkedDocumentId ?? cotizacionContent.linkedInvoiceId ?? facturaId,
+        },
       },
     }),
   ]);
 
+  await syncQuoteInvoiceBalance(cotizacionId, user.id);
+
   revalidatePath(`/empresa/facturas/${facturaId}`);
   revalidatePath(`/empresa/cotizaciones/${cotizacionId}`);
+  revalidatePath("/empresa/cuentas-por-cobrar");
+  revalidatePath("/empresa/cotizaciones");
+  revalidatePath("/empresa/facturas");
+}
+
+export async function attachInvoiceToQuoteAction(invoiceId: string, quoteId: string) {
+  const user = await getEmpresaUser();
+  const [invoice, quote] = await Promise.all([
+    prisma.document.findFirst({ where: { id: invoiceId, userId: user.id, type: "FACTURA" } }),
+    prisma.document.findFirst({ where: { id: quoteId, userId: user.id, type: "COTIZACION" } }),
+  ]);
+  if (!invoice || !quote) throw new Error("Documentos no encontrados");
+
+  const invoiceContent = (invoice.content ?? {}) as Record<string, unknown>;
+  await prisma.document.update({
+    where: { id: invoiceId },
+    data: {
+      linkedDocumentId: quoteId,
+      content: {
+        ...invoiceContent,
+        sourceQuoteId: quoteId,
+        sourceQuoteNumber: quote.number,
+      },
+    },
+  });
+
+  await syncQuoteInvoiceBalance(quoteId, user.id);
+  revalidatePath(`/empresa/facturas/${invoiceId}`);
+  revalidatePath(`/empresa/cotizaciones/${quoteId}`);
+  revalidatePath("/empresa/cuentas-por-cobrar");
+}
+
+export async function markScheduleInvoicedAction(scheduleId: string, invoiceId: string) {
+  const user = await getEmpresaUser();
+  const schedule = await prisma.paymentSchedule.findFirst({
+    where: { id: scheduleId, userId: user.id },
+  });
+  if (!schedule) return;
+
+  await prisma.paymentSchedule.update({
+    where: { id: scheduleId },
+    data: { invoiceId, status: "CANCELLED" },
+  });
 }
 
 export type CompanyConfigFormState = {

@@ -19,7 +19,9 @@ export async function GET(request: Request) {
 
     const allowed =
       key.startsWith(`branding/${user.id}/`) ||
+      key.startsWith("branding/mail/") ||
       key.startsWith("cotizaciones/") ||
+      key.startsWith("contracts/") ||
       key.startsWith("mail/");
 
     if (!allowed) {

@@ -1,6 +1,6 @@
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
-import { serializePaymentMethod } from "@/lib/serializers";
+import { serializePaymentMethod, serializeCompanyConfig } from "@/lib/serializers";
 import { ConfigForm } from "./config-form";
 import { PaymentMethodsSettings } from "@/components/empresa/payment-methods-settings";
 
@@ -17,12 +17,12 @@ export default async function ConfiguracionPage() {
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
         <h1 className="text-white text-2xl font-semibold tracking-tight">Configuración</h1>
-        <p className="text-white/40 text-sm mt-1">
+        <p className="text-white/60 text-sm mt-1">
           Datos de la empresa que aparecen en todos los documentos
         </p>
       </div>
 
-      <ConfigForm config={user.config} />
+      <ConfigForm config={serializeCompanyConfig(user.config)} />
       <PaymentMethodsSettings methods={paymentMethods.map(serializePaymentMethod)} />
     </div>
   );

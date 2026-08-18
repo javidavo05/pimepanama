@@ -3,6 +3,7 @@ import OpenAI from "openai";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { calcGptCost } from "@/lib/ai-pricing";
+import { brandSystemPrompt } from "@/lib/ai/pime-brand-voice";
 
 export const runtime = "nodejs";
 
@@ -24,7 +25,16 @@ export async function POST(request: Request) {
     }
 
     const targetLang = to === "en" ? "professional English" : "formal Panamanian Spanish";
-    const systemPrompt = `You are a professional translator for a Panamanian technology company. Translate the provided JSON array of strings from Spanish to ${targetLang}. Preserve technical terms, proper nouns, numbers, and formatting. Return ONLY a valid JSON array with the same number of elements in the same order. No explanations.`;
+    const systemPrompt = brandSystemPrompt(
+      `Translate the provided JSON array of strings into ${targetLang}, for use in an official business document (quote, invoice, contract). Translate meaning and register, not word-for-word — the result should read like it was originally written in the target language by a native business writer, not like a translation.
+
+Rules:
+- Preserve technical terms, proper nouns, company/client names, and numbers exactly.
+- Preserve formatting (line breaks, bullet markers, currency symbols).
+- Match each element's original register (a formal clause stays formal; a short label stays a short label — don't pad a 2-word label into a full sentence).
+- Return ONLY a valid JSON array with the same number of elements in the same order. No explanations, no wrapper object.`,
+      to === "en" ? "en" : "es"
+    );
 
     const start = Date.now();
     const response = await openai.chat.completions.create({

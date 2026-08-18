@@ -1,5 +1,6 @@
 import type { Document, EmpresaUser, CompanyConfig } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { syncQuoteInvoiceBalance } from "@/lib/quote-balance";
 
 export type EmpresaUserWithConfig = EmpresaUser & { config: CompanyConfig | null };
 
@@ -45,6 +46,7 @@ export async function createInvoiceFromQuote(
         data: { content: { ...quoteContent, linkedInvoiceId: existing.id }, linkedDocumentId: existing.id },
       });
     }
+    await syncQuoteInvoiceBalance(quote.id, quote.userId);
     return existing;
   }
 
@@ -97,6 +99,8 @@ export async function createInvoiceFromQuote(
       netAmount: quote.netAmount ?? undefined,
       currency: quote.currency,
       paymentMethodId: quote.paymentMethodId,
+      projectId: quote.projectId ?? undefined,
+      contractId: quote.contractId ?? undefined,
       userId: user.id,
       companyId: user.configId ?? undefined,
       linkedDocumentId: quote.id,

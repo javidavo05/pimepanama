@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { markSchedulePaidAction } from "@/app/(empresa)/empresa/actions";
+import { PdfDownloadButton } from "@/components/empresa/document-builder/pdf-download-button";
+import { PdfPreviewFrame } from "@/components/empresa/document-builder/pdf-preview-frame";
 
 interface Schedule {
   id: string;
@@ -49,15 +52,17 @@ interface Project {
   aiSummary: string | null;
   aiTags: string[];
   createdAt: string;
+  updatedAt: string;
+  hasProposal: boolean;
   client: { id: string; name: string; company: string | null } | null;
   contracts: Contract[];
   documents: Document[];
 }
 
 const CONTRACT_STATUS_COLOR: Record<string, string> = {
-  DRAFT: "bg-white/[0.05] text-white/30 border-white/[0.08]",
+  DRAFT: "bg-white/[0.05] text-white/55 border-white/[0.08]",
   ACTIVE: "bg-green-500/15 text-green-400 border-green-500/20",
-  EXPIRED: "bg-white/[0.05] text-white/40 border-white/[0.10]",
+  EXPIRED: "bg-white/[0.05] text-white/60 border-white/[0.10]",
   TERMINATED: "bg-red-500/15 text-red-400 border-red-500/20",
 };
 const CONTRACT_STATUS_LABEL: Record<string, string> = {
@@ -68,7 +73,7 @@ const SCHEDULE_STATUS_COLOR: Record<string, string> = {
   PENDING: "bg-blue-500/15 text-blue-400 border-blue-500/20",
   OVERDUE: "bg-red-500/15 text-red-400 border-red-500/20",
   PAID: "bg-green-500/15 text-green-400 border-green-500/20",
-  CANCELLED: "bg-white/[0.05] text-white/25 border-white/[0.08]",
+  CANCELLED: "bg-white/[0.05] text-white/50 border-white/[0.08]",
 };
 
 const DOC_TYPE_PATH: Record<string, string> = {
@@ -80,8 +85,11 @@ function fmtUSD(n: number) {
 }
 
 export function ProjectDetailClient({ project }: { project: Project }) {
+  const router = useRouter();
   const [payingId, setPayingId] = useState<string | null>(null);
   const [paidIds, setPaidIds] = useState<Set<string>>(new Set());
+  const [generatingProposal, setGeneratingProposal] = useState(false);
+  const [proposalError, setProposalError] = useState<string | null>(null);
 
   const allSchedules = project.documents.flatMap((d) => d.paymentSchedules);
   const totalScheduled = allSchedules.reduce((s, sc) => s + sc.amount, 0);
@@ -97,6 +105,27 @@ export function ProjectDetailClient({ project }: { project: Project }) {
     }
   }
 
+  async function handleGenerateProposal() {
+    setGeneratingProposal(true);
+    setProposalError(null);
+    try {
+      const res = await fetch(`/api/empresa/projects/${project.id}/ai-expand-proposal`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({}),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error ?? "Error generando la propuesta");
+      }
+      router.refresh();
+    } catch (err) {
+      setProposalError(err instanceof Error ? err.message : "Error generando la propuesta");
+    } finally {
+      setGeneratingProposal(false);
+    }
+  }
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
       {/* Main column */}
@@ -107,23 +136,62 @@ export function ProjectDetailClient({ project }: { project: Project }) {
           <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
             {project.description && (
               <div>
-                <p className="text-white/40 text-[10px] uppercase tracking-widest mb-2">Descripción</p>
+                <p className="text-white/60 text-[10px] uppercase tracking-widest mb-2">Descripción</p>
                 <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{project.description}</p>
               </div>
             )}
             {project.scope && (
               <div>
-                <p className="text-white/40 text-[10px] uppercase tracking-widest mb-2">Alcance</p>
+                <p className="text-white/60 text-[10px] uppercase tracking-widest mb-2">Alcance</p>
                 <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{project.scope}</p>
               </div>
             )}
             {project.aiSummary && (
               <div className="border-t border-white/[0.05] pt-4">
-                <p className="text-white/40 text-[10px] uppercase tracking-widest mb-2">Resumen IA</p>
+                <p className="text-white/60 text-[10px] uppercase tracking-widest mb-2">Resumen IA</p>
                 <p className="text-white/60 text-sm">{project.aiSummary}</p>
               </div>
             )}
           </div>
+        )}
+
+        {/* Propuesta comercial (PDF, estilo design-system) */}
+        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl overflow-hidden">
+          <div className="px-5 py-4 flex items-center justify-between">
+            <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">Propuesta comercial</h3>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleGenerateProposal}
+                disabled={generatingProposal}
+                className="text-[#1AA7F0]/70 text-[10px] hover:text-[#1AA7F0] transition-colors disabled:opacity-40"
+              >
+                {generatingProposal ? "Generando…" : project.hasProposal ? "↻ Regenerar con IA" : "✦ Generar con IA"}
+              </button>
+              {project.hasProposal && (
+                <PdfDownloadButton
+                  url={`/api/empresa/projects/${project.id}/proposal-pdf`}
+                  filename={`Propuesta-${project.name}.pdf`}
+                  label="Descargar"
+                />
+              )}
+            </div>
+          </div>
+          {proposalError && (
+            <div className="px-5 pb-4 text-red-400 text-xs">{proposalError}</div>
+          )}
+          {!project.hasProposal && (
+            <div className="px-5 pb-5 text-white/50 text-sm">
+              Genera el contenido de la propuesta con IA (portada, fases, inversión y cierre en el estilo de Pime) para poder descargarla.
+            </div>
+          )}
+        </div>
+
+        {project.hasProposal && (
+          <PdfPreviewFrame
+            url={`/api/empresa/projects/${project.id}/proposal-pdf`}
+            refreshKey={project.updatedAt}
+            title="Vista previa de la propuesta"
+          />
         )}
 
         {/* Documentos vinculados */}
@@ -136,7 +204,7 @@ export function ProjectDetailClient({ project }: { project: Project }) {
             </Link>
           </div>
           {project.documents.length === 0 ? (
-            <div className="px-5 py-6 text-white/25 text-sm text-center">Sin documentos vinculados</div>
+            <div className="px-5 py-6 text-white/50 text-sm text-center">Sin documentos vinculados</div>
           ) : (
             <div className="divide-y divide-white/[0.04]">
               {project.documents.map((doc) => (
@@ -147,7 +215,7 @@ export function ProjectDetailClient({ project }: { project: Project }) {
                     <span className="text-white/70 text-sm font-mono group-hover:text-[#1AA7F0] transition-colors">
                       {doc.number ?? doc.type}
                     </span>
-                    <span className="text-white/30 text-xs ml-2">{doc.clientName}</span>
+                    <span className="text-white/55 text-xs ml-2">{doc.clientName}</span>
                     {doc.type === "COTIZACION" && doc.status === "ACCEPTED" && !doc.linkedDocumentId && (
                       <span className="ml-2 text-[10px] text-amber-400 border border-amber-500/30 rounded px-1.5 py-0.5">⚠ Sin factura</span>
                     )}
@@ -156,7 +224,7 @@ export function ProjectDetailClient({ project }: { project: Project }) {
                     {doc.total != null && (
                       <span className="text-white/50 text-sm font-mono">${fmtUSD(doc.total)}</span>
                     )}
-                    <span className="text-white/25 text-[10px]">{new Date(doc.issueDate).toLocaleDateString("es-PA")}</span>
+                    <span className="text-white/50 text-[10px]">{new Date(doc.issueDate).toLocaleDateString("es-PA")}</span>
                   </div>
                 </Link>
               ))}
@@ -171,7 +239,7 @@ export function ProjectDetailClient({ project }: { project: Project }) {
               <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">Plan de pagos</h3>
               <div className="text-right">
                 <span className="text-[#C8A96E] text-xs font-mono">${fmtUSD(totalPaid)}</span>
-                <span className="text-white/25 text-xs"> / ${fmtUSD(totalScheduled)}</span>
+                <span className="text-white/50 text-xs"> / ${fmtUSD(totalScheduled)}</span>
               </div>
             </div>
             <div className="divide-y divide-white/[0.04]">
@@ -183,7 +251,7 @@ export function ProjectDetailClient({ project }: { project: Project }) {
                   <div key={sc.id} className="flex items-center justify-between px-5 py-3">
                     <div className="flex-1 min-w-0">
                       <p className="text-white/70 text-sm truncate">{sc.description}</p>
-                      <p className={`text-xs mt-0.5 ${isOverdue ? "text-red-400" : "text-white/30"}`}>
+                      <p className={`text-xs mt-0.5 ${isOverdue ? "text-red-400" : "text-white/55"}`}>
                         {isOverdue ? "Vencido — " : ""}{dueDate.toLocaleDateString("es-PA")}
                       </p>
                     </div>
@@ -215,26 +283,26 @@ export function ProjectDetailClient({ project }: { project: Project }) {
         <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-3">
           {project.totalBudget != null && (
             <div>
-              <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1">Presupuesto</p>
+              <p className="text-white/55 text-[10px] uppercase tracking-widest mb-1">Presupuesto</p>
               <p className="text-[#C8A96E] font-mono text-lg font-semibold">${fmtUSD(project.totalBudget)}</p>
             </div>
           )}
           {project.startDate && (
             <div>
-              <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1">Inicio</p>
+              <p className="text-white/55 text-[10px] uppercase tracking-widest mb-1">Inicio</p>
               <p className="text-white/60 text-sm">{new Date(project.startDate).toLocaleDateString("es-PA")}</p>
             </div>
           )}
           {project.endDate && (
             <div>
-              <p className="text-white/30 text-[10px] uppercase tracking-widest mb-1">Fin estimado</p>
+              <p className="text-white/55 text-[10px] uppercase tracking-widest mb-1">Fin estimado</p>
               <p className="text-white/60 text-sm">{new Date(project.endDate).toLocaleDateString("es-PA")}</p>
             </div>
           )}
           {project.aiTags.length > 0 && (
             <div className="flex flex-wrap gap-1 pt-2 border-t border-white/[0.05]">
               {project.aiTags.map((t) => (
-                <span key={t} className="px-2 py-0.5 text-[10px] rounded border border-white/[0.08] text-white/30">{t}</span>
+                <span key={t} className="px-2 py-0.5 text-[10px] rounded border border-white/[0.08] text-white/55">{t}</span>
               ))}
             </div>
           )}
@@ -248,7 +316,7 @@ export function ProjectDetailClient({ project }: { project: Project }) {
               className="text-[#1AA7F0]/60 text-[10px] hover:text-[#1AA7F0] transition-colors">+ nuevo</Link>
           </div>
           {project.contracts.length === 0 ? (
-            <div className="px-4 py-4 text-white/25 text-xs">Sin contratos</div>
+            <div className="px-4 py-4 text-white/50 text-xs">Sin contratos</div>
           ) : (
             <div className="divide-y divide-white/[0.04]">
               {project.contracts.map((c) => (
@@ -264,7 +332,7 @@ export function ProjectDetailClient({ project }: { project: Project }) {
                     <p className="text-[#C8A96E]/60 text-xs font-mono">${fmtUSD(c.value)}</p>
                   )}
                   {c.responsibilities && (
-                    <p className="text-white/30 text-xs mt-1 truncate">{c.responsibilities}</p>
+                    <p className="text-white/55 text-xs mt-1 truncate">{c.responsibilities}</p>
                   )}
                 </Link>
               ))}

@@ -32,6 +32,16 @@ const TYPE_LABEL: Record<string, string> = {
   BITACORA: "Bitácoras",
   CORREO: "Correos",
 };
+const DOC_STATUS_ES: Record<string, string> = {
+  DRAFT: "Borrador",
+  SENT: "Enviada",
+  ACCEPTED: "Aceptada",
+  REJECTED: "Rechazada",
+  PAID: "Pagada",
+  PARTIALLY_PAID: "Pago parcial",
+  CANCELLED: "Cancelada",
+};
+
 const TYPE_PATH: Record<string, string> = {
   COTIZACION: "cotizaciones",
   FACTURA: "facturas",
@@ -190,7 +200,7 @@ export function ClientCombobox({
             className="absolute inset-0 px-3 py-2.5 text-sm pointer-events-none flex items-center overflow-hidden rounded-lg"
           >
             <span className="invisible whitespace-pre">{value}</span>
-            <span className="text-white/25">{ghostSuffix}</span>
+            <span className="text-white/50">{ghostSuffix}</span>
           </div>
         )}
 
@@ -212,7 +222,7 @@ export function ClientCombobox({
 
         {/* Tab hint */}
         {ghostSuffix && open && (
-          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-white/20 font-mono bg-white/[0.04] px-1 py-0.5 rounded pointer-events-none">
+          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-white/50 font-mono bg-white/[0.04] px-1 py-0.5 rounded pointer-events-none">
             Tab ↹
           </span>
         )}
@@ -238,14 +248,14 @@ export function ClientCombobox({
                   <Highlight text={c.name} query={value} />
                 </p>
                 {c.company && (
-                  <p className="text-white/35 text-xs truncate">
+                  <p className="text-white/55 text-xs truncate">
                     <Highlight text={c.company} query={value} />
                   </p>
                 )}
               </div>
               <div className="text-right shrink-0">
-                {c.ruc && <p className="text-white/25 text-xs font-mono">{c.ruc}</p>}
-                {c.email && <p className="text-white/20 text-[10px] truncate max-w-28">{c.email}</p>}
+                {c.ruc && <p className="text-white/50 text-xs font-mono">{c.ruc}</p>}
+                {c.email && <p className="text-white/50 text-[10px] truncate max-w-28">{c.email}</p>}
               </div>
             </button>
           ))}
@@ -263,7 +273,7 @@ export function ClientCombobox({
                 <span className="flex-none w-5 h-5 rounded-full bg-[#1AA7F0]/15 border border-[#1AA7F0]/30 flex items-center justify-center text-[#1AA7F0] text-xs font-bold">+</span>
                 <div>
                   <p className="text-[#1AA7F0] text-sm font-medium">Crear &ldquo;{value}&rdquo;</p>
-                  <p className="text-white/25 text-xs">Se guardará como nuevo cliente al crear el documento</p>
+                  <p className="text-white/50 text-xs">Se guardará como nuevo cliente al crear el documento</p>
                 </div>
               </button>
             </>
@@ -275,7 +285,7 @@ export function ClientCombobox({
       {selectedClientId && !open && (
         <div className="mt-2 bg-[#0d0d18] border border-white/[0.06] rounded-xl overflow-hidden">
           {historyLoading ? (
-            <div className="px-4 py-3 text-white/25 text-xs">Cargando historial...</div>
+            <div className="px-4 py-3 text-white/50 text-xs">Cargando historial...</div>
           ) : history && history.totalDocs > 0 ? (
             <>
               <div className="px-4 py-2.5 border-b border-white/[0.05] flex items-center justify-between">
@@ -297,24 +307,36 @@ export function ClientCombobox({
                       <p className="text-white/60 text-xs flex items-center gap-1.5">
                         <span>{TYPE_ICON[type] ?? "📄"}</span>
                         <span className="font-medium">{TYPE_LABEL[type] ?? type}</span>
-                        <span className="text-white/30">·</span>
-                        <span className="text-white/30">{data.count}</span>
+                        <span className="text-white/55">·</span>
+                        <span className="text-white/55">{data.count}</span>
                       </p>
-                      <span className="text-white/20 text-[10px]">
-                        último {fmtDate(data.lastDate)}
+                      <span className="text-white/50 text-[10px] flex items-center gap-2">
+                        {data.total > 0 && (
+                          <span className="text-white/70 font-mono">
+                            ${data.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                          </span>
+                        )}
+                        <span>último {fmtDate(data.lastDate)}</span>
                       </span>
                     </div>
                     <div className="space-y-0.5">
                       {data.docs.map((doc) => (
                         <Link
                           key={doc.id}
-                          href={`/empresa/${TYPE_PATH[type] ?? type.toLowerCase()}s/${doc.id}`}
+                          href={`/empresa/${TYPE_PATH[type] ?? `${type.toLowerCase()}s`}/${doc.id}`}
                           className="flex items-center justify-between gap-2 text-[10px] hover:text-white/60 transition-colors group"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <span className="text-white/30 font-mono group-hover:text-[#1AA7F0]/60">{doc.number ?? doc.title.slice(0, 30)}</span>
-                          <span className={`px-1.5 py-0.5 rounded text-[9px] border ${doc.status === "ACCEPTED" || doc.status === "PAID" ? "border-green-500/20 text-green-400/60" : doc.status === "SENT" ? "border-blue-500/20 text-blue-400/60" : doc.status === "REJECTED" ? "border-red-500/20 text-red-400/60" : "border-white/10 text-white/25"}`}>
-                            {doc.status}
+                          <span className="text-white/55 font-mono group-hover:text-[#1AA7F0]/60">{doc.number ?? doc.title.slice(0, 30)}</span>
+                          <span className="flex items-center gap-1.5 shrink-0">
+                            {doc.total != null && Number(doc.total) > 0 && (
+                              <span className="text-white/70 font-mono text-[10px]">
+                                ${Number(doc.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                              </span>
+                            )}
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] border ${doc.status === "ACCEPTED" || doc.status === "PAID" ? "border-green-500/20 text-green-400/60" : doc.status === "SENT" ? "border-blue-500/20 text-blue-400/60" : doc.status === "REJECTED" ? "border-red-500/20 text-red-400/60" : "border-white/10 text-white/50"}`}>
+                              {DOC_STATUS_ES[doc.status] ?? doc.status}
+                            </span>
                           </span>
                         </Link>
                       ))}
@@ -324,7 +346,7 @@ export function ClientCombobox({
               </div>
             </>
           ) : history && history.totalDocs === 0 ? (
-            <div className="px-4 py-3 text-white/20 text-xs flex items-center justify-between">
+            <div className="px-4 py-3 text-white/50 text-xs flex items-center justify-between">
               <span>Sin documentos previos con este cliente</span>
               <Link href={`/empresa/clientes/${selectedClientId}`} className="text-[#1AA7F0]/50 hover:text-[#1AA7F0] transition-colors text-[10px]">
                 Ver perfil →

@@ -24,7 +24,7 @@ function CustomTooltip({ active, payload, label }: any) {
       <p className="text-white/60 font-semibold mb-2">{label}</p>
       <p className="text-[#1AA7F0] font-mono">Bruto: ${payload[0]?.value?.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
       <p className="text-green-400 font-mono">Neto: ${payload[1]?.value?.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
-      <p className="text-white/30 text-xs mt-1">{payload[0]?.payload?.count} cotizaciones aceptadas</p>
+      <p className="text-white/55 text-xs mt-1">{payload[0]?.payload?.count} cotizaciones aceptadas</p>
     </div>
   );
 }
@@ -37,7 +37,7 @@ interface RevenueChartProps {
 export function RevenueChart({ data, title }: RevenueChartProps) {
   if (data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48 text-white/20 text-sm">
+      <div className="flex items-center justify-center h-48 text-white/50 text-sm">
         Sin datos de cotizaciones aceptadas aún
       </div>
     );
@@ -72,7 +72,7 @@ function DashboardTooltip({ active, payload, label }: any) {
       <p className="text-white/60 font-semibold mb-2">{label}</p>
       <p className="text-[#1AA7F0] font-mono">Bruto: ${payload[0]?.value?.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
       <p className="text-green-400 font-mono">Neto: ${payload[1]?.value?.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
-      <p className="text-white/30 text-xs mt-1">{payload[0]?.payload?.count} docs aceptados</p>
+      <p className="text-white/55 text-xs mt-1">{payload[0]?.payload?.count} docs aceptados</p>
     </div>
   );
 }
@@ -88,7 +88,7 @@ export function DashboardRevenueChart({ monthlyData, yearlyData }: DashboardReve
   const isEmpty = monthlyData.length === 0 && yearlyData.length === 0;
   if (isEmpty) {
     return (
-      <div className="flex items-center justify-center h-48 text-white/20 text-sm">
+      <div className="flex items-center justify-center h-48 text-white/50 text-sm">
         Sin ingresos registrados aún
       </div>
     );
@@ -106,7 +106,7 @@ export function DashboardRevenueChart({ monthlyData, yearlyData }: DashboardReve
         <div className="flex gap-1 bg-white/[0.03] rounded-lg p-0.5 border border-white/[0.06]">
           {(["month", "year"] as const).map((v) => (
             <button key={v} onClick={() => setView(v)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${view === v ? "bg-[#1AA7F0]/15 text-[#1AA7F0] border border-[#1AA7F0]/20" : "text-white/30 hover:text-white/60"}`}>
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${view === v ? "bg-[#1AA7F0]/15 text-[#1AA7F0] border border-[#1AA7F0]/20" : "text-white/55 hover:text-white/60"}`}>
               {v === "month" ? "Por mes" : "Por año"}
             </button>
           ))}

@@ -6,6 +6,7 @@ import { useState, useRef } from "react";
 import { createDocumentAction, createClientAction, updateDocumentAction } from "@/app/(empresa)/empresa/actions";
 import { LanguageToggle } from "@/components/empresa/document-builder/language-toggle";
 import { AiEnhanceButton } from "@/components/empresa/document-builder/ai-enhance-button";
+import { DraftPdfPreview } from "@/components/empresa/document-builder/draft-pdf-preview";
 import { ClientCombobox } from "@/components/empresa/client-combobox";
 import {
   clientAttendeesFromProfile,
@@ -80,6 +81,24 @@ export function BitacoraBuilder({
   const rawNotes = watch("rawNotes");
 
   const isEs = language === "es";
+
+  const allValues = useWatch({ control });
+  const previewPayload = {
+    type: "BITACORA" as const,
+    title: allValues.project || "Bitácora",
+    language: allValues.language,
+    clientName: allValues.clientName,
+    issueDate: allValues.meetingDate,
+    content: {
+      project: allValues.project,
+      attendees: allValues.attendees,
+      pimeAttendees: allValues.pimeAttendees,
+      agenda: allValues.agenda,
+      decisions: allValues.decisions,
+      actionItems: allValues.actionItems,
+      nextMeeting: allValues.nextMeeting,
+    },
+  };
 
   async function startRecording() {
     try {
@@ -217,7 +236,7 @@ export function BitacoraBuilder({
                 ? "Nueva Bitácora"
                 : "New Log"}
           </h1>
-          <p className="text-white/40 text-sm mt-1">
+          <p className="text-white/60 text-sm mt-1">
             {mode === "edit" && initialDocument?.number ? (
               <span className="font-mono">{initialDocument.number}</span>
             ) : isEs ? (
@@ -235,7 +254,7 @@ export function BitacoraBuilder({
         <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">
           {isEs ? "Información de la reunión" : "Meeting information"}
         </h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">
               {isEs ? "Proyecto" : "Project"}
@@ -288,7 +307,7 @@ export function BitacoraBuilder({
               placeholder={isEs ? "Juan, María, Pedro..." : "John, Mary, Peter..."}
               className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/40 transition-all"
             />
-            <p className="mt-1 text-[10px] text-white/25">
+            <p className="mt-1 text-[10px] text-white/50">
               {isEs
                 ? "Se completa al elegir un cliente del perfil"
                 : "Filled when selecting a client from the directory"}
@@ -303,7 +322,7 @@ export function BitacoraBuilder({
               placeholder="Javier Vallejo, ..."
               className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/40 transition-all"
             />
-            <p className="mt-1 text-[10px] text-white/25">
+            <p className="mt-1 text-[10px] text-white/50">
               {isEs
                 ? "Javier Vallejo se incluye siempre como responsable"
                 : "Javier Vallejo is always included as owner"}
@@ -320,7 +339,7 @@ export function BitacoraBuilder({
           </h3>
           <div className="flex items-center gap-3">
             {transcribing && (
-              <span className="text-white/40 text-xs animate-pulse">
+              <span className="text-white/60 text-xs animate-pulse">
                 {isEs ? "Transcribiendo..." : "Transcribing..."}
               </span>
             )}
@@ -396,6 +415,8 @@ export function BitacoraBuilder({
           </div>
         ))}
       </div>
+
+      <DraftPdfPreview endpoint="/api/empresa/documents/preview" payload={previewPayload} title={isEs ? "Vista previa del documento" : "Document preview"} />
 
       <div className="flex justify-end gap-3 pt-2">
         <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-white/50 hover:text-white/80 text-sm transition-colors">

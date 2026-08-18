@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { SignaturePreview } from "@/components/empresa/mail/signature-preview";
+import { buildSignatureHtml } from "@/lib/mail/signature";
+import type { CompanyPreview } from "@/components/empresa/mail/email-compose-modal";
 
 interface FormState {
   label: string;
@@ -14,17 +17,22 @@ interface FormState {
   smtpHost: string;
   smtpPort: string;
   smtpTls: boolean;
+  fromName: string;
+  signatureName: string;
+  signatureTitle: string;
+  signatureEnabled: boolean;
 }
 
 interface MailAccountFormProps {
   mode: "create" | "edit";
   accountId?: string;
   initial?: Partial<FormState>;
+  company?: CompanyPreview | null;
 }
 
 const inputCls = "w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 transition-all";
 
-export function MailAccountForm({ mode, accountId, initial }: MailAccountFormProps) {
+export function MailAccountForm({ mode, accountId, initial, company }: MailAccountFormProps) {
   const router = useRouter();
   const [form, setForm] = useState<FormState>({
     label: initial?.label ?? "",
@@ -37,11 +45,39 @@ export function MailAccountForm({ mode, accountId, initial }: MailAccountFormPro
     smtpHost: initial?.smtpHost ?? "",
     smtpPort: initial?.smtpPort ?? "587",
     smtpTls: initial?.smtpTls ?? true,
+    fromName: initial?.fromName ?? "Javier Vallejo",
+    signatureName: initial?.signatureName ?? "Javier Vallejo",
+    signatureTitle: initial?.signatureTitle ?? "",
+    signatureEnabled: initial?.signatureEnabled ?? true,
   });
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [testingSmtp, setTestingSmtp] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; folders?: string[]; error?: string } | null>(null);
+  const [smtpTestResult, setSmtpTestResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [logoOrigin, setLogoOrigin] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") setLogoOrigin(window.location.origin);
+  }, []);
+
+  const signaturePreview = useMemo(() => {
+    if (!form.username) return "";
+    return buildSignatureHtml(
+      {
+        label: form.label,
+        username: form.username,
+        fromName: form.fromName,
+        signatureName: form.signatureName,
+        signatureTitle: form.signatureTitle || null,
+        signatureEnabled: form.signatureEnabled,
+        signatureHtml: null,
+      },
+      company ?? null,
+      { logoOrigin: logoOrigin || undefined }
+    );
+  }, [form, company, logoOrigin]);
 
   function set(k: keyof FormState, v: string | boolean) {
     setForm((f) => ({ ...f, [k]: v }));
@@ -72,6 +108,21 @@ export function MailAccountForm({ mode, accountId, initial }: MailAccountFormPro
     }
   }
 
+  async function handleTestSmtp() {
+    if (mode !== "edit" || !accountId) return;
+    setTestingSmtp(true);
+    setSmtpTestResult(null);
+    try {
+      const res = await fetch(`/api/empresa/mail/accounts/${accountId}/test-smtp`, { method: "POST" });
+      const data = await res.json();
+      setSmtpTestResult(res.ok ? "Correo de prueba enviado vía Resend" : (data.error ?? "Error Resend"));
+    } catch {
+      setSmtpTestResult("Error de red");
+    } finally {
+      setTestingSmtp(false);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
@@ -89,6 +140,10 @@ export function MailAccountForm({ mode, accountId, initial }: MailAccountFormPro
         smtpHost: form.smtpHost || undefined,
         smtpPort: parseInt(form.smtpPort),
         smtpTls: form.smtpTls,
+        fromName: form.fromName || undefined,
+        signatureName: form.signatureName || undefined,
+        signatureTitle: form.signatureTitle || undefined,
+        signatureEnabled: form.signatureEnabled,
       };
       if (form.password) body.password = form.password;
 
@@ -157,13 +212,13 @@ export function MailAccountForm({ mode, accountId, initial }: MailAccountFormPro
           <div className="flex gap-2">
             {[["PASSWORD", "Contraseña normal"], ["PASSWORD_APP", "Contraseña de aplicación (recomendada)"]].map(([val, lab]) => (
               <button key={val} type="button" onClick={() => set("credType", val)}
-                className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${form.credType === val ? "bg-[#1AA7F0]/10 border-[#1AA7F0]/30 text-[#1AA7F0]" : "border-white/[0.07] text-white/40 hover:text-white/60"}`}>
+                className={`px-3 py-1.5 rounded-lg text-xs border transition-all ${form.credType === val ? "bg-[#1AA7F0]/10 border-[#1AA7F0]/30 text-[#1AA7F0]" : "border-white/[0.07] text-white/60 hover:text-white/60"}`}>
                 {lab}
               </button>
             ))}
           </div>
           {form.credType === "PASSWORD_APP" && (
-            <p className="text-white/25 text-xs mt-2">Para Gmail: Configuración → Seguridad → Contraseñas de aplicación</p>
+            <p className="text-white/50 text-xs mt-2">Para Gmail: Configuración → Seguridad → Contraseñas de aplicación</p>
           )}
         </div>
 
@@ -213,9 +268,38 @@ export function MailAccountForm({ mode, accountId, initial }: MailAccountFormPro
         </div>
       </div>
 
-      {/* SMTP */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
-        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">Servidor de salida (SMTP) — opcional, para responder correos</h3>
+      {/* Envío vía Resend (global) */}
+      <div className="bg-[#0a0a10] border border-[#1AA7F0]/15 rounded-xl p-5 space-y-3">
+        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">Envío saliente (Resend)</h3>
+        <p className="text-white/50 text-sm leading-relaxed">
+          Los correos se envían vía <strong className="text-white/70">Resend</strong> con tracking de entrega y apertura.
+          El correo/usuario de esta cuenta se usa como remitente si el dominio está verificado en Resend; si no, se usa <code className="text-white/60">RESEND_FROM</code>.
+        </p>
+        <p className="text-white/45 text-xs">
+          Configura <code className="text-white/55">RESEND_API_KEY</code>, <code className="text-white/55">RESEND_FROM</code> y el webhook en Vercel. El username debe ser del dominio verificado (ej. javier@pimepanama.com).
+        </p>
+        {mode === "edit" && accountId && (
+          <button
+            type="button"
+            onClick={handleTestSmtp}
+            disabled={testingSmtp}
+            className="px-4 py-2 text-xs border border-[#1AA7F0]/25 text-[#1AA7F0] rounded-lg hover:bg-[#1AA7F0]/10 disabled:opacity-50"
+          >
+            {testingSmtp ? "Enviando prueba..." : "Probar envío Resend"}
+          </button>
+        )}
+        {smtpTestResult && (
+          <p className={`text-xs ${smtpTestResult.startsWith("Error") ? "text-red-400" : "text-green-400"}`}>
+            {smtpTestResult}
+          </p>
+        )}
+      </div>
+
+      {/* SMTP legacy (opcional) */}
+      <details className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
+        <summary className="text-white/50 text-xs uppercase tracking-widest font-medium cursor-pointer">
+          SMTP legacy (opcional, ya no usado para enviar)
+        </summary>
         <div className="grid grid-cols-3 gap-3">
           <div className="col-span-2">
             <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">Servidor SMTP</label>
@@ -233,7 +317,51 @@ export function MailAccountForm({ mode, accountId, initial }: MailAccountFormPro
           </button>
           <span className="text-white/50 text-sm">STARTTLS / TLS activo</span>
         </div>
-      </div>
+        {mode === "edit" && accountId && form.smtpHost && (
+          <button
+            type="button"
+            onClick={handleTestSmtp}
+            disabled={testingSmtp}
+            className="px-4 py-2 text-xs border border-white/[0.08] text-white/60 rounded-lg hover:bg-white/[0.04] disabled:opacity-50"
+          >
+            {testingSmtp ? "Enviando..." : "Probar SMTP legacy"}
+          </button>
+        )}
+        {smtpTestResult && form.smtpHost && (
+          <p className={`text-xs ${smtpTestResult.includes("enviado") || smtpTestResult.includes("ok") ? "text-green-400" : "text-red-400"}`}>
+            {smtpTestResult}
+          </p>
+        )}
+      </details>
+
+      {form.username && (
+        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
+          <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">Firma de correo</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">Nombre en firma</label>
+              <input value={form.signatureName} onChange={(e) => set("signatureName", e.target.value)} className={inputCls} />
+            </div>
+            <div>
+              <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">Cargo / título</label>
+              <input value={form.signatureTitle} onChange={(e) => set("signatureTitle", e.target.value)} placeholder="Director General" className={inputCls} />
+            </div>
+            <div>
+              <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">Nombre remitente (From)</label>
+              <input value={form.fromName} onChange={(e) => set("fromName", e.target.value)} className={inputCls} />
+            </div>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-white/60">
+            <input
+              type="checkbox"
+              checked={form.signatureEnabled}
+              onChange={(e) => set("signatureEnabled", e.target.checked)}
+            />
+            Incluir firma en correos enviados
+          </label>
+          {signaturePreview && <SignaturePreview html={signaturePreview} />}
+        </div>
+      )}
 
       {error && <p className="text-red-400 text-sm">{error}</p>}
 

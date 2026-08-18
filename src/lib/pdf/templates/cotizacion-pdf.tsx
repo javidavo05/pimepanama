@@ -1,6 +1,6 @@
 import { Document, Page, View, StyleSheet } from "@react-pdf/renderer";
 import { pageStyles, COLORS, FONTS, SPACING } from "../tokens";
-import { t, fmtDate, type PdfLang } from "../translations";
+import { t, fmtDate, documentStatusLabel, documentStatusVariant, type PdfLang } from "../translations";
 import { DocumentHeader } from "../components/document-header";
 import { ClientBlock } from "../components/client-block";
 import { LineItemsTable } from "../components/line-items-table";
@@ -8,15 +8,16 @@ import { NotesBlock } from "../components/notes-block";
 import { PaymentInfoBlock } from "../components/payment-info-block";
 import { SignatureBlock } from "../components/signature-block";
 import { DocumentFooter } from "../components/document-footer";
-import type { Document as PrismaDocument, CompanyConfig } from "@prisma/client";
+import type { Document as PrismaDocument, CompanyConfig, PaymentMethod } from "@prisma/client";
+import { buildPdfPaymentMethods } from "../payment-methods";
 
 const s = StyleSheet.create({
   // LAW: size must be LETTER (8.5" × 11"). NEVER A4.
   page: {
     ...pageStyles.page,
-    fontFamily: FONTS.regular,
-    backgroundColor: COLORS.bg,
-    color: COLORS.text,
+    fontFamily: FONTS.body,
+    backgroundColor: COLORS.white,
+    color: COLORS.ink,
     paddingBottom: 70,
   },
   body: {
@@ -32,9 +33,10 @@ interface CotizacionPdfProps {
   doc: PrismaDocument;
   company: Partial<CompanyConfig> | null;
   logoSrc: string;
+  paymentMethods?: PaymentMethod[];
 }
 
-export function CotizacionPdf({ doc, company, logoSrc }: CotizacionPdfProps) {
+export function CotizacionPdf({ doc, company, logoSrc, paymentMethods = [] }: CotizacionPdfProps) {
   const lang = (doc.language as PdfLang) ?? "es";
   const tr = t(lang);
   const content = doc.content as Record<string, unknown>;
@@ -42,6 +44,7 @@ export function CotizacionPdf({ doc, company, logoSrc }: CotizacionPdfProps) {
   const notes = content?.notes as string | undefined;
   const terms = content?.terms as string | undefined;
   const currency = (doc.currency as string) ?? "USD";
+  const pdfPaymentMethods = buildPdfPaymentMethods(paymentMethods);
 
   return (
     <Document
@@ -55,6 +58,8 @@ export function CotizacionPdf({ doc, company, logoSrc }: CotizacionPdfProps) {
           docLabel={tr.quote}
           docNumber={doc.number}
           logoSrc={logoSrc}
+          statusLabel={documentStatusLabel(doc.status, lang)}
+          statusVariant={documentStatusVariant(doc.status)}
         />
         <View style={s.body}>
           <ClientBlock
@@ -78,7 +83,7 @@ export function CotizacionPdf({ doc, company, logoSrc }: CotizacionPdfProps) {
           <NotesBlock label={tr.notes} text={notes} />
           <NotesBlock label={tr.terms} text={terms} />
           <View style={s.spacer} />
-          <PaymentInfoBlock tr={tr} />
+          <PaymentInfoBlock tr={tr} methods={pdfPaymentMethods} />
           <SignatureBlock
             tr={tr}
             showAcceptance

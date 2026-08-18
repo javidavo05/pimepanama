@@ -3,6 +3,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 
 import { AboutSection } from "@/components/landing/about-section";
 import { AffordableSection } from "@/components/landing/affordable-section";
+import { CallToActionSection, DEFAULT_BOOKING_CTAS } from "@/components/landing/cta-section";
 import { ContactForm } from "@/components/landing/contact-form";
 import { DifferentiatorsSection } from "@/components/landing/differentiators-section";
 import { HeroSection } from "@/components/landing/hero-section";
@@ -223,6 +224,15 @@ export default async function HomePage() {
         />
       ) : null}
       <AboutSection locale={locale} />
+      <CallToActionSection
+        heading={locale === "es" ? "¿Listo para empezar?" : "Ready to get started?"}
+        subheading={
+          locale === "es"
+            ? "Agenda una consulta o escríbenos directamente."
+            : "Book a consultation or reach out directly."
+        }
+        ctas={DEFAULT_BOOKING_CTAS[locale === "es" ? "es" : "en"]}
+      />
       <section
         id="contact"
         className="relative overflow-hidden px-6 py-24"

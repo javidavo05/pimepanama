@@ -1,4 +1,4 @@
-import type { PaymentMethod, Document, Project, Contract, PaymentSchedule } from "@prisma/client";
+import type { PaymentMethod, Document, Project, Contract, PaymentSchedule, Lead, CompanyConfig } from "@prisma/client";
 
 // Prisma Decimal cannot cross the Server→Client boundary in Next.js.
 // These serialized types replace Decimal with number so they can be passed as props.
@@ -45,6 +45,27 @@ export function serializePaymentMethod(pm: PaymentMethod): SerializedPaymentMeth
     commissionPct: Number(pm.commissionPct),
     commissionFlat: Number(pm.commissionFlat),
     commissionTax: Number(pm.commissionTax),
+  };
+}
+
+export type SerializedCompanyConfig = Omit<
+  CompanyConfig,
+  "taxRatePercent" | "createdAt" | "updatedAt"
+> & {
+  taxRatePercent: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export function serializeCompanyConfig(
+  config: CompanyConfig | null
+): SerializedCompanyConfig | null {
+  if (!config) return null;
+  return {
+    ...config,
+    taxRatePercent: Number(config.taxRatePercent),
+    createdAt: config.createdAt.toISOString(),
+    updatedAt: config.updatedAt.toISOString(),
   };
 }
 
@@ -102,6 +123,28 @@ export function serializeSchedule(s: PaymentSchedule): SerializedSchedule {
     dueDate: s.dueDate.toISOString(),
     paidAt: s.paidAt?.toISOString() ?? null,
     createdAt: s.createdAt.toISOString(),
+  };
+}
+
+export type SerializedLead = Omit<
+  Lead,
+  "estimatedValue" | "nextFollowUpAt" | "convertedAt" | "createdAt" | "updatedAt"
+> & {
+  estimatedValue: number | null;
+  nextFollowUpAt: string | null;
+  convertedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export function serializeLead(l: Lead): SerializedLead {
+  return {
+    ...l,
+    estimatedValue: l.estimatedValue != null ? Number(l.estimatedValue) : null,
+    nextFollowUpAt: l.nextFollowUpAt?.toISOString() ?? null,
+    convertedAt: l.convertedAt?.toISOString() ?? null,
+    createdAt: l.createdAt.toISOString(),
+    updatedAt: l.updatedAt.toISOString(),
   };
 }
 

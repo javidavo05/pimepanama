@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { serializeProject } from "@/lib/serializers";
+import { PdfDownloadButton } from "@/components/empresa/document-builder/pdf-download-button";
+import { ContractSigningPanel } from "@/components/pimesign/contract-signing-panel";
 import { ContractForm } from "../nuevo/contract-form";
 
 export const dynamic = "force-dynamic";
@@ -15,8 +17,8 @@ export default async function ContratoDetailPage({ params }: { params: Promise<{
     prisma.contract.findFirst({
       where: { id, userId: user.id },
       include: {
-        client: { select: { id: true, name: true, company: true } },
-        project: { select: { id: true, name: true } },
+        client: { select: { id: true, name: true, company: true, email: true } },
+        project: { select: { id: true, name: true, description: true, proposalContent: true } },
         documents: {
           select: { id: true, type: true, number: true, status: true, total: true, issueDate: true },
           orderBy: { createdAt: "desc" },
@@ -37,16 +39,23 @@ export default async function ContratoDetailPage({ params }: { params: Promise<{
     endsAt: contract.endsAt?.toISOString() ?? null,
     createdAt: contract.createdAt.toISOString(),
     updatedAt: contract.updatedAt.toISOString(),
+    htmlContent: contract.htmlContent,
     client: contract.client,
     project: contract.project,
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="flex items-center gap-2 mb-5 text-sm">
-        <Link href="/empresa/contratos" className="text-white/40 hover:text-white/70 transition-colors">Contratos</Link>
-        <span className="text-white/20">/</span>
-        <span className="text-white/60 truncate max-w-xs">{contract.title}</span>
+    <div className="max-w-6xl mx-auto">
+      <div className="flex items-center justify-between gap-2 mb-5 text-sm">
+        <div className="flex items-center gap-2">
+          <Link href="/empresa/contratos" className="text-white/60 hover:text-white/70 transition-colors">Contratos</Link>
+          <span className="text-white/50">/</span>
+          <span className="text-white/60 truncate max-w-xs">{contract.title}</span>
+        </div>
+        <PdfDownloadButton
+          url={`/api/empresa/contracts/${contract.id}/pdf?inline=1`}
+          filename={`Contrato-${contract.title}.pdf`}
+        />
       </div>
 
       <ContractForm
@@ -54,6 +63,13 @@ export default async function ContratoDetailPage({ params }: { params: Promise<{
         projects={projects.map(serializeProject)}
         mode="edit"
         initial={serialized}
+        signingManaged={!!contract.signingStatus && ["PENDING_CLIENT", "PENDING_COMPANY", "COMPLETED"].includes(contract.signingStatus)}
+      />
+
+      <ContractSigningPanel
+        contractId={contract.id}
+        clientEmail={contract.client?.email}
+        signingStatus={contract.signingStatus}
       />
 
       {contract.documents.length > 0 && (
@@ -67,7 +83,7 @@ export default async function ContratoDetailPage({ params }: { params: Promise<{
                 href={`/empresa/${d.type === "FACTURA" ? "facturas" : "cotizaciones"}/${d.id}`}
                 className="flex items-center justify-between px-5 py-3 hover:bg-white/[0.02] transition-colors text-sm">
                 <span className="text-white/60 font-mono">{d.number ?? d.type}</span>
-                <span className="text-white/30 text-xs">{new Date(d.issueDate).toLocaleDateString("es-PA")}</span>
+                <span className="text-white/55 text-xs">{new Date(d.issueDate).toLocaleDateString("es-PA")}</span>
               </Link>
             ))}
           </div>

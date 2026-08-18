@@ -48,10 +48,10 @@ export function DocumentRowActions({
   }
 
   return (
-    <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div className="flex items-center justify-end gap-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
       <Link
         href={editHref}
-        className="text-white/40 hover:text-white/80 text-xs transition-colors"
+        className="text-white/60 hover:text-white/80 text-xs transition-colors"
       >
         {editLabel}
       </Link>

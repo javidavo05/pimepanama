@@ -6,7 +6,8 @@ const CONFIG: Record<DocumentStatus, { label: string; className: string }> = {
   ACCEPTED: { label: "Aceptado", className: "text-green-400 bg-green-500/10 border-green-500/20" },
   REJECTED: { label: "Rechazado", className: "text-red-400 bg-red-500/10 border-red-500/20" },
   PAID: { label: "Pagado", className: "text-[#C8A96E] bg-[#C8A96E]/10 border-[#C8A96E]/20" },
-  CANCELLED: { label: "Cancelado", className: "text-white/30 bg-white/[0.03] border-white/[0.05]" },
+  PARTIALLY_PAID: { label: "Pago parcial", className: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
+  CANCELLED: { label: "Cancelado", className: "text-white/55 bg-white/[0.03] border-white/[0.05]" },
 };
 
 export function StatusBadge({ status }: { status: DocumentStatus }) {

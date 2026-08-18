@@ -1,0 +1,175 @@
+@font-face { font-family:'Inter'; font-weight:300; src:url('assets/fonts/inter-latin-300-normal.woff2') format('woff2'); }
+@font-face { font-family:'Inter'; font-weight:400; src:url('assets/fonts/inter-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family:'Inter'; font-weight:500; src:url('assets/fonts/inter-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family:'Inter'; font-weight:600; src:url('assets/fonts/inter-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family:'Inter'; font-weight:700; src:url('assets/fonts/inter-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family:'Inter'; font-weight:800; src:url('assets/fonts/inter-latin-800-normal.woff2') format('woff2'); }
+@font-face { font-family:'Inter'; font-weight:900; src:url('assets/fonts/inter-latin-900-normal.woff2') format('woff2'); }
+@font-face { font-family:'Manrope'; font-weight:500; src:url('assets/fonts/manrope-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family:'Manrope'; font-weight:600; src:url('assets/fonts/manrope-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family:'Manrope'; font-weight:700; src:url('assets/fonts/manrope-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family:'Manrope'; font-weight:800; src:url('assets/fonts/manrope-latin-800-normal.woff2') format('woff2'); }
+
+:root{
+  --blue:#0586FE;
+  --purple:#552EFF;
+  --ink:#0B0D14;
+  --ink-soft:#1B1F2B;
+  --slate:#4B5468;
+  --slate-light:#8A93A6;
+  --line:#E7E9EF;
+  --paper:#FCFCFD;
+  --panel:#F5F6F9;
+  --white:#FFFFFF;
+  --grad: linear-gradient(120deg, var(--blue) 0%, var(--purple) 100%);
+}
+
+*{ box-sizing:border-box; margin:0; padding:0; }
+
+html,body{
+  font-family:'Inter', sans-serif;
+  color:var(--ink);
+  background:var(--white);
+  -webkit-font-smoothing:antialiased;
+}
+
+.page{
+  width:210mm;
+  min-height:297mm;
+  position:relative;
+  page-break-after:always;
+  overflow:hidden;
+  background:var(--white);
+}
+.page:last-child{ page-break-after:auto; }
+
+.pad{ padding:20mm 18mm 18mm 18mm; }
+
+/* ---------- Typography ---------- */
+h1,h2,h3,h4{ font-family:'Manrope', sans-serif; color:var(--ink); letter-spacing:-0.02em; }
+.eyebrow{
+  font-family:'Inter', sans-serif;
+  font-weight:700;
+  font-size:9.5pt;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--blue);
+  display:flex; align-items:center; gap:8px;
+}
+.eyebrow::before{
+  content:''; width:16px; height:2px; background:var(--grad); display:inline-block; border-radius:2px;
+}
+.section-title{
+  font-size:24pt;
+  font-weight:800;
+  line-height:1.15;
+  margin-top:6px;
+}
+.section-sub{
+  font-size:10.5pt;
+  color:var(--slate);
+  font-weight:400;
+  line-height:1.6;
+  margin-top:10px;
+  max-width:145mm;
+}
+p.body{ font-size:9.6pt; line-height:1.7; color:var(--slate); font-weight:400; }
+
+/* ---------- Header / footer for content pages ---------- */
+.doc-header{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:11mm 18mm 6mm 18mm;
+  border-bottom:1px solid var(--line);
+}
+.doc-header .brand{ display:flex; align-items:center; gap:8px; }
+.doc-header .brand img{ height:16px; }
+.doc-header .brand span{ font-family:'Manrope'; font-weight:800; font-size:11pt; letter-spacing:-0.01em; }
+.doc-header .tag{ font-size:8pt; color:var(--slate-light); font-weight:600; letter-spacing:0.06em; text-transform:uppercase; }
+
+.doc-footer{
+  position:absolute; bottom:0; left:0; right:0;
+  display:flex; justify-content:space-between; align-items:center;
+  padding:6mm 18mm 9mm 18mm;
+  border-top:1px solid var(--line);
+  font-size:7.6pt; color:var(--slate-light); font-weight:500;
+}
+.doc-footer .dot{ color:var(--blue); }
+
+/* ---------- Cards / grids ---------- */
+.grid2{ display:grid; grid-template-columns:1fr 1fr; gap:5mm; }
+.grid3{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:5mm; }
+.grid4{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:4.5mm; }
+
+.card{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:10px;
+  padding:6mm;
+}
+.card h4{ font-size:11pt; font-weight:700; margin-bottom:2mm; }
+.card p{ font-size:8.7pt; color:var(--slate); line-height:1.6; }
+
+.icon-chip{
+  width:9mm; height:9mm; border-radius:8px;
+  background:var(--grad);
+  display:flex; align-items:center; justify-content:center;
+  margin-bottom:3.5mm;
+  color:white; font-family:'Manrope'; font-weight:800; font-size:11pt;
+}
+
+.num-chip{
+  width:8mm; height:8mm; border-radius:50%;
+  border:1.4px solid var(--blue);
+  color:var(--blue);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Manrope'; font-weight:800; font-size:9.5pt;
+  flex:none;
+}
+
+.pill{
+  display:inline-block;
+  padding:2.4mm 4mm;
+  border-radius:20px;
+  background:var(--ink);
+  color:white;
+  font-size:7.8pt;
+  font-weight:700;
+  letter-spacing:0.04em;
+}
+.pill.outline{ background:transparent; border:1px solid var(--line); color:var(--slate); }
+.pill.grad{ background:var(--grad); }
+
+hr.sep{ border:none; border-top:1px solid var(--line); margin:6mm 0; }
+
+table.clean{ width:100%; border-collapse:collapse; }
+table.clean th{
+  text-align:left; font-size:7.8pt; text-transform:uppercase; letter-spacing:0.06em;
+  color:var(--slate-light); font-weight:700; padding:3mm 3mm; border-bottom:1.4px solid var(--ink);
+}
+table.clean td{
+  font-size:9pt; color:var(--ink-soft); padding:3.6mm 3mm; border-bottom:1px solid var(--line); vertical-align:top;
+}
+table.clean tr:last-child td{ border-bottom:none; }
+
+.check-list{ list-style:none; }
+.check-list li{
+  display:flex; align-items:flex-start; gap:2.6mm;
+  font-size:8.9pt; color:var(--ink-soft); line-height:1.55; margin-bottom:2.4mm; font-weight:500;
+}
+.check-list li::before{
+  content:''; width:4mm; height:4mm; margin-top:0.9mm; flex:none; border-radius:4px;
+  background:var(--grad);
+}
+.x-list{ list-style:none; }
+.x-list li{
+  display:flex; align-items:flex-start; gap:2.6mm;
+  font-size:8.9pt; color:var(--slate); line-height:1.55; margin-bottom:2.4mm; font-weight:500;
+}
+.x-list li::before{
+  content:''; width:4mm; height:4mm; margin-top:0.9mm; flex:none; border-radius:4px;
+  background:var(--slate-light); opacity:0.4;
+}
+
+.page-index{
+  position:absolute; top:12mm; right:18mm; font-size:8pt; color:var(--slate-light); font-weight:600;
+}

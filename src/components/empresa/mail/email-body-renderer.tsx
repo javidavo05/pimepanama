@@ -15,10 +15,14 @@ export function EmailBodyRenderer({ body, emailId, onBodyUpdated }: EmailBodyRen
   const [viewMode, setViewMode] = useState<"html" | "text">("html");
   const [resyncing, setResyncing] = useState(false);
   const [resyncError, setResyncError] = useState<string | null>(null);
+  const [renderVersion, setRenderVersion] = useState(0);
 
   const html = body && isHtmlEmail(body) ? body : null;
   const showModeToggle = !!html;
   const showResync = !!emailId && !html;
+  const iframeSrc = emailId
+    ? `/api/empresa/mail/inbox/${emailId}/render?v=${renderVersion}`
+    : null;
 
   const updateHeight = useCallback(() => {
     try {
@@ -35,12 +39,14 @@ export function EmailBodyRenderer({ body, emailId, onBodyUpdated }: EmailBodyRen
     iframe.addEventListener("load", updateHeight);
     const timer = setTimeout(updateHeight, 800);
     const timer2 = setTimeout(updateHeight, 2000);
+    const timer3 = setTimeout(updateHeight, 5000);
     return () => {
       iframe.removeEventListener("load", updateHeight);
       clearTimeout(timer);
       clearTimeout(timer2);
+      clearTimeout(timer3);
     };
-  }, [updateHeight, html]);
+  }, [updateHeight, html, renderVersion, iframeSrc]);
 
   async function handleResyncBody() {
     if (!emailId) return;
@@ -55,6 +61,7 @@ export function EmailBodyRenderer({ body, emailId, onBodyUpdated }: EmailBodyRen
       }
       if (data.bodyText && isHtmlEmail(data.bodyText)) {
         onBodyUpdated?.(data.bodyText);
+        setRenderVersion((v) => v + 1);
         setViewMode("html");
       } else if (data.upgraded === 0) {
         setResyncError(
@@ -71,7 +78,7 @@ export function EmailBodyRenderer({ body, emailId, onBodyUpdated }: EmailBodyRen
   }
 
   if (!body) {
-    return <p className="text-white/25 text-sm italic">(Sin contenido)</p>;
+    return <p className="text-white/50 text-sm italic">(Sin contenido)</p>;
   }
 
   if (!html || viewMode === "text") {
@@ -118,10 +125,10 @@ export function EmailBodyRenderer({ body, emailId, onBodyUpdated }: EmailBodyRen
     <div>
       {showModeToggle && (
         <div className="flex items-center justify-between mb-3">
-          <span className="text-white/25 text-xs">Correo HTML</span>
+          <span className="text-white/50 text-xs">Correo HTML</span>
           <button
             onClick={() => setViewMode("text")}
-            className="text-[10px] text-white/30 hover:text-white/60 transition-colors"
+            className="text-[10px] text-white/55 hover:text-white/60 transition-colors"
           >
             Ver texto plano
           </button>
@@ -130,7 +137,8 @@ export function EmailBodyRenderer({ body, emailId, onBodyUpdated }: EmailBodyRen
       <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white w-full min-w-0">
         <iframe
           ref={iframeRef}
-          srcDoc={buildEmailSrcDoc(html)}
+          src={iframeSrc ?? undefined}
+          srcDoc={iframeSrc ? undefined : buildEmailSrcDoc(html, { proxyImages: true })}
           sandbox="allow-same-origin allow-popups"
           className="w-full min-w-0"
           style={{ height: `${height}px`, border: "none", display: "block" }}

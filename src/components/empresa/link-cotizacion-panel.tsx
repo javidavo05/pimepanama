@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { linkDocumentsAction } from "@/app/(empresa)/empresa/actions";
 import Link from "next/link";
 
@@ -17,6 +18,7 @@ interface LinkCotizacionPanelProps {
 }
 
 export function LinkCotizacionPanel({ facturaId, cotizaciones }: LinkCotizacionPanelProps) {
+  const router = useRouter();
   const [selected, setSelected] = useState("");
   const [pending, startTransition] = useTransition();
   const [done, setDone] = useState(false);
@@ -26,6 +28,7 @@ export function LinkCotizacionPanel({ facturaId, cotizaciones }: LinkCotizacionP
     startTransition(async () => {
       await linkDocumentsAction(facturaId, selected);
       setDone(true);
+      router.refresh();
     });
   }
 
@@ -33,7 +36,7 @@ export function LinkCotizacionPanel({ facturaId, cotizaciones }: LinkCotizacionP
     return (
       <div className="bg-[#0a0a10] border border-green-500/20 rounded-xl p-5">
         <p className="text-green-400 text-sm font-medium">✓ Cotización vinculada correctamente</p>
-        <p className="text-white/30 text-xs mt-1">Recarga la página para ver el pipeline actualizado.</p>
+        <p className="text-white/55 text-xs mt-1">Recarga la página para ver el pipeline actualizado.</p>
       </div>
     );
   }
@@ -44,7 +47,7 @@ export function LinkCotizacionPanel({ facturaId, cotizaciones }: LinkCotizacionP
         <span className="text-amber-400 text-sm">⚠</span>
         <p className="text-white/70 text-sm font-medium">Factura sin cotización vinculada</p>
       </div>
-      <p className="text-white/40 text-xs">
+      <p className="text-white/60 text-xs">
         Para un pipeline completo, vincula esta factura a su cotización de origen.
       </p>
 
@@ -60,6 +63,7 @@ export function LinkCotizacionPanel({ facturaId, cotizaciones }: LinkCotizacionP
           <select
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
+            aria-label="Cotización a vincular"
             className="flex-1 bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all"
           >
             <option value="">Seleccionar cotización...</option>

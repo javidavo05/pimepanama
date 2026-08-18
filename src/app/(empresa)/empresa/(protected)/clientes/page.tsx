@@ -31,7 +31,7 @@ export default async function ClientesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-white text-2xl font-semibold tracking-tight">Clientes</h1>
-          <p className="text-white/40 text-sm mt-1">
+          <p className="text-white/60 text-sm mt-1">
             {clients.length} clientes · Ingresos (facturas pagadas):{" "}
             <span className="text-[#1AA7F0] font-mono">
               ${totalGross.toLocaleString("en-US", { minimumFractionDigits: 2 })}
@@ -48,7 +48,7 @@ export default async function ClientesPage() {
 
       {clients.length === 0 ? (
         <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-16 text-center">
-          <p className="text-white/30 text-sm">
+          <p className="text-white/55 text-sm">
             Los clientes se crean automáticamente al guardar cotizaciones o facturas con
             &ldquo;Guardar como nuevo cliente&rdquo;, o puedes agregarlos al importar cotizaciones antiguas.
           </p>
@@ -70,7 +70,7 @@ export default async function ClientesPage() {
                 ].map((h) => (
                   <th
                     key={h}
-                    className="text-left text-white/40 text-xs uppercase tracking-widest font-medium px-5 py-3"
+                    className="text-left text-white/60 text-xs uppercase tracking-widest font-medium px-5 py-3"
                   >
                     {h}
                   </th>
@@ -82,7 +82,7 @@ export default async function ClientesPage() {
                 <tr key={c.id} className="group hover:bg-white/[0.02] transition-colors">
                   <td className="px-5 py-4">
                     <p className="text-white font-medium">{c.name}</p>
-                    {c.email && <p className="text-white/30 text-xs">{c.email}</p>}
+                    {c.email && <p className="text-white/55 text-xs">{c.email}</p>}
                   </td>
                   <td className="px-5 py-4 text-white/50 text-sm">{c.company ?? "—"}</td>
                   <td className="px-5 py-4 text-white/50 font-mono text-sm">{c.totalQuotes}</td>
@@ -90,7 +90,7 @@ export default async function ClientesPage() {
                   <td className="px-5 py-4">
                     <span className="text-green-400 font-mono text-sm">{c.paidInvoices}</span>
                     {c.totalInvoices > 0 && (
-                      <span className="text-white/20 text-xs ml-1">
+                      <span className="text-white/50 text-xs ml-1">
                         ({Math.round((c.paidInvoices / c.totalInvoices) * 100)}%)
                       </span>
                     )}
@@ -108,7 +108,7 @@ export default async function ClientesPage() {
                   <td className="px-5 py-4">
                     <Link
                       href={`/empresa/clientes/${c.id}`}
-                      className="text-white/30 hover:text-white/70 text-xs opacity-0 group-hover:opacity-100 transition-all"
+                      className="text-white/55 hover:text-white/70 text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all"
                     >
                       Ver historial →
                     </Link>

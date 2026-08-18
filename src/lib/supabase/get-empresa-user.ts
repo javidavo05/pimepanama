@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "./server";
 import { prisma } from "@/lib/prisma";
@@ -7,7 +8,10 @@ export type EmpresaUserWithConfig = EmpresaUser & {
   config: CompanyConfig | null;
 };
 
-export async function getEmpresaUser(): Promise<EmpresaUserWithConfig> {
+// cache() dedupes this across layout + page within the same request — sin
+// esto, cada página protegida repetía la llamada a Supabase auth.getUser()
+// y la consulta a Prisma una vez por layout y otra vez por page.
+export const getEmpresaUser = cache(async (): Promise<EmpresaUserWithConfig> => {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -36,4 +40,4 @@ export async function getEmpresaUser(): Promise<EmpresaUserWithConfig> {
   }
 
   return empresaUser;
-}
+});

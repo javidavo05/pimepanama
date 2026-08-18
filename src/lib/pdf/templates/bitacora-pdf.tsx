@@ -1,5 +1,5 @@
 import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
-import { pageStyles, COLORS, FONTS, SPACING } from "../tokens";
+import { pageStyles, COLORS, FONTS, SPACING, RADIUS } from "../tokens";
 import { t, fmtDate, type PdfLang } from "../translations";
 import { DocumentHeader } from "../components/document-header";
 import { DocumentFooter } from "../components/document-footer";
@@ -11,9 +11,9 @@ const s = StyleSheet.create({
   // LAW: size must be LETTER (8.5" × 11"). NEVER A4.
   page: {
     ...pageStyles.page,
-    fontFamily: FONTS.regular,
-    backgroundColor: COLORS.bg,
-    color: COLORS.text,
+    fontFamily: FONTS.body,
+    backgroundColor: COLORS.white,
+    color: COLORS.ink,
     paddingBottom: 70,
   },
   body: {
@@ -23,36 +23,40 @@ const s = StyleSheet.create({
   metaRow: { flexDirection: "row", gap: SPACING.md, marginBottom: SPACING.lg },
   metaCard: {
     flex: 1,
-    backgroundColor: COLORS.bgCard,
-    borderRadius: 4,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.purple,
+    backgroundColor: COLORS.panel,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    borderRadius: RADIUS.card,
     padding: SPACING.md,
   },
   metaLabel: {
-    fontFamily: FONTS.bold,
-    fontSize: 6.5,
-    color: COLORS.blueDim,
-    letterSpacing: 1.5,
+    fontFamily: FONTS.body,
+    fontWeight: 700,
+    fontSize: 6.6,
+    color: COLORS.blue,
+    letterSpacing: 1.2,
     marginBottom: 3,
   },
-  metaValue: { fontSize: 9, color: COLORS.text },
+  metaValue: { fontFamily: FONTS.body, fontWeight: 600, fontSize: 9, color: COLORS.ink },
   attendeeSection: { marginBottom: SPACING.lg },
   attendeeLabel: {
-    fontFamily: FONTS.bold,
+    fontFamily: FONTS.body,
+    fontWeight: 700,
     fontSize: 7,
     color: COLORS.blue,
-    letterSpacing: 2,
+    letterSpacing: 1.4,
     marginBottom: 6,
   },
   attendeeRow: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
   chip: {
-    backgroundColor: COLORS.blueLight,
-    borderRadius: 3,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    backgroundColor: COLORS.panel,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    borderRadius: RADIUS.pill,
+    paddingHorizontal: 9,
+    paddingVertical: 3.5,
   },
-  chipText: { fontSize: 8, color: COLORS.blueDim },
+  chipText: { fontFamily: FONTS.body, fontWeight: 500, fontSize: 8, color: COLORS.inkSoft },
 });
 
 interface BitacoraPdfProps {

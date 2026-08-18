@@ -2,26 +2,31 @@
 
 import { useForm, useWatch } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { createDocumentAction, updateDocumentAction, createClientAction, createPaymentSchedulesAction } from "@/app/(empresa)/empresa/actions";
 import { LanguageToggle } from "@/components/empresa/document-builder/language-toggle";
 import { LineItemsEditor, type DocumentFormValues } from "@/components/empresa/document-builder/line-items-editor";
 import { AiEnhanceButton } from "@/components/empresa/document-builder/ai-enhance-button";
+import { DraftPdfPreview } from "@/components/empresa/document-builder/draft-pdf-preview";
+import { PdfDownloadButton } from "@/components/empresa/document-builder/pdf-download-button";
 import { ClientCombobox } from "@/components/empresa/client-combobox";
+import { LeadCombobox } from "@/components/empresa/lead-combobox";
 import { PaymentSelector } from "@/components/empresa/payment-selector";
 import { useFieldArray } from "react-hook-form";
 import type { Client } from "@prisma/client";
-import type { SerializedPaymentMethod, SerializedDocument, SerializedProject, SerializedContract } from "@/lib/serializers";
+import type { SerializedPaymentMethod, SerializedDocument, SerializedProject, SerializedContract, SerializedLead } from "@/lib/serializers";
 
 interface CotizacionBuilderProps {
   taxRateDefault: number;
   currency: string;
   clients: Client[];
+  leads?: SerializedLead[];
   paymentMethods: SerializedPaymentMethod[];
   projects?: SerializedProject[];
   contracts?: SerializedContract[];
   mode?: "create" | "edit";
   initialDocument?: SerializedDocument;
+  initialLeadId?: string;
 }
 
 const STATUS_OPTS = [
@@ -36,7 +41,7 @@ function getInitialValues(doc?: SerializedDocument, currency = "USD", taxRate = 
     return {
       language: "es", currency,
       issueDate: new Date().toISOString().split("T")[0],
-      quoteStatus: "DRAFT", paymentMethodId: "", clientId: "", saveAsNewClient: false,
+      quoteStatus: "DRAFT", paymentMethodId: "", pdfPaymentMethodIds: [], clientId: "", leadId: "", saveAsNewClient: false,
       lineItems: [{ description: "", quantity: 1, unitPrice: 0, taxPercent: taxRate, discount: 0 }],
     };
   }
@@ -45,6 +50,7 @@ function getInitialValues(doc?: SerializedDocument, currency = "USD", taxRate = 
     language: (doc.language as "es" | "en") ?? "es",
     currency: doc.currency,
     clientId: doc.clientId ?? "",
+    leadId: doc.leadId ?? "",
     clientName: doc.clientName ?? "",
     clientEmail: doc.clientEmail ?? "",
     clientCompany: doc.clientCompany ?? "",
@@ -56,6 +62,9 @@ function getInitialValues(doc?: SerializedDocument, currency = "USD", taxRate = 
     terms: (content?.terms as string) ?? "",
     quoteStatus: (doc.status as "DRAFT" | "ACCEPTED" | "REJECTED" | "SENT") ?? "DRAFT",
     paymentMethodId: doc.paymentMethodId ?? "",
+    pdfPaymentMethodIds: Array.isArray(content?.pdfPaymentMethodIds)
+      ? (content.pdfPaymentMethodIds as string[])
+      : [],
     saveAsNewClient: false,
     lineItems: (content?.lineItems as DocumentFormValues["lineItems"]) ?? [
       { description: "", quantity: 1, unitPrice: 0, taxPercent: taxRate, discount: 0 },
@@ -64,16 +73,26 @@ function getInitialValues(doc?: SerializedDocument, currency = "USD", taxRate = 
 }
 
 export function CotizacionBuilder({
-  taxRateDefault, currency, clients, paymentMethods, projects = [], contracts = [], mode = "create", initialDocument,
+  taxRateDefault, currency, clients, leads = [], paymentMethods, projects = [], contracts = [], mode = "create", initialDocument, initialLeadId,
 }: CotizacionBuilderProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [lastTranslateCost, setLastTranslateCost] = useState<number | null>(null);
+  const preselectedLead = initialLeadId ? leads.find((l) => l.id === initialLeadId) : undefined;
+  const [contactMode, setContactMode] = useState<"client" | "lead">(
+    initialDocument?.leadId || preselectedLead ? "lead" : "client"
+  );
 
   const { register, control, setValue, handleSubmit, watch } = useForm<DocumentFormValues>({
     defaultValues: {
       ...(getInitialValues(initialDocument, currency, taxRateDefault) as DocumentFormValues),
+      leadId: initialDocument?.leadId ?? initialLeadId ?? "",
+      clientName: initialDocument?.clientName ?? preselectedLead?.name ?? "",
+      clientEmail: initialDocument?.clientEmail ?? preselectedLead?.email ?? "",
+      clientCompany: initialDocument?.clientCompany ?? preselectedLead?.company ?? "",
+      clientAddress: initialDocument?.clientAddress ?? preselectedLead?.address ?? "",
+      clientPhone: preselectedLead?.phone ?? "",
       projectId: "",
       contractId: "",
       paymentSchedules: [],
@@ -83,6 +102,7 @@ export function CotizacionBuilder({
   const language = useWatch({ control, name: "language" });
   const quoteStatus = useWatch({ control, name: "quoteStatus" });
   const paymentMethodId = useWatch({ control, name: "paymentMethodId" });
+  const pdfPaymentMethodIds = useWatch({ control, name: "pdfPaymentMethodIds" }) ?? [];
   const selectedProjectId = useWatch({ control, name: "projectId" });
   const selectedContractId = useWatch({ control, name: "contractId" });
 
@@ -98,6 +118,36 @@ export function CotizacionBuilder({
   const activeContract = filteredContracts.find((c) => c.status === "ACTIVE") ??
     (selectedContractId ? contracts.find((c) => c.id === selectedContractId) : null);
   const notes = watch("notes");
+  const allValues = useWatch({ control });
+  const previewPayload = {
+    type: "COTIZACION" as const,
+    number: initialDocument?.number,
+    title: allValues.clientName || "Cotización",
+    language: allValues.language,
+    status: allValues.quoteStatus,
+    currency: allValues.currency,
+    clientName: allValues.clientName,
+    clientEmail: allValues.clientEmail,
+    clientCompany: allValues.clientCompany,
+    clientAddress: allValues.clientAddress,
+    clientRuc: allValues.clientRuc,
+    issueDate: allValues.issueDate,
+    validUntil: allValues.validUntil,
+    content: {
+      lineItems: allValues.lineItems,
+      notes: allValues.notes,
+      terms: allValues.terms,
+      pdfPaymentMethodIds: allValues.pdfPaymentMethodIds ?? [],
+    },
+    pdfPaymentMethodIds: allValues.pdfPaymentMethodIds ?? [],
+  };
+
+  // Auto-seleccionar el contrato si el proyecto elegido tiene exactamente uno activo
+  useEffect(() => {
+    if (selectedContractId) return;
+    const activeOnes = filteredContracts.filter((c) => c.status === "ACTIVE");
+    if (activeOnes.length === 1) setValue("contractId", activeOnes[0].id);
+  }, [selectedProjectId]); // eslint-disable-line react-hooks/exhaustive-deps
   const terms = watch("terms");
   const lineItems = watch("lineItems") ?? [];
   const isEs = language === "es";
@@ -160,12 +210,25 @@ export function CotizacionBuilder({
 
   function handleClientSelect(client: Client) {
     setValue("clientId", client.id);
+    setValue("leadId", "");
     setValue("clientName", client.name);
     setValue("clientEmail", client.email ?? "");
     setValue("clientCompany", client.company ?? "");
     setValue("clientAddress", client.address ?? "");
     setValue("clientRuc", client.ruc ?? "");
     setValue("clientPhone", client.phone ?? "");
+    setValue("saveAsNewClient", false);
+  }
+
+  function handleLeadSelect(lead: SerializedLead) {
+    setValue("leadId", lead.id);
+    setValue("clientId", "");
+    setValue("clientName", lead.name);
+    setValue("clientEmail", lead.email ?? "");
+    setValue("clientCompany", lead.company ?? "");
+    setValue("clientAddress", lead.address ?? "");
+    setValue("clientRuc", "");
+    setValue("clientPhone", lead.phone ?? "");
     setValue("saveAsNewClient", false);
   }
 
@@ -216,6 +279,11 @@ export function CotizacionBuilder({
         clientId = newClient.id;
       }
 
+      const existingContent =
+        mode === "edit" && initialDocument
+          ? ((initialDocument.content as Record<string, unknown>) ?? {})
+          : {};
+
       const payload = {
         type: "COTIZACION" as const,
         title: data.clientName || `Cotización ${new Date().toLocaleDateString()}`,
@@ -226,7 +294,15 @@ export function CotizacionBuilder({
         clientAddress: data.clientAddress,
         clientRuc: data.clientRuc,
         clientId,
-        content: { lineItems: data.lineItems, notes: data.notes, terms: data.terms, currency: data.currency },
+        leadId: data.leadId || undefined,
+        content: {
+          ...existingContent,
+          lineItems: data.lineItems,
+          notes: data.notes,
+          terms: data.terms,
+          currency: data.currency,
+          pdfPaymentMethodIds: data.pdfPaymentMethodIds ?? [],
+        },
         issueDate: new Date(data.issueDate),
         validUntil: data.validUntil ? new Date(data.validUntil) : undefined,
         subtotal,
@@ -270,7 +346,7 @@ export function CotizacionBuilder({
               : (isEs ? "Nueva Cotización" : "New Quote")}
           </h1>
           {mode === "edit" && initialDocument?.number && (
-            <p className="text-white/40 text-sm mt-1 font-mono">{initialDocument.number}</p>
+            <p className="text-white/60 text-sm mt-1 font-mono">{initialDocument.number}</p>
           )}
         </div>
         <div className="flex items-center gap-3">
@@ -289,12 +365,17 @@ export function CotizacionBuilder({
                 )}
               </button>
               {lastTranslateCost != null && !translating && (
-                <span className="text-[10px] text-white/25 font-mono">
+                <span className="text-[10px] text-white/50 font-mono">
                   ${lastTranslateCost.toFixed(4)}
                 </span>
               )}
             </div>
           )}
+          <PdfDownloadButton
+            draftEndpoint="/api/empresa/documents/preview"
+            draftPayload={previewPayload}
+            filename={`${initialDocument?.number ?? "cotizacion"}.pdf`}
+          />
           <LanguageToggle value={language} onChange={(l) => setValue("language", l)} />
         </div>
       </div>
@@ -313,7 +394,7 @@ export function CotizacionBuilder({
               className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
                 quoteStatus === opt.value
                   ? `${opt.color} bg-white/[0.04]`
-                  : "border-white/[0.05] text-white/30 hover:text-white/60"
+                  : "border-white/[0.05] text-white/55 hover:text-white/60"
               }`}
             >
               {isEs ? opt.label : opt.labelEn}
@@ -328,13 +409,13 @@ export function CotizacionBuilder({
           <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">
             {isEs ? "Proyecto y contrato" : "Project and contract"}
           </h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {projects.length > 0 && (
               <div>
                 <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">
                   {isEs ? "Proyecto vinculado" : "Linked project"}
                 </label>
-                <select {...register("projectId")}
+                <select {...register("projectId")} aria-label={isEs ? "Proyecto vinculado" : "Linked project"}
                   className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all">
                   <option value="">{isEs ? "Sin proyecto" : "No project"}</option>
                   {projects.map((p) => (
@@ -351,7 +432,7 @@ export function CotizacionBuilder({
                 <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">
                   {isEs ? "Contrato aplicable" : "Applicable contract"}
                 </label>
-                <select {...register("contractId")}
+                <select {...register("contractId")} aria-label={isEs ? "Contrato aplicable" : "Applicable contract"}
                   className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all">
                   <option value="">{isEs ? "Sin contrato" : "No contract"}</option>
                   {filteredContracts.map((c) => (
@@ -368,7 +449,7 @@ export function CotizacionBuilder({
                 <span className="text-white/70 text-xs font-medium">{activeContract.title}</span>
               </div>
               {activeContract.responsibilities && (
-                <p className="text-white/40 text-xs leading-relaxed">{activeContract.responsibilities.slice(0, 200)}{activeContract.responsibilities.length > 200 ? "..." : ""}</p>
+                <p className="text-white/60 text-xs leading-relaxed">{activeContract.responsibilities.slice(0, 200)}{activeContract.responsibilities.length > 200 ? "..." : ""}</p>
               )}
             </div>
           )}
@@ -377,25 +458,64 @@ export function CotizacionBuilder({
 
       {/* Client picker */}
       <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
-        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">
-          {isEs ? "Cliente" : "Client"}
-        </h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">
+            {isEs ? "Cliente" : "Client"}
+          </h3>
+          <div className="inline-flex rounded-lg border border-white/[0.08] overflow-hidden">
+            {([
+              { value: "client" as const, label: isEs ? "Cliente" : "Client" },
+              { value: "lead" as const, label: "Lead" },
+            ]).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => {
+                  setContactMode(opt.value);
+                  setValue("clientId", "");
+                  setValue("leadId", "");
+                  setValue("saveAsNewClient", false);
+                }}
+                className={`px-3 py-1.5 text-xs font-medium transition-all ${
+                  contactMode === opt.value ? "bg-[#1AA7F0]/10 text-[#1AA7F0]" : "text-white/60 hover:text-white/60"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <ClientCombobox
-              clients={clients}
-              value={watch("clientName") ?? ""}
-              onChange={(name) => {
-                setValue("clientName", name);
-                setValue("clientId", "");
-                setValue("saveAsNewClient", false);
-              }}
-              onSelect={handleClientSelect}
-              onNewClient={() => setValue("saveAsNewClient", true)}
-              label={isEs ? "Nombre completo" : "Full name"}
-              placeholder="Juan Pérez"
-              selectedClientId={watch("clientId") || undefined}
-            />
+            {contactMode === "client" ? (
+              <ClientCombobox
+                clients={clients}
+                value={watch("clientName") ?? ""}
+                onChange={(name) => {
+                  setValue("clientName", name);
+                  setValue("clientId", "");
+                  setValue("saveAsNewClient", false);
+                }}
+                onSelect={handleClientSelect}
+                onNewClient={() => setValue("saveAsNewClient", true)}
+                label={isEs ? "Nombre completo" : "Full name"}
+                placeholder="Juan Pérez"
+                selectedClientId={watch("clientId") || undefined}
+              />
+            ) : (
+              <LeadCombobox
+                leads={leads}
+                value={watch("clientName") ?? ""}
+                onChange={(name) => {
+                  setValue("clientName", name);
+                  setValue("leadId", "");
+                }}
+                onSelect={handleLeadSelect}
+                label={isEs ? "Nombre completo" : "Full name"}
+                placeholder="Juan Pérez"
+                selectedLeadId={watch("leadId") || undefined}
+              />
+            )}
             {watch("saveAsNewClient") && (
               <p className="mt-1.5 text-[10px] text-[#1AA7F0]/70 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#1AA7F0]/60 inline-block" />
@@ -446,7 +566,7 @@ export function CotizacionBuilder({
         <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">
           {isEs ? "Vigencia" : "Validity"}
         </h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">{isEs ? "Fecha de emisión" : "Issue date"}</label>
             <input {...register("issueDate")} type="date" className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all" />
@@ -497,37 +617,39 @@ export function CotizacionBuilder({
             </button>
           </div>
           {scheduleFields.length === 0 ? (
-            <p className="text-white/25 text-sm text-center py-3">
+            <p className="text-white/50 text-sm text-center py-3">
               {isEs ? "Sin cuotas — agrega para habilitar pagos parciales" : "No installments — add to enable partial payments"}
             </p>
           ) : (
             <div className="space-y-3">
               {scheduleFields.map((field, i) => (
-                <div key={field.id} className="grid grid-cols-[1fr_120px_140px_24px] gap-2 items-end">
-                  <div>
-                    {i === 0 && <label className="block text-white/30 text-[10px] uppercase tracking-widest mb-1">{isEs ? "Descripción" : "Description"}</label>}
+                <div key={field.id} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_120px_140px_24px] sm:items-end">
+                  <div className="col-span-2 sm:col-span-1">
+                    <label className={`block text-white/55 text-[10px] uppercase tracking-widest mb-1 ${i === 0 ? "" : "sm:hidden"}`}>{isEs ? "Descripción" : "Description"}</label>
                     <input {...register(`paymentSchedules.${i}.description`)}
                       placeholder={isEs ? `Cuota ${i + 1}` : `Installment ${i + 1}`}
                       className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#6344E8]/40 transition-all" />
                   </div>
                   <div>
-                    {i === 0 && <label className="block text-white/30 text-[10px] uppercase tracking-widest mb-1">{isEs ? "Monto" : "Amount"}</label>}
+                    <label className={`block text-white/55 text-[10px] uppercase tracking-widest mb-1 ${i === 0 ? "" : "sm:hidden"}`}>{isEs ? "Monto" : "Amount"}</label>
                     <input {...register(`paymentSchedules.${i}.amount`, { valueAsNumber: true })}
                       type="number" min="0" step="0.01" placeholder="0.00"
                       className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#6344E8]/40 transition-all" />
                   </div>
                   <div>
-                    {i === 0 && <label className="block text-white/30 text-[10px] uppercase tracking-widest mb-1">{isEs ? "Vencimiento" : "Due date"}</label>}
+                    <label className={`block text-white/55 text-[10px] uppercase tracking-widest mb-1 ${i === 0 ? "" : "sm:hidden"}`}>{isEs ? "Vencimiento" : "Due date"}</label>
                     <input {...register(`paymentSchedules.${i}.dueDate`)}
                       type="date"
                       className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#6344E8]/40 transition-all" />
                   </div>
-                  <button type="button" onClick={() => removeSchedule(i)}
-                    className="text-white/20 hover:text-red-400 transition-colors text-sm pb-1.5">×</button>
+                  <div className="col-span-2 flex justify-end sm:col-span-1 sm:block sm:pb-1.5">
+                    <button type="button" onClick={() => removeSchedule(i)}
+                      className="text-white/50 hover:text-red-400 transition-colors text-sm">×</button>
+                  </div>
                 </div>
               ))}
               <div className="flex justify-end pt-1">
-                <span className="text-white/30 text-xs font-mono">
+                <span className="text-white/55 text-xs font-mono">
                   {isEs ? "Total cuotas:" : "Total installments:"}{" "}
                   <span className="text-[#C8A96E]">
                     ${(watch("paymentSchedules") ?? []).reduce((s, sc) => s + (Number(sc.amount) || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
@@ -539,7 +661,30 @@ export function CotizacionBuilder({
         </div>
       )}
 
-      {/* Payment method (shown when Accepted or Paid) */}
+      {/* Payment methods on PDF */}
+      {paymentMethods.length > 0 && (
+        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
+          <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">
+            {isEs ? "Formas de pago" : "Payment methods"}
+          </h3>
+          <p className="text-white/55 text-xs mb-4">
+            {isEs
+              ? "Seleccione las formas de pago que aparecerán en el PDF de la cotización."
+              : "Select the payment methods to include on the quote PDF."}
+          </p>
+          <PaymentSelector
+            methods={paymentMethods}
+            selectedIds={pdfPaymentMethodIds}
+            multiple
+            showCommission={false}
+            showCommissionHints={false}
+            onChangeMultiple={(ids) => setValue("pdfPaymentMethodIds", ids)}
+            lang={language}
+          />
+        </div>
+      )}
+
+      {/* Payment method received (shown when Accepted or Paid) */}
       {(quoteStatus === "ACCEPTED" || quoteStatus === "PAID") && paymentMethods.length > 0 && (
         <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
           <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">
@@ -554,6 +699,8 @@ export function CotizacionBuilder({
           />
         </div>
       )}
+
+      <DraftPdfPreview endpoint="/api/empresa/documents/preview" payload={previewPayload} title={isEs ? "Vista previa del documento" : "Document preview"} />
 
       <div className="flex justify-end gap-3 pt-2">
         <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-white/50 hover:text-white/80 text-sm transition-colors">

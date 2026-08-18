@@ -8,7 +8,7 @@ export const metadata = { title: "Nuevo Contrato — Pime Suite" };
 export default async function NuevoContratoPage({
   searchParams,
 }: {
-  searchParams: Promise<{ projectId?: string; clientId?: string }>;
+  searchParams: Promise<{ projectId?: string; clientId?: string; linkDocumentId?: string; returnTo?: string }>;
 }) {
   const user = await getEmpresaUser();
   const sp = await searchParams;
@@ -25,6 +25,8 @@ export default async function NuevoContratoPage({
         projects={projects.map(serializeProject)}
         defaultProjectId={sp.projectId}
         defaultClientId={sp.clientId}
+        linkDocumentId={sp.linkDocumentId}
+        returnTo={sp.returnTo}
       />
     </div>
   );

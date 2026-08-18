@@ -12,7 +12,7 @@ const STATUS_COLOR: Record<string, string> = {
   ACTIVE: "bg-green-500/15 text-green-400 border-green-500/20",
   PAUSED: "bg-amber-500/15 text-amber-400 border-amber-500/20",
   COMPLETED: "bg-blue-500/15 text-blue-400 border-blue-500/20",
-  CANCELLED: "bg-white/[0.05] text-white/30 border-white/[0.08]",
+  CANCELLED: "bg-white/[0.05] text-white/55 border-white/[0.08]",
 };
 
 export default async function ProyectosPage() {
@@ -22,6 +22,7 @@ export default async function ProyectosPage() {
     where: { userId: user.id },
     include: {
       client: { select: { name: true, company: true } },
+      clients: { include: { client: { select: { id: true, name: true, company: true } } } },
       _count: { select: { documents: true, contracts: true } },
     },
     orderBy: { createdAt: "desc" },
@@ -32,7 +33,7 @@ export default async function ProyectosPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-white text-2xl font-semibold tracking-tight">Proyectos</h1>
-          <p className="text-white/40 text-sm mt-0.5">{projects.length} proyecto{projects.length !== 1 ? "s" : ""}</p>
+          <p className="text-white/60 text-sm mt-0.5">{projects.length} proyecto{projects.length !== 1 ? "s" : ""}</p>
         </div>
         <Link href="/empresa/proyectos/nuevo"
           className="px-4 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] text-white text-sm font-semibold rounded-lg transition-all">
@@ -43,7 +44,7 @@ export default async function ProyectosPage() {
       {projects.length === 0 ? (
         <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-12 text-center space-y-4">
           <p className="text-white/60 font-medium">No tienes proyectos aún</p>
-          <p className="text-white/30 text-sm">Crea tu primer proyecto para vincular cotizaciones, contratos y pagos.</p>
+          <p className="text-white/55 text-sm">Crea tu primer proyecto para vincular cotizaciones, contratos y pagos.</p>
           <Link href="/empresa/proyectos/nuevo"
             className="inline-block px-5 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] text-white text-sm font-semibold rounded-lg transition-all">
             Crear primer proyecto
@@ -64,28 +65,34 @@ export default async function ProyectosPage() {
                     {STATUS_LABEL[p.status]}
                   </span>
                 </div>
-                {(p.client?.name || p.description) && (
-                  <p className="text-white/40 text-sm truncate">
-                    {p.client ? `${p.client.name}${p.client.company ? ` — ${p.client.company}` : ""}` : p.description}
+                {p.clients.length > 0 ? (
+                  <p className="text-white/60 text-sm truncate">
+                    {p.clients.map((pc) => pc.client.name).join(" · ")}
                   </p>
+                ) : p.client?.name ? (
+                  <p className="text-white/60 text-sm truncate">
+                    {p.client.name}{p.client.company ? ` — ${p.client.company}` : ""}
+                  </p>
+                ) : (
+                  <p className="text-amber-400/70 text-sm truncate">Sin cliente asignado</p>
                 )}
                 <div className="flex items-center gap-4 mt-2">
-                  <span className="text-white/25 text-xs">{p._count.documents} doc.</span>
-                  <span className="text-white/25 text-xs">{p._count.contracts} contrato{p._count.contracts !== 1 ? "s" : ""}</span>
+                  <span className="text-white/50 text-xs">{p._count.documents} doc.</span>
+                  <span className="text-white/50 text-xs">{p._count.contracts} contrato{p._count.contracts !== 1 ? "s" : ""}</span>
                   {p.totalBudget && (
                     <span className="text-[#C8A96E]/60 text-xs font-mono">
                       ${Number(p.totalBudget).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
                   )}
                   {p.startDate && (
-                    <span className="text-white/20 text-xs">
+                    <span className="text-white/50 text-xs">
                       {new Date(p.startDate).toLocaleDateString("es-PA")}
                       {p.endDate ? ` → ${new Date(p.endDate).toLocaleDateString("es-PA")}` : ""}
                     </span>
                   )}
                 </div>
               </div>
-              <svg className="w-4 h-4 text-white/20 group-hover:text-white/50 transition-colors shrink-0 mt-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-white/50 group-hover:text-white/50 transition-colors shrink-0 mt-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </Link>

@@ -24,7 +24,7 @@ export default async function CorreoDetailPage({
           <h1 className="text-white text-2xl font-semibold tracking-tight truncate max-w-lg">
             {content.subject ?? doc.title}
           </h1>
-          <p className="text-white/40 text-sm mt-1">
+          <p className="text-white/60 text-sm mt-1">
             {content.to} {content.cc && `· CC: ${content.cc}`}
           </p>
         </div>
@@ -34,17 +34,17 @@ export default async function CorreoDetailPage({
       <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
         <div className="border-b border-white/[0.06] pb-4 mb-4 space-y-2">
           <div className="flex gap-3 text-sm">
-            <span className="text-white/40 w-12">Para:</span>
+            <span className="text-white/60 w-12">Para:</span>
             <span className="text-white/80">{content.to ?? "—"}</span>
           </div>
           {content.cc && (
             <div className="flex gap-3 text-sm">
-              <span className="text-white/40 w-12">CC:</span>
+              <span className="text-white/60 w-12">CC:</span>
               <span className="text-white/70">{content.cc}</span>
             </div>
           )}
           <div className="flex gap-3 text-sm">
-            <span className="text-white/40 w-12">Asunto:</span>
+            <span className="text-white/60 w-12">Asunto:</span>
             <span className="text-white font-medium">{content.subject ?? "—"}</span>
           </div>
         </div>

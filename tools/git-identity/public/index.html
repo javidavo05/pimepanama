@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pime Git — Portal local</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="header">
+      <div>
+        <h1>Pime Git</h1>
+        <p class="sub">Portal web · proyectos, commits y git desde el navegador</p>
+      </div>
+      <div class="urls" id="urls"></div>
+    </header>
+
+    <section class="warn">
+      Solo red local de confianza. Cualquiera en tu Wi‑Fi puede usar este panel y ejecutar git en esta máquina.
+    </section>
+
+    <section class="profiles" id="profiles"></section>
+
+    <nav class="tabs">
+      <button type="button" class="tab active" data-tab="project">Proyecto activo</button>
+      <button type="button" class="tab" data-tab="import">Importar repos</button>
+      <button type="button" class="tab" data-tab="local">Carpetas locales</button>
+      <button type="button" class="tab" data-tab="maps">Mapeos</button>
+      <button type="button" class="tab" data-tab="config">Config</button>
+    </nav>
+
+    <main>
+      <!-- PROJECT -->
+      <section class="panel active" id="panel-project">
+        <div class="project-layout">
+          <aside class="projects-sidebar">
+            <div class="sidebar-head">
+              <h3>Proyectos <span id="projects-count" class="muted-num">0</span></h3>
+              <span id="auto-refresh-hint" class="auto-hint">auto</span>
+            </div>
+            <div id="projects-sidebar-list" class="projects-sidebar-list"></div>
+          </aside>
+          <div class="project-main">
+            <div id="project-detail" class="project-detail empty-state">
+              Cargando proyectos…
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- IMPORT -->
+      <section class="panel" id="panel-import">
+        <div class="toolbar">
+          <input type="search" id="filter" placeholder="Filtrar repos (org, nombre…)" />
+          <button type="button" class="btn ghost" id="btn-reload">Recargar lista</button>
+          <span class="spacer"></span>
+          <button type="button" class="btn ghost" id="btn-select-page">Página</button>
+          <button type="button" class="btn ghost" id="btn-select-all">Todos</button>
+          <button type="button" class="btn ghost" id="btn-select-none">Ninguno</button>
+        </div>
+
+        <div class="import-bar">
+          <label>
+            Carpeta base
+            <input type="text" id="base-dir" />
+          </label>
+          <span class="count" id="selected-count">0 seleccionados</span>
+          <button type="button" class="btn primary" id="btn-preview" disabled>Vista previa</button>
+          <button type="button" class="btn gold" id="btn-import" disabled>Importar seleccionados</button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="w-check"><input type="checkbox" id="check-page" title="Página visible" /></th>
+                <th>Repositorio</th>
+                <th>Local</th>
+              </tr>
+            </thead>
+            <tbody id="repo-rows">
+              <tr><td colspan="3" class="empty">Elige una cuenta arriba y pulsa Recargar lista</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="progress-panel" id="import-progress" hidden>
+          <div class="progress-head">
+            <span class="progress-title" id="import-progress-title">Importando…</span>
+            <span class="progress-pct" id="import-progress-pct">0%</span>
+          </div>
+          <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="import-progress-bar">
+            <div class="progress-fill" id="import-progress-fill"></div>
+          </div>
+          <ul class="progress-steps" id="import-progress-steps"></ul>
+        </div>
+
+        <div class="log" id="import-log" hidden></div>
+      </section>
+
+      <!-- LOCAL -->
+      <section class="panel" id="panel-local">
+        <div class="toolbar">
+          <label>
+            Escanear carpeta
+            <input type="text" id="local-root" />
+          </label>
+          <button type="button" class="btn ghost" id="btn-scan-local">Escanear</button>
+        </div>
+        <div class="cards" id="local-cards"></div>
+      </section>
+
+      <!-- MAPS -->
+      <section class="panel" id="panel-maps">
+        <div class="cards" id="map-cards"></div>
+      </section>
+
+      <!-- CONFIG -->
+      <section class="panel" id="panel-config">
+        <div class="config-actions">
+          <button type="button" class="btn primary" id="btn-sync">Sincronizar ~/.gitconfig + SSH</button>
+          <button type="button" class="btn ghost" id="btn-ssh-all">Probar SSH (todas)</button>
+        </div>
+        <pre class="log" id="config-log"></pre>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" id="modal-preview" hidden>
+    <div class="modal-box">
+      <h2>Vista previa de importación</h2>
+      <div class="modal-body" id="preview-body"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" id="btn-preview-close">Cerrar</button>
+        <button type="button" class="btn gold" id="btn-preview-run">Importar ahora</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script src="/app.js" type="module"></script>
+</body>
+</html>

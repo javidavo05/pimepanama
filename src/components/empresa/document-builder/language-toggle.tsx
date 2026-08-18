@@ -16,7 +16,7 @@ export function LanguageToggle({ value, onChange }: LanguageToggleProps) {
           className={`px-4 py-1.5 text-xs font-medium uppercase tracking-widest transition-all ${
             value === lang
               ? "bg-[#C8A96E]/10 text-[#C8A96E] border-r border-[#C8A96E]/20"
-              : "text-white/40 hover:text-white/60"
+              : "text-white/60 hover:text-white/60"
           }`}
         >
           {lang}

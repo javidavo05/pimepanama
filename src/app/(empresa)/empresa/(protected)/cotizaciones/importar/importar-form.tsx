@@ -128,16 +128,16 @@ export function ImportarCotizacionForm({ clients, paymentMethods }: ImportarForm
         {pdfFile ? (
           <div className="flex items-center justify-center gap-3">
             <span className="text-[#1AA7F0] text-sm font-medium">📄 {pdfFile.name}</span>
-            <button type="button" onClick={() => setPdfFile(null)} className="text-white/30 hover:text-red-400 text-xs transition-colors">✕</button>
+            <button type="button" onClick={() => setPdfFile(null)} className="text-white/55 hover:text-red-400 text-xs transition-colors">✕</button>
           </div>
         ) : (
           <div>
-            <p className="text-white/30 text-sm mb-2">PDF de la cotización original (opcional)</p>
+            <p className="text-white/55 text-sm mb-2">PDF de la cotización original (opcional)</p>
             <button type="button" onClick={() => fileRef.current?.click()}
               className="px-4 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-white/60 text-sm hover:text-white/80 transition-all">
               Seleccionar PDF
             </button>
-            <p className="text-white/20 text-xs mt-2">Se sube a Cloudflare R2 y queda guardado en el historial</p>
+            <p className="text-white/50 text-xs mt-2">Se sube a Cloudflare R2 y queda guardado en el historial</p>
           </div>
         )}
       </div>
@@ -165,15 +165,15 @@ export function ImportarCotizacionForm({ clients, paymentMethods }: ImportarForm
             )}
           </div>
           <div>
-            <label className="block text-white/40 text-xs uppercase tracking-widest mb-1.5">Empresa</label>
+            <label className="block text-white/60 text-xs uppercase tracking-widest mb-1.5">Empresa</label>
             <input value={clientCompany} onChange={(e) => setClientCompany(e.target.value)} placeholder="Empresa S.A." className={inputCls} />
           </div>
           <div>
-            <label className="block text-white/40 text-xs uppercase tracking-widest mb-1.5">RUC</label>
+            <label className="block text-white/60 text-xs uppercase tracking-widest mb-1.5">RUC</label>
             <input value={clientRuc} onChange={(e) => setClientRuc(e.target.value)} placeholder="8-123-456" className={inputCls} />
           </div>
           <div>
-            <label className="block text-white/40 text-xs uppercase tracking-widest mb-1.5">Correo</label>
+            <label className="block text-white/60 text-xs uppercase tracking-widest mb-1.5">Correo</label>
             <input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} placeholder="cliente@empresa.com" className={inputCls} />
           </div>
         </div>
@@ -184,24 +184,24 @@ export function ImportarCotizacionForm({ clients, paymentMethods }: ImportarForm
         <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">Datos de la cotización</h3>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-white/40 text-xs uppercase tracking-widest mb-1.5">Fecha de emisión</label>
+            <label className="block text-white/60 text-xs uppercase tracking-widest mb-1.5">Fecha de emisión</label>
             <input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="block text-white/40 text-xs uppercase tracking-widest mb-1.5">Válida hasta</label>
+            <label className="block text-white/60 text-xs uppercase tracking-widest mb-1.5">Válida hasta</label>
             <input type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <label className="block text-white/40 text-xs uppercase tracking-widest mb-1.5">Número original (opcional)</label>
+            <label className="block text-white/60 text-xs uppercase tracking-widest mb-1.5">Número original (opcional)</label>
             <input value={customNumber} onChange={(e) => setCustomNumber(e.target.value)} placeholder="COT-2024-0042" className={inputCls} />
           </div>
           <div>
-            <label className="block text-white/40 text-xs uppercase tracking-widest mb-1.5">Total bruto (USD)</label>
+            <label className="block text-white/60 text-xs uppercase tracking-widest mb-1.5">Total bruto (USD)</label>
             <input type="number" min="0" step="0.01" value={total} onChange={(e) => setTotal(e.target.value)} placeholder="0.00" className={inputCls} />
           </div>
         </div>
         <div>
-          <label className="block text-white/40 text-xs uppercase tracking-widest mb-1.5">Notas / Descripción</label>
+          <label className="block text-white/60 text-xs uppercase tracking-widest mb-1.5">Notas / Descripción</label>
           <textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Descripción de los servicios cotizados..." className={`${inputCls} resize-none`} />
         </div>
       </div>
@@ -215,7 +215,7 @@ export function ImportarCotizacionForm({ clients, paymentMethods }: ImportarForm
               className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
                 status === opt.value
                   ? "border-[#1AA7F0]/40 bg-[#1AA7F0]/10 text-[#1AA7F0]"
-                  : "border-white/[0.06] text-white/30 hover:text-white/60"
+                  : "border-white/[0.06] text-white/55 hover:text-white/60"
               }`}>
               {opt.label}
             </button>
@@ -240,7 +240,7 @@ export function ImportarCotizacionForm({ clients, paymentMethods }: ImportarForm
       )}
 
       <div className="flex justify-end gap-3">
-        <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-white/40 hover:text-white/70 text-sm transition-colors">Cancelar</button>
+        <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-white/60 hover:text-white/70 text-sm transition-colors">Cancelar</button>
         <button type="submit" disabled={saving || uploading} className="px-6 py-2.5 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-all">
           {uploading ? "Subiendo PDF..." : saving ? "Guardando..." : "Importar cotización"}
         </button>
