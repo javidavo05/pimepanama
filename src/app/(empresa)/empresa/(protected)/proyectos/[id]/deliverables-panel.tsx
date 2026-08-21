@@ -7,7 +7,7 @@ import {
   updateDeliverableAction,
   deleteDeliverableAction,
 } from "@/app/(empresa)/empresa/actions";
-import { INPUT_CLASS, toDateInput, type Deliverable } from "./types";
+import { INPUT_CLASS, TEXTAREA_CLASS, toDateInput, type Deliverable } from "./types";
 
 interface DeliverablesPanelProps {
   projectId: string;
@@ -72,19 +72,20 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
 
   const draftForm = (
     <div className="px-5 py-4 space-y-2 bg-white/[0.015]">
-      <div className="flex gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-[1fr_10rem] gap-2">
         <input
           autoFocus
           value={draft.name}
           onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
           placeholder="Nombre del entregable"
-          className={`${INPUT_CLASS} flex-1`}
+          className={INPUT_CLASS}
         />
         <input
           type="date"
+          aria-label="Fecha de entrega"
           value={draft.dueDate}
           onChange={(e) => setDraft((d) => ({ ...d, dueDate: e.target.value }))}
-          className={`${INPUT_CLASS} w-40`}
+          className={INPUT_CLASS}
         />
       </div>
       <textarea
@@ -92,7 +93,7 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
         value={draft.description}
         onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))}
         placeholder="Detalle (opcional)"
-        className={`${INPUT_CLASS} resize-none text-white/80`}
+        className={TEXTAREA_CLASS}
       />
       <div className="flex justify-end gap-3">
         <button

@@ -100,8 +100,20 @@ export const CONTRACT_STATUS_COLOR: Record<string, string> = {
   TERMINATED: "bg-red-500/15 text-red-400 border-red-500/20",
 };
 
-export const INPUT_CLASS =
-  "w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 transition-all [color-scheme:dark]";
+/**
+ * Ancho, padding y tamaño de texto van aparte: al concatenar `w-40` o `text-xs`
+ * sobre una clase que ya trae `w-full`/`text-sm`, Tailwind no los sobreescribe
+ * (gana el orden del CSS, no el del string) y el campo sale deformado.
+ */
+const FIELD_BASE =
+  "bg-white/[0.03] border border-white/[0.07] rounded-lg text-white placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 transition-all [color-scheme:dark]";
+
+export const INPUT_CLASS = `w-full px-3 py-2.5 text-sm ${FIELD_BASE}`;
+
+/** Variante compacta, para la barra lateral. */
+export const INPUT_COMPACT = `w-full px-3 py-2 text-xs ${FIELD_BASE}`;
+
+export const TEXTAREA_CLASS = `${INPUT_CLASS} resize-none`;
 
 export const LABEL_CLASS =
   "block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5";

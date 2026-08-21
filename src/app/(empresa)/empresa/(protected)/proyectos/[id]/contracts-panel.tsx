@@ -14,6 +14,7 @@ import {
   CONTRACT_STATUS_LABEL,
   INPUT_CLASS,
   LABEL_CLASS,
+  TEXTAREA_CLASS,
   fmtUSD,
   toDateInput,
   type Contract,
@@ -219,7 +220,7 @@ export function ContractsPanel({
           value={draft.responsibilities}
           onChange={(e) => setDraft((d) => ({ ...d, responsibilities: e.target.value }))}
           placeholder="Qué entrega cada parte..."
-          className={`${INPUT_CLASS} resize-none text-white/80`}
+          className={TEXTAREA_CLASS}
         />
       </div>
 
@@ -230,7 +231,7 @@ export function ContractsPanel({
           value={draft.terms}
           onChange={(e) => setDraft((d) => ({ ...d, terms: e.target.value }))}
           placeholder="Condiciones de pago, plazos, penalidades..."
-          className={`${INPUT_CLASS} resize-none text-white/80`}
+          className={TEXTAREA_CLASS}
         />
       </div>
 

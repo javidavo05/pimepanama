@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Client, ProjectStatus } from "@prisma/client";
 import {
@@ -15,6 +15,7 @@ import { validatePlan, type FinancingPlan } from "@/lib/financing";
 import {
   INPUT_CLASS,
   LABEL_CLASS,
+  TEXTAREA_CLASS,
   toDateInput,
   type Project,
   type ProjectClientRef,
@@ -35,14 +36,25 @@ const EMPTY_PLAN: FinancingPlan = {
   firstDueDate: "",
 };
 
+export type EditSection = "form" | "financing";
+
 interface ProjectEditFormProps {
   project: Project;
   allClients: Client[];
+  /** Desde dónde se abrió, para llevar la vista a esa parte del formulario. */
+  focusSection?: EditSection;
   onClose: () => void;
 }
 
-export function ProjectEditForm({ project, allClients, onClose }: ProjectEditFormProps) {
+export function ProjectEditForm({
+  project,
+  allClients,
+  focusSection = "form",
+  onClose,
+}: ProjectEditFormProps) {
   const router = useRouter();
+  const rootRef = useRef<HTMLDivElement>(null);
+  const financingRef = useRef<HTMLDivElement>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -62,6 +74,13 @@ export function ProjectEditForm({ project, allClients, onClose }: ProjectEditFor
 
   const [financingEnabled, setFinancingEnabled] = useState(project.financingPlan != null);
   const [financing, setFinancing] = useState<FinancingPlan>(project.financingPlan ?? EMPTY_PLAN);
+
+  // El formulario se abre arriba del todo; si se pidió desde un atajo de la
+  // barra lateral hay que llevar la vista, o parece que el botón no hizo nada.
+  useEffect(() => {
+    const target = focusSection === "financing" ? financingRef.current : rootRef.current;
+    target?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [focusSection]);
 
   const budgetNumber = totalBudget.trim() === "" ? null : Number(totalBudget);
   const plan: FinancingPlan = {
@@ -133,7 +152,7 @@ export function ProjectEditForm({ project, allClients, onClose }: ProjectEditFor
   }
 
   return (
-    <div className="space-y-5 mb-6">
+    <div ref={rootRef} className="space-y-5 mb-6 scroll-mt-6">
       <div className="bg-[#0a0a10] border border-[#1AA7F0]/20 rounded-xl p-5 space-y-5">
         <div className="flex items-center justify-between">
           <h2 className="text-white/60 text-xs uppercase tracking-widest font-medium">
@@ -251,7 +270,7 @@ export function ProjectEditForm({ project, allClients, onClose }: ProjectEditFor
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="¿En qué consiste el proyecto?"
-            className={`${INPUT_CLASS} resize-none text-white/80`}
+            className={TEXTAREA_CLASS}
           />
         </div>
 
@@ -265,18 +284,20 @@ export function ProjectEditForm({ project, allClients, onClose }: ProjectEditFor
             value={scope}
             onChange={(e) => setScope(e.target.value)}
             placeholder="Entregables, fases, exclusiones..."
-            className={`${INPUT_CLASS} resize-none text-white/80`}
+            className={TEXTAREA_CLASS}
           />
         </div>
       </div>
 
-      <FinancingPlanner
-        plan={plan}
-        onChange={setFinancing}
-        enabled={financingEnabled}
-        onToggle={setFinancingEnabled}
-        hint="Abono inicial más cuotas mensuales o quincenales. Al facturar el proyecto, cada cuota se crea sola en Cuentas por Cobrar."
-      />
+      <div ref={financingRef} className="scroll-mt-6">
+        <FinancingPlanner
+          plan={plan}
+          onChange={setFinancing}
+          enabled={financingEnabled}
+          onToggle={setFinancingEnabled}
+          hint="Abono inicial más cuotas mensuales o quincenales. Al facturar el proyecto, cada cuota se crea sola en Cuentas por Cobrar."
+        />
+      </div>
 
       {error && (
         <div className="bg-red-500/[0.07] border border-red-500/25 rounded-xl px-4 py-3">

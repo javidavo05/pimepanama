@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Client } from "@prisma/client";
 import { setProjectClientsAction } from "@/app/(empresa)/empresa/actions";
-import { INPUT_CLASS, type ProjectClientRef } from "./types";
+import { INPUT_COMPACT, type ProjectClientRef } from "./types";
 
 interface ClientsPanelProps {
   projectId: string;
@@ -117,7 +117,7 @@ export function ClientsPanel({ projectId, clients, allClients }: ClientsPanelPro
           aria-label={empty ? "Asignar cliente" : "Agregar cliente"}
           disabled={pending}
           onChange={(e) => e.target.value && save([...ids, e.target.value])}
-          className={`${INPUT_CLASS} py-2 text-xs disabled:opacity-40`}
+          className={`${INPUT_COMPACT} disabled:opacity-40`}
         >
           <option value="">
             {pending ? "Guardando…" : empty ? "Asignar cliente…" : "+ agregar otro cliente…"}

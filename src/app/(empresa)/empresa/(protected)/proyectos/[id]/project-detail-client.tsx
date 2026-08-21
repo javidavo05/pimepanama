@@ -9,7 +9,7 @@ import { PdfDownloadButton } from "@/components/empresa/document-builder/pdf-dow
 import { PdfPreviewFrame } from "@/components/empresa/document-builder/pdf-preview-frame";
 import { FREQUENCY_ADJECTIVE } from "@/lib/financing";
 import { ClientsPanel } from "./clients-panel";
-import { ProjectEditForm } from "./project-edit-form";
+import { ProjectEditForm, type EditSection } from "./project-edit-form";
 import { DeliverablesPanel } from "./deliverables-panel";
 import { ContractsPanel } from "./contracts-panel";
 import {
@@ -38,7 +38,7 @@ export function ProjectDetailClient({
   allClients: Client[];
 }) {
   const router = useRouter();
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState<EditSection | null>(null);
   const [payingId, setPayingId] = useState<string | null>(null);
   const [paidIds, setPaidIds] = useState<Set<string>>(new Set());
   const [generatingProposal, setGeneratingProposal] = useState(false);
@@ -116,7 +116,7 @@ export function ProjectDetailClient({
         {!editing && (
           <button
             type="button"
-            onClick={() => setEditing(true)}
+            onClick={() => setEditing("form")}
             className="px-3 py-1.5 bg-white/[0.04] border border-white/[0.08] text-white/60 text-xs font-medium rounded-lg hover:text-white hover:border-white/20 transition-all shrink-0"
           >
             Editar proyecto
@@ -128,7 +128,8 @@ export function ProjectDetailClient({
         <ProjectEditForm
           project={project}
           allClients={allClients}
-          onClose={() => setEditing(false)}
+          focusSection={editing}
+          onClose={() => setEditing(null)}
         />
       )}
 
@@ -149,7 +150,7 @@ export function ProjectDetailClient({
                 <p className="text-white/50 text-sm">Sin descripción ni alcance.</p>
                 <button
                   type="button"
-                  onClick={() => setEditing(true)}
+                  onClick={() => setEditing("form")}
                   className="text-[#1AA7F0]/60 text-[10px] hover:text-[#1AA7F0] transition-colors"
                 >
                   + agregar
@@ -334,7 +335,7 @@ export function ProjectDetailClient({
               <p className="text-white/50 text-[10px] uppercase tracking-widest">Resumen</p>
               <button
                 type="button"
-                onClick={() => setEditing(true)}
+                onClick={() => setEditing("form")}
                 className="text-[#1AA7F0]/60 text-[10px] hover:text-[#1AA7F0] transition-colors"
               >
                 editar
@@ -377,7 +378,7 @@ export function ProjectDetailClient({
               <p className="text-white/50 text-[10px] uppercase tracking-widest">Financiación</p>
               <button
                 type="button"
-                onClick={() => setEditing(true)}
+                onClick={() => setEditing("financing")}
                 className="text-[#1AA7F0]/60 text-[10px] hover:text-[#1AA7F0] transition-colors"
               >
                 {plan ? "editar" : "+ agregar"}
