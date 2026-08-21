@@ -8,6 +8,7 @@ import { markSchedulePaidAction } from "@/app/(empresa)/empresa/actions";
 import { PdfDownloadButton } from "@/components/empresa/document-builder/pdf-download-button";
 import { PdfPreviewFrame } from "@/components/empresa/document-builder/pdf-preview-frame";
 import { FREQUENCY_ADJECTIVE } from "@/lib/financing";
+import { ClientsPanel } from "./clients-panel";
 import { ProjectEditForm } from "./project-edit-form";
 import { DeliverablesPanel } from "./deliverables-panel";
 import { ContractsPanel } from "./contracts-panel";
@@ -47,6 +48,9 @@ export function ProjectDetailClient({
   const totalScheduled = allSchedules.reduce((s, sc) => s + sc.amount, 0);
   const totalPaid = allSchedules.filter((s) => s.status === "PAID").reduce((s, sc) => s + sc.amount, 0);
   const mainClient = project.clients[0] ?? null;
+  const clientsPanel = (
+    <ClientsPanel projectId={project.id} clients={project.clients} allClients={allClients} />
+  );
   const plan = project.financingPlan;
 
   async function handleMarkPaid(id: string) {
@@ -91,7 +95,9 @@ export function ProjectDetailClient({
               {PROJECT_STATUS_LABEL[project.status]}
             </span>
           </div>
-          {project.clients.length > 0 && (
+          {project.clients.length === 0 ? (
+            <p className="text-amber-400/80 text-sm">Sin cliente asignado</p>
+          ) : (
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
               {project.clients.map((c, i) => (
                 <span key={c.id} className="flex items-center gap-2">
@@ -124,6 +130,12 @@ export function ProjectDetailClient({
           allClients={allClients}
           onClose={() => setEditing(false)}
         />
+      )}
+
+      {/* Sin cliente el proyecto no factura: el aviso va a ancho completo,
+          no escondido en la barra lateral. */}
+      {project.clients.length === 0 && (
+        <div className="mb-5">{clientsPanel}</div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -312,8 +324,10 @@ export function ProjectDetailClient({
           )}
         </div>
 
-        {/* Sidebar */}
+          {/* Sidebar */}
         <div className="space-y-4">
+          {project.clients.length > 0 && clientsPanel}
+
           {/* Fechas y presupuesto */}
           <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-3">
             <div className="flex items-center justify-between">
