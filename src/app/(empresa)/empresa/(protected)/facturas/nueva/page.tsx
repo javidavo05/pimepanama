@@ -9,10 +9,10 @@ export const metadata = { title: "Nueva Factura — Pime Suite" };
 export default async function NuevaFacturaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ cobrar?: string; clientId?: string }>;
+  searchParams: Promise<{ cobrar?: string; clientId?: string; projectId?: string }>;
 }) {
   const user = await getEmpresaUser();
-  const { cobrar, clientId } = await searchParams;
+  const { cobrar, clientId, projectId } = await searchParams;
 
   const [clients, paymentMethods, projects, contracts, receivables] = await Promise.all([
     prisma.client.findMany({ where: { userId: user.id }, orderBy: { name: "asc" } }),
@@ -41,6 +41,7 @@ export default async function NuevaFacturaPage({
       receivables={receivables}
       preselectReceivableId={cobrar}
       preselectClientId={clientId}
+      preselectProjectId={projectId}
     />
   );
 }

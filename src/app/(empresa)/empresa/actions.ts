@@ -23,7 +23,8 @@ import {
   collectQuoteWithInvoice,
   type CollectResult,
 } from "@/lib/collect-receivable";
-import { DocumentType, DocumentStatus, ProjectStatus, ContractStatus, LeadStatus, LeadSource } from "@prisma/client";
+import { DocumentType, DocumentStatus, ProjectStatus, ContractStatus, LeadStatus, LeadSource, Prisma } from "@prisma/client";
+import type { FinancingPlan } from "@/lib/financing";
 import { serializeProject, serializeContract, serializeSchedule, serializeLead } from "@/lib/serializers";
 
 const DOCUMENT_LIST_PATH: Record<DocumentType, string> = {
@@ -638,32 +639,125 @@ export async function updateProjectAction(
   id: string,
   data: Partial<{
     name: string;
-    clientId: string;
-    description: string;
-    scope: string;
+    clientId: string | null;
+    description: string | null;
+    scope: string | null;
     status: ProjectStatus;
-    startDate: string;
-    endDate: string;
-    totalBudget: number;
-    aiSummary: string;
+    startDate: string | null;
+    endDate: string | null;
+    totalBudget: number | null;
+    aiSummary: string | null;
     aiTags: string[];
+    financingPlan: FinancingPlan | null;
   }>
 ) {
   const user = await getEmpresaUser();
   const existing = await prisma.project.findFirst({ where: { id, userId: user.id } });
   if (!existing) throw new Error("Proyecto no encontrado");
+
+  // `undefined` = no tocar el campo, `null` = vaciarlo. Sin esa distinción no
+  // había forma de quitar una fecha o un presupuesto ya guardado.
+  const toDate = (v: string | null | undefined) =>
+    v === undefined ? undefined : v ? new Date(v) : null;
+
   const project = await prisma.project.update({
     where: { id },
     data: {
-      ...data,
-      startDate: data.startDate ? new Date(data.startDate) : undefined,
-      endDate: data.endDate ? new Date(data.endDate) : undefined,
+      name: data.name,
+      clientId: data.clientId,
+      description: data.description,
+      scope: data.scope,
+      status: data.status,
+      startDate: toDate(data.startDate),
+      endDate: toDate(data.endDate),
+      totalBudget: data.totalBudget,
+      aiSummary: data.aiSummary,
+      aiTags: data.aiTags,
+      financingPlan:
+        data.financingPlan === undefined
+          ? undefined
+          : data.financingPlan ?? Prisma.DbNull,
     },
   });
   revalidatePath("/empresa/proyectos");
   revalidatePath(`/empresa/proyectos/${id}`);
   revalidatePath("/empresa");
   return serializeProject(project);
+}
+
+// ─── Entregables ─────────────────────────────────────────────────────────────
+
+export async function createDeliverableAction(
+  projectId: string,
+  data: { name: string; description?: string | null; dueDate?: string | null }
+) {
+  const user = await getEmpresaUser();
+  const project = await prisma.project.findFirst({
+    where: { id: projectId, userId: user.id },
+    select: { id: true },
+  });
+  if (!project) throw new Error("Proyecto no encontrado");
+  if (!data.name.trim()) throw new Error("El entregable necesita un nombre");
+
+  const last = await prisma.deliverable.findFirst({
+    where: { projectId },
+    orderBy: { sortOrder: "desc" },
+    select: { sortOrder: true },
+  });
+
+  await prisma.deliverable.create({
+    data: {
+      projectId,
+      name: data.name.trim(),
+      description: data.description?.trim() || null,
+      dueDate: data.dueDate ? new Date(data.dueDate) : null,
+      sortOrder: (last?.sortOrder ?? -1) + 1,
+      source: "MANUAL",
+    },
+  });
+  revalidatePath(`/empresa/proyectos/${projectId}`);
+}
+
+export async function updateDeliverableAction(
+  id: string,
+  data: Partial<{
+    name: string;
+    description: string | null;
+    dueDate: string | null;
+    completed: boolean;
+  }>
+) {
+  const user = await getEmpresaUser();
+  const existing = await prisma.deliverable.findFirst({
+    where: { id, project: { userId: user.id } },
+    select: { id: true, projectId: true, completed: true },
+  });
+  if (!existing) throw new Error("Entregable no encontrado");
+
+  await prisma.deliverable.update({
+    where: { id },
+    data: {
+      name: data.name?.trim(),
+      description: data.description === undefined ? undefined : data.description?.trim() || null,
+      dueDate: data.dueDate === undefined ? undefined : data.dueDate ? new Date(data.dueDate) : null,
+      completed: data.completed,
+      // La fecha de cierre la pone el sistema, no el formulario.
+      completedAt:
+        data.completed === undefined ? undefined : data.completed ? new Date() : null,
+    },
+  });
+  revalidatePath(`/empresa/proyectos/${existing.projectId}`);
+}
+
+export async function deleteDeliverableAction(id: string) {
+  const user = await getEmpresaUser();
+  const existing = await prisma.deliverable.findFirst({
+    where: { id, project: { userId: user.id } },
+    select: { id: true, projectId: true },
+  });
+  if (!existing) throw new Error("Entregable no encontrado");
+  await prisma.deliverable.delete({ where: { id } });
+  revalidatePath(`/empresa/proyectos/${existing.projectId}`);
 }
 
 export async function deleteProjectAction(id: string) {
@@ -711,29 +805,34 @@ export async function updateContractAction(
   id: string,
   data: Partial<{
     title: string;
-    projectId: string;
-    clientId: string;
-    description: string;
-    responsibilities: string;
-    terms: string;
-    htmlContent: string;
+    projectId: string | null;
+    clientId: string | null;
+    description: string | null;
+    responsibilities: string | null;
+    terms: string | null;
+    htmlContent: string | null;
     status: ContractStatus;
-    signedAt: string;
-    startsAt: string;
-    endsAt: string;
-    value: number;
+    signedAt: string | null;
+    startsAt: string | null;
+    endsAt: string | null;
+    value: number | null;
   }>
 ) {
   const user = await getEmpresaUser();
   const existing = await prisma.contract.findFirst({ where: { id, userId: user.id } });
   if (!existing) throw new Error("Contrato no encontrado");
+
+  // Igual que en los proyectos: `undefined` no toca el campo, `null` lo vacía.
+  const toDate = (v: string | null | undefined) =>
+    v === undefined ? undefined : v ? new Date(v) : null;
+
   const contract = await prisma.contract.update({
     where: { id },
     data: {
       ...data,
-      signedAt: data.signedAt ? new Date(data.signedAt) : undefined,
-      startsAt: data.startsAt ? new Date(data.startsAt) : undefined,
-      endsAt: data.endsAt ? new Date(data.endsAt) : undefined,
+      signedAt: toDate(data.signedAt),
+      startsAt: toDate(data.startsAt),
+      endsAt: toDate(data.endsAt),
     },
   });
   revalidatePath("/empresa/contratos");
@@ -748,6 +847,7 @@ export async function deleteContractAction(id: string) {
   if (!existing) throw new Error("Contrato no encontrado");
   await prisma.contract.delete({ where: { id } });
   revalidatePath("/empresa/contratos");
+  if (existing.projectId) revalidatePath(`/empresa/proyectos/${existing.projectId}`);
 }
 
 // ─── Leads (CRM) ────────────────────────────────────────────────────────────────

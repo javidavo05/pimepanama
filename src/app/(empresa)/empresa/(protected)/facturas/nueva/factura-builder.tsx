@@ -99,6 +99,8 @@ interface FacturaBuilderProps {
   preselectReceivableId?: string;
   /** Cliente a precargar (viene de ?clientId= al pulsar "+ Factura" en su perfil). */
   preselectClientId?: string;
+  /** Proyecto a precargar (viene de ?projectId= al facturar desde el proyecto). */
+  preselectProjectId?: string;
   mode?: "create" | "edit";
   initialDocument?: SerializedDocument;
 }
@@ -113,6 +115,7 @@ export function FacturaBuilder({
   receivables = [],
   preselectReceivableId,
   preselectClientId,
+  preselectProjectId,
   mode = "create",
   initialDocument,
 }: FacturaBuilderProps) {
@@ -225,6 +228,13 @@ export function FacturaBuilder({
     setValue("clientAddress", client.address ?? "");
     setValue("clientRuc", client.ruc ?? "");
   }, [preselectClientId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Precarga del proyecto al entrar desde su ficha (?projectId=)
+  useEffect(() => {
+    if (mode !== "create" || !preselectProjectId) return;
+    if (!projects.some((p) => p.id === preselectProjectId)) return;
+    setValue("projectId", preselectProjectId);
+  }, [preselectProjectId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Preselección desde "Facturar" en Cuentas por Cobrar
   useEffect(() => {

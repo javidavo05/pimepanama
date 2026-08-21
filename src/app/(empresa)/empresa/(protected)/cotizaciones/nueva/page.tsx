@@ -8,10 +8,10 @@ export const metadata = { title: "Nueva Cotización — Pime Suite" };
 export default async function NuevaCotizacionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ leadId?: string }>;
+  searchParams: Promise<{ leadId?: string; projectId?: string; clientId?: string }>;
 }) {
   const user = await getEmpresaUser();
-  const { leadId } = await searchParams;
+  const { leadId, projectId, clientId } = await searchParams;
   const [clients, paymentMethods, projects, contracts, leads] = await Promise.all([
     prisma.client.findMany({ where: { userId: user.id }, orderBy: { name: "asc" } }),
     prisma.paymentMethod.findMany({ where: { userId: user.id, isActive: true }, orderBy: { name: "asc" } }),
@@ -31,6 +31,8 @@ export default async function NuevaCotizacionPage({
       contracts={contracts.map(serializeContract)}
       mode="create"
       initialLeadId={leadId}
+      initialProjectId={projectId}
+      initialClientId={clientId}
     />
   );
 }

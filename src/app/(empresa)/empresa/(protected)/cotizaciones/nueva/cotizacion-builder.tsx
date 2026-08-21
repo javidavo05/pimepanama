@@ -27,6 +27,10 @@ interface CotizacionBuilderProps {
   mode?: "create" | "edit";
   initialDocument?: SerializedDocument;
   initialLeadId?: string;
+  /** Proyecto a precargar (viene de ?projectId= al pulsar "+ Cotización" en el proyecto). */
+  initialProjectId?: string;
+  /** Cliente a precargar (viene de ?clientId=). */
+  initialClientId?: string;
 }
 
 const STATUS_OPTS = [
@@ -74,12 +78,14 @@ function getInitialValues(doc?: SerializedDocument, currency = "USD", taxRate = 
 
 export function CotizacionBuilder({
   taxRateDefault, currency, clients, leads = [], paymentMethods, projects = [], contracts = [], mode = "create", initialDocument, initialLeadId,
+  initialProjectId, initialClientId,
 }: CotizacionBuilderProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [translating, setTranslating] = useState(false);
   const [lastTranslateCost, setLastTranslateCost] = useState<number | null>(null);
   const preselectedLead = initialLeadId ? leads.find((l) => l.id === initialLeadId) : undefined;
+  const preselectedClient = initialClientId ? clients.find((c) => c.id === initialClientId) : undefined;
   const [contactMode, setContactMode] = useState<"client" | "lead">(
     initialDocument?.leadId || preselectedLead ? "lead" : "client"
   );
@@ -88,12 +94,14 @@ export function CotizacionBuilder({
     defaultValues: {
       ...(getInitialValues(initialDocument, currency, taxRateDefault) as DocumentFormValues),
       leadId: initialDocument?.leadId ?? initialLeadId ?? "",
-      clientName: initialDocument?.clientName ?? preselectedLead?.name ?? "",
-      clientEmail: initialDocument?.clientEmail ?? preselectedLead?.email ?? "",
-      clientCompany: initialDocument?.clientCompany ?? preselectedLead?.company ?? "",
-      clientAddress: initialDocument?.clientAddress ?? preselectedLead?.address ?? "",
-      clientPhone: preselectedLead?.phone ?? "",
-      projectId: "",
+      clientId: initialDocument?.clientId ?? preselectedClient?.id ?? "",
+      clientName: initialDocument?.clientName ?? preselectedLead?.name ?? preselectedClient?.name ?? "",
+      clientEmail: initialDocument?.clientEmail ?? preselectedLead?.email ?? preselectedClient?.email ?? "",
+      clientCompany: initialDocument?.clientCompany ?? preselectedLead?.company ?? preselectedClient?.company ?? "",
+      clientAddress: initialDocument?.clientAddress ?? preselectedLead?.address ?? preselectedClient?.address ?? "",
+      clientPhone: preselectedLead?.phone ?? preselectedClient?.phone ?? "",
+      clientRuc: initialDocument?.clientRuc ?? preselectedClient?.ruc ?? "",
+      projectId: initialDocument?.projectId ?? initialProjectId ?? "",
       contractId: "",
       paymentSchedules: [],
     },

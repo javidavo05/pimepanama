@@ -313,7 +313,7 @@ export function testSsh(profile) {
     return { ok: true, message: out.trim() };
   } catch (err) {
     const body = `${err.stdout ?? ""}${err.stderr ?? ""}`.trim();
-    if (/Hi [\w-]+!/.test(body)) return { ok: true, message: body };
+    if (/Hi [\w./-]+!/.test(body)) return { ok: true, message: body };
     return { ok: false, message: body || String(err.message) };
   }
 }

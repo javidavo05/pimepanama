@@ -2,37 +2,41 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
+import type { FinancingPlan } from "@/lib/financing";
 import { ProjectDetailClient } from "./project-detail-client";
 
 export const dynamic = "force-dynamic";
-
-const STATUS_LABEL: Record<string, string> = {
-  ACTIVE: "Activo", PAUSED: "Pausado", COMPLETED: "Completado", CANCELLED: "Cancelado",
-};
-const STATUS_COLOR: Record<string, string> = {
-  ACTIVE: "bg-green-500/15 text-green-400 border-green-500/20",
-  PAUSED: "bg-amber-500/15 text-amber-400 border-amber-500/20",
-  COMPLETED: "bg-blue-500/15 text-blue-400 border-blue-500/20",
-  CANCELLED: "bg-white/[0.05] text-white/55 border-white/[0.08]",
-};
 
 export default async function ProyectoDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const user = await getEmpresaUser();
 
-  const project = await prisma.project.findFirst({
-    where: { id, userId: user.id },
-    include: {
-      client: { select: { id: true, name: true, company: true } },
-      contracts: { orderBy: { createdAt: "desc" } },
-      documents: {
-        select: { id: true, type: true, number: true, status: true, total: true, issueDate: true, clientName: true, linkedDocumentId: true, paymentSchedules: true },
-        orderBy: { createdAt: "desc" },
+  const [project, allClients] = await Promise.all([
+    prisma.project.findFirst({
+      where: { id, userId: user.id },
+      include: {
+        client: { select: { id: true, name: true, company: true } },
+        clients: { include: { client: { select: { id: true, name: true, company: true } } } },
+        deliverables: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+        contracts: { orderBy: { createdAt: "desc" } },
+        documents: {
+          select: { id: true, type: true, number: true, status: true, total: true, issueDate: true, clientName: true, linkedDocumentId: true, paymentSchedules: true },
+          orderBy: { createdAt: "desc" },
+        },
       },
-    },
-  });
+    }),
+    prisma.client.findMany({ where: { userId: user.id }, orderBy: { name: "asc" } }),
+  ]);
 
   if (!project) notFound();
+
+  // Los clientes del proyecto viven en ProjectClient; `client` es el espejo
+  // legacy del principal y solo se usa como respaldo si la tabla está vacía.
+  const projectClients = project.clients.length > 0
+    ? project.clients.map((pc) => pc.client)
+    : project.client
+      ? [project.client]
+      : [];
 
   const serialized = {
     ...project,
@@ -42,6 +46,14 @@ export default async function ProyectoDetailPage({ params }: { params: Promise<{
     createdAt: project.createdAt.toISOString(),
     updatedAt: project.updatedAt.toISOString(),
     hasProposal: project.proposalContent != null,
+    financingPlan: (project.financingPlan as FinancingPlan | null) ?? null,
+    clients: projectClients,
+    deliverables: project.deliverables.map((d) => ({
+      ...d,
+      dueDate: d.dueDate?.toISOString() ?? null,
+      completedAt: d.completedAt?.toISOString() ?? null,
+      createdAt: d.createdAt.toISOString(),
+    })),
     contracts: project.contracts.map((c) => ({
       ...c,
       value: c.value != null ? Number(c.value) : null,
@@ -74,31 +86,7 @@ export default async function ProyectoDetailPage({ params }: { params: Promise<{
         <span className="text-white/60 truncate max-w-xs">{project.name}</span>
       </div>
 
-      {/* Header */}
-      <div className="flex items-start justify-between mb-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-white text-2xl font-semibold tracking-tight">{project.name}</h1>
-            <span className={`px-2 py-0.5 text-xs rounded border ${STATUS_COLOR[project.status]}`}>
-              {STATUS_LABEL[project.status]}
-            </span>
-          </div>
-          {project.client && (
-            <Link href={`/empresa/clientes/${project.client.id}`}
-              className="text-white/60 text-sm hover:text-[#1AA7F0] transition-colors">
-              {project.client.name}{project.client.company ? ` — ${project.client.company}` : ""}
-            </Link>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <Link href={`/empresa/contratos/nuevo?projectId=${project.id}&clientId=${project.clientId ?? ""}`}
-            className="px-3 py-1.5 bg-white/[0.04] border border-white/[0.08] text-white/60 text-xs font-medium rounded-lg hover:text-white hover:border-white/20 transition-all">
-            + Contrato
-          </Link>
-        </div>
-      </div>
-
-      <ProjectDetailClient project={serialized} />
+      <ProjectDetailClient project={serialized} allClients={allClients} />
     </div>
   );
 }
