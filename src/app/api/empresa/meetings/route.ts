@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { withEmpresaRoute } from "@/app/api/empresa/_route";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { serializeMeeting } from "@/lib/meetings/serialize";
@@ -6,7 +7,7 @@ import { parseAttendees } from "@/lib/meetings/types";
 
 export const runtime = "nodejs";
 
-export async function GET(req: NextRequest) {
+export const GET = withEmpresaRoute(async (req) => {
   const user = await requireEmpresaUser(req);
   const sp = req.nextUrl.searchParams;
   const projectId = sp.get("projectId") ?? undefined;
@@ -36,9 +37,9 @@ export async function GET(req: NextRequest) {
       _count: m._count,
     }))
   );
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = withEmpresaRoute(async (req) => {
   const user = await requireEmpresaUser(req);
   const body = await req.json();
 
@@ -85,4 +86,4 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(serializeMeeting(meeting), { status: 201 });
-}
+});

@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { withEmpresaIdRoute } from "@/app/api/empresa/_route";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { deleteR2Object } from "@/lib/r2";
@@ -23,7 +24,7 @@ async function loadMeeting(userId: string, id: string) {
   });
 }
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withEmpresaIdRoute(async (req, { params }) => {
   const user = await requireEmpresaUser(req);
   const { id } = await params;
   const meeting = await loadMeeting(user.id, id);
@@ -36,9 +37,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     speakers: meeting.speakers.map(serializeMeetingSpeaker),
     actionItems: meeting.actionItems.map(serializeMeetingActionItem),
   });
-}
+});
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withEmpresaIdRoute(async (req, { params }) => {
   const user = await requireEmpresaUser(req);
   const { id } = await params;
   const existing = await prisma.meeting.findFirst({ where: { id, userId: user.id }, select: { id: true } });
@@ -84,9 +85,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const meeting = await prisma.meeting.update({ where: { id }, data });
   return NextResponse.json(serializeMeeting(meeting));
-}
+});
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withEmpresaIdRoute(async (req, { params }) => {
   const user = await requireEmpresaUser(req);
   const { id } = await params;
   const meeting = await prisma.meeting.findFirst({
@@ -101,4 +102,4 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   await prisma.meeting.delete({ where: { id } });
 
   return NextResponse.json({ ok: true });
-}
+});

@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { withEmpresaIdRoute } from "@/app/api/empresa/_route";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { serializeMeetingActionItem } from "@/lib/meetings/serialize";
@@ -31,7 +32,7 @@ function buildTaskDescription(item: {
  * como entregables del proyecto). Es idempotente por pendiente: uno que ya tiene
  * `taskId` se salta en vez de duplicarse.
  */
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withEmpresaIdRoute(async (req, { params }) => {
   const user = await requireEmpresaUser(req);
   const { id } = await params;
 
@@ -121,4 +122,4 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     skipped: skipped.length,
     actionItems: refreshed.map(serializeMeetingActionItem),
   });
-}
+});

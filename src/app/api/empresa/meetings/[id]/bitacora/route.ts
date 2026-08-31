@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { withEmpresaIdRoute } from "@/app/api/empresa/_route";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { ensurePimeOwner } from "@/lib/bitacora-attendees";
@@ -11,7 +12,7 @@ export const runtime = "nodejs";
  * ejecutiva de la reunión — el documento que sí sale hacia el cliente y que ya
  * tiene plantilla de PDF. La minuta técnica y el prompt se quedan adentro.
  */
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withEmpresaIdRoute(async (req, { params }) => {
   const user = await requireEmpresaUser(req);
   const { id } = await params;
 
@@ -97,4 +98,4 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   await prisma.meeting.update({ where: { id }, data: { bitacoraId: document.id } });
 
   return NextResponse.json({ documentId: document.id, number }, { status: 201 });
-}
+});

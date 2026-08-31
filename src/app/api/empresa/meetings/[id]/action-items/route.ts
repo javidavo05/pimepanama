@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
+import { withEmpresaIdRoute } from "@/app/api/empresa/_route";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { serializeMeetingActionItem } from "@/lib/meetings/serialize";
@@ -9,7 +10,7 @@ const KINDS = ["TECNICO", "COMERCIAL", "ADMINISTRATIVO", "DECISION", "RIESGO"];
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
 
 /** Crea un pendiente a mano sobre una reunión ya procesada. */
-export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withEmpresaIdRoute(async (req, { params }) => {
   const user = await requireEmpresaUser(req);
   const { id } = await params;
 
@@ -39,10 +40,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   });
 
   return NextResponse.json(serializeMeetingActionItem(item), { status: 201 });
-}
+});
 
 /** Edita un pendiente. El id del pendiente va en el body para no anidar otra ruta. */
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withEmpresaIdRoute(async (req, { params }) => {
   const user = await requireEmpresaUser(req);
   const { id } = await params;
   const body = await req.json();
@@ -66,9 +67,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   const item = await prisma.meetingActionItem.update({ where: { id: itemId }, data });
   return NextResponse.json(serializeMeetingActionItem(item));
-}
+});
 
-export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withEmpresaIdRoute(async (req, { params }) => {
   const user = await requireEmpresaUser(req);
   const { id } = await params;
   const itemId = req.nextUrl.searchParams.get("itemId") ?? "";
@@ -81,4 +82,4 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   await prisma.meetingActionItem.delete({ where: { id: itemId } });
   return NextResponse.json({ ok: true });
-}
+});
