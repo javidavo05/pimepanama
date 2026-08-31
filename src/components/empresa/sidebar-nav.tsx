@@ -20,6 +20,7 @@ const NAV_ITEMS = [
   { href: "/empresa/cuentas-por-cobrar", label: "Por Cobrar", icon: "💰" },
   { href: "/empresa/por-pagar", label: "Por pagar", icon: "💸" },
   { href: "/empresa/platforms", label: "Platforms", icon: "🖥️" },
+  { href: "/empresa/reuniones", label: "Reuniones", icon: "🎙️" },
   { href: "/empresa/bitacoras", label: "Bitácoras", icon: "📝" },
   { href: "/empresa/correos/hub", label: "Correos", icon: "✉️" },
 ];

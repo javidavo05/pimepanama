@@ -18,6 +18,14 @@ export default async function ProyectoDetailPage({ params }: { params: Promise<{
         client: { select: { id: true, name: true, company: true } },
         clients: { include: { client: { select: { id: true, name: true, company: true } } } },
         deliverables: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+        meetings: {
+          select: {
+            id: true, title: true, status: true, meetingDate: true,
+            durationMs: true, contextSummary: true,
+            actionItems: { select: { taskId: true } },
+          },
+          orderBy: { meetingDate: "desc" },
+        },
         contracts: { orderBy: { createdAt: "desc" } },
         documents: {
           select: { id: true, type: true, number: true, status: true, total: true, issueDate: true, clientName: true, linkedDocumentId: true, paymentSchedules: true },
@@ -48,6 +56,16 @@ export default async function ProyectoDetailPage({ params }: { params: Promise<{
     hasProposal: project.proposalContent != null,
     financingPlan: (project.financingPlan as FinancingPlan | null) ?? null,
     clients: projectClients,
+    meetings: project.meetings.map((m) => ({
+      id: m.id,
+      title: m.title,
+      status: m.status,
+      meetingDate: m.meetingDate.toISOString(),
+      durationMs: m.durationMs,
+      contextSummary: m.contextSummary,
+      actionItemCount: m.actionItems.length,
+      openItemCount: m.actionItems.filter((i) => !i.taskId).length,
+    })),
     deliverables: project.deliverables.map((d) => ({
       ...d,
       dueDate: d.dueDate?.toISOString() ?? null,

@@ -12,6 +12,7 @@
     "db:seed-admin": "tsx prisma/seed-admin.ts",
     "db:update-content": "tsx prisma/update-landing-content.ts",
     "db:setup-supabase": "node scripts/setup-supabase-db.cjs",
+    "db:migrate:supabase": "node scripts/apply-supabase-migration.cjs",
     "vercel:env-supabase": "node scripts/vercel-env-supabase.cjs",
     "export": "next build",
     "deploy:vercel": "node scripts/deploy-vercel.cjs",

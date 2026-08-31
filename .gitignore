@@ -29,6 +29,11 @@ yarn-error.log*
 .env*.local
 .env
 
+# secretos locales que nunca deben salir del equipo
+# (.env.local.bak no lo cubría el patrón de arriba, y el xlsx trae accesos)
+*.bak
+Plataformas access and data.xlsx
+
 # vercel (project.json se commitea para fijar el proyecto correcto)
 .vercel/*
 !.vercel/project.json

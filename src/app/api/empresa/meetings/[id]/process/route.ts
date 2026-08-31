@@ -1,0 +1,266 @@
+import { NextRequest, NextResponse } from "next/server";
+import { requireEmpresaUser } from "@/app/api/empresa/_auth";
+import { prisma } from "@/lib/prisma";
+import { buildProjectContext } from "@/lib/meetings/context";
+import {
+  getOpenAI,
+  logMeetingAiUsage,
+  runActionItems,
+  runDiarization,
+  runMinutes,
+  runTechnicalPrompt,
+} from "@/lib/meetings/pipeline";
+import { buildDiarizedText, orgForSpeaker, speakerStats } from "@/lib/meetings/transcript";
+import {
+  parseAttendees,
+  parseSegments,
+  type ExecutiveMinutes,
+  type MeetingSegment,
+  type TechnicalMinutes,
+} from "@/lib/meetings/types";
+import { serializeMeetingActionItem } from "@/lib/meetings/serialize";
+
+export const runtime = "nodejs";
+export const maxDuration = 300;
+
+const STAGES = ["diarize", "minutes", "items", "prompt"] as const;
+type Stage = (typeof STAGES)[number];
+
+/**
+ * Procesa la reunión por etapas. Se ejecutan una a una desde el cliente en vez
+ * de todo en una llamada porque cada etapa son 1-N llamadas a GPT-4o sobre una
+ * transcripción larga, y el conjunto se pasa del techo de 300 s de una función.
+ * Dividirlo también deja ver el avance y reintentar una sola etapa.
+ */
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const started = Date.now();
+  let meetingId = "";
+
+  try {
+    const user = await requireEmpresaUser(req);
+    const { id } = await params;
+    meetingId = id;
+
+    const body = await req.json().catch(() => ({}));
+    const stage: Stage = STAGES.includes(body?.stage) ? body.stage : "diarize";
+
+    const meeting = await prisma.meeting.findFirst({
+      where: { id, userId: user.id },
+      include: { actionItems: { orderBy: { sortOrder: "asc" } } },
+    });
+    if (!meeting) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    const segments = parseSegments(meeting.segments);
+    if (segments.length === 0) {
+      return NextResponse.json(
+        { error: "La reunión no tiene transcripción todavía." },
+        { status: 400 }
+      );
+    }
+
+    const attendees = parseAttendees(meeting.attendees);
+    const { block: projectContext } = await buildProjectContext(user.id, meeting.projectId, meeting.id);
+    const openai = getOpenAI();
+
+    await prisma.meeting.update({
+      where: { id },
+      data: { status: "PROCESSING", errorMessage: null },
+    });
+
+    // ── Etapa 1: quién dijo qué ──────────────────────────────────────────────
+    if (stage === "diarize") {
+      const result = await runDiarization(openai, segments, attendees, projectContext);
+      const diarizedText = buildDiarizedText(result.data);
+      const stats = speakerStats(result.data);
+
+      await prisma.$transaction([
+        prisma.meetingSpeaker.deleteMany({ where: { meetingId: id } }),
+        prisma.meetingSpeaker.createMany({
+          data: [...stats.entries()].map(([label, s]) => ({
+            meetingId: id,
+            label,
+            name: label.startsWith("Hablante") || label === "Desconocido" ? null : label,
+            org: orgForSpeaker(label, attendees),
+            segmentCount: s.segmentCount,
+            talkMs: s.talkMs,
+          })),
+        }),
+        prisma.meeting.update({
+          where: { id },
+          data: {
+            segments: result.data as unknown as object[],
+            diarizedText,
+            status: "TRANSCRIBED",
+            aiCostUSD: { increment: result.costUSD },
+          },
+        }),
+      ]);
+
+      await logMeetingAiUsage(
+        user.supabaseUid,
+        "meeting-diarize",
+        result.inputTokens,
+        result.outputTokens,
+        Date.now() - started
+      );
+
+      return NextResponse.json({
+        stage,
+        diarizedText,
+        speakers: [...stats.keys()],
+        costUSD: result.costUSD,
+      });
+    }
+
+    const diarizedText = meeting.diarizedText?.trim() || fallbackTranscript(meeting.transcript, segments);
+
+    // ── Etapa 2: minuta ejecutiva + minuta técnica ───────────────────────────
+    if (stage === "minutes") {
+      const result = await runMinutes(openai, diarizedText, attendees, projectContext);
+
+      await prisma.meeting.update({
+        where: { id },
+        data: {
+          executiveMinutes: result.data.executive as unknown as object,
+          technicalMinutes: result.data.technical as unknown as object,
+          status: "PROCESSING",
+          aiCostUSD: { increment: result.costUSD },
+        },
+      });
+
+      await logMeetingAiUsage(
+        user.supabaseUid,
+        "meeting-minutes",
+        result.inputTokens,
+        result.outputTokens,
+        Date.now() - started
+      );
+
+      return NextResponse.json({ stage, ...result.data, costUSD: result.costUSD });
+    }
+
+    const technical = meeting.technicalMinutes as unknown as TechnicalMinutes | null;
+    if (!technical) {
+      return NextResponse.json(
+        { error: "Genera primero las minutas: los pendientes salen de la minuta técnica." },
+        { status: 400 }
+      );
+    }
+
+    // ── Etapa 3: pendientes accionables ──────────────────────────────────────
+    if (stage === "items") {
+      const result = await runActionItems(openai, diarizedText, technical, attendees, projectContext);
+
+      // Solo se reemplazan los pendientes que aún no se materializaron en una
+      // tarea: los ya sincronizados viven en el módulo de Tareas y borrarlos
+      // dejaría tareas huérfanas.
+      await prisma.$transaction([
+        prisma.meetingActionItem.deleteMany({ where: { meetingId: id, taskId: null, deliverableId: null } }),
+        prisma.meetingActionItem.createMany({
+          data: result.data.map((item, i) => ({
+            meetingId: id,
+            title: item.title,
+            detail: item.detail ?? null,
+            kind: item.kind,
+            owner: item.owner ?? null,
+            dueDate: item.dueDate ? new Date(`${item.dueDate}T12:00:00`) : null,
+            priority: item.priority,
+            acceptance: item.acceptance,
+            touchpoints: item.touchpoints,
+            estimateHours: item.estimateHours ?? null,
+            sortOrder: i,
+          })),
+        }),
+        prisma.meeting.update({
+          where: { id },
+          data: { aiCostUSD: { increment: result.costUSD } },
+        }),
+      ]);
+
+      await logMeetingAiUsage(
+        user.supabaseUid,
+        "meeting-action-items",
+        result.inputTokens,
+        result.outputTokens,
+        Date.now() - started
+      );
+
+      const items = await prisma.meetingActionItem.findMany({
+        where: { meetingId: id },
+        orderBy: { sortOrder: "asc" },
+      });
+
+      return NextResponse.json({
+        stage,
+        actionItems: items.map(serializeMeetingActionItem),
+        costUSD: result.costUSD,
+      });
+    }
+
+    // ── Etapa 4: prompt técnico + memoria del proyecto ───────────────────────
+    const executive = meeting.executiveMinutes as unknown as ExecutiveMinutes | null;
+    const items = await prisma.meetingActionItem.findMany({
+      where: { meetingId: id },
+      orderBy: { sortOrder: "asc" },
+    });
+
+    const result = await runTechnicalPrompt(
+      openai,
+      technical,
+      executive?.decisions ?? [],
+      items.map((i) => ({
+        title: i.title,
+        detail: i.detail ?? undefined,
+        kind: i.kind,
+        owner: i.owner ?? undefined,
+        dueDate: i.dueDate?.toISOString().slice(0, 10) ?? null,
+        priority: i.priority,
+        acceptance: i.acceptance,
+        touchpoints: i.touchpoints,
+        estimateHours: i.estimateHours,
+      })),
+      projectContext,
+      meeting.title
+    );
+
+    await prisma.meeting.update({
+      where: { id },
+      data: {
+        technicalPrompt: result.data.technicalPrompt,
+        contextSummary: result.data.contextSummary,
+        status: "READY",
+        aiCostUSD: { increment: result.costUSD },
+      },
+    });
+
+    await logMeetingAiUsage(
+      user.supabaseUid,
+      "meeting-tech-prompt",
+      result.inputTokens,
+      result.outputTokens,
+      Date.now() - started
+    );
+
+    return NextResponse.json({ stage: "prompt", ...result.data, costUSD: result.costUSD });
+  } catch (err) {
+    if (err instanceof Response) return err;
+    console.error("Meeting process error:", err);
+    if (meetingId) {
+      await prisma.meeting
+        .update({
+          where: { id: meetingId },
+          data: {
+            status: "FAILED",
+            errorMessage: err instanceof Error ? err.message.slice(0, 500) : "Error desconocido",
+          },
+        })
+        .catch(() => undefined);
+    }
+    return NextResponse.json({ error: "Error procesando la reunión" }, { status: 500 });
+  }
+}
+
+/** Si la diarización no corrió, se analiza la transcripción plana. */
+function fallbackTranscript(transcript: string | null, segments: MeetingSegment[]): string {
+  return transcript?.trim() || segments.map((s) => s.text).join(" ");
+}

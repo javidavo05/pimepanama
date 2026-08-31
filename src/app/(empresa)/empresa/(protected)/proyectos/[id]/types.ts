@@ -35,6 +35,18 @@ export interface Contract {
   signedAt: string | null;
 }
 
+export interface ProjectMeeting {
+  id: string;
+  title: string;
+  status: string;
+  meetingDate: string;
+  durationMs: number;
+  contextSummary: string | null;
+  actionItemCount: number;
+  /** Pendientes que todavía no se materializaron en una tarea */
+  openItemCount: number;
+}
+
 export interface Deliverable {
   id: string;
   name: string;
@@ -68,6 +80,7 @@ export interface Project {
   financingPlan: FinancingPlan | null;
   clients: ProjectClientRef[];
   deliverables: Deliverable[];
+  meetings: ProjectMeeting[];
   contracts: Contract[];
   documents: ProjectDocument[];
 }

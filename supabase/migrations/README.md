@@ -35,3 +35,4 @@ Todas las migraciones se corren manualmente en **Supabase → SQL Editor**.
 | 0020 | `0020_contract_html_content.sql` | Contract.htmlContent (TEXT) — documento HTML del design-system para editor visual y PDF | 2026-07-21 | ✅ Aplicado |
 | 0021 | `0021_project_clients.sql` | ProjectClient — un proyecto puede pertenecer a varios clientes; backfill desde Project.clientId (que queda como espejo legacy del cliente principal) | 2026-08-18 | ✅ Aplicado |
 | 0022 | `0022_deliverables_financing.sql` | Deliverable (entregables del proyecto, generados del contrato adjunto por IA) + Project.financingPlan (abono inicial + cuotas mensuales/quincenales) | 2026-08-18 | ✅ Aplicado |
+| 0023 | `0023_meetings.sql` | PimeMeet: Meeting + MeetingSpeaker + MeetingActionItem, enums MeetingStatus/MeetingItemKind — reuniones grabadas con transcripción, hablantes, minuta ejecutiva + técnica, pendientes técnicos y prompt técnico ligados a Project | 2026-08-31 | ✅ Aplicado |
