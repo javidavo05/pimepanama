@@ -18,6 +18,7 @@ import {
   MEETING_STATUS_LABEL,
   PRIORITY_LABEL,
 } from "../status";
+import { MeetingContextPanel } from "./meeting-context-panel";
 
 type Tab = "ejecutiva" | "tecnica" | "pendientes" | "prompt" | "transcripcion";
 
@@ -40,6 +41,8 @@ interface MeetingDetailProps {
   meeting: SerializedMeeting;
   project: { id: string; name: string } | null;
   client: { id: string; name: string; company: string | null } | null;
+  projects: { id: string; name: string; clientId: string | null }[];
+  clients: { id: string; name: string; company: string | null }[];
   speakers: SerializedMeetingSpeaker[];
   actionItems: SerializedMeetingActionItem[];
   executive: ExecutiveMinutes | null;
@@ -73,6 +76,8 @@ export function MeetingDetail({
   meeting,
   project,
   client,
+  projects,
+  clients,
   speakers,
   actionItems: initialItems,
   executive,
@@ -88,8 +93,42 @@ export function MeetingDetail({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [renaming, setRenaming] = useState<Record<string, string>>({});
 
   const unsynced = items.filter((i) => !i.taskId);
+
+  /**
+   * Le pone nombre real a una etiqueta que la IA dejó genérica ("Hablante 2").
+   * Reescribe la transcripción atribuida entera y marca esos segmentos como
+   * confirmados, así un reproceso posterior ya no los vuelve a adivinar.
+   */
+  async function renameSpeaker(from: string) {
+    const to = renaming[from]?.trim();
+    if (!to || to === from) return;
+    setBusy(`speaker-${from}`);
+    setError(null);
+    setMessage(null);
+    try {
+      const res = await fetch(`/api/empresa/meetings/${meeting.id}/speakers`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ labels: [{ from, to }] }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error ?? "No se pudo renombrar");
+      setRenaming((prev) => {
+        const next = { ...prev };
+        delete next[from];
+        return next;
+      });
+      setMessage(`«${from}» ahora es ${to}.`);
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo renombrar");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function runStage(stage: string, label: string) {
     setBusy(stage);
@@ -205,19 +244,62 @@ export function MeetingDetail({
 
         {speakers.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-4">
-            {speakers.map((s) => (
-              <span
-                key={s.id}
-                className="px-2.5 py-1 rounded-lg border border-white/[0.08] bg-white/[0.03] text-xs text-white/70"
-              >
-                {s.name ?? s.label}
-                <span className="text-white/40">
-                  {" "}
-                  · {s.org === "PIME" ? "Pime" : s.org === "CLIENTE" ? "Cliente" : "?"} ·{" "}
-                  {formatDuration(s.talkMs)}
+            {speakers.map((s) => {
+              const editing = renaming[s.label] !== undefined;
+              return (
+                <span
+                  key={s.id}
+                  className="px-2.5 py-1 rounded-lg border border-white/[0.08] bg-white/[0.03] text-xs text-white/70 flex items-center gap-1.5"
+                >
+                  {editing ? (
+                    <>
+                      <input
+                        autoFocus
+                        value={renaming[s.label]}
+                        onChange={(e) =>
+                          setRenaming((prev) => ({ ...prev, [s.label]: e.target.value }))
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") void renameSpeaker(s.label);
+                          if (e.key === "Escape")
+                            setRenaming((prev) => {
+                              const next = { ...prev };
+                              delete next[s.label];
+                              return next;
+                            });
+                        }}
+                        placeholder="Nombre real"
+                        className="bg-[#050508] border border-white/[0.08] rounded px-1.5 py-0.5 text-white text-xs w-32 focus:border-[#1AA7F0]/50 focus:outline-none"
+                      />
+                      <button
+                        onClick={() => void renameSpeaker(s.label)}
+                        disabled={busy !== null}
+                        className="text-[#1AA7F0] hover:text-[#0E87C8] transition-colors"
+                      >
+                        {busy === `speaker-${s.label}` ? "…" : "✓"}
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span>{s.name ?? s.label}</span>
+                      <span className="text-white/40">
+                        · {s.org === "PIME" ? "Pime" : s.org === "CLIENTE" ? "Cliente" : "?"} ·{" "}
+                        {formatDuration(s.talkMs)}
+                      </span>
+                      <button
+                        onClick={() =>
+                          setRenaming((prev) => ({ ...prev, [s.label]: s.name ?? "" }))
+                        }
+                        className="text-white/30 hover:text-[#1AA7F0] transition-colors"
+                        aria-label={`Renombrar ${s.label}`}
+                      >
+                        ✎
+                      </button>
+                    </>
+                  )}
                 </span>
-              </span>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -258,6 +340,16 @@ export function MeetingDetail({
         {message && <p className="text-green-400 text-xs mt-3">{message}</p>}
         {error && <p className="text-red-400 text-xs mt-3">{error}</p>}
       </div>
+
+      <MeetingContextPanel
+        meetingId={meeting.id}
+        projectId={meeting.projectId}
+        clientId={meeting.clientId}
+        manualContext={meeting.manualContext}
+        projects={projects}
+        clients={clients}
+        hasMinutes={executive !== null || technical !== null}
+      />
 
       {/* Tabs */}
       <div className="flex gap-1 overflow-x-auto pb-1">

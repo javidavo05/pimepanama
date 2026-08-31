@@ -953,6 +953,8 @@ model Meeting {
   technicalPrompt  String?
   /// Resumen corto que alimenta el contexto acumulado del proyecto
   contextSummary   String?
+  /// Contexto escrito a mano por el usuario después de grabar; entra al prompt junto al del proyecto
+  manualContext    String?
   audioKeys        String[]
   aiCostUSD        Float               @default(0)
   errorMessage     String?

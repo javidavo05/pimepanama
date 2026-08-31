@@ -1,4 +1,4 @@
-import type { MeetingAttendee, MeetingSegment } from "./types";
+import type { MeetingAttendee, MeetingChannel, MeetingSegment } from "./types";
 
 /** ms → "mm:ss" (o "h:mm:ss" si pasa de la hora) */
 export function formatTimestamp(ms: number): string {
@@ -23,33 +23,58 @@ export function formatDuration(ms: number): string {
  * Segmentos numerados para la pasada de diarización. El índice es el contrato:
  * el modelo responde con `{ i, speaker }` y nosotros re-pegamos por índice, así
  * el modelo nunca reescribe el texto de la transcripción.
+ *
+ * Los segmentos cuyo hablante ya se conoce (porque vinieron de un canal de audio
+ * separado o porque una persona lo asignó a mano) se listan con el nombre
+ * delante. No son para que el modelo los reasigne: son el ancla que le dice de
+ * quién es la voz que responde alrededor.
  */
 export function numberedSegments(segments: MeetingSegment[], offset = 0): string {
   return segments
-    .map((seg, i) => `[${offset + i}] (${formatTimestamp(seg.start)}) ${seg.text}`)
+    .map((seg, i) => {
+      const known = seg.speaker ? `«${seg.speaker}» ` : "";
+      return `[${offset + i}] (${formatTimestamp(seg.start)}) ${known}${seg.text}`;
+    })
     .join("\n");
 }
 
+/** Un turno de conversación: lo que dijo una persona antes de que hablara otra. */
+export interface SpeakerTurn {
+  speaker: string;
+  channel?: MeetingChannel;
+  /** ms desde el inicio de la reunión */
+  start: number;
+  text: string;
+}
+
 /**
- * Transcripción atribuida, en markdown. Agrupa segmentos consecutivos del mismo
- * hablante en un solo turno para que se lea como una conversación y no como una
- * lista de fragmentos.
+ * Agrupa segmentos consecutivos del mismo hablante en un solo turno, para que la
+ * conversación se lea como conversación y no como una lista de fragmentos.
+ * Lo usan tanto la vista en vivo como la transcripción final.
  */
-export function buildDiarizedText(segments: MeetingSegment[]): string {
-  const turns: { speaker: string; start: number; parts: string[] }[] = [];
+export function groupTurns(
+  segments: MeetingSegment[],
+  labelFor: (seg: MeetingSegment) => string = (seg) => seg.speaker ?? "Desconocido"
+): SpeakerTurn[] {
+  const turns: (SpeakerTurn & { parts: string[] })[] = [];
 
   for (const seg of segments) {
-    const speaker = seg.speaker ?? "Desconocido";
+    const speaker = labelFor(seg);
     const last = turns[turns.length - 1];
     if (last && last.speaker === speaker) {
       last.parts.push(seg.text);
     } else {
-      turns.push({ speaker, start: seg.start, parts: [seg.text] });
+      turns.push({ speaker, channel: seg.channel, start: seg.start, text: "", parts: [seg.text] });
     }
   }
 
-  return turns
-    .map((t) => `**${t.speaker}** (${formatTimestamp(t.start)}): ${t.parts.join(" ")}`)
+  return turns.map(({ parts, ...turn }) => ({ ...turn, text: parts.join(" ") }));
+}
+
+/** Transcripción atribuida, en markdown. */
+export function buildDiarizedText(segments: MeetingSegment[]): string {
+  return groupTurns(segments)
+    .map((t) => `**${t.speaker}** (${formatTimestamp(t.start)}): ${t.text}`)
     .join("\n\n");
 }
 

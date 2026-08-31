@@ -1,16 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { AttendeeOrg, MeetingAttendee } from "@/lib/meetings/types";
+import type { AttendeeOrg, MeetingAttendee, MeetingSegment } from "@/lib/meetings/types";
+import { MeetingCapture, looksLikeLoopback, type CaptureChannel, type CaptureMode } from "./live-capture";
+import { CHANNEL_ACCENT, LiveTranscript } from "./live-transcript";
+import { isInstantSpeechSupported, useInstantSpeech } from "./use-instant-speech";
 
 /**
- * Duración de cada tramo de grabación. Cada tramo se cierra y se sube como un
- * webm independiente y decodificable — por eso se reinicia el MediaRecorder en
- * vez de pedirle `timeslice`: los trozos de un mismo recorder no se pueden
- * transcribir por separado.
+ * Duración de cada tramo. Corto a propósito: es lo que hace que la transcripción
+ * se vea avanzar durante la reunión. Cada tramo es un webm completo e
+ * independiente — por eso se reinicia el MediaRecorder en vez de pedirle
+ * `timeslice`: los trozos de un mismo recorder no se pueden transcribir sueltos.
  */
-const SEGMENT_MS = 90_000;
+const SEGMENT_MS = 8_000;
 
 interface ProjectOption {
   id: string;
@@ -41,19 +44,74 @@ const STAGES = [
   { key: "prompt", label: "Armando el prompt técnico" },
 ] as const;
 
-function pickMimeType(): string {
-  const candidates = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"];
-  for (const type of candidates) {
-    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(type)) return type;
-  }
-  return "";
+interface ModeOption {
+  key: CaptureMode;
+  title: string;
+  detail: string;
+  tag: string;
+  tagClass: string;
 }
+
+const CAPTURE_MODES: ModeOption[] = [
+  {
+    key: "device",
+    title: "Micrófono + audio del sistema",
+    detail:
+      "Tu voz por un lado y la de la llamada por el otro, sin compartir pantalla. Necesita un dispositivo de audio virtual instalado (BlackHole o Loopback en Mac, VB-Cable en Windows) puesto como salida de la llamada.",
+    tag: "voces separadas",
+    tagClass: "bg-green-500/15 text-green-400 border-green-500/25",
+  },
+  {
+    key: "ambient",
+    title: "Micrófono ambiente",
+    detail:
+      "El micrófono capta la sala completa: tu voz y lo que sale por los altavoces. No hay que compartir nada ni instalar nada, pero hay que estar sin audífonos y las voces se separan al final con IA, no en vivo.",
+    tag: "sin configurar nada",
+    tagClass: "bg-[#1AA7F0]/15 text-[#1AA7F0] border-[#1AA7F0]/25",
+  },
+  {
+    key: "tab",
+    title: "Micrófono + pestaña compartida",
+    detail:
+      "Chrome pide compartir una pestaña: eliges la del Meet o Zoom y marcas «Compartir audio de la pestaña». Separa voces igual de bien, pero obliga a compartir pantalla.",
+    tag: "voces separadas",
+    tagClass: "bg-green-500/15 text-green-400 border-green-500/25",
+  },
+  {
+    key: "mic",
+    title: "Solo mi micrófono",
+    detail: "Para una nota de voz o una reunión presencial en la que solo hablas tú.",
+    tag: "una sola voz",
+    tagClass: "bg-white/[0.06] text-white/60 border-white/[0.12]",
+  },
+];
+
+const CHANNEL_TITLE: Record<CaptureChannel, string> = {
+  LOCAL: "Tu micrófono",
+  REMOTE: "Audio de la llamada",
+};
 
 function formatClock(ms: number): string {
   const total = Math.floor(ms / 1000);
   const m = Math.floor(total / 60);
   const s = total % 60;
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
+
+/** Barra de nivel: es lo que deja ver quién está hablando sin esperar al texto. */
+function LevelBar({ level, channel }: { level: number; channel: CaptureChannel }) {
+  const accent = CHANNEL_ACCENT[channel];
+  const talking = level > 0.12;
+  return (
+    <div className="h-1.5 w-full bg-white/[0.06] rounded-full overflow-hidden">
+      <div
+        className={`h-full rounded-full transition-[width] duration-75 ${accent.dot} ${
+          talking ? "opacity-100" : "opacity-40"
+        }`}
+        style={{ width: `${Math.round(level * 100)}%` }}
+      />
+    </div>
+  );
 }
 
 export function MeetingRecorder({
@@ -70,36 +128,69 @@ export function MeetingRecorder({
   const [clientId, setClientId] = useState("");
   const [language, setLanguage] = useState<"es" | "en">("es");
   const [meetingDate, setMeetingDate] = useState(() => new Date().toISOString().slice(0, 10));
-  const [captureTab, setCaptureTab] = useState(true);
   const [attendees, setAttendees] = useState<MeetingAttendee[]>([
     { name: creatorName?.trim() || "Javier Vallejo", org: "PIME" },
     { name: "", org: "CLIENTE" },
   ]);
 
+  const [mode, setMode] = useState<CaptureMode>("ambient");
+  const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
+  const [micDeviceId, setMicDeviceId] = useState("");
+  const [systemDeviceId, setSystemDeviceId] = useState("");
+  const [instantPreview, setInstantPreview] = useState(true);
+  // El soporte solo se conoce en el navegador; resolverlo en el render daría un
+  // HTML distinto en servidor y cliente.
+  const [speechSupported, setSpeechSupported] = useState(false);
+
   const [meetingId, setMeetingId] = useState<string | null>(null);
   const [elapsed, setElapsed] = useState(0);
-  const [transcript, setTranscript] = useState("");
+  const [segments, setSegments] = useState<MeetingSegment[]>([]);
+  const [levels, setLevels] = useState<Record<CaptureChannel, number>>({ LOCAL: 0, REMOTE: 0 });
+  const [activeChannels, setActiveChannels] = useState<CaptureChannel[]>([]);
+  const [channelSpeaker, setChannelSpeaker] = useState<Record<CaptureChannel, string>>({
+    LOCAL: "",
+    REMOTE: "",
+  });
+  const [customChannel, setCustomChannel] = useState<Record<CaptureChannel, boolean>>({
+    LOCAL: false,
+    REMOTE: false,
+  });
+  // Borrador del nombre escrito a mano: se confirma al salir del campo o con
+  // Enter, para no disparar una reasignación por cada tecla.
+  const [customDraft, setCustomDraft] = useState<Record<CaptureChannel, string>>({
+    LOCAL: "",
+    REMOTE: "",
+  });
   const [uploading, setUploading] = useState(0);
   const [stageIndex, setStageIndex] = useState(-1);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const audioCtxRef = useRef<AudioContext | null>(null);
-  const destRef = useRef<MediaStreamAudioDestinationNode | null>(null);
-  const streamsRef = useRef<MediaStream[]>([]);
-  const recorderRef = useRef<MediaRecorder | null>(null);
-  const rotateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const segmentIndexRef = useRef(0);
-  const offsetRef = useRef(0);
-  const segmentStartRef = useRef(0);
-  const stoppingRef = useRef(false);
+  const captureRef = useRef<MeetingCapture | null>(null);
   const startedAtRef = useRef(0);
   // Las subidas se encadenan: el backend hace read-modify-write sobre el JSON de
   // segmentos, así que dos tramos en paralelo se pisarían.
   const uploadQueueRef = useRef<Promise<void>>(Promise.resolve());
   const meetingIdRef = useRef<string | null>(null);
+  // El mapeo canal→persona lo lee la subida, que corre fuera del render.
+  const speakerRef = useRef<Record<CaptureChannel, string>>({ LOCAL: "", REMOTE: "" });
+  const lockSpeakersRef = useRef(false);
 
   const selectedProject = projects.find((p) => p.id === projectId);
+  const namedAttendees = useMemo(
+    () => attendees.filter((a) => a.name.trim()).map((a) => a.name.trim()),
+    [attendees]
+  );
+
+  // En modo ambiente todo entra por el mismo micrófono: fijar un nombre al canal
+  // le pondría tu nombre a lo que dijo el cliente. Ahí la separación la hace la
+  // IA al final, y por eso no se bloquea ningún hablante.
+  const lockSpeakers = mode !== "ambient";
+
+  const interim = useInstantSpeech(phase === "recording" && instantPreview, language);
+  const interimSpeaker =
+    mode === "ambient" ? "Vista previa" : channelSpeaker.LOCAL || "Tu micrófono";
 
   useEffect(() => {
     if (selectedProject?.clientId && !clientId) setClientId(selectedProject.clientId);
@@ -112,90 +203,117 @@ export function MeetingRecorder({
     return () => clearInterval(t);
   }, [phase]);
 
-  const releaseAudio = useCallback(() => {
-    if (rotateTimerRef.current) clearTimeout(rotateTimerRef.current);
-    rotateTimerRef.current = null;
-    streamsRef.current.forEach((s) => s.getTracks().forEach((t) => t.stop()));
-    streamsRef.current = [];
-    audioCtxRef.current?.close().catch(() => undefined);
-    audioCtxRef.current = null;
-    destRef.current = null;
-    recorderRef.current = null;
+  const loadDevices = useCallback(async (askPermission: boolean) => {
+    if (!navigator.mediaDevices?.enumerateDevices) return;
+    try {
+      if (askPermission) {
+        // Sin permiso concedido, `enumerateDevices` devuelve los dispositivos sin
+        // nombre y no hay forma de reconocer cuál es el de loopback.
+        const probe = await navigator.mediaDevices.getUserMedia({ audio: true });
+        probe.getTracks().forEach((t) => t.stop());
+      }
+      const all = await navigator.mediaDevices.enumerateDevices();
+      const inputs = all.filter((d) => d.kind === "audioinput" && d.deviceId);
+      setDevices(inputs);
+
+      const loopback = inputs.find((d) => looksLikeLoopback(d.label));
+      if (loopback) {
+        setSystemDeviceId((prev) => prev || loopback.deviceId);
+        // Si la computadora ya tiene un dispositivo de loopback instalado, ese es
+        // el mejor modo disponible: separa voces y no obliga a compartir pantalla.
+        setMode((prev) => (prev === "ambient" ? "device" : prev));
+      }
+    } catch {
+      setNotice("No se pudieron listar los dispositivos de audio.");
+    }
   }, []);
 
+  useEffect(() => {
+    void loadDevices(false);
+    setSpeechSupported(isInstantSpeechSupported());
+  }, [loadDevices]);
+
   // Si el usuario abandona la página con la grabación viva, soltamos el micrófono.
-  useEffect(() => releaseAudio, [releaseAudio]);
+  useEffect(() => () => captureRef.current?.release(), []);
 
   function updateAttendee(index: number, patch: Partial<MeetingAttendee>) {
     setAttendees((prev) => prev.map((a, i) => (i === index ? { ...a, ...patch } : a)));
   }
 
-  async function uploadSegment(blob: Blob, index: number, offsetMs: number) {
-    const id = meetingIdRef.current;
-    if (!id || blob.size === 0) return;
+  const uploadSegment = useCallback(
+    async (blob: Blob, channel: CaptureChannel, index: number, offsetMs: number) => {
+      const id = meetingIdRef.current;
+      if (!id || blob.size === 0) return;
 
-    const formData = new FormData();
-    formData.append("audio", blob, `tramo-${index}.webm`);
-    formData.append("index", String(index));
-    formData.append("offsetMs", String(offsetMs));
+      const formData = new FormData();
+      formData.append("audio", blob, `${channel.toLowerCase()}-${index}.webm`);
+      formData.append("index", String(index));
+      formData.append("offsetMs", String(offsetMs));
+      formData.append("channel", channel);
+      const speaker = speakerRef.current[channel];
+      if (lockSpeakersRef.current && speaker) formData.append("speaker", speaker);
 
-    setUploading((n) => n + 1);
-    try {
-      const res = await fetch(`/api/empresa/meetings/${id}/audio`, {
-        method: "POST",
-        body: formData,
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? "No se pudo transcribir el tramo");
+      setUploading((n) => n + 1);
+      try {
+        const res = await fetch(`/api/empresa/meetings/${id}/audio`, {
+          method: "POST",
+          body: formData,
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error ?? "No se pudo transcribir el tramo");
+        }
+        const data = await res.json();
+        if (Array.isArray(data.segments) && data.segments.length > 0) {
+          setSegments((prev) =>
+            [...prev, ...(data.segments as MeetingSegment[])].sort((a, b) => a.start - b.start)
+          );
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Error subiendo audio");
+      } finally {
+        setUploading((n) => n - 1);
       }
-      const data = await res.json();
-      if (typeof data.transcript === "string") setTranscript(data.transcript);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Error subiendo audio");
-    } finally {
-      setUploading((n) => n - 1);
-    }
-  }
+    },
+    []
+  );
 
-  function enqueueUpload(blob: Blob, index: number, offsetMs: number) {
-    uploadQueueRef.current = uploadQueueRef.current.then(() =>
-      uploadSegment(blob, index, offsetMs)
+  const enqueueUpload = useCallback(
+    (blob: Blob, channel: CaptureChannel, index: number, offsetMs: number) => {
+      uploadQueueRef.current = uploadQueueRef.current.then(() =>
+        uploadSegment(blob, channel, index, offsetMs)
+      );
+    },
+    [uploadSegment]
+  );
+
+  /**
+   * Asigna una persona a un canal de audio. Reetiqueta también lo ya transcrito:
+   * la conversación de arriba se corrige entera, no solo de aquí en adelante.
+   */
+  async function assignSpeaker(channel: CaptureChannel, name: string) {
+    const speaker = name.trim();
+    setChannelSpeaker((prev) => ({ ...prev, [channel]: speaker }));
+    speakerRef.current = { ...speakerRef.current, [channel]: speaker };
+
+    setSegments((prev) =>
+      prev.map((seg) =>
+        seg.channel === channel ? { ...seg, speaker: speaker || undefined, locked: !!speaker } : seg
+      )
     );
-  }
 
-  function startSegment() {
-    const dest = destRef.current;
-    if (!dest) return;
-
-    const mimeType = pickMimeType();
-    const recorder = new MediaRecorder(dest.stream, mimeType ? { mimeType } : undefined);
-    const chunks: Blob[] = [];
-
-    recorder.ondataavailable = (e) => {
-      if (e.data.size > 0) chunks.push(e.data);
-    };
-
-    recorder.onstop = () => {
-      const elapsedMs = Date.now() - segmentStartRef.current;
-      const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
-      const index = segmentIndexRef.current++;
-      const offset = offsetRef.current;
-      offsetRef.current += elapsedMs;
-      enqueueUpload(blob, index, offset);
-      if (!stoppingRef.current) startSegment();
-    };
-
-    segmentStartRef.current = Date.now();
-    recorder.start();
-    recorderRef.current = recorder;
-    rotateTimerRef.current = setTimeout(() => {
-      if (recorder.state !== "inactive") recorder.stop();
-    }, SEGMENT_MS);
+    const id = meetingIdRef.current;
+    if (!id || !lockSpeakersRef.current) return;
+    await fetch(`/api/empresa/meetings/${id}/speakers`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ channels: [{ channel, speaker }] }),
+    }).catch(() => setError("No se pudo guardar el nombre de esa voz. Se reintenta al finalizar."));
   }
 
   async function startRecording() {
     setError(null);
+    setNotice(null);
 
     if (!title.trim()) {
       setError("Ponle un título a la reunión.");
@@ -205,41 +323,27 @@ export function MeetingRecorder({
       setError("Este navegador no permite grabar audio. Usa Chrome o Edge en escritorio.");
       return;
     }
+    if (mode === "device" && !systemDeviceId) {
+      setError("Elige el dispositivo por el que entra el audio de la llamada.");
+      return;
+    }
 
     setBusy(true);
+    const capture = new MeetingCapture({
+      mode,
+      micDeviceId: micDeviceId || undefined,
+      systemDeviceId: systemDeviceId || undefined,
+      segmentMs: SEGMENT_MS,
+      onSegment: ({ blob, channel, index, offsetMs }) =>
+        enqueueUpload(blob, channel, index, offsetMs),
+      onLevels: setLevels,
+      onNotice: setNotice,
+    });
+
     try {
-      const mic = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      });
-      streamsRef.current.push(mic);
-
-      const ctx = new AudioContext();
-      const dest = ctx.createMediaStreamDestination();
-      ctx.createMediaStreamSource(mic).connect(dest);
-      audioCtxRef.current = ctx;
-      destRef.current = dest;
-
-      if (captureTab) {
-        try {
-          // Chrome solo entrega audio de pestaña si también se pide vídeo; el
-          // track de vídeo se ignora, solo va el audio a la mezcla.
-          const display = await navigator.mediaDevices.getDisplayMedia({
-            video: true,
-            audio: true,
-          });
-          streamsRef.current.push(display);
-          const audioTracks = display.getAudioTracks();
-          if (audioTracks.length === 0) {
-            setError(
-              "Compartiste la pantalla sin audio. Solo se grabará tu micrófono: para incluir al cliente, comparte una pestaña y marca «Compartir audio de la pestaña»."
-            );
-          } else {
-            ctx.createMediaStreamSource(new MediaStream(audioTracks)).connect(dest);
-          }
-        } catch {
-          setError("No se compartió la pestaña. Se graba solo tu micrófono.");
-        }
-      }
+      await capture.start();
+      captureRef.current = capture;
+      setActiveChannels(capture.activeChannels);
 
       const res = await fetch("/api/empresa/meetings", {
         method: "POST",
@@ -261,15 +365,29 @@ export function MeetingRecorder({
       setMeetingId(meeting.id);
       meetingIdRef.current = meeting.id;
 
-      stoppingRef.current = false;
-      segmentIndexRef.current = 0;
-      offsetRef.current = 0;
+      // Arranque del mapeo de voces: tu micrófono eres tú, y si hay un solo
+      // asistente del lado del cliente, ese es el otro canal. Lo demás lo ajusta
+      // el usuario en vivo.
+      const mine = attendees.find((a) => a.org === "PIME" && a.name.trim())?.name.trim() ?? "";
+      const clientSide = attendees.filter((a) => a.org === "CLIENTE" && a.name.trim());
+      const theirs =
+        capture.activeChannels.includes("REMOTE") && clientSide.length === 1
+          ? clientSide[0].name.trim()
+          : "";
+      lockSpeakersRef.current = lockSpeakers;
+      const initialMap = lockSpeakers
+        ? { LOCAL: mine, REMOTE: theirs }
+        : { LOCAL: "", REMOTE: "" };
+      speakerRef.current = initialMap;
+      setChannelSpeaker(initialMap);
+
       startedAtRef.current = Date.now();
       setElapsed(0);
-      startSegment();
+      setSegments([]);
       setPhase("recording");
     } catch (err) {
-      releaseAudio();
+      capture.release();
+      captureRef.current = null;
       setError(err instanceof Error ? err.message : "No se pudo iniciar la grabación");
     } finally {
       setBusy(false);
@@ -281,17 +399,11 @@ export function MeetingRecorder({
     if (!id) return;
 
     setPhase("processing");
-    stoppingRef.current = true;
 
-    if (rotateTimerRef.current) clearTimeout(rotateTimerRef.current);
-    const recorder = recorderRef.current;
-    if (recorder && recorder.state !== "inactive") recorder.stop();
-
-    // El último tramo se encola dentro de onstop; esperamos un tick para que
-    // entre a la cola antes de drenarla.
-    await new Promise((r) => setTimeout(r, 300));
+    await captureRef.current?.stop();
     await uploadQueueRef.current;
-    releaseAudio();
+    captureRef.current?.release();
+    captureRef.current = null;
 
     await fetch(`/api/empresa/meetings/${id}`, {
       method: "PATCH",
@@ -320,6 +432,13 @@ export function MeetingRecorder({
     setPhase("done");
     router.push(`/empresa/reuniones/${id}`);
     router.refresh();
+  }
+
+  function labelFor(seg: MeetingSegment): string {
+    if (seg.speaker) return seg.speaker;
+    if (seg.channel === "LOCAL") return channelSpeaker.LOCAL || "Tu micrófono";
+    if (seg.channel === "REMOTE") return channelSpeaker.REMOTE || "La llamada";
+    return "Sin identificar";
   }
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -370,7 +489,7 @@ export function MeetingRecorder({
                 <p className="text-white font-medium">{title}</p>
                 <p className="text-white/50 text-xs">
                   {selectedProject ? selectedProject.name : "Sin proyecto"} ·{" "}
-                  {captureTab ? "micrófono + pestaña" : "solo micrófono"}
+                  {CAPTURE_MODES.find((m) => m.key === mode)?.title.toLowerCase()}
                 </p>
               </div>
             </div>
@@ -384,25 +503,123 @@ export function MeetingRecorder({
               </button>
             </div>
           </div>
-          <p className="text-white/40 text-xs mt-4">
-            {uploading > 0
-              ? `Transcribiendo ${uploading} tramo${uploading !== 1 ? "s" : ""}…`
-              : "Transcripción al día. Se sube un tramo cada 90 segundos."}
-          </p>
-          {error && <p className="text-amber-400 text-xs mt-2">{error}</p>}
+          {notice && <p className="text-amber-400 text-xs mt-3">{notice}</p>}
+          {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
         </div>
 
+        {/* Quién es cada voz */}
+        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-5">
+          <div className="flex items-baseline justify-between gap-3 flex-wrap mb-3">
+            <h3 className="text-white/70 text-xs uppercase tracking-wider">Voces</h3>
+            <p className="text-white/35 text-[11px]">
+              {lockSpeakers
+                ? "Cambiar el nombre corrige también lo ya transcrito."
+                : "Todo entra por un micrófono: las voces se separan al finalizar."}
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-2 gap-3">
+            {activeChannels.map((channel) => {
+              const accent = CHANNEL_ACCENT[channel];
+              const level = levels[channel];
+              const talking = level > 0.12;
+              return (
+                <div
+                  key={channel}
+                  className={`border rounded-xl p-3.5 transition-colors ${
+                    talking ? "border-white/[0.16] bg-white/[0.03]" : "border-white/[0.06]"
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="flex items-center gap-2">
+                      <span
+                        className={`w-2 h-2 rounded-full ${accent.dot} ${talking ? "animate-pulse" : "opacity-40"}`}
+                      />
+                      <span className={`text-xs font-medium ${accent.name}`}>
+                        {CHANNEL_TITLE[channel]}
+                      </span>
+                    </span>
+                    <span
+                      className={`text-[10px] ${talking ? "text-white/70" : "text-white/25"}`}
+                    >
+                      {talking ? "hablando" : "en silencio"}
+                    </span>
+                  </div>
+
+                  <LevelBar level={level} channel={channel} />
+
+                  {lockSpeakers &&
+                    (customChannel[channel] ? (
+                      <input
+                        autoFocus
+                        value={customDraft[channel]}
+                        onChange={(e) =>
+                          setCustomDraft((prev) => ({ ...prev, [channel]: e.target.value }))
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") e.currentTarget.blur();
+                        }}
+                        onBlur={() => {
+                          setCustomChannel((prev) => ({ ...prev, [channel]: false }));
+                          void assignSpeaker(channel, customDraft[channel]);
+                        }}
+                        placeholder="Nombre de esta voz"
+                        className="w-full mt-3 bg-[#050508] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-white text-xs placeholder:text-white/30 focus:border-[#1AA7F0]/50 focus:outline-none"
+                      />
+                    ) : (
+                      <select
+                        value={
+                          namedAttendees.includes(channelSpeaker[channel])
+                            ? channelSpeaker[channel]
+                            : channelSpeaker[channel]
+                              ? "__custom"
+                              : ""
+                        }
+                        onChange={(e) => {
+                          if (e.target.value === "__custom") {
+                            setCustomDraft((prev) => ({
+                              ...prev,
+                              [channel]: channelSpeaker[channel],
+                            }));
+                            setCustomChannel((prev) => ({ ...prev, [channel]: true }));
+                            return;
+                          }
+                          void assignSpeaker(channel, e.target.value);
+                        }}
+                        className="w-full mt-3 bg-[#050508] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-white text-xs focus:border-[#1AA7F0]/50 focus:outline-none"
+                      >
+                        <option value="">Sin asignar</option>
+                        {namedAttendees.map((name) => (
+                          <option key={name} value={name}>
+                            {name}
+                          </option>
+                        ))}
+                        <option value="__custom">Otro nombre…</option>
+                      </select>
+                    ))}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Conversación en vivo */}
         <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
-          <h3 className="text-white/70 text-xs uppercase tracking-wider mb-3">Transcripción en vivo</h3>
-          {transcript ? (
-            <p className="text-white/75 text-sm leading-relaxed whitespace-pre-wrap max-h-96 overflow-y-auto">
-              {transcript}
+          <div className="flex items-baseline justify-between gap-3 flex-wrap mb-3">
+            <h3 className="text-white/70 text-xs uppercase tracking-wider">Conversación en vivo</h3>
+            <p className="text-white/35 text-[11px]">
+              {uploading > 0
+                ? `transcribiendo ${uploading} tramo${uploading !== 1 ? "s" : ""}…`
+                : `al día · tramos de ${SEGMENT_MS / 1000} s`}
             </p>
-          ) : (
-            <p className="text-white/40 text-sm">
-              El primer tramo aparece a los 90 segundos de haber empezado.
-            </p>
-          )}
+          </div>
+          <LiveTranscript
+            segments={segments}
+            labelFor={labelFor}
+            interim={instantPreview ? interim : ""}
+            interimSpeaker={interimSpeaker}
+            emptyHint={`El texto empieza a aparecer a los ${SEGMENT_MS / 1000} segundos de haber empezado a hablar.`}
+          />
         </div>
       </div>
     );
@@ -447,7 +664,7 @@ export function MeetingRecorder({
             <p className="text-white/40 text-xs mt-1">
               {projectId
                 ? "La IA leerá el alcance, los entregables y las reuniones anteriores del proyecto."
-                : "Sin proyecto la reunión se analiza a ciegas y no acumula contexto."}
+                : "Puedes dejarlo en blanco y asignarle el proyecto después, desde el detalle de la reunión."}
             </p>
           </div>
 
@@ -496,8 +713,8 @@ export function MeetingRecorder({
         <div>
           <h2 className="text-white/70 text-xs uppercase tracking-wider">Asistentes</h2>
           <p className="text-white/40 text-xs mt-1">
-            Es la lista contra la que se resuelve quién habló. Mientras más completa, mejor la
-            atribución.
+            Es la lista contra la que se resuelve quién habló, y de la que salen los nombres que le
+            asignas a cada voz durante la reunión.
           </p>
         </div>
 
@@ -544,26 +761,134 @@ export function MeetingRecorder({
         </button>
       </div>
 
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
-        <label className="flex items-start gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={captureTab}
-            onChange={(e) => setCaptureTab(e.target.checked)}
-            className="mt-1 accent-[#1AA7F0]"
-          />
-          <span>
-            <span className="text-white text-sm font-medium">
-              Capturar también el audio de la videollamada
+      {/* Cómo se capta el audio */}
+      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6 space-y-3">
+        <div>
+          <h2 className="text-white/70 text-xs uppercase tracking-wider">Cómo se capta el audio</h2>
+          <p className="text-white/40 text-xs mt-1">
+            Cuando tu voz y la de la llamada entran por fuentes distintas, se sabe quién habla en el
+            momento, sin que la IA tenga que adivinarlo.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          {CAPTURE_MODES.map((option) => (
+            <label
+              key={option.key}
+              className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+                mode === option.key
+                  ? "border-[#1AA7F0]/35 bg-[#1AA7F0]/[0.05]"
+                  : "border-white/[0.06] hover:border-white/[0.12]"
+              }`}
+            >
+              <input
+                type="radio"
+                name="capture-mode"
+                checked={mode === option.key}
+                onChange={() => setMode(option.key)}
+                className="mt-1 accent-[#1AA7F0]"
+              />
+              <span className="min-w-0">
+                <span className="flex items-center gap-2 flex-wrap">
+                  <span className="text-white text-sm font-medium">{option.title}</span>
+                  <span className={`px-1.5 py-0.5 text-[10px] rounded border ${option.tagClass}`}>
+                    {option.tag}
+                  </span>
+                </span>
+                <span className="block text-white/50 text-xs mt-1 leading-relaxed">
+                  {option.detail}
+                </span>
+              </span>
+            </label>
+          ))}
+        </div>
+
+        {mode === "device" && (
+          <div className="border border-white/[0.06] rounded-xl p-3.5 space-y-2">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <label className="text-white/70 text-xs uppercase tracking-wider">
+                Entrada con el audio de la llamada
+              </label>
+              <button
+                type="button"
+                onClick={() => void loadDevices(true)}
+                className="text-[#1AA7F0] hover:text-[#0E87C8] text-xs transition-colors"
+              >
+                Buscar dispositivos
+              </button>
+            </div>
+            <select
+              value={systemDeviceId}
+              onChange={(e) => setSystemDeviceId(e.target.value)}
+              className="w-full bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm focus:border-[#1AA7F0]/50 focus:outline-none"
+            >
+              <option value="">Elige un dispositivo…</option>
+              {devices.map((d) => (
+                <option key={d.deviceId} value={d.deviceId}>
+                  {d.label || "Entrada sin nombre"}
+                  {looksLikeLoopback(d.label) ? " · recomendado" : ""}
+                </option>
+              ))}
+            </select>
+            {devices.length === 0 && (
+              <p className="text-white/40 text-xs">
+                Pulsa «Buscar dispositivos» y concede el permiso del micrófono para poder verlos por
+                nombre.
+              </p>
+            )}
+            <p className="text-white/40 text-xs leading-relaxed">
+              En Mac: instala BlackHole, crea un «Dispositivo de salida múltiple» con tus audífonos +
+              BlackHole y ponlo como salida del sistema. Aquí elige BlackHole. En Windows, VB-Cable o
+              «Mezcla estéreo».
+            </p>
+          </div>
+        )}
+
+        {devices.length > 0 && (
+          <div>
+            <label className="block text-white/70 text-xs uppercase tracking-wider mb-1.5">
+              Micrófono
+            </label>
+            <select
+              value={micDeviceId}
+              onChange={(e) => setMicDeviceId(e.target.value)}
+              className="w-full bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm focus:border-[#1AA7F0]/50 focus:outline-none"
+            >
+              <option value="">Predeterminado del sistema</option>
+              {devices.map((d) => (
+                <option key={d.deviceId} value={d.deviceId}>
+                  {d.label || "Entrada sin nombre"}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {speechSupported && (
+          <label className="flex items-start gap-3 cursor-pointer pt-1">
+            <input
+              type="checkbox"
+              checked={instantPreview}
+              onChange={(e) => setInstantPreview(e.target.checked)}
+              className="mt-1 accent-[#1AA7F0]"
+            />
+            <span>
+              <span className="text-white text-sm font-medium">Vista previa instantánea</span>
+              <span className="block text-white/50 text-xs mt-1 leading-relaxed">
+                Muestra palabra por palabra lo que oye el micrófono mientras se graba, usando el
+                reconocimiento de voz de Chrome (procesa audio en servidores de Google). La
+                transcripción que se guarda es siempre la de Whisper.
+              </span>
             </span>
-            <span className="block text-white/50 text-xs mt-1">
-              Al iniciar, Chrome pedirá compartir una pestaña: elige la del Meet o Zoom y marca
-              «Compartir audio de la pestaña». Sin esto solo se graba tu micrófono y la
-              transcripción no tendrá lo que dijo el cliente.
-            </span>
-          </span>
-        </label>
+          </label>
+        )}
       </div>
+
+      {notice && (
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+          <p className="text-amber-400 text-sm">{notice}</p>
+        </div>
+      )}
 
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">

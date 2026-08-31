@@ -90,9 +90,15 @@ interface Assignment {
 }
 
 /**
- * Asigna un hablante a cada segmento. Procesa por lotes y arrastra el roster de
- * hablantes ya identificados, para que el hablante 2 del minuto 40 sea el mismo
- * que el del minuto 3 y no una persona nueva.
+ * Asigna un hablante a cada segmento que todavía no lo tenga. Procesa por lotes
+ * y arrastra el roster de hablantes ya identificados, para que el hablante 2 del
+ * minuto 40 sea el mismo que el del minuto 3 y no una persona nueva.
+ *
+ * Los segmentos que llegan con hablante ya resuelto —los que vinieron de un
+ * canal de audio propio, o los que una persona asignó a mano— se respetan tal
+ * cual: se le muestran al modelo como contexto pero nunca se reasignan. Si la
+ * reunión se grabó con micrófono y llamada en canales separados, esta pasada no
+ * tiene nada que adivinar y no cuesta nada.
  *
  * El modelo nunca reescribe el texto: solo devuelve `{i, speaker}` y nosotros
  * re-pegamos por índice sobre los segmentos originales de Whisper.
@@ -104,21 +110,29 @@ export async function runDiarization(
   projectContext: string
 ): Promise<AiCallResult<MeetingSegment[]>> {
   const assigned: MeetingSegment[] = segments.map((s) => ({ ...s }));
-  const knownSpeakers = new Set<string>();
+  const knownSpeakers = new Set<string>(
+    segments.flatMap((s) => (s.speaker ? [s.speaker] : []))
+  );
   let costUSD = 0;
   let inputTokens = 0;
   let outputTokens = 0;
 
-  for (let offset = 0; offset < segments.length; offset += DIARIZATION_BATCH) {
+  const pendingCount = segments.filter((s) => !s.speaker).length;
+
+  for (let offset = 0; offset < segments.length && pendingCount > 0; offset += DIARIZATION_BATCH) {
     const batch = segments.slice(offset, offset + DIARIZATION_BATCH);
+    const pending = batch.flatMap((s, i) => (s.speaker ? [] : [offset + i]));
+    // Un lote entero ya atribuido por canal no se le manda al modelo.
+    if (pending.length === 0) continue;
+
     const system = diarizationPrompt(attendees, [...knownSpeakers], projectContext);
-    const user = `Transcripción (índice global, timestamp, texto):\n\n${numberedSegments(batch, offset)}\n\nDevuelve la asignación de hablante para los índices ${offset} a ${offset + batch.length - 1}.`;
+    const user = `Transcripción (índice global, timestamp, texto). Las líneas que ya traen «Nombre» delante están confirmadas: úsalas como referencia, no las reasignes.\n\n${numberedSegments(batch, offset)}\n\nDevuelve la asignación de hablante SOLO para estos índices: ${pending.join(", ")}.`;
 
     const result = await jsonCall<{ assignments?: Assignment[] }>(
       openai,
       system,
       user,
-      Math.min(4000, batch.length * 30 + 500)
+      Math.min(4000, pending.length * 30 + 500)
     );
 
     costUSD += result.costUSD;
@@ -129,6 +143,8 @@ export async function runDiarization(
       const idx = Number(a?.i);
       const speaker = typeof a?.speaker === "string" ? a.speaker.trim() : "";
       if (!speaker || !Number.isInteger(idx) || !assigned[idx]) continue;
+      // Un hablante confirmado por canal o a mano no se pisa con una inferencia.
+      if (assigned[idx].locked || segments[idx].speaker) continue;
       assigned[idx].speaker = speaker;
       knownSpeakers.add(speaker);
     }

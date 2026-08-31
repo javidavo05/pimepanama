@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
-import { buildProjectContext } from "@/lib/meetings/context";
+import { buildProjectContext, withManualContext } from "@/lib/meetings/context";
 import {
   getOpenAI,
   logMeetingAiUsage,
@@ -59,7 +59,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const attendees = parseAttendees(meeting.attendees);
-    const { block: projectContext } = await buildProjectContext(user.id, meeting.projectId, meeting.id);
+    const { block } = await buildProjectContext(user.id, meeting.projectId, meeting.id);
+    // El contexto del proyecto y las notas manuales se combinan: se puede grabar
+    // primero y decidir después a qué proyecto pertenece la reunión y con qué
+    // contexto se analiza.
+    const projectContext = withManualContext(block, meeting.manualContext);
     const openai = getOpenAI();
 
     await prisma.meeting.update({

@@ -21,15 +21,29 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
   const user = await getEmpresaUser();
   const { id } = await params;
 
-  const meeting = await prisma.meeting.findFirst({
-    where: { id, userId: user.id },
-    include: {
-      project: { select: { id: true, name: true } },
-      client: { select: { id: true, name: true, company: true } },
-      speakers: { orderBy: { talkMs: "desc" } },
-      actionItems: { orderBy: { sortOrder: "asc" } },
-    },
-  });
+  // Los proyectos y clientes viajan con la reunión para poder asignarla a un
+  // proyecto después de grabada, sin salir del detalle.
+  const [meeting, projects, clients] = await Promise.all([
+    prisma.meeting.findFirst({
+      where: { id, userId: user.id },
+      include: {
+        project: { select: { id: true, name: true } },
+        client: { select: { id: true, name: true, company: true } },
+        speakers: { orderBy: { talkMs: "desc" } },
+        actionItems: { orderBy: { sortOrder: "asc" } },
+      },
+    }),
+    prisma.project.findMany({
+      where: { userId: user.id },
+      select: { id: true, name: true, clientId: true },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.client.findMany({
+      where: { userId: user.id },
+      select: { id: true, name: true, company: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   if (!meeting) notFound();
 
@@ -39,6 +53,8 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
         meeting={serializeMeeting(meeting)}
         project={meeting.project}
         client={meeting.client}
+        projects={projects}
+        clients={clients}
         speakers={meeting.speakers.map(serializeMeetingSpeaker)}
         actionItems={meeting.actionItems.map(serializeMeetingActionItem)}
         executive={meeting.executiveMinutes as unknown as ExecutiveMinutes | null}

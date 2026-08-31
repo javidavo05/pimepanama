@@ -125,6 +125,17 @@ export async function buildProjectContext(
   return { block: lines.join("\n"), projectName: project.name, openItems };
 }
 
+/**
+ * Añade al contexto las notas que el usuario escribió a mano para esta reunión.
+ * Van primero y marcadas como prioritarias: si alguien se tomó el trabajo de
+ * escribirlas, sabe algo que ni el proyecto ni la transcripción dicen.
+ */
+export function withManualContext(block: string, manualContext: string | null | undefined): string {
+  const notes = manualContext?.trim();
+  if (!notes) return block;
+  return `## Contexto que aportó el equipo sobre esta reunión (tiene prioridad sobre lo demás)\n${notes}\n\n${block}`;
+}
+
 /** Resumen de una línea por segmento para el encabezado del prompt técnico. */
 export function contextHeaderLine(durationMs: number, segmentCount: number): string {
   return `Reunión de ${formatTimestamp(durationMs)} (${segmentCount} intervenciones transcritas).`;

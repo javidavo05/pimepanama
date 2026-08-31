@@ -56,6 +56,8 @@ export const PATCH = withEmpresaIdRoute(async (req, { params }) => {
   if (typeof body.diarizedText === "string") data.diarizedText = body.diarizedText;
   if (typeof body.technicalPrompt === "string") data.technicalPrompt = body.technicalPrompt;
   if (typeof body.contextSummary === "string") data.contextSummary = body.contextSummary;
+  // Notas de contexto escritas a mano; vaciarlas es un cambio válido.
+  if (typeof body.manualContext === "string") data.manualContext = body.manualContext.trim() || null;
   if (typeof body.durationMs === "number") data.durationMs = Math.max(0, Math.round(body.durationMs));
 
   if (body.projectId !== undefined) {

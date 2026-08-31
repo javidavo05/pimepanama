@@ -10,6 +10,14 @@ export interface MeetingAttendee {
   role?: string;
 }
 
+/**
+ * Canal físico del que salió el audio. Cuando se graba con dos fuentes
+ * separadas (micrófono por un lado, audio de la llamada por el otro) el canal
+ * ya dice quién habló sin necesidad de IA: eso es lo que permite ver la
+ * conversación atribuida en vivo.
+ */
+export type MeetingChannel = "LOCAL" | "REMOTE";
+
 /** Segmento crudo de Whisper, con timestamps absolutos en ms desde el inicio de la reunión. */
 export interface MeetingSegment {
   /** ms desde el inicio de la reunión */
@@ -17,8 +25,15 @@ export interface MeetingSegment {
   /** ms desde el inicio de la reunión */
   end: number;
   text: string;
-  /** Etiqueta del hablante, asignada por la pasada de diarización */
+  /** Etiqueta del hablante, asignada por el canal (en vivo) o por la diarización */
   speaker?: string;
+  /** Fuente de audio; ausente en grabaciones de un solo canal mezclado */
+  channel?: MeetingChannel;
+  /**
+   * `true` cuando el hablante viene del canal y no de la IA. La diarización no
+   * toca estos segmentos: el hardware ya sabe más que el modelo.
+   */
+  locked?: boolean;
 }
 
 export interface ExecutiveMinutes {
@@ -115,6 +130,8 @@ export function parseSegments(value: unknown): MeetingSegment[] {
         end: Number(rec.end) || 0,
         text,
         speaker: typeof rec.speaker === "string" ? rec.speaker : undefined,
+        channel: rec.channel === "LOCAL" || rec.channel === "REMOTE" ? rec.channel : undefined,
+        locked: rec.locked === true ? true : undefined,
       } satisfies MeetingSegment,
     ];
   });
