@@ -8,6 +8,7 @@ import {
   serializeMeetingActionItem,
   serializeMeetingSpeaker,
 } from "@/lib/meetings/serialize";
+import { countSegments, loadSegments } from "@/lib/meetings/segments";
 import { parseAttendees } from "@/lib/meetings/types";
 
 export const runtime = "nodejs";
@@ -30,8 +31,11 @@ export const GET = withEmpresaIdRoute(async (req, { params }) => {
   const meeting = await loadMeeting(user.id, id);
   if (!meeting) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
+  const segments = await loadSegments(id);
+
   return NextResponse.json({
-    ...serializeMeeting(meeting),
+    ...serializeMeeting(meeting, segments.length),
+    segments,
     project: meeting.project,
     client: meeting.client,
     speakers: meeting.speakers.map(serializeMeetingSpeaker),
@@ -86,7 +90,7 @@ export const PATCH = withEmpresaIdRoute(async (req, { params }) => {
   }
 
   const meeting = await prisma.meeting.update({ where: { id }, data });
-  return NextResponse.json(serializeMeeting(meeting));
+  return NextResponse.json(serializeMeeting(meeting, await countSegments(id)));
 });
 
 export const DELETE = withEmpresaIdRoute(async (req, { params }) => {

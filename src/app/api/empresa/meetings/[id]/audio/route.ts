@@ -2,16 +2,41 @@ import { NextRequest, NextResponse } from "next/server";
 import { toFile } from "openai";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
-import { putR2Object } from "@/lib/r2";
+import { generatePresignedDownloadUrl, putR2Object } from "@/lib/r2";
 import { calcWhisperCost } from "@/lib/ai-pricing";
 import { getOpenAI } from "@/lib/meetings/pipeline";
-import { parseSegments, type MeetingChannel, type MeetingSegment } from "@/lib/meetings/types";
+import { appendSegments, flatten, loadSegments } from "@/lib/meetings/segments";
+import {
+  parseAudioChunks,
+  type MeetingAudioChunk,
+  type MeetingChannel,
+  type MeetingSegment,
+} from "@/lib/meetings/types";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
 /** Tramos de audio más largos que esto no caben cómodos en una llamada a Whisper. */
 const MAX_BYTES = 24 * 1024 * 1024;
+
+/** Formatos que acepta Whisper. La extensión importa: la usa para decodificar. */
+const EXTENSION_BY_MIME: Record<string, string> = {
+  "audio/webm": "webm",
+  "audio/ogg": "ogg",
+  "audio/wav": "wav",
+  "audio/x-wav": "wav",
+  "audio/wave": "wav",
+  "audio/mpeg": "mp3",
+  "audio/mp3": "mp3",
+  "audio/mp4": "m4a",
+  "audio/x-m4a": "m4a",
+  "audio/aac": "m4a",
+  "audio/flac": "flac",
+};
+
+function extensionFor(mime: string): string {
+  return EXTENSION_BY_MIME[mime.split(";")[0].trim().toLowerCase()] ?? "webm";
+}
 
 interface WhisperSegment {
   start: number;
@@ -20,10 +45,15 @@ interface WhisperSegment {
 }
 
 /**
- * Recibe un tramo de audio de la grabación en curso, lo archiva en R2 y lo
- * transcribe. El cliente graba en tramos cortos e independientes (cada uno es un
- * webm completo y decodificable) y los va subiendo en orden, así la
- * transcripción avanza durante la reunión en vez de esperar al final.
+ * Recibe un tramo de audio, lo archiva en R2 y lo transcribe. Sirve para las dos
+ * formas de entrar audio al sistema:
+ *
+ * - **Grabando**: el cliente corta la reunión en tramos cortos e independientes
+ *   (cada uno un webm completo y decodificable) y los sube en orden, así la
+ *   transcripción avanza durante la reunión en vez de esperar al final.
+ * - **Subiendo un archivo ya grabado** (la exportación de un Zoom, una nota de
+ *   voz): el cliente lo decodifica, lo parte en tramos y los sube por aquí
+ *   mismo, con su `offsetMs`. Para el servidor es el mismo caso.
  *
  * Cuando la grabación tiene dos fuentes de audio separadas (micrófono por un
  * lado, audio de la videollamada por el otro) cada tramo llega etiquetado con su
@@ -38,7 +68,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const meeting = await prisma.meeting.findFirst({
       where: { id, userId: user.id },
-      select: { id: true, language: true, segments: true, transcript: true, audioKeys: true, durationMs: true },
+      select: { id: true, language: true, audioKeys: true, audioChunks: true, durationMs: true },
     });
     if (!meeting) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -68,14 +98,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const speaker =
       typeof rawSpeaker === "string" && rawSpeaker.trim() ? rawSpeaker.trim().slice(0, 80) : undefined;
 
+    const mime = audio.type || "audio/webm";
     const buffer = Buffer.from(await audio.arrayBuffer());
-    const key = `meetings/${id}/${channel === "REMOTE" ? "r" : "l"}${String(index).padStart(4, "0")}.webm`;
-    await putR2Object(key, buffer, audio.type || "audio/webm");
+    const key = `meetings/${id}/${channel === "REMOTE" ? "r" : "l"}${String(index).padStart(4, "0")}.${extensionFor(mime)}`;
+    await putR2Object(key, buffer, mime);
 
     const openai = getOpenAI();
     const start = Date.now();
     const transcription = await openai.audio.transcriptions.create({
-      file: await toFile(buffer, `tramo-${index}.webm`, { type: audio.type || "audio/webm" }),
+      file: await toFile(buffer, `tramo-${index}.${extensionFor(mime)}`, { type: mime }),
       model: "whisper-1",
       language: meeting.language === "en" ? "en" : "es",
       response_format: "verbose_json",
@@ -96,21 +127,30 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const chunkText = (raw.text ?? newSegments.map((s) => s.text).join(" ")).trim();
     const chunkMs = Math.round((Number(raw.duration) || 0) * 1000);
 
-    const existing = parseSegments(meeting.segments);
-    const merged = [...existing, ...newSegments].sort((a, b) => a.start - b.start);
-    // La transcripción plana se rearma desde los segmentos ya ordenados: con dos
-    // canales los tramos no llegan en orden cronológico, así que concatenar por
-    // orden de llegada mezclaría la conversación.
-    const flatTranscript = merged.map((s) => s.text).join(" ");
+    // Insertar solo las filas de este tramo: la transcripción anterior no se
+    // toca. Antes cada tramo reescribía el JSON completo de la reunión.
+    await appendSegments(id, newSegments);
+
+    // El mapa de tramos es lo que después permite reproducir la reunión y saltar
+    // al minuto de un turno.
+    const chunks = parseAudioChunks(meeting.audioChunks).filter((c) => c.key !== key);
+    chunks.push({ key, channel, index, offsetMs, durationMs: chunkMs, mime } satisfies MeetingAudioChunk);
+
+    // Con dos canales los tramos no llegan en orden cronológico, así que la
+    // transcripción plana se rearma desde los segmentos ya ordenados.
+    const allSegments = await loadSegments(id);
 
     const updated = await prisma.meeting.update({
       where: { id },
       data: {
         status: "RECORDING",
-        segments: merged as unknown as object[],
-        transcript: flatTranscript,
+        transcript: flatten(allSegments),
         audioKeys: meeting.audioKeys.includes(key) ? meeting.audioKeys : [...meeting.audioKeys, key],
+        audioChunks: chunks as unknown as object[],
         durationMs: Math.max(meeting.durationMs, offsetMs + chunkMs),
+        // La transcripción también cuesta: sin esto el total de la reunión solo
+        // contaba el análisis y subestimaba lo que se gastó.
+        aiCostUSD: { increment: calcWhisperCost(chunkMs || durationMs) },
       },
       select: { transcript: true, durationMs: true },
     });
@@ -131,7 +171,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       // Solo los segmentos de este tramo: el cliente los va acumulando para
       // pintar la conversación en vivo sin re-descargar toda la transcripción.
       segments: newSegments,
-      segmentCount: merged.length,
+      segmentCount: allSegments.length,
       transcript: updated.transcript,
       durationMs: updated.durationMs,
       costUSD: calcWhisperCost(chunkMs || durationMs),
@@ -140,5 +180,59 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (err instanceof Response) return err;
     console.error("Meeting audio error:", err);
     return NextResponse.json({ error: "Error al transcribir el tramo" }, { status: 500 });
+  }
+}
+
+/**
+ * Enlaces temporales para escuchar la reunión. El audio vive en un bucket
+ * privado, así que se firma tramo por tramo para quien ya probó ser dueño de la
+ * reunión; el reproductor los encadena usando el `offsetMs` de cada uno.
+ */
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const user = await requireEmpresaUser(req);
+    const { id } = await params;
+
+    const meeting = await prisma.meeting.findFirst({
+      where: { id, userId: user.id },
+      select: { audioChunks: true, audioKeys: true, durationMs: true },
+    });
+    if (!meeting) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+    let chunks = parseAudioChunks(meeting.audioChunks);
+
+    // Reuniones grabadas antes de 0025 solo tienen las claves, sin offsets. Se
+    // reconstruyen desde el nombre del archivo, que codifica canal e índice.
+    if (chunks.length === 0 && meeting.audioKeys.length > 0) {
+      chunks = meeting.audioKeys
+        .map((key) => {
+          const name = key.split("/").pop() ?? "";
+          const index = Number(name.slice(1).split(".")[0]) || 0;
+          return {
+            key,
+            channel: name.startsWith("r") ? ("REMOTE" as const) : ("LOCAL" as const),
+            index,
+            offsetMs: 0,
+            durationMs: 0,
+            mime: "audio/webm",
+          };
+        })
+        // Sin offsets guardados, el orden de grabación es lo único que hay.
+        .sort((a, b) => a.index - b.index);
+    }
+
+    if (chunks.length === 0) {
+      return NextResponse.json({ chunks: [], durationMs: meeting.durationMs });
+    }
+
+    const signed = await Promise.all(
+      chunks.map(async (c) => ({ ...c, url: await generatePresignedDownloadUrl(c.key) }))
+    );
+
+    return NextResponse.json({ chunks: signed, durationMs: meeting.durationMs });
+  } catch (err) {
+    if (err instanceof Response) return err;
+    console.error("Meeting audio list error:", err);
+    return NextResponse.json({ error: "No se pudo preparar el audio" }, { status: 500 });
   }
 }

@@ -58,6 +58,17 @@ export function extractR2Key(urlOrKey: string): string | null {
   }
 }
 
+/**
+ * URL temporal de descarga. Los objetos privados (el audio de una reunión) no se
+ * sirven por la URL pública del bucket: se firma un enlace corto para quien ya
+ * demostró tener acceso a la fila que lo referencia.
+ */
+export async function generatePresignedDownloadUrl(key: string, expiresIn = 3600): Promise<string> {
+  assertR2Configured();
+  const cmd = new GetObjectCommand({ Bucket: R2_BUCKET, Key: key });
+  return getSignedUrl(r2, cmd, { expiresIn });
+}
+
 export async function getR2Object(key: string) {
   return r2.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: key }));
 }

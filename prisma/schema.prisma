@@ -714,6 +714,8 @@ model Task {
   paymentSchedule   PaymentSchedule?    @relation(fields: [paymentScheduleId], references: [id])
   bookings          Booking[]
   meetingItems      MeetingActionItem[]
+  /// Reuniones cuya "próxima reunión" quedó agendada en esta tarea
+  nextUpMeetings    Meeting[]           @relation("MeetingNextUp")
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 
@@ -923,50 +925,84 @@ enum MeetingItemKind {
 }
 
 model Meeting {
-  id               String              @id @default(cuid())
-  userId           String
-  user             EmpresaUser         @relation(fields: [userId], references: [id])
-  projectId        String?
-  project          Project?            @relation(fields: [projectId], references: [id])
-  clientId         String?
-  client           Client?             @relation(fields: [clientId], references: [id])
+  id                String              @id @default(cuid())
+  userId            String
+  user              EmpresaUser         @relation(fields: [userId], references: [id])
+  projectId         String?
+  project           Project?            @relation(fields: [projectId], references: [id])
+  clientId          String?
+  client            Client?             @relation(fields: [clientId], references: [id])
   /// Bitácora (Document tipo BITACORA) emitida a partir de esta reunión
-  bitacoraId       String?
-  bitacora         Document?           @relation("MeetingBitacora", fields: [bitacoraId], references: [id])
-  title            String
-  language         String              @default("es")
-  status           MeetingStatus       @default(DRAFT)
-  meetingDate      DateTime            @default(now())
-  durationMs       Int                 @default(0)
+  bitacoraId        String?
+  bitacora          Document?           @relation("MeetingBitacora", fields: [bitacoraId], references: [id])
+  title             String
+  language          String              @default("es")
+  status            MeetingStatus       @default(DRAFT)
+  meetingDate       DateTime            @default(now())
+  durationMs        Int                 @default(0)
   /// Asistentes esperados: [{ name, org: "PIME"|"CLIENTE", role }]
-  attendees        Json                @default("[]")
-  /// Segmentos de Whisper con timestamps: [{ start, end, text, speaker }]
-  segments         Json                @default("[]")
-  transcript       String?
+  attendees         Json                @default("[]")
+  /// LEGACY: los segmentos viven en MeetingSegment desde 0025. Respaldo del backfill; no se lee ni se escribe.
+  segments          Json                @default("[]")
+  transcript        String?
   /// Transcripción ya atribuida a hablantes, en markdown
-  diarizedText     String?
+  diarizedText      String?
   /// Minuta ejecutiva (cliente): { agenda, decisions[], risks[], nextSteps, nextMeeting }
-  executiveMinutes Json?
+  executiveMinutes  Json?
   /// Minuta técnica (equipo): { summary, architecture, changes[], dependencies[], openQuestions[] }
-  technicalMinutes Json?
+  technicalMinutes  Json?
   /// Prompt listo para pegarle a un agente de código
-  technicalPrompt  String?
+  technicalPrompt   String?
   /// Resumen corto que alimenta el contexto acumulado del proyecto
-  contextSummary   String?
+  contextSummary    String?
   /// Contexto escrito a mano por el usuario después de grabar; entra al prompt junto al del proyecto
-  manualContext    String?
-  audioKeys        String[]
-  aiCostUSD        Float               @default(0)
-  errorMessage     String?
-  speakers         MeetingSpeaker[]
-  actionItems      MeetingActionItem[]
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
+  manualContext     String?
+  /// Índice de temas: [{ startMs, title, summary }]
+  chapters          Json?
+  audioKeys         String[]
+  /// Dónde cae cada tramo de audio dentro de la reunión: [{ key, channel, index, offsetMs, durationMs, mime }]
+  audioChunks       Json                @default("[]")
+  /// Cuándo se le envió la minuta ejecutiva al cliente por correo
+  minutesSentAt     DateTime?
+  /// Tarea creada para la próxima reunión acordada
+  nextMeetingTaskId String?
+  nextMeetingTask   Task?               @relation("MeetingNextUp", fields: [nextMeetingTaskId], references: [id])
+  aiCostUSD         Float               @default(0)
+  errorMessage      String?
+  speakers          MeetingSpeaker[]
+  segmentRows       MeetingSegment[]
+  actionItems       MeetingActionItem[]
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
 
   @@index([userId])
   @@index([projectId])
   @@index([clientId])
   @@index([userId, meetingDate])
+  @@index([userId, status])
+}
+
+/// Una intervención transcrita. Es la fuente de verdad de la transcripción:
+/// grabando se insertan las filas del tramo recién transcrito, sin reescribir
+/// nada de lo anterior.
+model MeetingSegment {
+  id        String   @id @default(cuid())
+  meetingId String
+  meeting   Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  /// ms desde el inicio de la reunión
+  startMs   Int
+  /// ms desde el inicio de la reunión
+  endMs     Int
+  text      String
+  /// Hablante resuelto: por canal de audio, a mano, o por la diarización
+  speaker   String?
+  /// LOCAL | REMOTE — ausente en grabaciones de un solo canal mezclado
+  channel   String?
+  /// true cuando el hablante viene del canal o de una persona: la IA no lo toca
+  locked    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([meetingId, startMs])
 }
 
 model MeetingSpeaker {

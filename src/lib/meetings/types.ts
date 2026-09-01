@@ -36,6 +36,25 @@ export interface MeetingSegment {
   locked?: boolean;
 }
 
+/** Un tramo de audio archivado en R2 y dónde cae dentro de la reunión. */
+export interface MeetingAudioChunk {
+  key: string;
+  channel?: MeetingChannel;
+  index: number;
+  /** ms desde el inicio de la reunión */
+  offsetMs: number;
+  durationMs: number;
+  mime: string;
+}
+
+/** Un tema de la reunión, para poder saltar directo a donde se habló de él. */
+export interface MeetingChapter {
+  /** ms desde el inicio de la reunión */
+  startMs: number;
+  title: string;
+  summary: string;
+}
+
 export interface ExecutiveMinutes {
   /** Prosa de 2-4 oraciones: de qué se habló y por qué */
   agenda: string;
@@ -78,12 +97,26 @@ export interface DraftActionItem {
 }
 
 export interface SerializedMeeting
-  extends Omit<Meeting, "meetingDate" | "createdAt" | "updatedAt" | "attendees" | "segments"> {
+  extends Omit<
+    Meeting,
+    | "meetingDate"
+    | "createdAt"
+    | "updatedAt"
+    | "minutesSentAt"
+    | "attendees"
+    | "segments"
+    | "chapters"
+    | "audioChunks"
+  > {
   meetingDate: string;
   createdAt: string;
   updatedAt: string;
+  minutesSentAt: string | null;
   attendees: MeetingAttendee[];
-  segments: MeetingSegment[];
+  chapters: MeetingChapter[];
+  audioChunks: MeetingAudioChunk[];
+  /** Cuántas intervenciones tiene la transcripción, sin traerlas todas */
+  segmentCount: number;
 }
 
 export interface SerializedMeetingActionItem
@@ -98,6 +131,7 @@ export interface SerializedMeetingSpeaker extends Omit<MeetingSpeaker, "createdA
 }
 
 export interface SerializedMeetingFull extends SerializedMeeting {
+  segments: MeetingSegment[];
   speakers: SerializedMeetingSpeaker[];
   actionItems: SerializedMeetingActionItem[];
   project: { id: string; name: string } | null;
@@ -135,4 +169,43 @@ export function parseSegments(value: unknown): MeetingSegment[] {
       } satisfies MeetingSegment,
     ];
   });
+}
+
+export function parseChapters(value: unknown): MeetingChapter[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((raw) => {
+    if (!raw || typeof raw !== "object") return [];
+    const rec = raw as Record<string, unknown>;
+    const title = typeof rec.title === "string" ? rec.title.trim() : "";
+    if (!title) return [];
+    return [
+      {
+        startMs: Math.max(0, Number(rec.startMs) || 0),
+        title,
+        summary: typeof rec.summary === "string" ? rec.summary.trim() : "",
+      } satisfies MeetingChapter,
+    ];
+  });
+}
+
+export function parseAudioChunks(value: unknown): MeetingAudioChunk[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .flatMap((raw) => {
+      if (!raw || typeof raw !== "object") return [];
+      const rec = raw as Record<string, unknown>;
+      const key = typeof rec.key === "string" ? rec.key : "";
+      if (!key) return [];
+      return [
+        {
+          key,
+          channel: rec.channel === "LOCAL" || rec.channel === "REMOTE" ? rec.channel : undefined,
+          index: Number(rec.index) || 0,
+          offsetMs: Math.max(0, Number(rec.offsetMs) || 0),
+          durationMs: Math.max(0, Number(rec.durationMs) || 0),
+          mime: typeof rec.mime === "string" && rec.mime ? rec.mime : "audio/webm",
+        } satisfies MeetingAudioChunk,
+      ];
+    })
+    .sort((a, b) => a.offsetMs - b.offsetMs);
 }

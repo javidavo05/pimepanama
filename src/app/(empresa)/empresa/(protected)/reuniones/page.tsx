@@ -2,27 +2,46 @@ import Link from "next/link";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { formatDuration } from "@/lib/meetings/transcript";
+import { meetingSearchFilter } from "@/lib/meetings/search";
 import { MEETING_STATUS_COLOR, MEETING_STATUS_LABEL } from "./status";
+import { MeetingsFilters } from "./meetings-filters";
 
 export const metadata = { title: "Reuniones — Pime Suite" };
 export const dynamic = "force-dynamic";
 
-export default async function ReunionesPage() {
+export default async function ReunionesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string; projectId?: string; clientId?: string; status?: string }>;
+}) {
   const user = await getEmpresaUser();
+  const filters = await searchParams;
+  const filtering = Boolean(filters.q || filters.projectId || filters.clientId || filters.status);
 
-  const meetings = await prisma.meeting.findMany({
-    where: { userId: user.id },
-    include: {
-      project: { select: { id: true, name: true } },
-      client: { select: { name: true, company: true } },
-      _count: { select: { actionItems: true, speakers: true } },
-    },
-    orderBy: { meetingDate: "desc" },
-  });
-
-  const pendingSync = await prisma.meetingActionItem.count({
-    where: { meeting: { userId: user.id }, taskId: null, kind: "TECNICO" },
-  });
+  const [meetings, pendingSync, projects, clients] = await Promise.all([
+    prisma.meeting.findMany({
+      where: meetingSearchFilter(user.id, filters),
+      include: {
+        project: { select: { id: true, name: true } },
+        client: { select: { name: true, company: true } },
+        _count: { select: { actionItems: true, speakers: true } },
+      },
+      orderBy: { meetingDate: "desc" },
+    }),
+    prisma.meetingActionItem.count({
+      where: { meeting: { userId: user.id }, taskId: null, kind: "TECNICO" },
+    }),
+    prisma.project.findMany({
+      where: { userId: user.id, meetings: { some: {} } },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.client.findMany({
+      where: { userId: user.id, meetings: { some: {} } },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
+  ]);
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -44,7 +63,16 @@ export default async function ReunionesPage() {
         </Link>
       </div>
 
-      {meetings.length === 0 ? (
+      <MeetingsFilters projects={projects} clients={clients} />
+
+      {meetings.length === 0 && filtering ? (
+        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-10 text-center">
+          <p className="text-white/60 font-medium">Ninguna reunión coincide con esa búsqueda</p>
+          <p className="text-white/45 text-sm mt-1">
+            La búsqueda mira el título, la transcripción, las notas de contexto y los pendientes.
+          </p>
+        </div>
+      ) : meetings.length === 0 ? (
         <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-12 text-center space-y-4">
           <p className="text-white/60 font-medium">Todavía no has grabado ninguna reunión</p>
           <p className="text-white/55 text-sm max-w-md mx-auto">

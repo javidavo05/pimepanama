@@ -3,31 +3,33 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { formatDuration } from "@/lib/meetings/transcript";
+import { formatDuration, formatTimestamp } from "@/lib/meetings/transcript";
 import type {
   ExecutiveMinutes,
+  MeetingSegment,
   SerializedMeeting,
   SerializedMeetingActionItem,
   SerializedMeetingSpeaker,
   TechnicalMinutes,
 } from "@/lib/meetings/types";
-import {
-  KIND_COLOR,
-  KIND_LABEL,
-  MEETING_STATUS_COLOR,
-  MEETING_STATUS_LABEL,
-  PRIORITY_LABEL,
-} from "../status";
+import { MEETING_STATUS_COLOR, MEETING_STATUS_LABEL } from "../status";
+import { ActionItemsPanel } from "./action-items-panel";
+import { MeetingAskPanel } from "./meeting-ask-panel";
+import { MeetingAudioPlayer, type SeekRequest } from "./meeting-audio-player";
 import { MeetingContextPanel } from "./meeting-context-panel";
+import { MeetingOutbound } from "./meeting-outbound";
+import { MeetingTranscriptView } from "./meeting-transcript-view";
 
-type Tab = "ejecutiva" | "tecnica" | "pendientes" | "prompt" | "transcripcion";
+type Tab = "ejecutiva" | "tecnica" | "pendientes" | "prompt" | "transcripcion" | "capitulos" | "preguntar";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "ejecutiva", label: "Minuta ejecutiva" },
   { key: "tecnica", label: "Minuta técnica" },
   { key: "pendientes", label: "Pendientes" },
   { key: "prompt", label: "Prompt técnico" },
+  { key: "capitulos", label: "Capítulos" },
   { key: "transcripcion", label: "Transcripción" },
+  { key: "preguntar", label: "Preguntar" },
 ];
 
 const STAGES = [
@@ -35,10 +37,12 @@ const STAGES = [
   { key: "minutes", label: "Minutas" },
   { key: "items", label: "Pendientes" },
   { key: "prompt", label: "Prompt" },
+  { key: "chapters", label: "Capítulos" },
 ] as const;
 
 interface MeetingDetailProps {
   meeting: SerializedMeeting;
+  segments: MeetingSegment[];
   project: { id: string; name: string } | null;
   client: { id: string; name: string; company: string | null } | null;
   projects: { id: string; name: string; clientId: string | null }[];
@@ -74,6 +78,7 @@ function Bullets({ items, empty }: { items: string[]; empty: string }) {
 
 export function MeetingDetail({
   meeting,
+  segments,
   project,
   client,
   projects,
@@ -86,16 +91,22 @@ export function MeetingDetail({
   const router = useRouter();
   const [tab, setTab] = useState<Tab>(executive ? "ejecutiva" : "transcripcion");
   const [items, setItems] = useState(initialItems);
-  const [selected, setSelected] = useState<string[]>(() =>
-    initialItems.filter((i) => !i.taskId).map((i) => i.id)
-  );
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [renaming, setRenaming] = useState<Record<string, string>>({});
+  const [editingHeader, setEditingHeader] = useState(false);
+  const [title, setTitle] = useState(meeting.title);
+  const [meetingDate, setMeetingDate] = useState(meeting.meetingDate.slice(0, 10));
+  // El reproductor vive arriba y cualquier timestamp del detalle le pide saltar.
+  const [seek, setSeek] = useState<SeekRequest | null>(null);
 
-  const unsynced = items.filter((i) => !i.taskId);
+  const hasAudio = meeting.audioChunks.length > 0 || meeting.audioKeys.length > 0;
+
+  function seekTo(ms: number) {
+    setSeek({ ms, nonce: Date.now() });
+  }
 
   /**
    * Le pone nombre real a una etiqueta que la IA dejó genérica ("Hablante 2").
@@ -151,33 +162,43 @@ export function MeetingDetail({
     }
   }
 
-  async function syncTasks(asDeliverables: boolean) {
-    if (selected.length === 0) {
-      setError("Selecciona al menos un pendiente.");
-      return;
-    }
-    setBusy("sync");
+  async function saveHeader() {
+    setBusy("header");
     setError(null);
-    setMessage(null);
     try {
-      const res = await fetch(`/api/empresa/meetings/${meeting.id}/sync-tasks`, {
-        method: "POST",
+      const res = await fetch(`/api/empresa/meetings/${meeting.id}`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemIds: selected, asDeliverables }),
+        body: JSON.stringify({ title, meetingDate }),
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "Error creando tareas");
-      setItems(data.actionItems);
-      setSelected([]);
-      setMessage(
-        `${data.created} tarea${data.created !== 1 ? "s" : ""} creada${data.created !== 1 ? "s" : ""}${
-          asDeliverables ? " y agregadas como entregables del proyecto" : ""
-        }.`
-      );
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "No se pudo guardar");
+      }
+      setEditingHeader(false);
+      setMessage("Reunión actualizada.");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Error creando tareas");
+      setError(err instanceof Error ? err.message : "No se pudo guardar");
     } finally {
+      setBusy(null);
+    }
+  }
+
+  async function deleteMeeting() {
+    if (!confirm("Se borra la reunión, su transcripción y su audio. No se puede deshacer.")) return;
+    setBusy("delete");
+    setError(null);
+    try {
+      const res = await fetch(`/api/empresa/meetings/${meeting.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "No se pudo borrar");
+      }
+      router.push("/empresa/reuniones");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo borrar");
       setBusy(null);
     }
   }
@@ -213,32 +234,76 @@ export function MeetingDetail({
       {/* Cabecera */}
       <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-1">
-              <h1 className="text-white text-xl font-semibold tracking-tight">{meeting.title}</h1>
-              <span className={`px-2 py-0.5 text-[10px] rounded border ${MEETING_STATUS_COLOR[meeting.status]}`}>
-                {MEETING_STATUS_LABEL[meeting.status]}
-              </span>
-            </div>
-            <p className="text-white/60 text-sm">
-              {new Date(meeting.meetingDate).toLocaleDateString("es-PA")}
-              {meeting.durationMs > 0 ? ` · ${formatDuration(meeting.durationMs)}` : ""}
-              {project ? (
-                <>
-                  {" · "}
-                  <Link href={`/empresa/proyectos/${project.id}`} className="text-[#1AA7F0] hover:underline">
-                    {project.name}
-                  </Link>
-                </>
-              ) : (
-                <span className="text-amber-400/70"> · sin proyecto</span>
-              )}
-              {client ? ` · ${client.name}` : ""}
-            </p>
+          <div className="min-w-0 flex-1">
+            {editingHeader ? (
+              <div className="space-y-2">
+                <input
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm focus:border-[#1AA7F0]/50 focus:outline-none"
+                />
+                <div className="flex gap-2 flex-wrap">
+                  <input
+                    type="date"
+                    value={meetingDate}
+                    onChange={(e) => setMeetingDate(e.target.value)}
+                    className="bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm focus:border-[#1AA7F0]/50 focus:outline-none"
+                  />
+                  <button
+                    onClick={() => void saveHeader()}
+                    disabled={busy !== null}
+                    className="px-4 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-all"
+                  >
+                    {busy === "header" ? "Guardando…" : "Guardar"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingHeader(false);
+                      setTitle(meeting.title);
+                      setMeetingDate(meeting.meetingDate.slice(0, 10));
+                    }}
+                    className="px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-white/70 text-xs rounded-lg transition-all"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <h1 className="text-white text-xl font-semibold tracking-tight">{meeting.title}</h1>
+                  <span className={`px-2 py-0.5 text-[10px] rounded border ${MEETING_STATUS_COLOR[meeting.status]}`}>
+                    {MEETING_STATUS_LABEL[meeting.status]}
+                  </span>
+                  <button
+                    onClick={() => setEditingHeader(true)}
+                    className="text-white/30 hover:text-[#1AA7F0] text-xs transition-colors"
+                    aria-label="Editar título y fecha"
+                  >
+                    ✎
+                  </button>
+                </div>
+                <p className="text-white/60 text-sm">
+                  {new Date(meeting.meetingDate).toLocaleDateString("es-PA")}
+                  {meeting.durationMs > 0 ? ` · ${formatDuration(meeting.durationMs)}` : ""}
+                  {project ? (
+                    <>
+                      {" · "}
+                      <Link href={`/empresa/proyectos/${project.id}`} className="text-[#1AA7F0] hover:underline">
+                        {project.name}
+                      </Link>
+                    </>
+                  ) : (
+                    <span className="text-amber-400/70"> · sin proyecto</span>
+                  )}
+                  {client ? ` · ${client.name}` : ""}
+                </p>
+              </>
+            )}
           </div>
           <div className="text-right shrink-0">
             <p className="text-[#C8A96E]/70 text-xs font-mono">${meeting.aiCostUSD.toFixed(3)} en IA</p>
-            <p className="text-white/40 text-xs">{meeting.segments.length} intervenciones</p>
+            <p className="text-white/40 text-xs">{meeting.segmentCount} intervenciones</p>
           </div>
         </div>
 
@@ -287,9 +352,7 @@ export function MeetingDetail({
                         {formatDuration(s.talkMs)}
                       </span>
                       <button
-                        onClick={() =>
-                          setRenaming((prev) => ({ ...prev, [s.label]: s.name ?? "" }))
-                        }
+                        onClick={() => setRenaming((prev) => ({ ...prev, [s.label]: s.name ?? "" }))}
                         className="text-white/30 hover:text-[#1AA7F0] transition-colors"
                         aria-label={`Renombrar ${s.label}`}
                       >
@@ -312,7 +375,7 @@ export function MeetingDetail({
             <button
               key={stage.key}
               onClick={() => runStage(stage.key, stage.label)}
-              disabled={busy !== null || meeting.segments.length === 0}
+              disabled={busy !== null || meeting.segmentCount === 0}
               className="px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] disabled:opacity-40 border border-white/[0.08] text-white/70 text-xs rounded-lg transition-all"
             >
               {busy === stage.key ? "Procesando…" : `↻ ${stage.label}`}
@@ -335,11 +398,22 @@ export function MeetingDetail({
               📝 Ver bitácora emitida
             </Link>
           )}
+          <button
+            onClick={() => void deleteMeeting()}
+            disabled={busy !== null}
+            className="px-3 py-1.5 bg-white/[0.02] hover:bg-red-500/10 disabled:opacity-40 border border-white/[0.06] hover:border-red-500/25 text-white/40 hover:text-red-400 text-xs rounded-lg transition-all ml-auto"
+          >
+            {busy === "delete" ? "Borrando…" : "Borrar reunión"}
+          </button>
         </div>
 
         {message && <p className="text-green-400 text-xs mt-3">{message}</p>}
         {error && <p className="text-red-400 text-xs mt-3">{error}</p>}
       </div>
+
+      {hasAudio && (
+        <MeetingAudioPlayer meetingId={meeting.id} durationMs={meeting.durationMs} seek={seek} />
+      )}
 
       <MeetingContextPanel
         meetingId={meeting.id}
@@ -349,6 +423,14 @@ export function MeetingDetail({
         projects={projects}
         clients={clients}
         hasMinutes={executive !== null || technical !== null}
+      />
+
+      <MeetingOutbound
+        meetingId={meeting.id}
+        hasMinutes={executive !== null}
+        minutesSentAt={meeting.minutesSentAt}
+        nextMeetingTaskId={meeting.nextMeetingTaskId}
+        nextMeetingHint={executive?.nextMeeting ?? null}
       />
 
       {/* Tabs */}
@@ -365,6 +447,7 @@ export function MeetingDetail({
           >
             {t.label}
             {t.key === "pendientes" && items.length > 0 ? ` (${items.length})` : ""}
+            {t.key === "capitulos" && meeting.chapters.length > 0 ? ` (${meeting.chapters.length})` : ""}
           </button>
         ))}
       </div>
@@ -432,10 +515,7 @@ export function MeetingDetail({
                 <Bullets items={technical.dependencies} empty="Ninguna." />
               </Section>
               <Section title="Preguntas abiertas">
-                <Bullets
-                  items={technical.openQuestions}
-                  empty="Ninguna — el alcance quedó cerrado."
-                />
+                <Bullets items={technical.openQuestions} empty="Ninguna — el alcance quedó cerrado." />
               </Section>
             </>
           ) : (
@@ -445,114 +525,45 @@ export function MeetingDetail({
           ))}
 
         {tab === "pendientes" && (
-          <>
-            {items.length === 0 ? (
-              <p className="text-white/40 text-sm">
-                No hay pendientes. Corre la etapa «Pendientes» para extraerlos de la reunión.
-              </p>
-            ) : (
-              <>
-                <div className="space-y-3">
-                  {items.map((item) => {
-                    const isSelected = selected.includes(item.id);
-                    return (
-                      <div
-                        key={item.id}
-                        className={`border rounded-xl p-4 transition-all ${
-                          item.taskId
-                            ? "border-green-500/20 bg-green-500/[0.03]"
-                            : isSelected
-                              ? "border-[#1AA7F0]/30 bg-[#1AA7F0]/[0.04]"
-                              : "border-white/[0.06]"
-                        }`}
-                      >
-                        <div className="flex items-start gap-3">
-                          {!item.taskId && (
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={(e) =>
-                                setSelected((prev) =>
-                                  e.target.checked
-                                    ? [...prev, item.id]
-                                    : prev.filter((id) => id !== item.id)
-                                )
-                              }
-                              className="mt-1 accent-[#1AA7F0]"
-                            />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap mb-1">
-                              <span className={`px-2 py-0.5 text-[10px] rounded border ${KIND_COLOR[item.kind]}`}>
-                                {KIND_LABEL[item.kind]}
-                              </span>
-                              <span className="text-white/40 text-[10px]">
-                                Prioridad {PRIORITY_LABEL[item.priority]}
-                              </span>
-                              {item.taskId && (
-                                <span className="text-green-400 text-[10px]">✓ En tareas</span>
-                              )}
-                            </div>
-                            <p className="text-white text-sm font-medium">{item.title}</p>
-                            {item.detail && (
-                              <p className="text-white/60 text-xs mt-1 leading-relaxed">{item.detail}</p>
-                            )}
-                            {item.acceptance.length > 0 && (
-                              <div className="mt-2">
-                                <p className="text-white/40 text-[10px] uppercase tracking-wider mb-1">
-                                  Criterios de aceptación
-                                </p>
-                                <ul className="space-y-0.5">
-                                  {item.acceptance.map((a, i) => (
-                                    <li key={i} className="text-white/60 text-xs flex gap-1.5">
-                                      <span className="text-[#1AA7F0]/50">✓</span>
-                                      <span>{a}</span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                            <div className="flex gap-3 flex-wrap mt-2 text-[11px] text-white/40">
-                              {item.owner && <span>👤 {item.owner}</span>}
-                              {item.dueDate && (
-                                <span>📅 {new Date(item.dueDate).toLocaleDateString("es-PA")}</span>
-                              )}
-                              {item.estimateHours && <span>⏱ {item.estimateHours} h</span>}
-                              {item.touchpoints.length > 0 && (
-                                <span>🧩 {item.touchpoints.join(", ")}</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {unsynced.length > 0 && (
-                  <div className="flex flex-wrap gap-2 pt-2 border-t border-white/[0.06]">
-                    <button
-                      onClick={() => syncTasks(false)}
-                      disabled={busy !== null || selected.length === 0}
-                      className="px-4 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-all"
-                    >
-                      {busy === "sync" ? "Creando…" : `✅ Pasar ${selected.length} a Tareas`}
-                    </button>
-                    {project && (
-                      <button
-                        onClick={() => syncTasks(true)}
-                        disabled={busy !== null || selected.length === 0}
-                        className="px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] disabled:opacity-40 border border-white/[0.08] text-white/70 text-xs rounded-lg transition-all"
-                      >
-                        + también como entregables del proyecto
-                      </button>
-                    )}
-                  </div>
-                )}
-              </>
-            )}
-          </>
+          <ActionItemsPanel
+            meetingId={meeting.id}
+            items={items}
+            onItemsChange={setItems}
+            hasProject={project !== null}
+          />
         )}
+
+        {tab === "capitulos" &&
+          (meeting.chapters.length > 0 ? (
+            <div className="space-y-2">
+              <p className="text-white/50 text-xs">
+                El índice de la reunión. Pulsa un capítulo para escucharlo desde ahí.
+              </p>
+              {meeting.chapters.map((c, i) => (
+                <button
+                  key={i}
+                  onClick={() => seekTo(c.startMs)}
+                  className="w-full text-left border border-white/[0.06] hover:border-[#1AA7F0]/25 rounded-xl p-3.5 transition-all group"
+                >
+                  <div className="flex items-baseline gap-2.5">
+                    <span className="text-[#1AA7F0]/70 text-xs font-mono shrink-0">
+                      {formatTimestamp(c.startMs)}
+                    </span>
+                    <span className="text-white text-sm font-medium group-hover:text-[#1AA7F0] transition-colors">
+                      {c.title}
+                    </span>
+                  </div>
+                  {c.summary && (
+                    <p className="text-white/55 text-xs mt-1 leading-relaxed pl-[3.6rem]">{c.summary}</p>
+                  )}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-white/40 text-sm">
+              Todavía no se generó el índice de temas. Corre la etapa «Capítulos».
+            </p>
+          ))}
 
         {tab === "prompt" &&
           (meeting.technicalPrompt ? (
@@ -588,43 +599,19 @@ export function MeetingDetail({
           ))}
 
         {tab === "transcripcion" && (
-          <>
-            {meeting.diarizedText ? (
-              <div className="space-y-3 max-h-[70vh] overflow-y-auto">
-                {meeting.diarizedText.split("\n\n").map((turn, i) => {
-                  const match = turn.match(/^\*\*(.+?)\*\*\s*\((.+?)\):\s*([\s\S]*)$/);
-                  if (!match) {
-                    return (
-                      <p key={i} className="text-white/70 text-sm leading-relaxed">
-                        {turn}
-                      </p>
-                    );
-                  }
-                  const [, speaker, time, text] = match;
-                  return (
-                    <div key={i} className="flex gap-3">
-                      <div className="w-32 shrink-0 text-right">
-                        <p className="text-[#1AA7F0] text-xs font-medium truncate">{speaker}</p>
-                        <p className="text-white/30 text-[10px] font-mono">{time}</p>
-                      </div>
-                      <p className="text-white/75 text-sm leading-relaxed flex-1">{text}</p>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : meeting.transcript ? (
-              <>
-                <p className="text-white/40 text-xs">
-                  Sin atribuir todavía — corre la etapa «Hablantes» para separar quién dijo qué.
-                </p>
-                <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap max-h-[70vh] overflow-y-auto">
-                  {meeting.transcript}
-                </p>
-              </>
-            ) : (
-              <p className="text-white/40 text-sm">Esta reunión no tiene audio transcrito.</p>
-            )}
-          </>
+          <MeetingTranscriptView
+            segments={segments}
+            fallback={meeting.transcript}
+            onSeek={seekTo}
+          />
+        )}
+
+        {tab === "preguntar" && (
+          <MeetingAskPanel
+            meetingId={meeting.id}
+            hasTranscript={meeting.segmentCount > 0}
+            onSeek={seekTo}
+          />
         )}
       </div>
     </div>

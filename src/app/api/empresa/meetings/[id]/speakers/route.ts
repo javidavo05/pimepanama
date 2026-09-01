@@ -2,13 +2,10 @@ import { NextResponse } from "next/server";
 import { withEmpresaIdRoute } from "@/app/api/empresa/_route";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
-import { buildDiarizedText, orgForSpeaker, speakerStats } from "@/lib/meetings/transcript";
-import {
-  parseAttendees,
-  parseSegments,
-  type MeetingChannel,
-  type MeetingSegment,
-} from "@/lib/meetings/types";
+import { rebuildRoster } from "@/lib/meetings/roster";
+import { assignChannelSpeaker, loadSegments, renameSpeakerLabel } from "@/lib/meetings/segments";
+import { buildDiarizedText } from "@/lib/meetings/transcript";
+import { parseAttendees, type MeetingChannel } from "@/lib/meetings/types";
 
 export const runtime = "nodejs";
 
@@ -41,7 +38,7 @@ export const POST = withEmpresaIdRoute(async (req, { params }) => {
 
   const meeting = await prisma.meeting.findFirst({
     where: { id, userId: user.id },
-    select: { id: true, segments: true, attendees: true, diarizedText: true },
+    select: { id: true, attendees: true, diarizedText: true },
   });
   if (!meeting) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -69,47 +66,25 @@ export const POST = withEmpresaIdRoute(async (req, { params }) => {
     return NextResponse.json({ error: "Nada que reasignar" }, { status: 400 });
   }
 
-  const byChannel = new Map(channels.map((c) => [c.channel, c.speaker]));
-  const byLabel = new Map(labels.map((l) => [l.from, l.to]));
+  // Cada reasignación es un UPDATE con WHERE sobre los segmentos afectados: no
+  // hace falta traerse la transcripción para reescribirla entera.
+  for (const c of channels) {
+    await assignChannelSpeaker(id, c.channel, c.speaker || null);
+  }
+  for (const l of labels) {
+    await renameSpeakerLabel(id, l.from, l.to);
+  }
 
-  const segments: MeetingSegment[] = parseSegments(meeting.segments).map((seg) => {
-    const fromChannel = seg.channel ? byChannel.get(seg.channel) : undefined;
-    if (fromChannel !== undefined) {
-      return fromChannel
-        ? { ...seg, speaker: fromChannel, locked: true }
-        : { ...seg, speaker: undefined, locked: undefined };
-    }
-    const renamed = seg.speaker ? byLabel.get(seg.speaker) : undefined;
-    if (renamed) return { ...seg, speaker: renamed, locked: true };
-    return seg;
-  });
-
+  const segments = await loadSegments(id);
   const attendees = parseAttendees(meeting.attendees);
   // La transcripción atribuida solo se rearma si ya existía: durante la
   // grabación todavía no hay, y no queremos generarla a medias.
   const diarizedText = meeting.diarizedText ? buildDiarizedText(segments) : null;
-  const stats = speakerStats(segments);
 
-  await prisma.$transaction([
-    prisma.meeting.update({
-      where: { id },
-      data: {
-        segments: segments as unknown as object[],
-        ...(diarizedText ? { diarizedText } : {}),
-      },
-    }),
-    prisma.meetingSpeaker.deleteMany({ where: { meetingId: id } }),
-    prisma.meetingSpeaker.createMany({
-      data: [...stats.entries()].map(([label, s]) => ({
-        meetingId: id,
-        label,
-        name: label.startsWith("Hablante") || label === "Desconocido" ? null : label,
-        org: orgForSpeaker(label, attendees),
-        segmentCount: s.segmentCount,
-        talkMs: s.talkMs,
-      })),
-    }),
-  ]);
+  await rebuildRoster(id, segments, attendees);
+  if (diarizedText) {
+    await prisma.meeting.update({ where: { id }, data: { diarizedText } });
+  }
 
   return NextResponse.json({ ok: true, segments, diarizedText });
 });

@@ -12,6 +12,20 @@ export function formatTimestamp(ms: number): string {
     : `${mm}:${String(s).padStart(2, "0")}`;
 }
 
+/**
+ * "mm:ss" o "h:mm:ss" → ms. Es la vuelta de `formatTimestamp`: el modelo copia
+ * los timestamps de la transcripción tal como los ve, y aquí se convierten en el
+ * número con el que se salta el audio.
+ */
+export function parseTimestamp(value: string): number | null {
+  const parts = value.trim().split(":");
+  if (parts.length < 2 || parts.length > 3) return null;
+  const nums = parts.map((p) => Number(p));
+  if (nums.some((n) => !Number.isFinite(n) || n < 0)) return null;
+  const [h, m, s] = parts.length === 3 ? nums : [0, nums[0], nums[1]];
+  return ((h * 60 + m) * 60 + s) * 1000;
+}
+
 export function formatDuration(ms: number): string {
   const min = Math.round(ms / 60000);
   if (min < 60) return `${min} min`;
@@ -114,9 +128,50 @@ export function describeAttendees(attendees: MeetingAttendee[]): string {
 
 /**
  * Recorta la transcripción por el final conservando el inicio, que es donde
- * suele estar el encuadre de la reunión.
+ * suele estar el encuadre de la reunión. Es el último recurso: para una reunión
+ * larga se usa `chunkTranscript`, que no tira nada.
  */
 export function clampTranscript(text: string, maxChars: number): string {
   if (text.length <= maxChars) return text;
   return `${text.slice(0, maxChars)}\n\n[...transcripción truncada por longitud...]`;
+}
+
+/**
+ * Parte la transcripción atribuida en bloques que caben en una llamada, cortando
+ * siempre entre turnos: un turno nunca queda partido a la mitad, porque medio
+ * turno sin su cierre se lee como una decisión que no se tomó.
+ *
+ * Una reunión que cabe entera devuelve un solo bloque, y entonces el pipeline
+ * hace exactamente lo que hacía antes: una llamada, sin pasada de fusión.
+ */
+export function chunkTranscript(text: string, maxChars: number): string[] {
+  const trimmed = text.trim();
+  if (trimmed.length <= maxChars) return trimmed ? [trimmed] : [];
+
+  const chunks: string[] = [];
+  let current = "";
+
+  for (const turn of trimmed.split("\n\n")) {
+    // Un turno más largo que el bloque entero (una intervención kilométrica) se
+    // parte por caracteres: es preferible a descartarlo.
+    if (turn.length > maxChars) {
+      if (current) {
+        chunks.push(current);
+        current = "";
+      }
+      for (let i = 0; i < turn.length; i += maxChars) {
+        chunks.push(turn.slice(i, i + maxChars));
+      }
+      continue;
+    }
+    if (current.length + turn.length + 2 > maxChars) {
+      chunks.push(current);
+      current = turn;
+    } else {
+      current = current ? `${current}\n\n${turn}` : turn;
+    }
+  }
+
+  if (current) chunks.push(current);
+  return chunks;
 }

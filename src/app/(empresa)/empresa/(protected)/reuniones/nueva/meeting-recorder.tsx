@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { AttendeeOrg, MeetingAttendee, MeetingSegment } from "@/lib/meetings/types";
+import { importAudioFile, type ImportProgress } from "./audio-import";
 import { MeetingCapture, looksLikeLoopback, type CaptureChannel, type CaptureMode } from "./live-capture";
 import { CHANNEL_ACCENT, LiveTranscript } from "./live-transcript";
 import { isInstantSpeechSupported, useInstantSpeech } from "./use-instant-speech";
@@ -42,6 +43,9 @@ const STAGES = [
   { key: "minutes", label: "Redactando minuta ejecutiva y técnica" },
   { key: "items", label: "Extrayendo pendientes técnicos" },
   { key: "prompt", label: "Armando el prompt técnico" },
+  // Va al final y sobre la transcripción, no sobre las minutas: si falla, la
+  // reunión ya está completa y solo se queda sin índice de temas.
+  { key: "chapters", label: "Armando el índice de temas" },
 ] as const;
 
 interface ModeOption {
@@ -162,6 +166,8 @@ export function MeetingRecorder({
     REMOTE: "",
   });
   const [uploading, setUploading] = useState(0);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
   const [stageIndex, setStageIndex] = useState(-1);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -311,6 +317,126 @@ export function MeetingRecorder({
     }).catch(() => setError("No se pudo guardar el nombre de esa voz. Se reintenta al finalizar."));
   }
 
+  /** Crea la fila de la reunión. La comparten grabar en vivo e importar audio. */
+  async function createMeeting(): Promise<string> {
+    const res = await fetch("/api/empresa/meetings", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: title.trim(),
+        projectId: projectId || undefined,
+        clientId: clientId || undefined,
+        language,
+        meetingDate,
+        attendees: attendees.filter((a) => a.name.trim()),
+      }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error ?? "No se pudo crear la reunión");
+    }
+    const meeting = await res.json();
+    setMeetingId(meeting.id);
+    meetingIdRef.current = meeting.id;
+    return meeting.id as string;
+  }
+
+  /** Corre el análisis completo y lleva al detalle. Lo comparten ambos caminos. */
+  async function processMeeting(id: string) {
+    for (let i = 0; i < STAGES.length; i++) {
+      setStageIndex(i);
+      const res = await fetch(`/api/empresa/meetings/${id}/process`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ stage: STAGES[i].key }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(
+          `${data.error ?? "Error procesando"} — la transcripción quedó guardada, puedes reintentar desde el detalle.`
+        );
+        setStageIndex(-1);
+        router.push(`/empresa/reuniones/${id}`);
+        return;
+      }
+    }
+
+    setPhase("done");
+    router.push(`/empresa/reuniones/${id}`);
+    router.refresh();
+  }
+
+  /**
+   * Importa un audio ya grabado. El archivo se decodifica y se corta aquí, en el
+   * navegador: al servidor le llegan tramos idénticos a los de una grabación en
+   * vivo, así que de ahí en adelante el camino es el mismo.
+   */
+  async function startImport() {
+    setError(null);
+    setNotice(null);
+
+    if (!title.trim()) {
+      setError("Ponle un título a la reunión.");
+      return;
+    }
+    if (!importFile) {
+      setError("Elige el archivo de audio.");
+      return;
+    }
+
+    setBusy(true);
+    let id: string;
+    try {
+      id = await createMeeting();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo crear la reunión");
+      setBusy(false);
+      return;
+    }
+
+    setPhase("processing");
+    setImportProgress({ done: 0, total: 1 });
+
+    try {
+      const { durationMs } = await importAudioFile({
+        file: importFile,
+        onProgress: setImportProgress,
+        onChunk: async ({ blob, index, offsetMs }) => {
+          const formData = new FormData();
+          formData.append("audio", blob, `tramo-${index}.wav`);
+          formData.append("index", String(index));
+          formData.append("offsetMs", String(offsetMs));
+          const res = await fetch(`/api/empresa/meetings/${id}/audio`, {
+            method: "POST",
+            body: formData,
+          });
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error ?? "No se pudo transcribir un tramo del archivo");
+          }
+        },
+      });
+
+      await fetch(`/api/empresa/meetings/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ durationMs }),
+      }).catch(() => undefined);
+    } catch (err) {
+      setError(
+        `${err instanceof Error ? err.message : "Error importando el audio"} — la reunión quedó creada, puedes reintentar desde el detalle.`
+      );
+      setImportProgress(null);
+      router.push(`/empresa/reuniones/${id}`);
+      return;
+    } finally {
+      setBusy(false);
+    }
+
+    setImportProgress(null);
+    await processMeeting(id);
+  }
+
   async function startRecording() {
     setError(null);
     setNotice(null);
@@ -345,25 +471,7 @@ export function MeetingRecorder({
       captureRef.current = capture;
       setActiveChannels(capture.activeChannels);
 
-      const res = await fetch("/api/empresa/meetings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          projectId: projectId || undefined,
-          clientId: clientId || undefined,
-          language,
-          meetingDate,
-          attendees: attendees.filter((a) => a.name.trim()),
-        }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        throw new Error(data.error ?? "No se pudo crear la reunión");
-      }
-      const meeting = await res.json();
-      setMeetingId(meeting.id);
-      meetingIdRef.current = meeting.id;
+      await createMeeting();
 
       // Arranque del mapeo de voces: tu micrófono eres tú, y si hay un solo
       // asistente del lado del cliente, ese es el otro canal. Lo demás lo ajusta
@@ -411,27 +519,7 @@ export function MeetingRecorder({
       body: JSON.stringify({ durationMs: Date.now() - startedAtRef.current }),
     }).catch(() => undefined);
 
-    for (let i = 0; i < STAGES.length; i++) {
-      setStageIndex(i);
-      const res = await fetch(`/api/empresa/meetings/${id}/process`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stage: STAGES[i].key }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(
-          `${data.error ?? "Error procesando"} — la transcripción quedó guardada, puedes reintentar desde el detalle.`
-        );
-        setStageIndex(-1);
-        router.push(`/empresa/reuniones/${id}`);
-        return;
-      }
-    }
-
-    setPhase("done");
-    router.push(`/empresa/reuniones/${id}`);
-    router.refresh();
+    await processMeeting(id);
   }
 
   function labelFor(seg: MeetingSegment): string {
@@ -450,6 +538,24 @@ export function MeetingRecorder({
         <p className="text-white/60 text-sm mb-6">
           No cierres esta pestaña. Tarda alrededor de un minuto por cada media hora grabada.
         </p>
+        {importProgress && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between gap-3 mb-1.5">
+              <span className="text-white/80 text-sm">Transcribiendo el archivo</span>
+              <span className="text-white/50 text-xs font-mono">
+                {importProgress.done} / {importProgress.total}
+              </span>
+            </div>
+            <div className="h-1.5 w-full bg-white/[0.06] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#1AA7F0] rounded-full transition-[width] duration-300"
+                style={{
+                  width: `${Math.round((importProgress.done / Math.max(1, importProgress.total)) * 100)}%`,
+                }}
+              />
+            </div>
+          </div>
+        )}
         <ol className="space-y-3">
           {STAGES.map((stage, i) => {
             const state = i < stageIndex ? "done" : i === stageIndex ? "active" : "pending";
@@ -881,6 +987,40 @@ export function MeetingRecorder({
               </span>
             </span>
           </label>
+        )}
+      </div>
+
+      {/* Importar un audio ya grabado */}
+      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6 space-y-3">
+        <div>
+          <h2 className="text-white/70 text-xs uppercase tracking-wider">
+            ¿Ya tienes la reunión grabada?
+          </h2>
+          <p className="text-white/40 text-xs mt-1 leading-relaxed">
+            Sube la exportación del Zoom o del Meet, una nota de voz o el mp3 de una grabadora. Se
+            corta y se transcribe aquí mismo, y a partir de ahí obtienes lo mismo que grabando en
+            vivo: minutas, pendientes y prompt. Las voces las separa la IA, porque un archivo ya
+            mezclado no dice quién habló.
+          </p>
+        </div>
+
+        <input
+          type="file"
+          accept="audio/*,video/mp4,.m4a,.mp3,.wav,.webm,.ogg"
+          onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+          className="w-full text-white/60 text-xs file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-white/[0.06] file:text-white/70 file:text-xs hover:file:bg-white/[0.10] file:cursor-pointer"
+        />
+
+        {importFile && (
+          <button
+            onClick={startImport}
+            disabled={busy}
+            className="w-full px-5 py-2.5 bg-white/[0.04] hover:bg-white/[0.08] disabled:opacity-50 border border-white/[0.08] text-white/80 text-sm font-semibold rounded-lg transition-all"
+          >
+            {busy
+              ? "Preparando…"
+              : `⬆️ Transcribir ${importFile.name} (${(importFile.size / 1024 / 1024).toFixed(1)} MB)`}
+          </button>
         )}
       </div>
 

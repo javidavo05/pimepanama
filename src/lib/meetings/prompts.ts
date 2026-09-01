@@ -165,3 +165,81 @@ PARTE 2 — "contextSummary": 4-8 oraciones que resuman esta reunión para que s
 Responde SOLO con JSON válido:
 {"technicalPrompt": "markdown...", "contextSummary": "..."}${contextPreamble(projectContext)}`;
 }
+
+/**
+ * Encabezado para el análisis de un tramo de una reunión larga. La reunión no
+ * cabe en una sola llamada, así que se analiza por partes y luego se fusiona:
+ * cada parte tiene que saber que es una parte, o redacta conclusiones como si
+ * la reunión hubiera terminado ahí.
+ */
+export function partialPass(index: number, total: number): string {
+  return `\n\nIMPORTANTE: esto es el tramo ${index + 1} de ${total} de una reunión larga. Analiza SOLO lo que aparece en este tramo y no especules sobre lo que se dijo antes o después. Si un tema queda a medias al final del tramo, regístralo tal como quedó; otra pasada lo completará.`;
+}
+
+/** Fusión de las minutas parciales de una reunión larga en una sola minuta. */
+export function mergeMinutesPrompt(attendees: MeetingAttendee[], projectContext: string): string {
+  return `${minutesPrompt(attendees, projectContext)}
+
+AHORA NO RECIBES LA TRANSCRIPCIÓN: recibes las minutas parciales de cada tramo de la reunión, en orden cronológico. Tu tarea es fusionarlas en UNA sola minuta con la misma estructura JSON.
+
+Reglas de la fusión:
+- Una decisión que aparece en varios tramos es UNA decisión, no varias. Únelas.
+- Si un tramo posterior contradice a uno anterior, manda el posterior: es lo que se acordó al final.
+- Un tema que en un tramo quedó abierto y en otro se cerró ya no es una pregunta abierta.
+- No inventes nada que no esté en alguna de las minutas parciales.
+- "agenda" y "summary" se redactan de nuevo cubriendo la reunión completa, no se concatenan.`;
+}
+
+/** Fusión de los pendientes extraídos por tramos. */
+export function mergeItemsPrompt(attendees: MeetingAttendee[], projectContext: string): string {
+  return `${actionItemsPrompt(attendees, projectContext)}
+
+AHORA NO RECIBES LA TRANSCRIPCIÓN: recibes las listas de pendientes extraídas de cada tramo de la reunión, en orden cronológico. Fusiónalas en UNA sola lista con la misma estructura JSON.
+
+Reglas de la fusión:
+- El mismo trabajo mencionado en dos tramos es UN pendiente. Únelos quedándote con el detalle más completo y con la unión de sus criterios de aceptación.
+- Si un tramo posterior cancela o reemplaza un pendiente anterior, no lo incluyas.
+- Ordena la lista por prioridad y dependencia: primero lo que bloquea a lo demás.`;
+}
+
+/** Índice de temas con timestamps, para poder saltar a donde se habló de algo. */
+export function chaptersPrompt(projectContext: string): string {
+  return `${TECH_PERSONA}
+
+Tu tarea: partir la reunión en capítulos, como el índice de un video. Alguien que no estuvo tiene que poder mirar la lista y saltar directo al momento donde se habló de lo que le interesa.
+
+Recibes la transcripción atribuida, donde cada turno viene con su timestamp en formato (mm:ss) o (h:mm:ss) desde el inicio de la reunión.
+
+Responde SOLO con JSON válido:
+{"chapters": [{"start": "12:30", "title": "Cambio de alcance del módulo de facturación", "summary": "Una o dos oraciones sobre lo que se resolvió en este tramo."}]}
+
+Reglas:
+- Entre 3 y 12 capítulos según lo larga que sea la reunión. Una reunión de 20 minutos no tiene 10 temas.
+- "start" es el timestamp EXACTO de un turno que aparece en la transcripción, copiado tal cual. No lo inventes ni lo redondees.
+- El primer capítulo arranca en el primer turno de la reunión.
+- El título nombra el tema, no la actividad: "Precio del mantenimiento mensual", no "Se conversó sobre precios".
+- Un cambio de tema es un capítulo nuevo; un ida y vuelta sobre el mismo tema no lo es.${contextPreamble(projectContext)}`;
+}
+
+/**
+ * Preguntas sobre lo que se dijo en la reunión. Responde citando el minuto, que
+ * es lo que permite ir a escucharlo y comprobar que no se lo inventó.
+ */
+export function askPrompt(attendees: MeetingAttendee[], projectContext: string): string {
+  return `${TECH_PERSONA}
+
+Tu tarea: responder preguntas sobre lo que se dijo en esta reunión, apoyándote SOLO en la transcripción que recibes.
+
+Asistentes:
+${describeAttendees(attendees)}
+
+Responde SOLO con JSON válido:
+{"answer": "La respuesta en prosa, directa, sin preámbulo.", "citations": [{"time": "12:30", "speaker": "Nombre", "quote": "La frase textual de la transcripción que sostiene la respuesta."}]}
+
+Reglas:
+- Si la reunión no contiene la respuesta, dilo sin rodeos: "Eso no se habló en esta reunión." No lo completes con lo que sabes del proyecto.
+- Cada afirmación tuya que venga de la reunión va con su cita. "time" es el timestamp exacto del turno, copiado tal cual de la transcripción.
+- Las citas son textuales. No las corrijas ni las parafrasees.
+- Entre 1 y 4 citas. Si la respuesta es "no se habló", devuelve la lista vacía.
+- Distingue lo que alguien propuso de lo que se acordó, y di quién dijo cada cosa.${contextPreamble(projectContext)}`;
+}

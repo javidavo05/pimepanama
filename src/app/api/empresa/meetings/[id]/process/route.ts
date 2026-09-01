@@ -2,18 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { buildProjectContext, withManualContext } from "@/lib/meetings/context";
+import { resolveMeetingStatus } from "@/lib/meetings/meeting-status";
 import {
   getOpenAI,
   logMeetingAiUsage,
   runActionItems,
+  runChapters,
   runDiarization,
   runMinutes,
   runTechnicalPrompt,
 } from "@/lib/meetings/pipeline";
-import { buildDiarizedText, orgForSpeaker, speakerStats } from "@/lib/meetings/transcript";
+import { rebuildRosterOps } from "@/lib/meetings/roster";
+import { flatten, loadSegments, replaceSegments } from "@/lib/meetings/segments";
+import { buildDiarizedText } from "@/lib/meetings/transcript";
 import {
   parseAttendees,
-  parseSegments,
   type ExecutiveMinutes,
   type MeetingSegment,
   type TechnicalMinutes,
@@ -23,7 +26,7 @@ import { serializeMeetingActionItem } from "@/lib/meetings/serialize";
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const STAGES = ["diarize", "minutes", "items", "prompt"] as const;
+const STAGES = ["diarize", "minutes", "items", "prompt", "chapters"] as const;
 type Stage = (typeof STAGES)[number];
 
 /**
@@ -50,7 +53,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     });
     if (!meeting) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const segments = parseSegments(meeting.segments);
+    const segments = await loadSegments(id);
     if (segments.length === 0) {
       return NextResponse.json(
         { error: "La reunión no tiene transcripción todavía." },
@@ -66,6 +69,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const projectContext = withManualContext(block, meeting.manualContext);
     const openai = getOpenAI();
 
+    // El estado en el que queda la reunión no depende de la etapa que acaba de
+    // correr sino de lo que ya tiene: correr solo «Minutas» no puede dejarla
+    // marcada como procesando para siempre.
+    const settled = (technicalPrompt: string | null = meeting.technicalPrompt) =>
+      resolveMeetingStatus({ technicalPrompt, segmentCount: segments.length });
+
     await prisma.meeting.update({
       where: { id },
       data: { status: "PROCESSING", errorMessage: null },
@@ -75,26 +84,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     if (stage === "diarize") {
       const result = await runDiarization(openai, segments, attendees, projectContext);
       const diarizedText = buildDiarizedText(result.data);
-      const stats = speakerStats(result.data);
 
+      await replaceSegments(id, result.data);
       await prisma.$transaction([
-        prisma.meetingSpeaker.deleteMany({ where: { meetingId: id } }),
-        prisma.meetingSpeaker.createMany({
-          data: [...stats.entries()].map(([label, s]) => ({
-            meetingId: id,
-            label,
-            name: label.startsWith("Hablante") || label === "Desconocido" ? null : label,
-            org: orgForSpeaker(label, attendees),
-            segmentCount: s.segmentCount,
-            talkMs: s.talkMs,
-          })),
-        }),
+        ...rebuildRosterOps(id, result.data, attendees),
         prisma.meeting.update({
           where: { id },
           data: {
-            segments: result.data as unknown as object[],
             diarizedText,
-            status: "TRANSCRIBED",
+            status: settled(),
             aiCostUSD: { increment: result.costUSD },
           },
         }),
@@ -111,7 +109,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({
         stage,
         diarizedText,
-        speakers: [...stats.keys()],
+        speakers: [...new Set(result.data.map((s) => s.speaker ?? "Desconocido"))],
         costUSD: result.costUSD,
       });
     }
@@ -127,7 +125,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         data: {
           executiveMinutes: result.data.executive as unknown as object,
           technicalMinutes: result.data.technical as unknown as object,
-          status: "PROCESSING",
+          status: settled(),
           aiCostUSD: { increment: result.costUSD },
         },
       });
@@ -143,8 +141,35 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ stage, ...result.data, costUSD: result.costUSD });
     }
 
+    // ── Etapa opcional: índice de temas ──────────────────────────────────────
+    // Va sobre la transcripción, no sobre las minutas, así que no necesita que
+    // el resto del análisis haya corrido.
+    if (stage === "chapters") {
+      const result = await runChapters(openai, diarizedText, meeting.durationMs, projectContext);
+
+      await prisma.meeting.update({
+        where: { id },
+        data: {
+          chapters: result.data as unknown as object[],
+          status: settled(),
+          aiCostUSD: { increment: result.costUSD },
+        },
+      });
+
+      await logMeetingAiUsage(
+        user.supabaseUid,
+        "meeting-chapters",
+        result.inputTokens,
+        result.outputTokens,
+        Date.now() - started
+      );
+
+      return NextResponse.json({ stage, chapters: result.data, costUSD: result.costUSD });
+    }
+
     const technical = meeting.technicalMinutes as unknown as TechnicalMinutes | null;
     if (!technical) {
+      await prisma.meeting.update({ where: { id }, data: { status: settled() } });
       return NextResponse.json(
         { error: "Genera primero las minutas: los pendientes salen de la minuta técnica." },
         { status: 400 }
@@ -177,7 +202,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         }),
         prisma.meeting.update({
           where: { id },
-          data: { aiCostUSD: { increment: result.costUSD } },
+          data: { status: settled(), aiCostUSD: { increment: result.costUSD } },
         }),
       ]);
 
@@ -232,7 +257,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       data: {
         technicalPrompt: result.data.technicalPrompt,
         contextSummary: result.data.contextSummary,
-        status: "READY",
+        status: settled(result.data.technicalPrompt),
         aiCostUSD: { increment: result.costUSD },
       },
     });
@@ -266,5 +291,5 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
 /** Si la diarización no corrió, se analiza la transcripción plana. */
 function fallbackTranscript(transcript: string | null, segments: MeetingSegment[]): string {
-  return transcript?.trim() || segments.map((s) => s.text).join(" ");
+  return transcript?.trim() || flatten(segments);
 }

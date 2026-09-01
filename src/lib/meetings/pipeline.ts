@@ -3,15 +3,21 @@ import { prisma } from "@/lib/prisma";
 import { calcGptCost } from "@/lib/ai-pricing";
 import {
   actionItemsPrompt,
+  askPrompt,
+  chaptersPrompt,
   diarizationPrompt,
+  mergeItemsPrompt,
+  mergeMinutesPrompt,
   minutesPrompt,
+  partialPass,
   technicalPromptPrompt,
 } from "./prompts";
-import { clampTranscript, numberedSegments } from "./transcript";
+import { chunkTranscript, clampTranscript, numberedSegments, parseTimestamp } from "./transcript";
 import type {
   DraftActionItem,
   ExecutiveMinutes,
   MeetingAttendee,
+  MeetingChapter,
   MeetingSegment,
   TechnicalMinutes,
 } from "./types";
@@ -21,6 +27,12 @@ const MODEL = "gpt-4o";
 const DIARIZATION_BATCH = 100;
 /** Tope de caracteres de transcripción por llamada de análisis (~40k tokens de entrada). */
 const MAX_TRANSCRIPT_CHARS = 60_000;
+/**
+ * Tamaño de cada tramo cuando la reunión no cabe en una llamada. Es menor que el
+ * tope para dejarle sitio al prompt y al contexto del proyecto, que viajan con
+ * cada tramo.
+ */
+const CHUNK_CHARS = 40_000;
 
 export interface AiCallResult<T> {
   data: T;
@@ -168,26 +180,93 @@ export interface MinutesResult {
   technical: TechnicalMinutes;
 }
 
+/**
+ * Suma el costo y los tokens de varias llamadas encadenadas, para que una etapa
+ * de N pasadas se contabilice como una sola.
+ */
+class CostTally {
+  costUSD = 0;
+  inputTokens = 0;
+  outputTokens = 0;
+
+  add<T>(result: AiCallResult<T>): T {
+    this.costUSD += result.costUSD;
+    this.inputTokens += result.inputTokens;
+    this.outputTokens += result.outputTokens;
+    return result.data;
+  }
+
+  wrap<T>(data: T): AiCallResult<T> {
+    return {
+      data,
+      costUSD: this.costUSD,
+      inputTokens: this.inputTokens,
+      outputTokens: this.outputTokens,
+    };
+  }
+}
+
+/**
+ * Minuta ejecutiva + minuta técnica.
+ *
+ * Una reunión que cabe en una llamada se analiza de una. Una que no cabe —a
+ * partir de un par de horas— se analiza por tramos y luego se fusiona, en vez de
+ * recortarla: antes se truncaba a 60k caracteres y el final de la reunión, que
+ * es justo donde se cierran los acuerdos, no llegaba nunca al modelo.
+ */
 export async function runMinutes(
   openai: OpenAI,
   diarizedText: string,
   attendees: MeetingAttendee[],
   projectContext: string
 ): Promise<AiCallResult<MinutesResult>> {
-  const result = await jsonCall<Partial<MinutesResult>>(
-    openai,
-    minutesPrompt(attendees, projectContext),
-    `Transcripción atribuida por hablante:\n\n${clampTranscript(diarizedText, MAX_TRANSCRIPT_CHARS)}`,
-    3000
+  const chunks = chunkTranscript(diarizedText, CHUNK_CHARS);
+  const tally = new CostTally();
+
+  if (chunks.length <= 1) {
+    const data = tally.add(
+      await jsonCall<Partial<MinutesResult>>(
+        openai,
+        minutesPrompt(attendees, projectContext),
+        `Transcripción atribuida por hablante:\n\n${clampTranscript(diarizedText, MAX_TRANSCRIPT_CHARS)}`,
+        3000
+      )
+    );
+    return tally.wrap({
+      executive: normalizeExecutive(data.executive),
+      technical: normalizeTechnical(data.technical),
+    });
+  }
+
+  const partials: Partial<MinutesResult>[] = [];
+  for (let i = 0; i < chunks.length; i++) {
+    partials.push(
+      tally.add(
+        await jsonCall<Partial<MinutesResult>>(
+          openai,
+          minutesPrompt(attendees, projectContext) + partialPass(i, chunks.length),
+          `Transcripción atribuida por hablante — tramo ${i + 1} de ${chunks.length}:\n\n${chunks[i]}`,
+          3000
+        )
+      )
+    );
+  }
+
+  const merged = tally.add(
+    await jsonCall<Partial<MinutesResult>>(
+      openai,
+      mergeMinutesPrompt(attendees, projectContext),
+      `Minutas parciales de los ${chunks.length} tramos, en orden cronológico:\n\n${partials
+        .map((p, i) => `### Tramo ${i + 1}\n${JSON.stringify(p)}`)
+        .join("\n\n")}`,
+      3000
+    )
   );
 
-  return {
-    ...result,
-    data: {
-      executive: normalizeExecutive(result.data.executive),
-      technical: normalizeTechnical(result.data.technical),
-    },
-  };
+  return tally.wrap({
+    executive: normalizeExecutive(merged.executive),
+    technical: normalizeTechnical(merged.technical),
+  });
 }
 
 function str(value: unknown, fallback = ""): string {
@@ -252,14 +331,50 @@ export async function runActionItems(
     .filter(Boolean)
     .join("\n\n");
 
-  const result = await jsonCall<{ items?: unknown[] }>(
-    openai,
-    actionItemsPrompt(attendees, projectContext),
-    `Minuta técnica de la reunión:\n${technicalDigest}\n\n---\n\nTranscripción atribuida:\n\n${clampTranscript(diarizedText, MAX_TRANSCRIPT_CHARS)}`,
-    3000
-  );
+  const chunks = chunkTranscript(diarizedText, CHUNK_CHARS);
+  const tally = new CostTally();
+  let rawItems: unknown[];
 
-  const items: DraftActionItem[] = (result.data.items ?? []).flatMap((raw) => {
+  if (chunks.length <= 1) {
+    rawItems =
+      tally.add(
+        await jsonCall<{ items?: unknown[] }>(
+          openai,
+          actionItemsPrompt(attendees, projectContext),
+          `Minuta técnica de la reunión:\n${technicalDigest}\n\n---\n\nTranscripción atribuida:\n\n${clampTranscript(diarizedText, MAX_TRANSCRIPT_CHARS)}`,
+          3000
+        )
+      ).items ?? [];
+  } else {
+    // Reunión larga: pendientes por tramo y una pasada final que los fusiona,
+    // porque el mismo encargo suele mencionarse en dos tramos distintos.
+    const partials: unknown[][] = [];
+    for (let i = 0; i < chunks.length; i++) {
+      const part = tally.add(
+        await jsonCall<{ items?: unknown[] }>(
+          openai,
+          actionItemsPrompt(attendees, projectContext) + partialPass(i, chunks.length),
+          `Minuta técnica de la reunión completa:\n${technicalDigest}\n\n---\n\nTranscripción atribuida — tramo ${i + 1} de ${chunks.length}:\n\n${chunks[i]}`,
+          2500
+        )
+      );
+      partials.push(part.items ?? []);
+    }
+
+    rawItems =
+      tally.add(
+        await jsonCall<{ items?: unknown[] }>(
+          openai,
+          mergeItemsPrompt(attendees, projectContext),
+          `Pendientes extraídos de cada tramo, en orden cronológico:\n\n${partials
+            .map((items, i) => `### Tramo ${i + 1}\n${JSON.stringify(items)}`)
+            .join("\n\n")}`,
+          3000
+        )
+      ).items ?? [];
+  }
+
+  const items: DraftActionItem[] = rawItems.flatMap((raw) => {
     if (!raw || typeof raw !== "object") return [];
     const rec = raw as Record<string, unknown>;
     const title = str(rec.title);
@@ -289,7 +404,7 @@ export async function runActionItems(
     ];
   });
 
-  return { ...result, data: items };
+  return tally.wrap(items);
 }
 
 // ─── Paso 4: prompt técnico + memoria del proyecto ───────────────────────────
@@ -353,4 +468,122 @@ ${itemsDigest || "(ninguno)"}`;
       contextSummary: str(result.data.contextSummary),
     },
   };
+}
+
+// ─── Capítulos: el índice de temas de la reunión ─────────────────────────────
+
+/**
+ * Parte la reunión en temas con su minuto. Es lo que convierte una hora de audio
+ * en algo que se puede recorrer: se lee el índice y se salta a donde importa.
+ *
+ * El modelo copia timestamps que ya vio en la transcripción; aquí se validan
+ * contra la duración real y se descarta cualquiera inventado.
+ */
+export async function runChapters(
+  openai: OpenAI,
+  diarizedText: string,
+  durationMs: number,
+  projectContext: string
+): Promise<AiCallResult<MeetingChapter[]>> {
+  const result = await jsonCall<{ chapters?: unknown[] }>(
+    openai,
+    chaptersPrompt(projectContext),
+    `Transcripción atribuida por hablante, con timestamps:\n\n${clampTranscript(diarizedText, MAX_TRANSCRIPT_CHARS)}`,
+    2000
+  );
+
+  const seen = new Set<number>();
+  const chapters: MeetingChapter[] = (result.data.chapters ?? [])
+    .flatMap((raw) => {
+      if (!raw || typeof raw !== "object") return [];
+      const rec = raw as Record<string, unknown>;
+      const title = str(rec.title);
+      const startMs = parseTimestamp(str(rec.start));
+      if (!title || startMs === null) return [];
+      // Un capítulo fuera de la reunión es un timestamp inventado.
+      if (durationMs > 0 && startMs > durationMs) return [];
+      if (seen.has(startMs)) return [];
+      seen.add(startMs);
+      return [{ startMs, title, summary: str(rec.summary) } satisfies MeetingChapter];
+    })
+    .sort((a, b) => a.startMs - b.startMs);
+
+  return { ...result, data: chapters };
+}
+
+// ─── Preguntarle a la reunión ────────────────────────────────────────────────
+
+export interface MeetingCitation {
+  /** ms desde el inicio de la reunión */
+  startMs: number;
+  speaker: string;
+  quote: string;
+}
+
+export interface MeetingAnswer {
+  answer: string;
+  citations: MeetingCitation[];
+}
+
+/**
+ * Responde una pregunta sobre lo que se dijo, citando el minuto exacto. La cita
+ * es lo que hace la respuesta comprobable: se puede ir a escuchar ese momento en
+ * vez de creerle al modelo.
+ *
+ * En una reunión larga se pregunta tramo por tramo y luego se juntan las
+ * respuestas; un tramo que no sabe nada del tema se descarta.
+ */
+export async function runAsk(
+  openai: OpenAI,
+  diarizedText: string,
+  question: string,
+  attendees: MeetingAttendee[],
+  projectContext: string
+): Promise<AiCallResult<MeetingAnswer>> {
+  const chunks = chunkTranscript(diarizedText, CHUNK_CHARS);
+  const tally = new CostTally();
+
+  const passes: MeetingAnswer[] = [];
+  for (let i = 0; i < chunks.length; i++) {
+    const system =
+      chunks.length > 1
+        ? askPrompt(attendees, projectContext) + partialPass(i, chunks.length)
+        : askPrompt(attendees, projectContext);
+    const data = tally.add(
+      await jsonCall<{ answer?: unknown; citations?: unknown[] }>(
+        openai,
+        system,
+        `Transcripción atribuida${chunks.length > 1 ? ` — tramo ${i + 1} de ${chunks.length}` : ""}:\n\n${chunks[i]}\n\n---\n\nPregunta: ${question}`,
+        1200
+      )
+    );
+    passes.push(normalizeAnswer(data));
+  }
+
+  if (passes.length === 0) {
+    return tally.wrap({ answer: "Esta reunión no tiene transcripción todavía.", citations: [] });
+  }
+  if (passes.length === 1) return tally.wrap(passes[0]);
+
+  // Los tramos que no encontraron nada no aportan: se quedan los que citan algo.
+  const withEvidence = passes.filter((p) => p.citations.length > 0);
+  if (withEvidence.length === 0) return tally.wrap(passes[0]);
+
+  return tally.wrap({
+    answer: withEvidence.map((p) => p.answer).join(" "),
+    citations: withEvidence.flatMap((p) => p.citations).sort((a, b) => a.startMs - b.startMs),
+  });
+}
+
+function normalizeAnswer(raw: { answer?: unknown; citations?: unknown[] }): MeetingAnswer {
+  const citations: MeetingCitation[] = (raw.citations ?? []).flatMap((c) => {
+    if (!c || typeof c !== "object") return [];
+    const rec = c as Record<string, unknown>;
+    const quote = str(rec.quote);
+    const startMs = parseTimestamp(str(rec.time));
+    if (!quote || startMs === null) return [];
+    return [{ startMs, speaker: str(rec.speaker, "Desconocido"), quote }];
+  });
+
+  return { answer: str(raw.answer, "No se pudo responder con esta transcripción."), citations };
 }

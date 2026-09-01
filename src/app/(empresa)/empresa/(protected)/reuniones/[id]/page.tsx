@@ -6,6 +6,7 @@ import {
   serializeMeetingActionItem,
   serializeMeetingSpeaker,
 } from "@/lib/meetings/serialize";
+import { loadSegments } from "@/lib/meetings/segments";
 import type { ExecutiveMinutes, TechnicalMinutes } from "@/lib/meetings/types";
 import { MeetingDetail } from "./meeting-detail";
 
@@ -23,7 +24,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
 
   // Los proyectos y clientes viajan con la reunión para poder asignarla a un
   // proyecto después de grabada, sin salir del detalle.
-  const [meeting, projects, clients] = await Promise.all([
+  const [meeting, segments, projects, clients] = await Promise.all([
     prisma.meeting.findFirst({
       where: { id, userId: user.id },
       include: {
@@ -33,6 +34,8 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
         actionItems: { orderBy: { sortOrder: "asc" } },
       },
     }),
+    // Los segmentos alimentan la transcripción y los saltos al audio.
+    loadSegments(id),
     prisma.project.findMany({
       where: { userId: user.id },
       select: { id: true, name: true, clientId: true },
@@ -50,7 +53,8 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
   return (
     <div className="max-w-4xl mx-auto">
       <MeetingDetail
-        meeting={serializeMeeting(meeting)}
+        meeting={serializeMeeting(meeting, segments.length)}
+        segments={segments}
         project={meeting.project}
         client={meeting.client}
         projects={projects}

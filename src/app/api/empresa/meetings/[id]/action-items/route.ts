@@ -9,6 +9,16 @@ export const runtime = "nodejs";
 const KINDS = ["TECNICO", "COMERCIAL", "ADMINISTRATIVO", "DECISION", "RIESGO"];
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
 
+/**
+ * Una fecha suelta ("2026-09-01") interpretada como medianoche UTC se muestra
+ * como el día anterior en Panamá. Se ancla al mediodía.
+ */
+function parseDueDate(value: unknown): Date | null {
+  if (typeof value !== "string" || !value.trim()) return null;
+  const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00` : value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 /** Crea un pendiente a mano sobre una reunión ya procesada. */
 export const POST = withEmpresaIdRoute(async (req, { params }) => {
   const user = await requireEmpresaUser(req);
@@ -32,7 +42,7 @@ export const POST = withEmpresaIdRoute(async (req, { params }) => {
       kind: KINDS.includes(body.kind) ? body.kind : "TECNICO",
       priority: PRIORITIES.includes(body.priority) ? body.priority : "MEDIUM",
       owner: typeof body.owner === "string" && body.owner.trim() ? body.owner.trim() : null,
-      dueDate: body.dueDate ? new Date(body.dueDate) : null,
+      dueDate: parseDueDate(body.dueDate),
       acceptance: Array.isArray(body.acceptance) ? body.acceptance.map(String) : [],
       touchpoints: Array.isArray(body.touchpoints) ? body.touchpoints.map(String) : [],
       sortOrder: meeting._count.actionItems,
@@ -61,7 +71,7 @@ export const PATCH = withEmpresaIdRoute(async (req, { params }) => {
   if (typeof body.owner === "string") data.owner = body.owner.trim() || null;
   if (KINDS.includes(body.kind)) data.kind = body.kind;
   if (PRIORITIES.includes(body.priority)) data.priority = body.priority;
-  if (body.dueDate !== undefined) data.dueDate = body.dueDate ? new Date(body.dueDate) : null;
+  if (body.dueDate !== undefined) data.dueDate = parseDueDate(body.dueDate);
   if (Array.isArray(body.acceptance)) data.acceptance = body.acceptance.map(String);
   if (Array.isArray(body.touchpoints)) data.touchpoints = body.touchpoints.map(String);
 

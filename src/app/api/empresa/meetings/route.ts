@@ -3,6 +3,7 @@ import { withEmpresaRoute } from "@/app/api/empresa/_route";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { serializeMeeting } from "@/lib/meetings/serialize";
+import { meetingSearchFilter, type MeetingListFilters } from "@/lib/meetings/search";
 import { parseAttendees } from "@/lib/meetings/types";
 
 export const runtime = "nodejs";
@@ -10,28 +11,26 @@ export const runtime = "nodejs";
 export const GET = withEmpresaRoute(async (req) => {
   const user = await requireEmpresaUser(req);
   const sp = req.nextUrl.searchParams;
-  const projectId = sp.get("projectId") ?? undefined;
-  const clientId = sp.get("clientId") ?? undefined;
-  const status = sp.get("status") ?? undefined;
+  const filters: MeetingListFilters = {
+    q: sp.get("q") ?? undefined,
+    projectId: sp.get("projectId") ?? undefined,
+    clientId: sp.get("clientId") ?? undefined,
+    status: sp.get("status") ?? undefined,
+  };
 
   const meetings = await prisma.meeting.findMany({
-    where: {
-      userId: user.id,
-      ...(projectId && { projectId }),
-      ...(clientId && { clientId }),
-      ...(status && { status: status as never }),
-    },
+    where: meetingSearchFilter(user.id, filters),
     include: {
       project: { select: { id: true, name: true } },
       client: { select: { id: true, name: true, company: true } },
-      _count: { select: { actionItems: true } },
+      _count: { select: { actionItems: true, segmentRows: true } },
     },
     orderBy: { meetingDate: "desc" },
   });
 
   return NextResponse.json(
     meetings.map((m) => ({
-      ...serializeMeeting(m),
+      ...serializeMeeting(m, m._count.segmentRows),
       project: m.project,
       client: m.client,
       _count: m._count,

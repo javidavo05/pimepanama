@@ -1,20 +1,33 @@
 import type { Meeting, MeetingActionItem, MeetingSpeaker } from "@prisma/client";
 import {
   parseAttendees,
-  parseSegments,
+  parseAudioChunks,
+  parseChapters,
   type SerializedMeeting,
   type SerializedMeetingActionItem,
   type SerializedMeetingSpeaker,
 } from "./types";
 
-export function serializeMeeting(m: Meeting): SerializedMeeting {
+/**
+ * `segmentCount` viaja aparte porque los segmentos ya no están en la fila de
+ * `Meeting`: quien lo tenga a mano (un `_count`) lo pasa, y el listado, que solo
+ * necesita el número, no paga traerse la transcripción entera.
+ */
+export function serializeMeeting(m: Meeting, segmentCount = 0): SerializedMeeting {
+  // `segments` es la columna legacy del backfill de 0025: no se lee ni se manda
+  // al cliente, que se quedaría con una copia vieja de la transcripción.
+  const { segments: _legacy, ...rest } = m;
+  void _legacy;
   return {
-    ...m,
+    ...rest,
     attendees: parseAttendees(m.attendees),
-    segments: parseSegments(m.segments),
+    chapters: parseChapters(m.chapters),
+    audioChunks: parseAudioChunks(m.audioChunks),
+    segmentCount,
     meetingDate: m.meetingDate.toISOString(),
     createdAt: m.createdAt.toISOString(),
     updatedAt: m.updatedAt.toISOString(),
+    minutesSentAt: m.minutesSentAt?.toISOString() ?? null,
   };
 }
 
