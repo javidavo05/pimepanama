@@ -100,7 +100,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const echoes = findEchoes(segments);
       const clean = segments.filter((_, i) => !echoes[i]);
 
-      const result = await runDiarization(openai, clean, attendees, projectContext);
+      const result = await runDiarization(openai, clean, attendees, projectContext, meeting.audioSource);
       const diarizedText = buildDiarizedText(result.data);
 
       // El eco no se borra, solo se excluye del análisis: sigue en la
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     // ── Etapa 2: minuta ejecutiva + minuta técnica ───────────────────────────
     if (stage === "minutes") {
-      const result = await runMinutes(openai, diarizedText, attendees, codeContext);
+      const result = await runMinutes(openai, diarizedText, attendees, codeContext, meeting.audioSource);
 
       await prisma.meeting.update({
         where: { id },

@@ -4,7 +4,7 @@ import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { serializeMeeting } from "@/lib/meetings/serialize";
 import { meetingSearchFilter, type MeetingListFilters } from "@/lib/meetings/search";
-import { parseAttendees } from "@/lib/meetings/types";
+import { parseAttendees, parseAudioSource } from "@/lib/meetings/types";
 
 export const runtime = "nodejs";
 
@@ -78,6 +78,7 @@ export const POST = withEmpresaRoute(async (req) => {
       projectId,
       clientId,
       language: body.language === "en" ? "en" : "es",
+      audioSource: parseAudioSource(body.audioSource),
       meetingDate: body.meetingDate ? new Date(body.meetingDate) : new Date(),
       attendees: parseAttendees(body.attendees) as unknown as object[],
       status: "DRAFT",

@@ -15,11 +15,20 @@ interface ClientOption {
   company: string | null;
 }
 
+const AUDIO_SOURCES = [
+  { key: "VIDEOLLAMADA", label: "Videollamada (Meet, Zoom, Teams)" },
+  { key: "LLAMADA", label: "Llamada telefónica" },
+  { key: "PRESENCIAL", label: "Reunión presencial" },
+  { key: "NOTA_VOZ", label: "Nota de voz" },
+  { key: "OTRO", label: "Otro" },
+] as const;
+
 interface MeetingContextPanelProps {
   meetingId: string;
   projectId: string | null;
   clientId: string | null;
   manualContext: string | null;
+  audioSource: string | null;
   projects: ProjectOption[];
   clients: ClientOption[];
   /** Si ya se generaron minutas, reprocesar las rehace con el contexto nuevo */
@@ -46,6 +55,7 @@ export function MeetingContextPanel({
   projectId,
   clientId,
   manualContext,
+  audioSource,
   projects,
   clients,
   hasMinutes,
@@ -55,6 +65,7 @@ export function MeetingContextPanel({
   const [project, setProject] = useState(projectId ?? "");
   const [client, setClient] = useState(clientId ?? "");
   const [notes, setNotes] = useState(manualContext ?? "");
+  const [source, setSource] = useState(audioSource ?? "");
   const [busy, setBusy] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -62,7 +73,8 @@ export function MeetingContextPanel({
   const dirty =
     project !== (projectId ?? "") ||
     client !== (clientId ?? "") ||
-    notes.trim() !== (manualContext ?? "").trim();
+    notes.trim() !== (manualContext ?? "").trim() ||
+    source !== (audioSource ?? "");
 
   async function save(): Promise<boolean> {
     setBusy("save");
@@ -72,7 +84,12 @@ export function MeetingContextPanel({
       const res = await fetch(`/api/empresa/meetings/${meetingId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ projectId: project, clientId: client, manualContext: notes }),
+        body: JSON.stringify({
+          projectId: project,
+          clientId: client,
+          manualContext: notes,
+          audioSource: source || null,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error ?? "No se pudo guardar el contexto");
@@ -174,6 +191,28 @@ export function MeetingContextPanel({
                 ))}
               </select>
             </div>
+          </div>
+
+          <div>
+            <label className="block text-white/70 text-xs uppercase tracking-wider mb-1.5">
+              Origen del audio
+            </label>
+            <select
+              value={source}
+              onChange={(e) => setSource(e.target.value)}
+              className="w-full bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm focus:border-[#1AA7F0]/50 focus:outline-none"
+            >
+              <option value="">Sin declarar</option>
+              {AUDIO_SOURCES.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-white/40 text-xs mt-1">
+              Declararlo y volver a analizar mejora la separación de voces: una llamada de dos
+              personas no se reparte como una sala de seis.
+            </p>
           </div>
 
           <div>

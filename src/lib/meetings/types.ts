@@ -289,3 +289,45 @@ export function parseTechnicalDeliverable(value: unknown): TechnicalDeliverable 
       rec.readyFor === "PROPUESTA" || rec.readyFor === "CONTRATO" ? rec.readyFor : "DESARROLLO",
   };
 }
+
+/**
+ * De dónde salió el audio de la reunión. Cambia cómo se separan las voces y cómo
+ * se redacta la minuta: una llamada son dos personas turnándose sin verse, una
+ * sala son varias voces solapándose, y una nota de voz es una sola persona.
+ */
+export type MeetingAudioSource =
+  | "VIDEOLLAMADA"
+  | "LLAMADA"
+  | "PRESENCIAL"
+  | "NOTA_VOZ"
+  | "OTRO";
+
+const AUDIO_SOURCES: MeetingAudioSource[] = [
+  "VIDEOLLAMADA",
+  "LLAMADA",
+  "PRESENCIAL",
+  "NOTA_VOZ",
+  "OTRO",
+];
+
+export function parseAudioSource(value: unknown): MeetingAudioSource | null {
+  return AUDIO_SOURCES.includes(value as MeetingAudioSource)
+    ? (value as MeetingAudioSource)
+    : null;
+}
+
+/** Lo que el modelo necesita saber del origen para no equivocarse de escenario. */
+export function describeAudioSource(source: string | null | undefined): string {
+  switch (source) {
+    case "VIDEOLLAMADA":
+      return "El audio viene de una videollamada (Meet, Zoom o Teams). Los turnos son limpios: la gente se interrumpe poco y casi nunca hablan dos a la vez.";
+    case "LLAMADA":
+      return "El audio viene de una llamada telefónica. Casi siempre son DOS personas alternándose, así que no inventes un tercer hablante salvo que sea evidente que alguien más entró a la línea.";
+    case "PRESENCIAL":
+      return "El audio viene de una reunión presencial grabada en una sala. Espera ruido de fondo, voces que se solapan y frases que empiezan antes de que la otra persona termine; algunos fragmentos serán inaudibles.";
+    case "NOTA_VOZ":
+      return "El audio es una nota de voz: habla UNA sola persona. No lo redactes como una conversación ni atribuyas nada a un segundo hablante.";
+    default:
+      return "No se declaró de dónde salió el audio.";
+  }
+}

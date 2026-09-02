@@ -124,7 +124,8 @@ export async function runDiarization(
   openai: OpenAI,
   segments: MeetingSegment[],
   attendees: MeetingAttendee[],
-  projectContext: string
+  projectContext: string,
+  audioSource?: string | null
 ): Promise<AiCallResult<MeetingSegment[]>> {
   const assigned: MeetingSegment[] = segments.map((s) => ({ ...s }));
   const knownSpeakers = new Set<string>(
@@ -142,7 +143,7 @@ export async function runDiarization(
     // Un lote entero ya atribuido por canal no se le manda al modelo.
     if (pending.length === 0) continue;
 
-    const system = diarizationPrompt(attendees, [...knownSpeakers], projectContext);
+    const system = diarizationPrompt(attendees, [...knownSpeakers], projectContext, audioSource);
     const user = `Transcripción (índice global, timestamp, texto). Las líneas que ya traen «Nombre» delante están confirmadas: úsalas como referencia, no las reasignes.\n\n${numberedSegments(batch, offset)}\n\nDevuelve la asignación de hablante SOLO para estos índices: ${pending.join(", ")}.`;
 
     const result = await jsonCall<{ assignments?: Assignment[] }>(
@@ -223,7 +224,8 @@ export async function runMinutes(
   openai: OpenAI,
   diarizedText: string,
   attendees: MeetingAttendee[],
-  projectContext: string
+  projectContext: string,
+  audioSource?: string | null
 ): Promise<AiCallResult<MinutesResult>> {
   const chunks = chunkTranscript(diarizedText, CHUNK_CHARS);
   const tally = new CostTally();
@@ -232,7 +234,7 @@ export async function runMinutes(
     const data = tally.add(
       await jsonCall<Partial<MinutesResult>>(
         openai,
-        minutesPrompt(attendees, projectContext),
+        minutesPrompt(attendees, projectContext, audioSource),
         `Transcripción atribuida por hablante:\n\n${clampTranscript(diarizedText, MAX_TRANSCRIPT_CHARS)}`,
         3000
       )
@@ -249,7 +251,7 @@ export async function runMinutes(
       tally.add(
         await jsonCall<Partial<MinutesResult>>(
           openai,
-          minutesPrompt(attendees, projectContext) + partialPass(i, chunks.length),
+          minutesPrompt(attendees, projectContext, audioSource) + partialPass(i, chunks.length),
           `Transcripción atribuida por hablante — tramo ${i + 1} de ${chunks.length}:\n\n${chunks[i]}`,
           3000
         )

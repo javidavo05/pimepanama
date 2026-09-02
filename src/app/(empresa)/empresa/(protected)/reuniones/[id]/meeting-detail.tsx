@@ -436,6 +436,7 @@ export function MeetingDetail({
         projectId={meeting.projectId}
         clientId={meeting.clientId}
         manualContext={meeting.manualContext}
+        audioSource={meeting.audioSource}
         projects={projects}
         clients={clients}
         hasMinutes={executive !== null || technical !== null}

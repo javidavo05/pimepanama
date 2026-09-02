@@ -92,6 +92,24 @@ const CAPTURE_MODES: ModeOption[] = [
   },
 ];
 
+/** Cómo entra la reunión al sistema. */
+type Entry = "record" | "upload";
+
+/**
+ * De dónde salió el audio. No es una etiqueta decorativa: una llamada son dos
+ * personas turnándose sin verse, una reunión presencial son varias voces en una
+ * sala con solapamientos, y una nota de voz es una sola persona. La separación
+ * de voces y la redacción de la minuta cambian según cuál sea.
+ */
+const AUDIO_SOURCES = [
+  { key: "VIDEOLLAMADA", label: "Videollamada", detail: "Meet, Zoom, Teams" },
+  { key: "LLAMADA", label: "Llamada telefónica", detail: "WhatsApp, celular" },
+  { key: "PRESENCIAL", label: "Reunión presencial", detail: "varias voces en una sala" },
+  { key: "NOTA_VOZ", label: "Nota de voz", detail: "hablas tú solo" },
+] as const;
+
+type AudioSource = (typeof AUDIO_SOURCES)[number]["key"];
+
 const CHANNEL_TITLE: Record<CaptureChannel, string> = {
   LOCAL: "Tu micrófono",
   REMOTE: "Audio de la llamada",
@@ -168,6 +186,8 @@ export function MeetingRecorder({
     REMOTE: "",
   });
   const [uploading, setUploading] = useState(0);
+  const [entry, setEntry] = useState<Entry>("record");
+  const [audioSource, setAudioSource] = useState<AudioSource>("VIDEOLLAMADA");
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
   const [stageIndex, setStageIndex] = useState(-1);
@@ -330,6 +350,7 @@ export function MeetingRecorder({
         clientId: clientId || undefined,
         language,
         meetingDate,
+        audioSource,
         attendees: attendees.filter((a) => a.name.trim()),
       }),
     });
@@ -736,11 +757,51 @@ export function MeetingRecorder({
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-white text-2xl font-semibold tracking-tight">Grabar reunión</h1>
+        <h1 className="text-white text-2xl font-semibold tracking-tight">Nueva reunión</h1>
         <p className="text-white/60 text-sm mt-0.5">
-          Al terminar obtienes minuta ejecutiva, minuta técnica, pendientes y un prompt listo para
-          construir lo que se acordó.
+          Grábala en vivo o sube un audio que ya tengas. En los dos casos obtienes minuta ejecutiva,
+          minuta técnica, pendientes, el entregable técnico y el prompt para construirlo.
         </p>
+      </div>
+
+      {/* Cómo entra la reunión — es la primera decisión, no la última */}
+      <div className="grid sm:grid-cols-2 gap-3">
+        {(
+          [
+            {
+              key: "record" as const,
+              icon: "🎙️",
+              title: "Grabar ahora",
+              detail: "Estás por entrar a la reunión. Se transcribe mientras hablan.",
+            },
+            {
+              key: "upload" as const,
+              icon: "⬆️",
+              title: "Subir un audio",
+              detail: "Ya la tienes grabada: la exportación de un Zoom, una llamada, una nota de voz.",
+            },
+          ] satisfies { key: Entry; icon: string; title: string; detail: string }[]
+        ).map((option) => (
+          <button
+            key={option.key}
+            onClick={() => setEntry(option.key)}
+            className={`text-left p-4 rounded-2xl border transition-all ${
+              entry === option.key
+                ? "border-[#1AA7F0]/40 bg-[#1AA7F0]/[0.06]"
+                : "border-white/[0.06] bg-[#0a0a10] hover:border-white/[0.12]"
+            }`}
+          >
+            <span className="text-lg">{option.icon}</span>
+            <p
+              className={`text-sm font-medium mt-1 ${
+                entry === option.key ? "text-[#1AA7F0]" : "text-white"
+              }`}
+            >
+              {option.title}
+            </p>
+            <p className="text-white/50 text-xs mt-1 leading-relaxed">{option.detail}</p>
+          </button>
+        ))}
       </div>
 
       <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6 space-y-4">
@@ -801,6 +862,27 @@ export function MeetingRecorder({
               onChange={(e) => setMeetingDate(e.target.value)}
               className="w-full bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm focus:border-[#1AA7F0]/50 focus:outline-none"
             />
+          </div>
+
+          <div>
+            <label className="block text-white/70 text-xs uppercase tracking-wider mb-1.5">
+              Origen del audio
+            </label>
+            <select
+              value={audioSource}
+              onChange={(e) => setAudioSource(e.target.value as AudioSource)}
+              className="w-full bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm focus:border-[#1AA7F0]/50 focus:outline-none"
+            >
+              {AUDIO_SOURCES.map((s) => (
+                <option key={s.key} value={s.key}>
+                  {s.label} — {s.detail}
+                </option>
+              ))}
+            </select>
+            <p className="text-white/40 text-xs mt-1">
+              Cambia cómo se separan las voces: no es lo mismo una llamada de dos personas que una
+              sala con seis.
+            </p>
           </div>
 
           <div>
@@ -869,7 +951,8 @@ export function MeetingRecorder({
         </button>
       </div>
 
-      {/* Cómo se capta el audio */}
+      {/* Cómo se capta el audio — solo tiene sentido grabando en vivo */}
+      {entry === "record" && (
       <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6 space-y-3">
         <div>
           <h2 className="text-white/70 text-xs uppercase tracking-wider">Cómo se capta el audio</h2>
@@ -991,40 +1074,56 @@ export function MeetingRecorder({
           </label>
         )}
       </div>
+      )}
 
-      {/* Importar un audio ya grabado */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6 space-y-3">
-        <div>
-          <h2 className="text-white/70 text-xs uppercase tracking-wider">
-            ¿Ya tienes la reunión grabada?
-          </h2>
-          <p className="text-white/40 text-xs mt-1 leading-relaxed">
-            Sube la exportación del Zoom o del Meet, una nota de voz o el mp3 de una grabadora. Se
-            corta y se transcribe aquí mismo, y a partir de ahí obtienes lo mismo que grabando en
-            vivo: minutas, pendientes y prompt. Las voces las separa la IA, porque un archivo ya
-            mezclado no dice quién habló.
+      {/* El archivo — solo en el camino de subir */}
+      {entry === "upload" && (
+        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6 space-y-3">
+          <div>
+            <h2 className="text-white/70 text-xs uppercase tracking-wider">El archivo de audio</h2>
+            <p className="text-white/40 text-xs mt-1 leading-relaxed">
+              La exportación de un Zoom o un Meet, la grabación de una llamada, una nota de voz de
+              WhatsApp o el mp3 de una grabadora. Se decodifica y se corta aquí mismo, en tu
+              navegador, y se sube por tramos: para el sistema es igual que si la hubieras grabado
+              en vivo.
+            </p>
+          </div>
+
+          <label
+            className={`block border border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
+              importFile
+                ? "border-[#1AA7F0]/35 bg-[#1AA7F0]/[0.04]"
+                : "border-white/[0.12] hover:border-white/[0.22]"
+            }`}
+          >
+            <input
+              type="file"
+              accept="audio/*,video/mp4,video/webm,.m4a,.mp3,.wav,.webm,.ogg,.aac,.flac"
+              onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
+              className="hidden"
+            />
+            {importFile ? (
+              <>
+                <p className="text-white text-sm font-medium">{importFile.name}</p>
+                <p className="text-white/45 text-xs mt-1">
+                  {(importFile.size / 1024 / 1024).toFixed(1)} MB · pulsa para cambiarlo
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-white/70 text-sm">Elige el archivo de audio</p>
+                <p className="text-white/40 text-xs mt-1">mp3, m4a, wav, webm, ogg o el audio de un mp4</p>
+              </>
+            )}
+          </label>
+
+          <p className="text-white/35 text-[11px] leading-relaxed">
+            En un archivo ya mezclado las voces las separa la IA, porque el audio no dice por sí
+            solo quién habló. Declarar bien los asistentes y el origen arriba es lo que hace que
+            acierte.
           </p>
         </div>
-
-        <input
-          type="file"
-          accept="audio/*,video/mp4,.m4a,.mp3,.wav,.webm,.ogg"
-          onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
-          className="w-full text-white/60 text-xs file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-white/[0.06] file:text-white/70 file:text-xs hover:file:bg-white/[0.10] file:cursor-pointer"
-        />
-
-        {importFile && (
-          <button
-            onClick={startImport}
-            disabled={busy}
-            className="w-full px-5 py-2.5 bg-white/[0.04] hover:bg-white/[0.08] disabled:opacity-50 border border-white/[0.08] text-white/80 text-sm font-semibold rounded-lg transition-all"
-          >
-            {busy
-              ? "Preparando…"
-              : `⬆️ Transcribir ${importFile.name} (${(importFile.size / 1024 / 1024).toFixed(1)} MB)`}
-          </button>
-        )}
-      </div>
+      )}
 
       {notice && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
@@ -1039,11 +1138,17 @@ export function MeetingRecorder({
       )}
 
       <button
-        onClick={startRecording}
-        disabled={busy}
+        onClick={entry === "upload" ? startImport : startRecording}
+        disabled={busy || (entry === "upload" && !importFile)}
         className="w-full px-5 py-3 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-all"
       >
-        {busy ? "Preparando…" : "🎙️ Iniciar grabación"}
+        {busy
+          ? "Preparando…"
+          : entry === "upload"
+            ? importFile
+              ? "⬆️ Transcribir y analizar el audio"
+              : "Elige un archivo para continuar"
+            : "🎙️ Iniciar grabación"}
       </button>
       {meetingId && phase === "setup" && (
         <p className="text-white/40 text-xs text-center">Reunión creada: {meetingId}</p>

@@ -1,6 +1,7 @@
 import { brandSystemPrompt } from "@/lib/ai/pime-brand-voice";
 import type { MeetingAttendee } from "./types";
 import { describeAttendees } from "./transcript";
+import { describeAudioSource } from "./types";
 
 /**
  * Persona técnica. Deliberadamente NO usa `brandSystemPrompt`: esa voz es la del
@@ -24,7 +25,8 @@ function contextPreamble(projectContext: string): string {
 export function diarizationPrompt(
   attendees: MeetingAttendee[],
   knownSpeakers: string[],
-  projectContext: string
+  projectContext: string,
+  audioSource?: string | null
 ): string {
   const roster =
     knownSpeakers.length > 0
@@ -36,6 +38,8 @@ export function diarizationPrompt(
 Tu tarea ahora es atribuir cada intervención de una transcripción a quién la dijo.
 
 La transcripción viene como líneas numeradas con timestamp. No tienes el audio: te guías por el contenido — quién pregunta y quién responde, quién habla como proveedor y quién como cliente, cambios de tema, menciones por nombre ("como decía Javier..."), y el hecho de que una misma persona suele encadenar varias líneas seguidas.
+
+Cómo se grabó: ${describeAudioSource(audioSource)}
 
 Asistentes declarados de la reunión:
 ${describeAttendees(attendees)}${roster}
@@ -52,7 +56,11 @@ Responde SOLO con JSON válido:
 }
 
 /** Paso 2 — minuta ejecutiva (cliente) + minuta técnica (equipo), en una sola pasada. */
-export function minutesPrompt(attendees: MeetingAttendee[], projectContext: string): string {
+export function minutesPrompt(
+  attendees: MeetingAttendee[],
+  projectContext: string,
+  audioSource?: string | null
+): string {
   const commercial = brandSystemPrompt(
     `Vas a redactar la parte ejecutiva de la minuta de una reunión: el registro que el cliente puede leer y reenviar como constancia de lo acordado.`,
     "es"
@@ -63,6 +71,8 @@ export function minutesPrompt(attendees: MeetingAttendee[], projectContext: stri
 Además de la parte ejecutiva, redactas una segunda minuta —la técnica— y para esa cambias de sombrero:
 
 ${TECH_PERSONA}
+
+Cómo se grabó: ${describeAudioSource(audioSource)}
 
 Asistentes:
 ${describeAttendees(attendees)}

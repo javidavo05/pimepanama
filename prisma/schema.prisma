@@ -969,6 +969,9 @@ model Meeting {
   contextSummary       String?
   /// Contexto escrito a mano por el usuario después de grabar; entra al prompt junto al del proyecto
   manualContext        String?
+  /// De dónde salió el audio: VIDEOLLAMADA | LLAMADA | PRESENCIAL | NOTA_VOZ | OTRO.
+  /// Cambia cómo se separan las voces y cómo se redacta la minuta.
+  audioSource          String?
   /// Índice de temas: [{ startMs, title, summary }]
   chapters             Json?
   /// El entregable técnico que deja la reunión, sea de seguimiento o de producto
