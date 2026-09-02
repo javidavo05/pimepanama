@@ -54,3 +54,6 @@ prisma/dev.db-journal
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+# Binario compilado de tools/pime-audio (se regenera con npm run audio)
+tools/pime-audio/pime-audio

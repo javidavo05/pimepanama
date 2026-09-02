@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { generatePresignedDownloadUrl, putR2Object } from "@/lib/r2";
 import { calcWhisperCost } from "@/lib/ai-pricing";
 import { getOpenAI } from "@/lib/meetings/pipeline";
+import { withoutEchoes } from "@/lib/meetings/echo";
 import { appendSegments, flatten, loadSegments } from "@/lib/meetings/segments";
 import {
   parseAudioChunks,
@@ -144,7 +145,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       where: { id },
       data: {
         status: "RECORDING",
-        transcript: flatten(allSegments),
+        // Sin el eco del altavoz: esta transcripción es la que se analiza si la
+        // diarización no llega a correr.
+        transcript: flatten(withoutEchoes(allSegments)),
         audioKeys: meeting.audioKeys.includes(key) ? meeting.audioKeys : [...meeting.audioKeys, key],
         audioChunks: chunks as unknown as object[],
         durationMs: Math.max(meeting.durationMs, offsetMs + chunkMs),

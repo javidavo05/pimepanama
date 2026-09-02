@@ -22,6 +22,7 @@
     "pime-git": "node tools/git-identity/cli.mjs menu",
     "pime-git:web": "node tools/git-identity/server.mjs",
     "pime-git:install": "bash tools/git-identity/install-mac.sh",
+    "audio": "bash tools/pime-audio/run.sh",
     "disk-recovery:web": "node tools/disk-recovery/server.mjs",
     "disk-recovery:install": "bash tools/disk-recovery/install-mac.sh"
   },

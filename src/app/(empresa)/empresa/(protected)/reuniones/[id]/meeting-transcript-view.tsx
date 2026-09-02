@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { findEchoes } from "@/lib/meetings/echo";
 import { formatTimestamp, groupTurns } from "@/lib/meetings/transcript";
 import type { MeetingSegment } from "@/lib/meetings/types";
 
@@ -20,7 +21,15 @@ interface MeetingTranscriptViewProps {
  */
 export function MeetingTranscriptView({ segments, fallback, onSeek }: MeetingTranscriptViewProps) {
   const [query, setQuery] = useState("");
-  const turns = useMemo(() => groupTurns(segments), [segments]);
+  // Lo que el altavoz devolvió al micrófono se aparta de la conversación: es la
+  // misma frase del cliente, transcrita peor y atribuida a quien no la dijo.
+  const { turns, echoCount } = useMemo(() => {
+    const echoes = findEchoes(segments);
+    return {
+      turns: groupTurns(segments.filter((_, i) => !echoes[i])),
+      echoCount: echoes.filter(Boolean).length,
+    };
+  }, [segments]);
 
   const term = query.trim().toLowerCase();
   const visible = term
@@ -56,6 +65,13 @@ export function MeetingTranscriptView({ segments, fallback, onSeek }: MeetingTra
             : `${turns.length} intervenciones · pulsa el minuto para escucharlo`}
         </span>
       </div>
+
+      {echoCount > 0 && (
+        <p className="text-white/35 text-[11px]">
+          Se apartaron {echoCount} fragmento{echoCount !== 1 ? "s" : ""} que tu micrófono captó del
+          altavoz: eran la voz del cliente repetida. Con audífonos no ocurre.
+        </p>
+      )}
 
       {visible.length === 0 ? (
         <p className="text-white/40 text-sm">Nadie dijo eso en esta reunión.</p>

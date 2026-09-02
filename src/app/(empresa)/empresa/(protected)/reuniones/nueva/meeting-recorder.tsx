@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { AttendeeOrg, MeetingAttendee, MeetingSegment } from "@/lib/meetings/types";
+import { withoutEchoes } from "@/lib/meetings/echo";
 import { importAudioFile, type ImportProgress } from "./audio-import";
 import { MeetingCapture, looksLikeLoopback, type CaptureChannel, type CaptureMode } from "./live-capture";
 import { CHANNEL_ACCENT, LiveTranscript } from "./live-transcript";
@@ -61,7 +62,7 @@ const CAPTURE_MODES: ModeOption[] = [
     key: "device",
     title: "Micrófono + audio del sistema",
     detail:
-      "Tu voz por un lado y la de la llamada por el otro, sin compartir pantalla. Necesita un dispositivo de audio virtual instalado (BlackHole o Loopback en Mac, VB-Cable en Windows) puesto como salida de la llamada.",
+      "Tu voz por un lado y la de la llamada por el otro, sin compartir pantalla. Necesita un dispositivo de audio virtual (BlackHole en Mac, VB-Cable en Windows) puesto como salida. Funciona con audífonos y sin ellos: por altavoz el micrófono capta también al cliente, pero esa repetición se descarta al analizar.",
     tag: "voces separadas",
     tagClass: "bg-green-500/15 text-green-400 border-green-500/25",
   },
@@ -720,7 +721,7 @@ export function MeetingRecorder({
             </p>
           </div>
           <LiveTranscript
-            segments={segments}
+            segments={withoutEchoes(segments)}
             labelFor={labelFor}
             interim={instantPreview ? interim : ""}
             interimSpeaker={interimSpeaker}

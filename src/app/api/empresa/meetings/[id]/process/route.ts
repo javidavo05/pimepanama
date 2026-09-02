@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { buildProjectContext, withManualContext } from "@/lib/meetings/context";
+import { findEchoes, withoutEchoes } from "@/lib/meetings/echo";
 import { resolveMeetingStatus } from "@/lib/meetings/meeting-status";
 import {
   getOpenAI,
@@ -82,10 +83,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     // ── Etapa 1: quién dijo qué ──────────────────────────────────────────────
     if (stage === "diarize") {
-      const result = await runDiarization(openai, segments, attendees, projectContext);
+      // Grabando sin audífonos, el altavoz devuelve la voz del cliente al
+      // micrófono y la frase entra por los dos canales. La copia del canal local
+      // se aparta antes de analizar: si no, la minuta la registra dos veces y se
+      // la atribuye a quien no la dijo.
+      const echoes = findEchoes(segments);
+      const clean = segments.filter((_, i) => !echoes[i]);
+
+      const result = await runDiarization(openai, clean, attendees, projectContext);
       const diarizedText = buildDiarizedText(result.data);
 
-      await replaceSegments(id, result.data);
+      // El eco no se borra, solo se excluye del análisis: sigue en la
+      // transcripción por si la heurística se equivocó y hay que revisarlo.
+      let next = 0;
+      const merged = segments.map((seg, i) => (echoes[i] ? seg : result.data[next++]));
+
+      await replaceSegments(id, merged);
       await prisma.$transaction([
         ...rebuildRosterOps(id, result.data, attendees),
         prisma.meeting.update({
@@ -110,6 +123,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         stage,
         diarizedText,
         speakers: [...new Set(result.data.map((s) => s.speaker ?? "Desconocido"))],
+        echoesDropped: echoes.filter(Boolean).length,
         costUSD: result.costUSD,
       });
     }
@@ -291,5 +305,5 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
 /** Si la diarización no corrió, se analiza la transcripción plana. */
 function fallbackTranscript(transcript: string | null, segments: MeetingSegment[]): string {
-  return transcript?.trim() || flatten(segments);
+  return transcript?.trim() || flatten(withoutEchoes(segments));
 }
