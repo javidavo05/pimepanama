@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
-import { buildProjectContext, withManualContext } from "@/lib/meetings/context";
+import { buildProjectContext, withManualContext, withRepoContext } from "@/lib/meetings/context";
 import { findEchoes, withoutEchoes } from "@/lib/meetings/echo";
 import { resolveMeetingStatus } from "@/lib/meetings/meeting-status";
 import {
@@ -11,6 +11,7 @@ import {
   runChapters,
   runDiarization,
   runMinutes,
+  runTechnicalDeliverable,
   runTechnicalPrompt,
 } from "@/lib/meetings/pipeline";
 import { rebuildRosterOps } from "@/lib/meetings/roster";
@@ -18,6 +19,7 @@ import { flatten, loadSegments, replaceSegments } from "@/lib/meetings/segments"
 import { buildDiarizedText } from "@/lib/meetings/transcript";
 import {
   parseAttendees,
+  parseTechnicalDeliverable,
   type ExecutiveMinutes,
   type MeetingSegment,
   type TechnicalMinutes,
@@ -27,7 +29,7 @@ import { serializeMeetingActionItem } from "@/lib/meetings/serialize";
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-const STAGES = ["diarize", "minutes", "items", "prompt", "chapters"] as const;
+const STAGES = ["diarize", "minutes", "items", "deliverable", "prompt", "chapters"] as const;
 type Stage = (typeof STAGES)[number];
 
 /**
@@ -63,11 +65,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const attendees = parseAttendees(meeting.attendees);
-    const { block } = await buildProjectContext(user.id, meeting.projectId, meeting.id);
+    const { block, repoBlock, hasRepo } = await buildProjectContext(
+      user.id,
+      meeting.projectId,
+      meeting.id
+    );
     // El contexto del proyecto y las notas manuales se combinan: se puede grabar
     // primero y decidir después a qué proyecto pertenece la reunión y con qué
     // contexto se analiza.
     const projectContext = withManualContext(block, meeting.manualContext);
+    // El código solo entra donde cambia la respuesta. Separar quién habló o
+    // partir la reunión en temas no mejora por conocer el repositorio, y ese
+    // bloque son miles de tokens en cada una de las llamadas de la etapa.
+    const codeContext = withRepoContext(projectContext, repoBlock);
     const openai = getOpenAI();
 
     // El estado en el que queda la reunión no depende de la etapa que acaba de
@@ -132,7 +142,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     // ── Etapa 2: minuta ejecutiva + minuta técnica ───────────────────────────
     if (stage === "minutes") {
-      const result = await runMinutes(openai, diarizedText, attendees, projectContext);
+      const result = await runMinutes(openai, diarizedText, attendees, codeContext);
 
       await prisma.meeting.update({
         where: { id },
@@ -192,7 +202,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     // ── Etapa 3: pendientes accionables ──────────────────────────────────────
     if (stage === "items") {
-      const result = await runActionItems(openai, diarizedText, technical, attendees, projectContext);
+      const result = await runActionItems(openai, diarizedText, technical, attendees, codeContext);
 
       // Solo se reemplazan los pendientes que aún no se materializaron en una
       // tarea: los ya sincronizados viven en el módulo de Tareas y borrarlos
@@ -240,30 +250,68 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       });
     }
 
-    // ── Etapa 4: prompt técnico + memoria del proyecto ───────────────────────
-    const executive = meeting.executiveMinutes as unknown as ExecutiveMinutes | null;
-    const items = await prisma.meetingActionItem.findMany({
-      where: { meetingId: id },
-      orderBy: { sortOrder: "asc" },
-    });
+    const draftItems = () =>
+      prisma.meetingActionItem
+        .findMany({ where: { meetingId: id }, orderBy: { sortOrder: "asc" } })
+        .then((rows) =>
+          rows.map((i) => ({
+            title: i.title,
+            detail: i.detail ?? undefined,
+            kind: i.kind,
+            owner: i.owner ?? undefined,
+            dueDate: i.dueDate?.toISOString().slice(0, 10) ?? null,
+            priority: i.priority,
+            acceptance: i.acceptance,
+            touchpoints: i.touchpoints,
+            estimateHours: i.estimateHours,
+          }))
+        );
 
+    // ── Etapa 4: el entregable técnico ───────────────────────────────────────
+    // Toda reunión deja uno. Es lo que conecta lo hablado con algo construible,
+    // facturable o contratable, y es la base sobre la que se escribe el encargo.
+    if (stage === "deliverable") {
+      const result = await runTechnicalDeliverable(
+        openai,
+        diarizedText,
+        technical,
+        await draftItems(),
+        codeContext,
+        meeting.title,
+        hasRepo
+      );
+
+      await prisma.meeting.update({
+        where: { id },
+        data: {
+          technicalDeliverable: (result.data ?? undefined) as unknown as object,
+          status: settled(),
+          aiCostUSD: { increment: result.costUSD },
+        },
+      });
+
+      await logMeetingAiUsage(
+        user.supabaseUid,
+        "meeting-deliverable",
+        result.inputTokens,
+        result.outputTokens,
+        Date.now() - started
+      );
+
+      return NextResponse.json({ stage, deliverable: result.data, costUSD: result.costUSD });
+    }
+
+    // ── Etapa 5: master prompt + memoria del proyecto ────────────────────────
+    const executive = meeting.executiveMinutes as unknown as ExecutiveMinutes | null;
     const result = await runTechnicalPrompt(
       openai,
       technical,
       executive?.decisions ?? [],
-      items.map((i) => ({
-        title: i.title,
-        detail: i.detail ?? undefined,
-        kind: i.kind,
-        owner: i.owner ?? undefined,
-        dueDate: i.dueDate?.toISOString().slice(0, 10) ?? null,
-        priority: i.priority,
-        acceptance: i.acceptance,
-        touchpoints: i.touchpoints,
-        estimateHours: i.estimateHours,
-      })),
-      projectContext,
-      meeting.title
+      await draftItems(),
+      codeContext,
+      meeting.title,
+      parseTechnicalDeliverable(meeting.technicalDeliverable),
+      hasRepo
     );
 
     await prisma.meeting.update({

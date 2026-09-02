@@ -13,6 +13,7 @@ import { ProjectEditForm, type EditSection } from "./project-edit-form";
 import { DeliverablesPanel } from "./deliverables-panel";
 import { ContractsPanel } from "./contracts-panel";
 import { MeetingsPanel } from "./meetings-panel";
+import { RepoPanel } from "./repo-panel";
 import {
   PROJECT_STATUS_COLOR,
   PROJECT_STATUS_LABEL,
@@ -185,6 +186,8 @@ export function ProjectDetailClient({
           <DeliverablesPanel projectId={project.id} deliverables={project.deliverables} />
 
           {/* Reuniones — memoria del proyecto */}
+          <RepoPanel projectId={project.id} />
+
           <MeetingsPanel projectId={project.id} meetings={project.meetings} />
 
           {/* Contratos */}

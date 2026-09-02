@@ -6,19 +6,24 @@ import {
   askPrompt,
   chaptersPrompt,
   diarizationPrompt,
+  contractDraftPrompt,
+  masterPromptPrompt,
   mergeItemsPrompt,
   mergeMinutesPrompt,
   minutesPrompt,
   partialPass,
+  technicalDeliverablePrompt,
   technicalPromptPrompt,
 } from "./prompts";
 import { chunkTranscript, clampTranscript, numberedSegments, parseTimestamp } from "./transcript";
+import { parseTechnicalDeliverable } from "./types";
 import type {
   DraftActionItem,
   ExecutiveMinutes,
   MeetingAttendee,
   MeetingChapter,
   MeetingSegment,
+  TechnicalDeliverable,
   TechnicalMinutes,
 } from "./types";
 
@@ -420,7 +425,9 @@ export async function runTechnicalPrompt(
   executiveDecisions: string[],
   items: DraftActionItem[],
   projectContext: string,
-  meetingTitle: string
+  meetingTitle: string,
+  deliverable: TechnicalDeliverable | null,
+  hasRepo: boolean
 ): Promise<AiCallResult<TechnicalPromptResult>> {
   const itemsDigest = items
     .filter((i) => i.kind === "TECNICO" || i.kind === "DECISION")
@@ -452,11 +459,15 @@ Preguntas abiertas:
 ${technical.openQuestions.map((q) => `- ${q}`).join("\n") || "(ninguna)"}
 
 Pendientes técnicos derivados:
-${itemsDigest || "(ninguno)"}`;
+${itemsDigest || "(ninguno)"}
+
+${deliverable ? describeDeliverable(deliverable) : "Entregable técnico: no se determinó."}`;
 
   const result = await jsonCall<Partial<TechnicalPromptResult>>(
     openai,
-    technicalPromptPrompt(projectContext),
+    // Con repositorio conectado el encargo puede nombrar archivos reales; sin él
+    // se escribe en términos de "localizar el módulo que…".
+    hasRepo ? masterPromptPrompt(projectContext, true) : technicalPromptPrompt(projectContext),
     user,
     4000
   );
@@ -586,4 +597,117 @@ function normalizeAnswer(raw: { answer?: unknown; citations?: unknown[] }): Meet
   });
 
   return { answer: str(raw.answer, "No se pudo responder con esta transcripción."), citations };
+}
+
+// ─── El entregable técnico de la reunión ─────────────────────────────────────
+
+/** El entregable resumido, para que el master prompt se construya sobre él. */
+export function describeDeliverable(d: TechnicalDeliverable): string {
+  const section = (label: string, items: string[]) =>
+    items.length > 0 ? `\n${label}:\n${items.map((i) => `- ${i}`).join("\n")}` : "";
+
+  return `Entregable técnico (${d.kind}, va a ${d.readyFor}): ${d.title}
+${d.summary}${section("Alcance", d.scope)}${section("Fuera de alcance", d.outOfScope)}${section("Criterios de aceptación", d.acceptance)}${section("Toca en el código", d.touchedAreas)}${section("Se reutiliza", d.reuse)}${section("Bloqueos", d.blockers)}${
+    d.recommendation ? `\nRecomendación técnica: ${d.recommendation}` : ""
+  }`;
+}
+
+/**
+ * Determina qué entregable técnico deja la reunión. Siempre devuelve uno: en un
+ * entorno técnico una reunión sin entregable identificado es una minuta que
+ * nadie ejecuta, así que hasta un seguimiento deja el estado de lo que está en
+ * curso.
+ */
+export async function runTechnicalDeliverable(
+  openai: OpenAI,
+  diarizedText: string,
+  technical: TechnicalMinutes,
+  items: DraftActionItem[],
+  projectContext: string,
+  meetingTitle: string,
+  hasRepo: boolean
+): Promise<AiCallResult<TechnicalDeliverable | null>> {
+  const itemsDigest = items
+    .map((i) => `- (${i.kind}/${i.priority}) ${i.title}${i.detail ? ` — ${i.detail}` : ""}`)
+    .join("\n");
+
+  const user = `Reunión: ${meetingTitle}
+
+Minuta técnica:
+${technical.summary || "(sin resumen)"}
+
+Decisiones de arquitectura:
+${technical.architecture.map((a) => `- ${a}`).join("\n") || "(ninguna)"}
+
+Cambios identificados:
+${technical.changes.map((c) => `- [${c.area}] ${c.what} — porque: ${c.why}`).join("\n") || "(ninguno)"}
+
+Dependencias pendientes:
+${technical.dependencies.map((d) => `- ${d}`).join("\n") || "(ninguna)"}
+
+Preguntas abiertas:
+${technical.openQuestions.map((q) => `- ${q}`).join("\n") || "(ninguna)"}
+
+Pendientes extraídos:
+${itemsDigest || "(ninguno)"}
+
+---
+
+Transcripción atribuida:
+
+${clampTranscript(diarizedText, MAX_TRANSCRIPT_CHARS)}`;
+
+  const result = await jsonCall<unknown>(
+    openai,
+    technicalDeliverablePrompt(projectContext, hasRepo),
+    user,
+    2500
+  );
+
+  return { ...result, data: parseTechnicalDeliverable(result.data) };
+}
+
+// ─── Borrador de contrato ────────────────────────────────────────────────────
+
+export interface ContractDraft {
+  title: string;
+  description: string;
+  responsibilities: string;
+  terms: string;
+}
+
+/**
+ * Redacta el alcance contractual del entregable acordado. Es lo que convierte
+ * "quedamos en que hacen los pagos parciales" en algo que se puede firmar.
+ */
+export async function runContractDraft(
+  openai: OpenAI,
+  deliverable: TechnicalDeliverable,
+  executiveDecisions: string[],
+  projectContext: string,
+  meetingTitle: string
+): Promise<AiCallResult<ContractDraft>> {
+  const user = `Reunión: ${meetingTitle}
+
+Decisiones tomadas:
+${executiveDecisions.map((d) => `- ${d}`).join("\n") || "(ninguna registrada)"}
+
+${describeDeliverable(deliverable)}`;
+
+  const result = await jsonCall<Partial<ContractDraft>>(
+    openai,
+    contractDraftPrompt(projectContext),
+    user,
+    2500
+  );
+
+  return {
+    ...result,
+    data: {
+      title: str(result.data.title, deliverable.title),
+      description: str(result.data.description),
+      responsibilities: str(result.data.responsibilities),
+      terms: str(result.data.terms),
+    },
+  };
 }

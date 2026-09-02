@@ -1,21 +1,37 @@
 import { prisma } from "@/lib/prisma";
+import { describeRepo } from "@/lib/github/describe";
+import { parseRepoSnapshot } from "@/lib/github/snapshot";
 import { formatTimestamp } from "./transcript";
 
 /** Cuántas reuniones previas del proyecto entran al contexto acumulado. */
 const HISTORY_LIMIT = 6;
 
 export interface MeetingProjectContext {
-  /** Bloque de texto listo para inyectar en el system prompt */
+  /** Proyecto, entregables y reuniones anteriores. Sin el código. */
   block: string;
+  /**
+   * El mapa del repositorio, aparte.
+   *
+   * Va separado porque no todas las etapas lo necesitan: saber quién habló o
+   * partir la reunión en capítulos no mejora por conocer el código, y ese bloque
+   * son varios miles de tokens en cada llamada. La diarización de una reunión
+   * larga son diez llamadas — pegárselo ahí sería pagarlo diez veces para nada.
+   */
+  repoBlock: string;
   projectName: string | null;
   /** Pendientes técnicos abiertos de reuniones anteriores */
   openItems: { title: string; from: string }[];
+  /** `true` si el contexto incluye el código real del repositorio */
+  hasRepo: boolean;
 }
 
 const EMPTY: MeetingProjectContext = {
-  block: "No hay proyecto asociado a esta reunión, así que no hay contexto previo.",
+  block:
+    "No hay proyecto asociado a esta reunión, así que no hay contexto previo ni acceso al código.",
+  repoBlock: "",
   projectName: null,
   openItems: [],
+  hasRepo: false,
 };
 
 /**
@@ -42,6 +58,7 @@ export async function buildProjectContext(
       aiSummary: true,
       aiTags: true,
       status: true,
+      repoSnapshot: true,
       client: { select: { name: true, company: true } },
       deliverables: {
         select: { name: true, description: true, completed: true, dueDate: true },
@@ -122,7 +139,18 @@ export async function buildProjectContext(
     lines.push("\n## Reuniones anteriores\nEsta es la primera reunión registrada del proyecto.");
   }
 
-  return { block: lines.join("\n"), projectName: project.name, openItems };
+  const snapshot = parseRepoSnapshot(project.repoSnapshot);
+  const repoBlock = snapshot
+    ? describeRepo(snapshot)
+    : "## Código actual del proyecto\nEste proyecto no tiene repositorio conectado, así que no sabes qué está construido ya. No afirmes que algo existe o no existe en el código: cuando haga falta, dilo como algo a verificar.";
+
+  return {
+    block: lines.join("\n"),
+    repoBlock,
+    projectName: project.name,
+    openItems,
+    hasRepo: snapshot !== null,
+  };
 }
 
 /**
@@ -139,4 +167,12 @@ export function withManualContext(block: string, manualContext: string | null | 
 /** Resumen de una línea por segmento para el encabezado del prompt técnico. */
 export function contextHeaderLine(durationMs: number, segmentCount: number): string {
   return `Reunión de ${formatTimestamp(durationMs)} (${segmentCount} intervenciones transcritas).`;
+}
+
+/**
+ * Añade el mapa del código al contexto. Solo lo usan las etapas que de verdad
+ * razonan sobre el sistema: minutas, pendientes, entregable y encargo técnico.
+ */
+export function withRepoContext(block: string, repoBlock: string): string {
+  return repoBlock ? `${block}\n\n${repoBlock}` : block;
 }

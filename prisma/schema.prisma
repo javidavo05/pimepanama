@@ -260,6 +260,9 @@ model EmpresaUser {
   platforms             Platform[]
   expenses              Expense[]
   meetings              Meeting[]
+  /// PAT de GitHub cifrado (AES-256-GCM). Es del usuario, no del proyecto: un
+  /// token sirve para todos sus repos.
+  githubTokenEnc        String?
   config                CompanyConfig?           @relation(fields: [configId], references: [id])
   configId              String?
   createdAt             DateTime                 @default(now())
@@ -484,6 +487,13 @@ model Project {
   /// Plan de financiación: abono inicial + cuotas mensuales/quincenales.
   /// Se materializa en PaymentSchedule al emitir la factura del proyecto.
   financingPlan   Json?
+  /// Repositorio de GitHub del proyecto — lo que la IA lee para saber qué existe
+  repoOwner       String?
+  repoName        String?
+  repoBranch      String?
+  /// Mapa del repo: árbol, dependencias, modelos de Prisma, rutas, docs, commits
+  repoSnapshot    Json?
+  repoSyncedAt    DateTime?
   deliverables    Deliverable[]
   meetings        Meeting[]
   documents       Document[]
@@ -508,6 +518,7 @@ model Deliverable {
   /// MANUAL | AI_CONTRACT — de dónde salió el entregable
   source       String              @default("MANUAL")
   meetingItems MeetingActionItem[]
+  meetings     Meeting[]           @relation("MeetingDeliverable")
   createdAt    DateTime            @default(now())
   updatedAt    DateTime            @updatedAt
 
@@ -549,6 +560,7 @@ model Contract {
   value              Decimal?
   documents          Document[]
   signingRequest     ContractSigningRequest?
+  meetings           Meeting[]               @relation("MeetingContract")
   createdAt          DateTime                @default(now())
   updatedAt          DateTime                @updatedAt
 
@@ -925,55 +937,66 @@ enum MeetingItemKind {
 }
 
 model Meeting {
-  id                String              @id @default(cuid())
-  userId            String
-  user              EmpresaUser         @relation(fields: [userId], references: [id])
-  projectId         String?
-  project           Project?            @relation(fields: [projectId], references: [id])
-  clientId          String?
-  client            Client?             @relation(fields: [clientId], references: [id])
+  id                   String              @id @default(cuid())
+  userId               String
+  user                 EmpresaUser         @relation(fields: [userId], references: [id])
+  projectId            String?
+  project              Project?            @relation(fields: [projectId], references: [id])
+  clientId             String?
+  client               Client?             @relation(fields: [clientId], references: [id])
   /// Bitácora (Document tipo BITACORA) emitida a partir de esta reunión
-  bitacoraId        String?
-  bitacora          Document?           @relation("MeetingBitacora", fields: [bitacoraId], references: [id])
-  title             String
-  language          String              @default("es")
-  status            MeetingStatus       @default(DRAFT)
-  meetingDate       DateTime            @default(now())
-  durationMs        Int                 @default(0)
+  bitacoraId           String?
+  bitacora             Document?           @relation("MeetingBitacora", fields: [bitacoraId], references: [id])
+  title                String
+  language             String              @default("es")
+  status               MeetingStatus       @default(DRAFT)
+  meetingDate          DateTime            @default(now())
+  durationMs           Int                 @default(0)
   /// Asistentes esperados: [{ name, org: "PIME"|"CLIENTE", role }]
-  attendees         Json                @default("[]")
+  attendees            Json                @default("[]")
   /// LEGACY: los segmentos viven en MeetingSegment desde 0025. Respaldo del backfill; no se lee ni se escribe.
-  segments          Json                @default("[]")
-  transcript        String?
+  segments             Json                @default("[]")
+  transcript           String?
   /// Transcripción ya atribuida a hablantes, en markdown
-  diarizedText      String?
+  diarizedText         String?
   /// Minuta ejecutiva (cliente): { agenda, decisions[], risks[], nextSteps, nextMeeting }
-  executiveMinutes  Json?
+  executiveMinutes     Json?
   /// Minuta técnica (equipo): { summary, architecture, changes[], dependencies[], openQuestions[] }
-  technicalMinutes  Json?
+  technicalMinutes     Json?
   /// Prompt listo para pegarle a un agente de código
-  technicalPrompt   String?
+  technicalPrompt      String?
   /// Resumen corto que alimenta el contexto acumulado del proyecto
-  contextSummary    String?
+  contextSummary       String?
   /// Contexto escrito a mano por el usuario después de grabar; entra al prompt junto al del proyecto
-  manualContext     String?
+  manualContext        String?
   /// Índice de temas: [{ startMs, title, summary }]
-  chapters          Json?
-  audioKeys         String[]
+  chapters             Json?
+  /// El entregable técnico que deja la reunión, sea de seguimiento o de producto
+  /// nuevo: { kind, title, summary, scope[], acceptance[], touchedAreas[], ... }
+  technicalDeliverable Json?
+  /// Entregable del proyecto creado a partir de él
+  deliverableId        String?
+  deliverable          Deliverable?        @relation("MeetingDeliverable", fields: [deliverableId], references: [id])
+  /// Cuándo se redactó el borrador de propuesta comercial con lo hablado
+  proposalDraftedAt    DateTime?
+  /// Contrato (o adenda) redactado a partir de la reunión
+  contractId           String?
+  contract             Contract?           @relation("MeetingContract", fields: [contractId], references: [id])
+  audioKeys            String[]
   /// Dónde cae cada tramo de audio dentro de la reunión: [{ key, channel, index, offsetMs, durationMs, mime }]
-  audioChunks       Json                @default("[]")
+  audioChunks          Json                @default("[]")
   /// Cuándo se le envió la minuta ejecutiva al cliente por correo
-  minutesSentAt     DateTime?
+  minutesSentAt        DateTime?
   /// Tarea creada para la próxima reunión acordada
-  nextMeetingTaskId String?
-  nextMeetingTask   Task?               @relation("MeetingNextUp", fields: [nextMeetingTaskId], references: [id])
-  aiCostUSD         Float               @default(0)
-  errorMessage      String?
-  speakers          MeetingSpeaker[]
-  segmentRows       MeetingSegment[]
-  actionItems       MeetingActionItem[]
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
+  nextMeetingTaskId    String?
+  nextMeetingTask      Task?               @relation("MeetingNextUp", fields: [nextMeetingTaskId], references: [id])
+  aiCostUSD            Float               @default(0)
+  errorMessage         String?
+  speakers             MeetingSpeaker[]
+  segmentRows          MeetingSegment[]
+  actionItems          MeetingActionItem[]
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
 
   @@index([userId])
   @@index([projectId])

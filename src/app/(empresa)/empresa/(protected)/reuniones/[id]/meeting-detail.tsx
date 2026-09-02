@@ -14,19 +14,29 @@ import type {
 } from "@/lib/meetings/types";
 import { MEETING_STATUS_COLOR, MEETING_STATUS_LABEL } from "../status";
 import { ActionItemsPanel } from "./action-items-panel";
+import { DeliverablePanel } from "./deliverable-panel";
 import { MeetingAskPanel } from "./meeting-ask-panel";
 import { MeetingAudioPlayer, type SeekRequest } from "./meeting-audio-player";
 import { MeetingContextPanel } from "./meeting-context-panel";
 import { MeetingOutbound } from "./meeting-outbound";
 import { MeetingTranscriptView } from "./meeting-transcript-view";
 
-type Tab = "ejecutiva" | "tecnica" | "pendientes" | "prompt" | "transcripcion" | "capitulos" | "preguntar";
+type Tab =
+  | "entregable"
+  | "ejecutiva"
+  | "tecnica"
+  | "pendientes"
+  | "prompt"
+  | "transcripcion"
+  | "capitulos"
+  | "preguntar";
 
 const TABS: { key: Tab; label: string }[] = [
+  { key: "entregable", label: "Entregable técnico" },
   { key: "ejecutiva", label: "Minuta ejecutiva" },
   { key: "tecnica", label: "Minuta técnica" },
   { key: "pendientes", label: "Pendientes" },
-  { key: "prompt", label: "Prompt técnico" },
+  { key: "prompt", label: "Master prompt" },
   { key: "capitulos", label: "Capítulos" },
   { key: "transcripcion", label: "Transcripción" },
   { key: "preguntar", label: "Preguntar" },
@@ -36,7 +46,8 @@ const STAGES = [
   { key: "diarize", label: "Hablantes" },
   { key: "minutes", label: "Minutas" },
   { key: "items", label: "Pendientes" },
-  { key: "prompt", label: "Prompt" },
+  { key: "deliverable", label: "Entregable" },
+  { key: "prompt", label: "Master prompt" },
   { key: "chapters", label: "Capítulos" },
 ] as const;
 
@@ -51,6 +62,8 @@ interface MeetingDetailProps {
   actionItems: SerializedMeetingActionItem[];
   executive: ExecutiveMinutes | null;
   technical: TechnicalMinutes | null;
+  /** El proyecto tiene repositorio conectado y la IA vio el código real */
+  hasRepo: boolean;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -87,9 +100,12 @@ export function MeetingDetail({
   actionItems: initialItems,
   executive,
   technical,
+  hasRepo,
 }: MeetingDetailProps) {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>(executive ? "ejecutiva" : "transcripcion");
+  const [tab, setTab] = useState<Tab>(
+    meeting.technicalDeliverable ? "entregable" : executive ? "ejecutiva" : "transcripcion"
+  );
   const [items, setItems] = useState(initialItems);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -453,6 +469,19 @@ export function MeetingDetail({
       </div>
 
       <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6 space-y-6">
+        {tab === "entregable" && (
+          <DeliverablePanel
+            meetingId={meeting.id}
+            deliverable={meeting.technicalDeliverable}
+            hasProject={project !== null}
+            projectId={meeting.projectId}
+            hasRepo={hasRepo}
+            deliverableId={meeting.deliverableId}
+            contractId={meeting.contractId}
+            proposalDraftedAt={meeting.proposalDraftedAt}
+          />
+        )}
+
         {tab === "ejecutiva" &&
           (executive ? (
             <>

@@ -3,6 +3,7 @@ import {
   parseAttendees,
   parseAudioChunks,
   parseChapters,
+  parseTechnicalDeliverable,
   type SerializedMeeting,
   type SerializedMeetingActionItem,
   type SerializedMeetingSpeaker,
@@ -22,12 +23,14 @@ export function serializeMeeting(m: Meeting, segmentCount = 0): SerializedMeetin
     ...rest,
     attendees: parseAttendees(m.attendees),
     chapters: parseChapters(m.chapters),
+    technicalDeliverable: parseTechnicalDeliverable(m.technicalDeliverable),
     audioChunks: parseAudioChunks(m.audioChunks),
     segmentCount,
     meetingDate: m.meetingDate.toISOString(),
     createdAt: m.createdAt.toISOString(),
     updatedAt: m.updatedAt.toISOString(),
     minutesSentAt: m.minutesSentAt?.toISOString() ?? null,
+    proposalDraftedAt: m.proposalDraftedAt?.toISOString() ?? null,
   };
 }
 

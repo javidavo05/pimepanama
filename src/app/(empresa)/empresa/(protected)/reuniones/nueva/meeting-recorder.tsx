@@ -43,7 +43,8 @@ const STAGES = [
   { key: "diarize", label: "Separando quién habla" },
   { key: "minutes", label: "Redactando minuta ejecutiva y técnica" },
   { key: "items", label: "Extrayendo pendientes técnicos" },
-  { key: "prompt", label: "Armando el prompt técnico" },
+  { key: "deliverable", label: "Determinando el entregable técnico" },
+  { key: "prompt", label: "Armando el master prompt" },
   // Va al final y sobre la transcripción, no sobre las minutas: si falla, la
   // reunión ya está completa y solo se queda sin índice de temas.
   { key: "chapters", label: "Armando el índice de temas" },

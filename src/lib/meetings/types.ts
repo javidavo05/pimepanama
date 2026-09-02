@@ -103,18 +103,23 @@ export interface SerializedMeeting
     | "createdAt"
     | "updatedAt"
     | "minutesSentAt"
+    | "proposalDraftedAt"
     | "attendees"
     | "segments"
     | "chapters"
     | "audioChunks"
+    | "technicalDeliverable"
   > {
   meetingDate: string;
   createdAt: string;
   updatedAt: string;
   minutesSentAt: string | null;
+  proposalDraftedAt: string | null;
   attendees: MeetingAttendee[];
   chapters: MeetingChapter[];
   audioChunks: MeetingAudioChunk[];
+  /** El entregable técnico de la reunión; toda reunión deja uno */
+  technicalDeliverable: TechnicalDeliverable | null;
   /** Cuántas intervenciones tiene la transcripción, sin traerlas todas */
   segmentCount: number;
 }
@@ -208,4 +213,79 @@ export function parseAudioChunks(value: unknown): MeetingAudioChunk[] {
       ];
     })
     .sort((a, b) => a.offsetMs - b.offsetMs);
+}
+
+/**
+ * Qué clase de entregable técnico deja la reunión. Toda reunión deja uno:
+ * incluso un seguimiento donde no se decidió nada nuevo deja el estado del
+ * entregable en curso, que es información y no un vacío.
+ */
+export type DeliverableKind =
+  | "SISTEMA_NUEVO"
+  | "MODIFICACION"
+  | "PROPUESTA_COMERCIAL"
+  | "CONTRATO"
+  | "MANTENIMIENTO"
+  | "SEGUIMIENTO";
+
+/** Hacia dónde va el entregable una vez definido. */
+export type DeliverableDestination = "PROPUESTA" | "CONTRATO" | "DESARROLLO";
+
+export interface TechnicalDeliverable {
+  kind: DeliverableKind;
+  title: string;
+  /** Qué hay que construir o entregar, en prosa, para quien no estuvo */
+  summary: string;
+  scope: string[];
+  /** Lo que explícitamente queda fuera, para que no se construya de más */
+  outOfScope: string[];
+  acceptance: string[];
+  /** Archivos, módulos o pantallas REALES del repositorio que toca */
+  touchedAreas: string[];
+  /** Lo que ya existe en el código y se reutiliza en vez de rehacer */
+  reuse: string[];
+  estimateHours: number | null;
+  /** Lo que impide empezar: accesos, decisiones, contenido del cliente */
+  blockers: string[];
+  /** Cómo hacerlo dado lo que el repositorio ya tiene */
+  recommendation: string;
+  readyFor: DeliverableDestination;
+}
+
+export const DELIVERABLE_KINDS: DeliverableKind[] = [
+  "SISTEMA_NUEVO",
+  "MODIFICACION",
+  "PROPUESTA_COMERCIAL",
+  "CONTRATO",
+  "MANTENIMIENTO",
+  "SEGUIMIENTO",
+];
+
+export function parseTechnicalDeliverable(value: unknown): TechnicalDeliverable | null {
+  if (!value || typeof value !== "object") return null;
+  const rec = value as Record<string, unknown>;
+  const title = typeof rec.title === "string" ? rec.title.trim() : "";
+  if (!title) return null;
+
+  const list = (v: unknown): string[] =>
+    Array.isArray(v) ? v.map((x) => (typeof x === "string" ? x.trim() : "")).filter(Boolean) : [];
+  const hours = Number(rec.estimateHours);
+
+  return {
+    kind: DELIVERABLE_KINDS.includes(rec.kind as DeliverableKind)
+      ? (rec.kind as DeliverableKind)
+      : "MODIFICACION",
+    title,
+    summary: typeof rec.summary === "string" ? rec.summary.trim() : "",
+    scope: list(rec.scope),
+    outOfScope: list(rec.outOfScope),
+    acceptance: list(rec.acceptance),
+    touchedAreas: list(rec.touchedAreas),
+    reuse: list(rec.reuse),
+    estimateHours: Number.isFinite(hours) && hours > 0 ? hours : null,
+    blockers: list(rec.blockers),
+    recommendation: typeof rec.recommendation === "string" ? rec.recommendation.trim() : "",
+    readyFor:
+      rec.readyFor === "PROPUESTA" || rec.readyFor === "CONTRATO" ? rec.readyFor : "DESARROLLO",
+  };
 }

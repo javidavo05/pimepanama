@@ -28,7 +28,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
     prisma.meeting.findFirst({
       where: { id, userId: user.id },
       include: {
-        project: { select: { id: true, name: true } },
+        project: { select: { id: true, name: true, repoOwner: true, repoSnapshot: true } },
         client: { select: { id: true, name: true, company: true } },
         speakers: { orderBy: { talkMs: "desc" } },
         actionItems: { orderBy: { sortOrder: "asc" } },
@@ -63,6 +63,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
         actionItems={meeting.actionItems.map(serializeMeetingActionItem)}
         executive={meeting.executiveMinutes as unknown as ExecutiveMinutes | null}
         technical={meeting.technicalMinutes as unknown as TechnicalMinutes | null}
+        hasRepo={meeting.project?.repoSnapshot != null}
       />
     </div>
   );
