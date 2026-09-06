@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { formatDateTimeEsPa } from "@/lib/format-datetime";
+import { PushToggle } from "@/components/empresa/push-toggle";
 
 interface Notification {
   id: string;
@@ -44,7 +45,10 @@ export function NotificationBell() {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  async function handleOpen() {
+  async function handleOpen(e: React.MouseEvent) {
+    // La campana del sidebar vive dentro de un <Link>: sin esto, abrirla navega.
+    e.preventDefault();
+    e.stopPropagation();
     setOpen((v) => !v);
     if (!open && unread > 0) {
       await fetch("/api/empresa/mail/notifications", { method: "PATCH" });
@@ -67,7 +71,10 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 mt-2 w-80 bg-[#0d0d18] border border-white/[0.08] rounded-xl shadow-2xl z-50 overflow-hidden">
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-32px)] bg-[#0d0d18] border border-white/[0.08] rounded-xl shadow-2xl z-50 overflow-hidden"
+        >
           <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
             <p className="text-white/70 text-sm font-medium">Notificaciones</p>
             <Link href="/empresa/correos/hub" className="text-[#1AA7F0] text-xs hover:underline" onClick={() => setOpen(false)}>
@@ -92,6 +99,10 @@ export function NotificationBell() {
               ))}
             </div>
           )}
+
+          <div className="border-t border-white/[0.06]">
+            <PushToggle />
+          </div>
         </div>
       )}
     </div>

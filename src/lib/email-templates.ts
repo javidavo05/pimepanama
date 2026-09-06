@@ -5,14 +5,31 @@ type ContactData = {
   phone?: string;
   message: string;
   locale: "en" | "es";
+  /** Enlace al lead ya creado en el CRM, para responder desde el panel. */
+  leadUrl?: string;
 };
+
+/** El contenido lo escribe un desconocido en un formulario público: se escapa. */
+function esc(value: string | undefined | null): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 // Email template for admin notification
 export function getAdminNotificationEmail(data: ContactData) {
-  const { name, email, company, phone, message, locale } = data;
+  const { locale, leadUrl } = data;
+  const name = esc(data.name);
+  const email = esc(data.email);
+  const company = esc(data.company);
+  const phone = esc(data.phone);
+  const message = esc(data.message);
 
   return {
-    subject: `[PIME Panama] Nueva solicitud de ${name}`,
+    subject: `[PIME Panama] Nueva solicitud de ${data.name}`,
     html: `
       <!DOCTYPE html>
       <html>
@@ -70,6 +87,11 @@ export function getAdminNotificationEmail(data: ContactData) {
                 <div class="label">Fecha</div>
                 <div class="value">${new Date().toLocaleString('es-PA', { timeZone: 'America/Panama' })}</div>
               </div>
+              ${leadUrl ? `
+              <div class="field">
+                <a href="${esc(leadUrl)}" style="display: block; text-align: center; background: #0586FE; color: #ffffff; text-decoration: none; padding: 14px 24px; border-radius: 6px; font-weight: bold;">Abrir el lead en Pime Suite</a>
+              </div>
+              ` : ''}
             </div>
             <div class="footer">
               <p>Este email fue generado automáticamente desde pimepanama.com</p>
@@ -83,7 +105,8 @@ export function getAdminNotificationEmail(data: ContactData) {
 
 // Thank you email for customer (auto-reply)
 export function getCustomerThankYouEmail(data: ContactData) {
-  const { name, locale } = data;
+  const { locale } = data;
+  const name = esc(data.name);
 
   const content = {
     en: {

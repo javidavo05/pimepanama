@@ -260,6 +260,7 @@ model EmpresaUser {
   platforms             Platform[]
   expenses              Expense[]
   meetings              Meeting[]
+  pushSubscriptions     PushSubscription[]
   /// PAT de GitHub cifrado (AES-256-GCM). Es del usuario, no del proyecto: un
   /// token sirve para todos sus repos.
   githubTokenEnc        String?
@@ -915,6 +916,25 @@ model MailNotification {
   createdAt DateTime @default(now())
 
   @@index([userId, read])
+}
+
+/// Suscripción Web Push de un navegador/dispositivo al PWA de Pime Suite.
+/// Una fila por dispositivo: el mismo usuario puede tener el iPhone, la Mac y
+/// el iPad suscritos a la vez. Se borra sola cuando el push server responde
+/// 404/410 (el usuario desinstaló el PWA o revocó el permiso).
+model PushSubscription {
+  id         String      @id @default(cuid())
+  userId     String
+  user       EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint   String      @unique
+  p256dh     String
+  auth       String
+  userAgent  String?
+  lastUsedAt DateTime?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([userId])
 }
 
 // ─── PimeMeet: reuniones grabadas → minutas, pendientes y prompt técnico ─────

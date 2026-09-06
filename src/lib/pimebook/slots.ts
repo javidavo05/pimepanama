@@ -1,21 +1,10 @@
 import { prisma } from "@/lib/prisma";
+import { resolveOwnerUserId } from "@/lib/owner-user";
 import { bookingMinNoticeHours, bookingTimezone } from "./config";
 
-export async function resolveBookingOwnerUserId(explicitUserId?: string | null) {
-  if (explicitUserId) {
-    const u = await prisma.empresaUser.findUnique({ where: { id: explicitUserId } });
-    if (u) return u.id;
-  }
-
-  const email = process.env.BOOKING_OWNER_EMAIL?.trim();
-  if (email) {
-    const u = await prisma.empresaUser.findUnique({ where: { email } });
-    if (u) return u.id;
-  }
-
-  const first = await prisma.empresaUser.findFirst({ orderBy: { createdAt: "asc" } });
-  if (!first) throw new Error("No hay usuario empresa configurado para citas.");
-  return first.id;
+/** Alias histórico: la resolución del dueño vive en `@/lib/owner-user`. */
+export function resolveBookingOwnerUserId(explicitUserId?: string | null) {
+  return resolveOwnerUserId(explicitUserId);
 }
 
 function parseTime(t: string): number {

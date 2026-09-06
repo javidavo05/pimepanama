@@ -16,7 +16,10 @@ export function ContactForm({ locale }: { locale: Locale }) {
     setIsSubmitting(true);
     setError("");
 
-    const formData = new FormData(e.currentTarget);
+    // Se guarda antes del await: `currentTarget` queda en null al terminar el
+    // dispatch del evento, y sin esto el reset() de abajo tiraba TypeError.
+    const form = e.currentTarget;
+    const formData = new FormData(form);
     const data = {
       name: formData.get("name"),
       email: formData.get("email"),
@@ -33,12 +36,17 @@ export function ContactForm({ locale }: { locale: Locale }) {
         body: JSON.stringify(data),
       });
 
-      if (!response.ok) throw new Error("Failed to send");
+      const result = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(result?.error ?? "Failed to send");
+      }
 
       setSubmitted(true);
-      e.currentTarget.reset();
-    } catch {
-      setError(t("error"));
+      form.reset();
+    } catch (err) {
+      // El servidor solo devuelve error cuando el mensaje no quedó registrado
+      // en ningún lado; en ese caso su texto dice a dónde escribir.
+      setError(err instanceof Error && err.message !== "Failed to send" ? err.message : t("error"));
     } finally {
       setIsSubmitting(false);
     }

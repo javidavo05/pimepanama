@@ -100,14 +100,15 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
                 onError={() => setLogoFailed(true)}
               />
             </div>
-            <div>
-              <p className="text-white text-xs font-semibold tracking-widest uppercase">
+            <div className="min-w-0 flex-1">
+              <p className="text-white text-xs font-semibold tracking-widest uppercase truncate">
                 {companyName}
               </p>
               <p className="text-[#1AA7F0] text-[10px] tracking-[0.25em] uppercase mt-0.5">
                 Suite
               </p>
             </div>
+            <NotificationBell />
           </div>
         </div>
 
@@ -125,7 +126,6 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
             >
               <span className="text-base w-5 text-center">{item.icon}</span>
               <span className="flex-1">{item.label}</span>
-              {item.href === "/empresa/correos/hub" && <NotificationBell />}
             </Link>
           ))}
         </nav>
