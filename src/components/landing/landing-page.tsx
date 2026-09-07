@@ -107,6 +107,7 @@ export async function LandingPage({ locale }: { locale: Locale }) {
           heading={localized(servicesSection, "title", locale) ?? ""}
           subheading={localized(servicesSection, "subtitle", locale)}
           services={services}
+          locale={locale}
         />
       ) : null}
       <PortfolioSection

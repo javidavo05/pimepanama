@@ -2,7 +2,9 @@
 
 import { Icon } from "@iconify/react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { TiltCard } from "@/components/ui/tilt-card";
+import { SERVICES } from "@/lib/services-content";
 
 type Service = {
   id: string;
@@ -16,10 +18,12 @@ export function ServicesSection({
   heading,
   subheading,
   services,
+  locale = "es",
 }: {
   heading: string;
   subheading?: string | null;
   services: Service[];
+  locale?: "es" | "en";
 }) {
   return (
     <section
@@ -95,6 +99,25 @@ export function ServicesSection({
             </motion.div>
           ))}
         </div>
+
+        {/* Enlaces en el cuerpo hacia las páginas de servicio. Antes solo las
+            enlazaba el pie, y un enlace desde el contenido le dice a Google que
+            esa página importa mucho más que uno de pie de página. Para el
+            visitante también es el camino natural a más detalle. */}
+        {locale === "es" ? (
+          <nav aria-label="Páginas de servicio" className="flex flex-wrap items-center gap-3 pt-4">
+            <span className="text-sm text-white/55">Más detalle por servicio:</span>
+            {SERVICES.map((service) => (
+              <Link
+                key={service.slug}
+                href={`/${service.slug}`}
+                className="rounded-lg border border-white/[0.1] px-4 py-2 text-sm text-white/70 transition-colors hover:border-[#3B82F6]/50 hover:text-white"
+              >
+                {service.shortName}
+              </Link>
+            ))}
+          </nav>
+        ) : null}
       </div>
     </section>
   );
