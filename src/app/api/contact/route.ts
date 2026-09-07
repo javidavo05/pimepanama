@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextResponse, after } from "next/server";
 import type { Lead } from "@prisma/client";
 import { getAdminNotificationEmail, getCustomerThankYouEmail } from "@/lib/email-templates";
 import { sendEmail } from "@/lib/email-service";
 import { resolveOwnerUserId } from "@/lib/owner-user";
 import { persistLead } from "@/lib/leads/persist";
-import { notifyUser } from "@/lib/notifications/notify";
+import { triageLead } from "@/lib/leads/triage";
 import { getSiteUrl } from "@/lib/site-url";
 
 export const runtime = "nodejs";
@@ -70,19 +70,10 @@ export async function POST(request: Request) {
 
   const leadUrl = lead ? `${getSiteUrl()}/empresa/leads/${lead.id}` : undefined;
 
-  // ── 2. Avisos y correos, cada uno aislado ─────────────────────────────────
+  // ── 2. Correos, cada uno aislado ──────────────────────────────────────────
+  // Van en la ruta crítica a propósito: el correo es el canal que Javier tiene
+  // garantizado, y tarda cientos de milisegundos, no segundos.
   const results = await Promise.allSettled([
-    // Campana del panel + push al PWA
-    lead
-      ? notifyUser({
-          userId: lead.userId,
-          title: repeat ? `${payload.name} volvió a escribir` : `Nuevo lead: ${payload.name}`,
-          body: `${payload.company ? `${payload.company} · ` : ""}${payload.message}`,
-          link: `/empresa/leads/${lead.id}`,
-          tag: `lead-${lead.id}`,
-        })
-      : Promise.reject(new Error("sin lead que notificar")),
-
     // Aviso por correo a Javier (+ info@)
     (async () => {
       const admin = getAdminNotificationEmail({ ...payload, leadUrl });
@@ -96,19 +87,34 @@ export async function POST(request: Request) {
     })(),
   ]);
 
-  const [notified, adminMail, customerMail] = results;
+  const [adminMail, customerMail] = results;
   const channels = {
     lead: Boolean(lead),
-    inApp: notified.status === "fulfilled",
     adminEmail: adminMail.status === "fulfilled",
     customerEmail: customerMail.status === "fulfilled",
   };
 
   results.forEach((r, i) => {
     if (r.status === "rejected") {
-      console.error(`[contact] canal ${["aviso", "correo-admin", "correo-cliente"][i]} falló`, r.reason);
+      console.error(`[contact] canal ${["correo-admin", "correo-cliente"][i]} falló`, r.reason);
     }
   });
+
+  // ── 3. Triaje con IA, ya con la respuesta enviada ─────────────────────────
+  // Clasificar cuesta un par de segundos. El visitante no tiene por qué
+  // esperarlos: el lead ya está guardado y los correos ya salieron, así que
+  // esto corre después de cerrar la respuesta y solo ajusta la prioridad y
+  // dispara la campana y el push.
+  if (lead) {
+    const saved = lead;
+    after(async () => {
+      try {
+        await triageLead(saved, { repeat });
+      } catch (err) {
+        console.error("[contact] el triaje posterior falló", saved.id, err);
+      }
+    });
+  }
 
   // El contacto se considera recibido si quedó registrado en algún lado que
   // Javier revise: el CRM o el correo. Si fallaron los dos, el cliente tiene
