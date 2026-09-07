@@ -2,23 +2,6 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
-const ENGLISH_COUNTRIES = new Set(["US", "CA", "GB", "AU", "NZ", "IE"]);
-const COOKIE_NAME = "NEXT_LOCALE";
-const ONE_YEAR = 60 * 60 * 24 * 365;
-
-function detectLocale(request: NextRequest): "en" | "es" {
-  // 1. Respect saved user preference
-  const cookie = request.cookies.get(COOKIE_NAME)?.value;
-  if (cookie === "en" || cookie === "es") return cookie;
-
-  // 2. Vercel geolocation header (only available on Vercel)
-  const country = request.headers.get("x-vercel-ip-country");
-  if (country && ENGLISH_COUNTRIES.has(country)) return "en";
-
-  // 3. Default to Spanish (primary market: Panama + Latin America)
-  return "es";
-}
-
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -82,33 +65,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Redirect legacy locale-prefixed URLs to canonical root URLs
-  const localePrefix = pathname.match(/^\/(en|es)(\/.*)?$/);
-  if (localePrefix) {
-    const rest = localePrefix[2] ?? "/";
-    const canonical = new URL(rest, request.url);
-    const response = NextResponse.redirect(canonical, { status: 301 });
-    // Preserve locale preference from the URL they visited
-    const visitedLocale = localePrefix[1] as "en" | "es";
-    response.cookies.set(COOKIE_NAME, visitedLocale, {
-      path: "/",
-      maxAge: ONE_YEAR,
-      sameSite: "lax",
-    });
-    return response;
-  }
-
-  // Set locale cookie if not already set
-  const currentCookie = request.cookies.get(COOKIE_NAME)?.value;
-  if (currentCookie !== "en" && currentCookie !== "es") {
-    const locale = detectLocale(request);
-    const response = NextResponse.next();
-    response.cookies.set(COOKIE_NAME, locale, {
-      path: "/",
-      maxAge: ONE_YEAR,
-      sameSite: "lax",
-    });
-    return response;
+  // Las URLs viejas con prefijo /es ahora son la raíz. /en es una página real,
+  // así que no se toca.
+  if (pathname === "/es" || pathname.startsWith("/es/")) {
+    const rest = pathname.slice(3) || "/";
+    return NextResponse.redirect(new URL(rest, request.url), { status: 301 });
   }
 
   return NextResponse.next();

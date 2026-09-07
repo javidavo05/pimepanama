@@ -3,14 +3,14 @@
 export const staticContent = {
   hero: {
     id: "hero-main",
-    headline_en: "Software Development in Panama",
-    headline_es: "Desarrollo de Software en Panama",
+    headline_en: "Custom Software Development in Panama",
+    headline_es: "Desarrollo de Software a Medida en Panamá",
     subheadline_en:
       "We are a software development company in Panama. We build custom SaaS platforms, CRMs, CMS systems, management tools, and automation workflows that help businesses across Panama and the region operate better and grow with technology.",
     subheadline_es:
-      "Somos una empresa de desarrollo de software en Panama. Construimos plataformas SaaS, CRMs, CMS, sistemas de gestión y herramientas de automatización a medida que ayudan a empresas de Panama y la región a operar mejor y crecer con tecnología.",
+      "Somos una empresa de desarrollo de software en Panamá. Construimos software a medida: sistemas empresariales tipo ERP, plataformas SaaS, CRM, aplicaciones web, aplicaciones móviles y automatización de procesos para empresas de Panamá y la región.",
     highlight_en: "30+ systems delivered across Panama and the region",
-    highlight_es: "Más de 30 sistemas entregados en Panama y la región",
+    highlight_es: "Más de 30 sistemas a medida entregados en Panamá y la región",
     backgroundImageUrl: null,
     backgroundVideoUrl: null,
     ctaPrimaryLabel_en: "View Projects",
@@ -190,12 +190,12 @@ export const staticContent = {
     {
       id: "seo-main",
       page: "home",
-      metaTitle_en: "Software Development Company in Panama | Pime Panamá",
-      metaTitle_es: "Empresa de Desarrollo de Software en Panama | Pime Panamá",
+      metaTitle_en: "Custom Software Development Company in Panama | Pime Panamá",
+      metaTitle_es: "Desarrollo de Software a Medida en Panamá | Pime Panamá",
       metaDescription_en:
-        "Software development company in Panama. We build SaaS platforms, CRM, CMS and automation systems for businesses across Panama, Latin America and beyond.",
+        "Software development company in Panama building custom software: ERP-style systems, SaaS, CRM, web and mobile apps. 30+ systems delivered.",
       metaDescription_es:
-        "Empresa de desarrollo de software en Panama. Construimos plataformas SaaS, CRM, CMS y sistemas de automatización para empresas en Panama, Latinoamérica y el mundo.",
+        "Empresa de desarrollo de software a medida en Panamá: sistemas empresariales ERP, SaaS, CRM y aplicaciones web y móviles. Más de 30 sistemas entregados.",
       ogImageUrl: null,
     },
   ],

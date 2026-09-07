@@ -69,7 +69,7 @@ export function AffordableCard({
 
       <div className="space-y-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-white/40">{target}</p>
+          <p className="text-xs uppercase tracking-[0.35em] text-white/55">{target}</p>
           <h3 className="mt-1 text-lg font-bold text-white">{name}</h3>
         </div>
 
@@ -77,7 +77,7 @@ export function AffordableCard({
           <span className={`text-3xl font-extrabold ${isPopular ? "text-[#60A5FA]" : "text-white"}`}>
             {price}
           </span>
-          <span className="text-xs text-white/40">{priceNote}</span>
+          <span className="text-xs text-white/55">{priceNote}</span>
         </div>
 
         <p className="text-sm leading-relaxed text-white/55">{description}</p>

@@ -181,9 +181,9 @@ export function ContactForm({ locale }: { locale: Locale }) {
           {isSubmitting ? t("submitting") : t("submit")}
         </motion.button>
 
-        <p className="text-center text-xs text-white/40">
+        <p className="text-center text-xs text-white/55">
           {t("or_email")}{" "}
-          <a href="mailto:info@pimepanama.com" className="text-[#60A5FA]/70 underline hover:text-white">
+          <a href="mailto:info@pimepanama.com" className="text-[#60A5FA] underline hover:text-white">
             info@pimepanama.com
           </a>
         </p>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { Locale } from "@/lib/i18n";
+import { SERVICES } from "@/lib/services-content";
 
 export function LandingFooter({ locale: _locale }: { locale?: Locale }) {
   const t = useTranslations("footer");
@@ -55,6 +56,28 @@ export function LandingFooter({ locale: _locale }: { locale?: Locale }) {
             </Link>
           </div>
         </div>
+        {/* Enlaces a las páginas de servicio en todas las páginas del sitio:
+            es lo que hace que Google las descubra y les pase autoridad desde
+            la portada, que es la que concentra los enlaces externos. */}
+        <nav aria-label="Servicios de desarrollo de software" className="border-t pt-8" style={{ borderColor: "rgba(37,99,235,0.12)" }}>
+          <p className="mb-4 text-[0.62rem] font-semibold uppercase tracking-[0.3em]" style={{ color: "rgba(255,255,255,0.35)" }}>
+            {t("servicesNav")}
+          </p>
+          <ul className="flex flex-wrap gap-x-6 gap-y-3 text-sm">
+            {SERVICES.map((service) => (
+              <li key={service.slug}>
+                <Link
+                  href={`/${service.slug}`}
+                  className="transition hover:text-white"
+                  style={{ color: "rgba(255,255,255,0.55)" }}
+                >
+                  {service.shortName}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
         <div className="border-t pt-8" style={{ borderColor: "rgba(37,99,235,0.12)" }}>
           <p className="text-center text-xs uppercase tracking-[0.4em]" style={{ color: "rgba(255,255,255,0.30)" }}>
             © {currentYear} PIME Panama. {t("rights")}.

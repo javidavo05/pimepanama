@@ -1,19 +1,20 @@
 import type { Metadata, Viewport } from "next";
 import { Syne, Inter } from "next/font/google";
-import { NextIntlClientProvider } from "next-intl";
-import { getLocale, getMessages } from "next-intl/server";
 import "./globals.css";
+import { JsonLd, organizationSchema, websiteSchema } from "@/lib/structured-data";
 
 const syne = Syne({
   variable: "--font-display",
   subsets: ["latin"],
   weight: ["700", "800"],
+  display: "swap",
 });
 
 const inter = Inter({
   variable: "--font-body",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600"],
+  display: "swap",
 });
 
 export const viewport: Viewport = {
@@ -32,112 +33,25 @@ export const metadata: Metadata = {
   },
 };
 
-const orgSchema = {
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  name: "Pime Panamá",
-  alternateName: ["PIME", "Pime Panama", "Empresa de Desarrollo de Software en Panama"],
-  slogan: "Empresa de Desarrollo de Software en Panama",
-  url: "https://pimepanama.com",
-  logo: "https://pimepanama.com/pime-icon.svg",
-  description:
-    "Empresa de desarrollo de software en Panama especializada en software a medida, sistemas empresariales, SaaS, CRM y transformación digital.",
-  email: "info@pimepanama.com",
-  address: {
-    "@type": "PostalAddress",
-    addressCountry: "PA",
-    addressLocality: "Panama City",
-  },
-  // SEO TODO: Create LinkedIn company page at linkedin.com/company/pimepanama and add the URL below
-  sameAs: [],
-  contactPoint: {
-    "@type": "ContactPoint",
-    email: "info@pimepanama.com",
-    contactType: "customer service",
-    availableLanguage: ["Spanish", "English"],
-  },
-  areaServed: [
-    { "@type": "Country", name: "Panama" },
-    { "@type": "Place", name: "Latin America" },
-    { "@type": "Place", name: "Central America" },
-  ],
-  knowsAbout: [
-    "Software Development",
-    "SaaS Development",
-    "Enterprise Systems",
-    "CRM Development",
-    "Web Applications",
-    "Mobile Applications",
-    "Digital Transformation",
-    "Panama Software",
-  ],
-};
-
-const localBusinessSchema = {
-  "@context": "https://schema.org",
-  "@type": "ProfessionalService",
-  name: "Pime Panamá",
-  description:
-    "Empresa de desarrollo de software en Panama: software a medida, sistemas empresariales, SaaS, CRM y plataformas web.",
-  serviceType: [
-    "Desarrollo de software a medida",
-    "Desarrollo de plataformas SaaS",
-    "Desarrollo de sistemas empresariales",
-    "Desarrollo web",
-  ],
-  url: "https://pimepanama.com",
-  email: "info@pimepanama.com",
-  address: {
-    "@type": "PostalAddress",
-    addressLocality: "Panama City",
-    addressCountry: "PA",
-  },
-  areaServed: ["Panama", "Latin America"],
-  priceRange: "$$",
-};
-
-const webSiteSchema = {
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  url: "https://pimepanama.com",
-  name: "Pime Panamá",
-  potentialAction: {
-    "@type": "SearchAction",
-    target: "https://pimepanama.com/portfolio?q={search_term_string}",
-    "query-input": "required name=search_term_string",
-  },
-};
-
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const locale = await getLocale();
-  const messages = await getMessages();
-
+/**
+ * Layout raíz. No lee cookies ni cabeceras a propósito: en cuanto lo hace,
+ * todas las páginas que cuelgan de él pasan a renderizarse dinámicas, la
+ * metadata deja de salir en el <head> y se pierde la caché del CDN.
+ *
+ * El idioma se declara acá como español porque es el sitio canónico; la rama
+ * /en lo corrige para su subárbol.
+ */
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <head>
-        {/* Preconnect to Google Fonts for faster font loading */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(orgSchema) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(webSiteSchema) }}
-        />
+        <JsonLd data={[organizationSchema, websiteSchema]} />
       </head>
       <body
         className={`${syne.variable} ${inter.variable} text-white antialiased`}
         suppressHydrationWarning
       >
-        <NextIntlClientProvider messages={messages}>
-          <div className="relative min-h-screen">{children}</div>
-        </NextIntlClientProvider>
+        <div className="relative min-h-screen">{children}</div>
       </body>
     </html>
   );

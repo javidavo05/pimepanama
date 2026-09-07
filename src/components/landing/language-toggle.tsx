@@ -1,26 +1,22 @@
 "use client";
 
-import { useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import type { Locale } from "@/lib/i18n";
 
-const COOKIE_NAME = "NEXT_LOCALE";
-const ONE_YEAR = 60 * 60 * 24 * 365;
-
+/**
+ * El idioma cambia de URL, no de cookie: / es español y /en es inglés.
+ * Antes recargaba la página con `window.location.reload()` tras escribir una
+ * cookie, lo que obligaba a renderizar todo dinámico y dejaba a las dos
+ * versiones compartiendo una sola URL en Google.
+ */
 export function LanguageToggle({ currentLocale }: { currentLocale: Locale }) {
-  // On mount: sync localStorage preference with cookie (handles returning users)
-  useEffect(() => {
-    const stored = localStorage.getItem(COOKIE_NAME) as Locale | null;
-    if (stored && stored !== currentLocale && (stored === "en" || stored === "es")) {
-      setLocale(stored);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const pathname = usePathname() ?? "/";
+  const basePath = pathname.startsWith("/en") ? pathname.slice(3) || "/" : pathname;
 
-  function setLocale(locale: Locale) {
-    document.cookie = `${COOKIE_NAME}=${locale}; path=/; max-age=${ONE_YEAR}; samesite=lax`;
-    localStorage.setItem(COOKIE_NAME, locale);
-    window.location.reload();
-  }
+  const hrefFor = (lang: Locale) =>
+    lang === "en" ? `/en${basePath === "/" ? "" : basePath}` : basePath;
 
   return (
     <div
@@ -34,10 +30,12 @@ export function LanguageToggle({ currentLocale }: { currentLocale: Locale }) {
       {(["es", "en"] as Locale[]).map((lang) => {
         const active = lang === currentLocale;
         return (
-          <button
+          <Link
             key={lang}
-            onClick={() => !active && setLocale(lang)}
-            aria-pressed={active}
+            href={hrefFor(lang)}
+            hrefLang={lang}
+            aria-current={active ? "true" : undefined}
+            aria-label={lang === "es" ? "Ver el sitio en español" : "View the site in English"}
             className={`relative z-10 rounded-full px-2.5 py-1 text-[0.62rem] font-semibold uppercase tracking-[0.2em] transition-colors duration-200 ${
               active ? "text-white" : "text-white/45 hover:text-white/75"
             }`}
@@ -54,7 +52,7 @@ export function LanguageToggle({ currentLocale }: { currentLocale: Locale }) {
               />
             )}
             {lang.toUpperCase()}
-          </button>
+          </Link>
         );
       })}
     </div>

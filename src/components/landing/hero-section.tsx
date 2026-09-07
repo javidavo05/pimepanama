@@ -36,29 +36,6 @@ const TRUST_LABEL: Record<Locale, string> = {
   en: "Active systems for:",
 };
 
-function WordReveal({ text, delay = 0 }: { text: string; delay?: number }) {
-  const words = text.split(" ");
-  return (
-    <span className="inline" aria-label={text}>
-      {words.map((word, i) => (
-        <motion.span
-          key={i}
-          className="inline-block"
-          initial={{ opacity: 0, y: 20, filter: "blur(6px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          transition={{
-            duration: 0.5,
-            delay: delay + i * 0.055,
-            ease: [0.25, 0.46, 0.45, 0.94],
-          }}
-        >
-          {word}
-          {i < words.length - 1 ? " " : ""}
-        </motion.span>
-      ))}
-    </span>
-  );
-}
 
 export function HeroSection({
   hero,
@@ -110,12 +87,21 @@ export function HeroSection({
                 {EYEBROW[hero.locale]}
               </motion.p>
 
-              <h1
+              {/* El H1 se anima como un bloque, no palabra por palabra.
+                  La versión anterior partía el título en <span> con
+                  opacity:0, así que el HTML del servidor entregaba el
+                  encabezado principal fragmentado y oculto — texto que un
+                  rastreador puede descontar. Ahora el título es un solo nodo
+                  de texto visible y lo que se anima es el contenedor. */}
+              <motion.h1
                 className="text-4xl font-bold leading-[1.1] tracking-tight text-white md:text-5xl lg:text-6xl"
                 style={{ fontFamily: "var(--font-display)" }}
+                initial={{ opacity: 0, y: 20, filter: "blur(6px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                transition={{ duration: 0.6, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
-                <WordReveal text={hero.headline} delay={0.1} />
-              </h1>
+                {hero.headline}
+              </motion.h1>
 
               <motion.p
                 className="max-w-2xl text-base leading-relaxed text-white/70 md:text-lg"
@@ -178,7 +164,7 @@ export function HeroSection({
               <p className="text-xs uppercase tracking-[0.4em] text-white/35">
                 {TRUST_LABEL[hero.locale]}
               </p>
-              <p className="text-sm text-white/40">
+              <p className="text-sm text-white/55">
                 Academyx · Sembradores · Visita7 · B&amp;B Real Estate · Tickex · y más
               </p>
             </motion.div>
@@ -214,11 +200,11 @@ export function HeroSection({
                     boxShadow: "0 20px 40px -20px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.05)",
                   }}
                 >
-                  <p className="text-xs uppercase tracking-[0.3em] text-[#60A5FA]/70">
+                  <p className="text-xs uppercase tracking-[0.3em] text-[#60A5FA]">
                     {card.label}
                   </p>
                   <p className="mt-2 text-2xl font-bold text-white">{card.metric}</p>
-                  <p className="mt-0.5 text-xs text-white/40">{card.sub}</p>
+                  <p className="mt-0.5 text-xs text-white/55">{card.sub}</p>
                   {/* Inner blue glow */}
                   <div className="absolute inset-0 rounded-xl opacity-0 transition-opacity duration-300 hover:opacity-100"
                     style={{ background: "radial-gradient(circle at 30% 30%, rgba(37,99,235,0.12), transparent 70%)" }}

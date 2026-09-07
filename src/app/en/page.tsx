@@ -3,24 +3,20 @@ import { getTranslations, setRequestLocale } from "next-intl/server";
 import { NextIntlClientProvider } from "next-intl";
 
 import { LandingPage } from "@/components/landing/landing-page";
-import { JsonLd, faqSchema } from "@/lib/structured-data";
-import { HOME_FAQS } from "@/lib/services-content";
 import { getLandingContent } from "@/lib/content";
 import { alternatesFor, absoluteUrl, ROBOTS_INDEX } from "@/lib/seo-urls";
 import { getSiteUrl } from "@/lib/site-url";
-import esMessages from "../../messages/es.json";
+import enMessages from "../../../messages/en.json";
 
 /**
- * Portada en español — la canónica, porque el mercado es Panamá.
- *
- * Se renderiza estática a propósito: el contenido vive en
- * `src/lib/static-content.ts` y no toca la base de datos, así que no hay nada
- * que justifique `force-dynamic`. Estática significa metadata en el <head> y
- * HTML cacheado en el CDN, que es de donde sale el LCP.
+ * Portada en inglés. Antes vivía en la misma URL que la española y se elegía
+ * por geolocalización de IP; como Googlebot rastrea desde Estados Unidos,
+ * esta era la versión que Google tenía indexada de pimepanama.com. Ahora
+ * tiene su propia URL y las dos se declaran con hreflang.
  */
 export const dynamic = "force-static";
 
-const LOCALE = "es" as const;
+const LOCALE = "en" as const;
 
 export async function generateMetadata(): Promise<Metadata> {
   setRequestLocale(LOCALE);
@@ -28,8 +24,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const { seo } = await getLandingContent();
   const home = seo.find((item) => item.page === "home");
 
-  const title = home?.metaTitle_es ?? t("home_title");
-  const description = home?.metaDescription_es ?? t("home_description");
+  const title = home?.metaTitle_en ?? t("home_title");
+  const description = home?.metaDescription_en ?? t("home_description");
   const siteUrl = getSiteUrl();
   const ogImage = `${siteUrl}/og-image.png`;
 
@@ -39,18 +35,15 @@ export async function generateMetadata(): Promise<Metadata> {
     authors: [{ name: "Pime Panamá" }],
     creator: "Pime Panamá",
     publisher: "Pime Panamá",
-    formatDetection: { email: false, address: false, telephone: false },
     metadataBase: new URL(siteUrl),
     openGraph: {
       title,
       description,
       url: absoluteUrl("/", LOCALE),
       siteName: "Pime Panamá",
-      locale: "es_PA",
+      locale: "en_US",
       type: "website",
-      images: [
-        { url: ogImage, width: 1200, height: 630, alt: "Pime Panamá — Desarrollo de software a medida en Panamá" },
-      ],
+      images: [{ url: ogImage, width: 1200, height: 630, alt: "Pime Panamá — Custom software development in Panama" }],
     },
     twitter: { card: "summary_large_image", title, description, images: [ogImage] },
     alternates: alternatesFor("/", LOCALE),
@@ -58,11 +51,15 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function HomePage() {
+export default async function HomePageEn() {
   setRequestLocale(LOCALE);
   return (
-    <NextIntlClientProvider locale={LOCALE} messages={esMessages}>
-      <JsonLd data={faqSchema(HOME_FAQS.map((f) => ({ q: f.q, a: f.a })))} />
+    <NextIntlClientProvider locale={LOCALE} messages={enMessages}>
+      {/* El <html lang> del layout raíz es "es" (el sitio canónico). Para esta
+          rama se corrige en el cliente: Google renderiza JS y lo lee bien. */}
+      <script
+        dangerouslySetInnerHTML={{ __html: `document.documentElement.lang='en'` }}
+      />
       <LandingPage locale={LOCALE} />
     </NextIntlClientProvider>
   );
