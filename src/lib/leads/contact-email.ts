@@ -33,9 +33,15 @@ function stripHtml(value: string): string {
     .trim();
 }
 
-/** true si el correo es uno de los avisos del formulario público. */
+/**
+ * true si el correo es uno de los avisos del formulario público. El prefijo
+ * entre corchetes cambió de "[PIME Panama]" a "[Pime Panamá]" al rediseñar la
+ * plantilla; se aceptan los dos para que el backlog viejo siga entrando.
+ */
+export const CONTACT_SUBJECT_MARKER = "Nueva solicitud de";
+
 export function isContactFormEmail(subject: string | null): boolean {
-  return /^\[PIME Panama\]\s*Nueva solicitud de /i.test(subject ?? "");
+  return new RegExp(`^\\[Pime Panam[aá]\\]\\s*${CONTACT_SUBJECT_MARKER} `, "i").test(subject ?? "");
 }
 
 export function parseContactEmail(bodyHtml: string | null): ParsedContactEmail | null {

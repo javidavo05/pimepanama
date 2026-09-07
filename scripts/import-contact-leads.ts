@@ -21,7 +21,7 @@ const DRY_RUN = process.argv.includes("--dry-run");
 
 async function main() {
   const { prisma } = await import("../src/lib/prisma");
-  const { isContactFormEmail, parseContactEmail } = await import("../src/lib/leads/contact-email");
+  const { isContactFormEmail, parseContactEmail, CONTACT_SUBJECT_MARKER } = await import("../src/lib/leads/contact-email");
   const { classifyLead } = await import("../src/lib/leads/classify");
   const { persistLead } = await import("../src/lib/leads/persist");
   const { resolveOwnerUserId } = await import("../src/lib/owner-user");
@@ -30,7 +30,7 @@ async function main() {
 
   const userId = await resolveOwnerUserId();
   const emails = await prisma.inboxEmail.findMany({
-    where: { subject: { startsWith: "[PIME Panama] Nueva solicitud de" } },
+    where: { subject: { contains: CONTACT_SUBJECT_MARKER } },
     orderBy: { receivedAt: "asc" },
     select: { id: true, subject: true, bodyText: true, receivedAt: true },
   });
