@@ -304,6 +304,14 @@ enum LeadStatus {
   PERDIDO
 }
 
+/// Qué tan caliente está el prospecto. La clasifica la IA al entrar por el
+/// formulario público y se puede corregir a mano desde la ficha.
+enum LeadPriority {
+  BAJA
+  MEDIA
+  ALTA
+}
+
 enum LeadSource {
   REFERIDO
   WEB
@@ -324,6 +332,9 @@ model Lead {
   country           String      @default("Panamá")
   source            LeadSource  @default(OTRO)
   status            LeadStatus  @default(NUEVO)
+  priority          LeadPriority @default(MEDIA)
+  /// Por qué la IA le puso esa prioridad, en una línea. Vacío si la puso a mano.
+  priorityReason    String?
   estimatedValue    Decimal?
   notes             String?
   nextFollowUpAt    DateTime?

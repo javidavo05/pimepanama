@@ -4,7 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { updateLeadStatusAction, updateLeadAction } from "@/app/(empresa)/empresa/actions";
-import type { LeadStatus } from "@prisma/client";
+import type { LeadStatus, LeadPriority } from "@prisma/client";
+import { LEAD_PRIORITIES } from "@/components/empresa/lead-priority-badge";
 
 interface LeadDocument {
   id: string;
@@ -27,6 +28,8 @@ interface Lead {
   country: string;
   source: string;
   status: LeadStatus;
+  priority: LeadPriority;
+  priorityReason: string | null;
   estimatedValue: number | null;
   notes: string | null;
   nextFollowUpAt: string | null;
@@ -55,6 +58,22 @@ export function LeadDetailClient({ lead: initialLead }: { lead: Lead }) {
   const [notice, setNotice] = useState<string | null>(null);
   const [notes, setNotes] = useState(lead.notes ?? "");
   const [savingNotes, setSavingNotes] = useState(false);
+  const [savingPriority, setSavingPriority] = useState(false);
+
+  async function handlePriorityChange(priority: LeadPriority) {
+    if (priority === lead.priority) return;
+    const previous = lead;
+    setLead((prev) => ({ ...prev, priority, priorityReason: null }));
+    setSavingPriority(true);
+    try {
+      await updateLeadAction(lead.id, { priority });
+    } catch {
+      setLead(previous);
+      setNotice(null);
+    } finally {
+      setSavingPriority(false);
+    }
+  }
 
   async function handleStatusChange(status: LeadStatus) {
     if (status === lead.status) return;
@@ -117,6 +136,33 @@ export function LeadDetailClient({ lead: initialLead }: { lead: Lead }) {
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Prioridad */}
+      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
+        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">Prioridad</h3>
+        <div className="flex flex-wrap gap-2">
+          {LEAD_PRIORITIES.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              disabled={savingPriority}
+              onClick={() => handlePriorityChange(opt.value)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all disabled:opacity-50 ${
+                lead.priority === opt.value
+                  ? `${opt.className} bg-white/[0.04]`
+                  : "border-white/[0.05] text-white/55 hover:text-white/60"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-white/50 text-xs mt-4 leading-relaxed">
+          {lead.priorityReason
+            ? `Clasificada por IA — ${lead.priorityReason}`
+            : "Definida a mano."}
+        </p>
       </div>
 
       <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">

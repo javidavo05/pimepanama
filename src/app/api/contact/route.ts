@@ -2,8 +2,8 @@ import { NextResponse } from "next/server";
 import type { Lead } from "@prisma/client";
 import { getAdminNotificationEmail, getCustomerThankYouEmail } from "@/lib/email-templates";
 import { sendEmail } from "@/lib/email-service";
-import { prisma } from "@/lib/prisma";
 import { resolveOwnerUserId } from "@/lib/owner-user";
+import { persistLead } from "@/lib/leads/persist";
 import { notifyUser } from "@/lib/notifications/notify";
 import { getSiteUrl } from "@/lib/site-url";
 
@@ -31,51 +31,6 @@ type ContactPayload = {
   message: string;
   locale: "en" | "es";
 };
-
-/**
- * Guarda el contacto como Lead en el CRM. Esto es lo único que NO puede
- * perderse: los correos y los avisos son secundarios y van después.
- * Si ya existe un lead con ese correo, se le anexa el mensaje nuevo en vez de
- * duplicar la ficha.
- */
-async function persistLead(data: ContactPayload): Promise<{ lead: Lead; repeat: boolean }> {
-  const userId = await resolveOwnerUserId();
-  const stamp = new Date().toLocaleString("es-PA", { timeZone: "America/Panama" });
-  const entry = `[${stamp}] Formulario web (${data.locale}):\n${data.message}`;
-
-  const existing = await prisma.lead.findFirst({
-    where: { userId, email: { equals: data.email, mode: "insensitive" } },
-    orderBy: { updatedAt: "desc" },
-  });
-
-  if (existing) {
-    const lead = await prisma.lead.update({
-      where: { id: existing.id },
-      data: {
-        notes: [existing.notes, entry].filter(Boolean).join("\n\n"),
-        company: existing.company ?? (data.company || null),
-        phone: existing.phone ?? (data.phone || null),
-        // Un lead dado por perdido que vuelve a escribir es una oportunidad viva.
-        status: existing.status === "PERDIDO" ? "NUEVO" : existing.status,
-      },
-    });
-    return { lead, repeat: true };
-  }
-
-  const lead = await prisma.lead.create({
-    data: {
-      userId,
-      name: data.name,
-      email: data.email,
-      company: data.company || null,
-      phone: data.phone || null,
-      source: "WEB",
-      status: "NUEVO",
-      notes: entry,
-    },
-  });
-  return { lead, repeat: false };
-}
 
 export async function POST(request: Request) {
   let payload: ContactPayload;
@@ -105,7 +60,7 @@ export async function POST(request: Request) {
   let lead: Lead | null = null;
   let repeat = false;
   try {
-    const saved = await persistLead(payload);
+    const saved = await persistLead({ ...payload, userId: await resolveOwnerUserId() });
     lead = saved.lead;
     repeat = saved.repeat;
   } catch (err) {

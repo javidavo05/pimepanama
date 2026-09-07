@@ -23,7 +23,7 @@ import {
   collectQuoteWithInvoice,
   type CollectResult,
 } from "@/lib/collect-receivable";
-import { DocumentType, DocumentStatus, ProjectStatus, ContractStatus, LeadStatus, LeadSource, Prisma } from "@prisma/client";
+import { DocumentType, DocumentStatus, ProjectStatus, ContractStatus, LeadStatus, LeadSource, LeadPriority, Prisma } from "@prisma/client";
 import type { FinancingPlan } from "@/lib/financing";
 import { serializeProject, serializeContract, serializeSchedule, serializeLead } from "@/lib/serializers";
 
@@ -888,6 +888,7 @@ export async function updateLeadAction(
     city: string;
     country: string;
     source: LeadSource;
+    priority: LeadPriority;
     estimatedValue: number;
     notes: string;
     nextFollowUpAt: string;
@@ -902,6 +903,9 @@ export async function updateLeadAction(
     data: {
       ...data,
       nextFollowUpAt: data.nextFollowUpAt ? new Date(data.nextFollowUpAt) : undefined,
+      // Si alguien la corrige a mano, el motivo que había escrito la IA deja de
+      // aplicar: se borra en vez de quedar contradiciendo al badge.
+      ...(data.priority ? { priorityReason: null } : {}),
     },
   });
   revalidatePath("/empresa/leads");

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { updateLeadStatusAction } from "@/app/(empresa)/empresa/actions";
 import type { SerializedLead } from "@/lib/serializers";
 import type { LeadStatus } from "@prisma/client";
+import { LeadPriorityBadge, priorityRank } from "@/components/empresa/lead-priority-badge";
 
 interface LeadsBoardProps {
   leads: SerializedLead[];
@@ -43,6 +44,24 @@ export function LeadsBoard({ leads: initialLeads }: LeadsBoardProps) {
     }
   }
 
+  if (leads.length === 0) {
+    return (
+      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl px-6 py-12 text-center">
+        <p className="text-white/70 text-sm font-medium">Todavía no hay prospectos</p>
+        <p className="text-white/50 text-sm mt-2 max-w-md mx-auto leading-relaxed">
+          Cada solicitud del formulario de pimepanama.com entra aquí sola, con su prioridad ya
+          clasificada. También podés cargar uno a mano.
+        </p>
+        <Link
+          href="/empresa/leads/nuevo"
+          className="inline-flex mt-6 px-4 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] text-white text-sm font-semibold rounded-lg transition-all"
+        >
+          Cargar el primer lead
+        </Link>
+      </div>
+    );
+  }
+
   return (
     <div>
       {notice && (
@@ -54,7 +73,13 @@ export function LeadsBoard({ leads: initialLeads }: LeadsBoardProps) {
 
       <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-3">
         {COLUMNS.map((col) => {
-          const items = leads.filter((l) => l.status === col.status);
+          const items = leads
+            .filter((l) => l.status === col.status)
+            .sort(
+              (a, b) =>
+                priorityRank(a.priority) - priorityRank(b.priority) ||
+                +new Date(b.updatedAt) - +new Date(a.updatedAt)
+            );
           return (
             <div
               key={col.status}
@@ -87,19 +112,26 @@ export function LeadsBoard({ leads: initialLeads }: LeadsBoardProps) {
                     className={`bg-white/[0.03] border border-white/[0.07] rounded-lg p-3 cursor-grab active:cursor-grabbing hover:border-white/[0.15] transition-all ${draggingId === lead.id ? "opacity-40" : ""}`}
                   >
                     <Link href={`/empresa/leads/${lead.id}`} className="block">
+                      {/* El nombre se queda con el ancho completo de la columna:
+                          en la grilla de 6 columnas, un badge a su lado lo
+                          recortaba a "Jamie It...". La prioridad baja a la fila
+                          de metadatos, que casi siempre está vacía. */}
                       <p className="text-white/85 text-sm font-medium truncate">{lead.name}</p>
                       {lead.company && <p className="text-white/55 text-xs truncate">{lead.company}</p>}
-                      <div className="flex items-center justify-between mt-2">
-                        {lead.estimatedValue != null && (
-                          <span className="text-[#C8A96E]/70 text-xs font-mono">
-                            ${lead.estimatedValue.toLocaleString("en-US", { minimumFractionDigits: 0 })}
-                          </span>
-                        )}
-                        {lead.nextFollowUpAt && (
-                          <span className="text-white/50 text-[10px]">
-                            {new Date(lead.nextFollowUpAt).toLocaleDateString("es-PA")}
-                          </span>
-                        )}
+                      <div className="flex items-center justify-between gap-2 mt-2">
+                        <LeadPriorityBadge priority={lead.priority} />
+                        <div className="flex items-center gap-2 min-w-0">
+                          {lead.estimatedValue != null && (
+                            <span className="text-[#C8A96E]/70 text-xs font-mono truncate">
+                              ${lead.estimatedValue.toLocaleString("en-US", { minimumFractionDigits: 0 })}
+                            </span>
+                          )}
+                          {lead.nextFollowUpAt && (
+                            <span className="text-white/50 text-[10px] shrink-0">
+                              {new Date(lead.nextFollowUpAt).toLocaleDateString("es-PA")}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </Link>
                   </div>
