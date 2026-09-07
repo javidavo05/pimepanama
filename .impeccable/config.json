@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-09-07T20:22:46.289Z",
+        "reason": "Inter y Manrope son las dos familias del design-system de Pime Panamá (PROMPT_CLAUDE_CODE.md §2); rigen PDFs, contratos y propuestas"
+      }
+    ]
+  }
+}

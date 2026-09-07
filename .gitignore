@@ -57,3 +57,6 @@ ui-debug.log
 
 # Binario compilado de tools/pime-audio (se regenera con npm run audio)
 tools/pime-audio/pime-audio
+
+# impeccable: la config de excepciones se comparte; la caché del hook no.
+.impeccable/hook.cache.json
