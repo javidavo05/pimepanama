@@ -191,7 +191,7 @@ export function MailAccountForm({ mode, accountId, initial, company }: MailAccou
         <div className="flex items-center gap-3">
           <button type="button" onClick={() => set("tls", !form.tls)}
             className={`relative w-10 h-5 rounded-full overflow-hidden transition-colors ${form.tls ? "bg-brand" : "bg-fill-3"}`}>
-            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.tls ? "translate-x-5" : "translate-x-0"}`} />
+            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-knob ring-1 ring-line-loud/50 rounded-full shadow transition-transform ${form.tls ? "translate-x-5" : "translate-x-0"}`} />
           </button>
           <span className="text-fg-faint text-sm">SSL/TLS activo</span>
         </div>
@@ -313,7 +313,7 @@ export function MailAccountForm({ mode, accountId, initial, company }: MailAccou
         <div className="flex items-center gap-3">
           <button type="button" onClick={() => set("smtpTls", !form.smtpTls)}
             className={`relative w-10 h-5 rounded-full overflow-hidden transition-colors ${form.smtpTls ? "bg-brand" : "bg-fill-3"}`}>
-            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform ${form.smtpTls ? "translate-x-5" : "translate-x-0"}`} />
+            <span className={`absolute top-0.5 left-0.5 w-4 h-4 bg-knob ring-1 ring-line-loud/50 rounded-full shadow transition-transform ${form.smtpTls ? "translate-x-5" : "translate-x-0"}`} />
           </button>
           <span className="text-fg-faint text-sm">STARTTLS / TLS activo</span>
         </div>

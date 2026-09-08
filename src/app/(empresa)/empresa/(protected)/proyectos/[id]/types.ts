@@ -96,9 +96,9 @@ export const PROJECT_STATUS_LABEL: Record<string, string> = {
 };
 
 export const PROJECT_STATUS_COLOR: Record<string, string> = {
-  ACTIVE: "bg-green-500/15 text-ok border-green-500/20",
-  PAUSED: "bg-amber-500/15 text-warn border-amber-500/20",
-  COMPLETED: "bg-blue-500/15 text-info border-blue-500/20",
+  ACTIVE: "bg-ok/15 text-ok border-ok/20",
+  PAUSED: "bg-warn/15 text-warn border-warn/20",
+  COMPLETED: "bg-info/15 text-info border-info/20",
   CANCELLED: "bg-fill-2 text-fg-dim border-line",
 };
 
@@ -108,9 +108,9 @@ export const CONTRACT_STATUS_LABEL: Record<string, string> = {
 
 export const CONTRACT_STATUS_COLOR: Record<string, string> = {
   DRAFT: "bg-fill-2 text-fg-dim border-line",
-  ACTIVE: "bg-green-500/15 text-ok border-green-500/20",
+  ACTIVE: "bg-ok/15 text-ok border-ok/20",
   EXPIRED: "bg-fill-2 text-fg-dim border-line-mid",
-  TERMINATED: "bg-red-500/15 text-danger border-red-500/20",
+  TERMINATED: "bg-danger/15 text-danger border-danger/20",
 };
 
 /**

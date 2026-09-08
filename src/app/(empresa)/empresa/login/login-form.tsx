@@ -65,7 +65,7 @@ export function EmpresaLoginForm() {
       </div>
 
       {error && (
-        <p className="text-danger/80 text-sm bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3">
+        <p className="text-danger text-sm bg-danger/10 border border-danger/20 rounded-lg px-4 py-3">
           {error}
         </p>
       )}

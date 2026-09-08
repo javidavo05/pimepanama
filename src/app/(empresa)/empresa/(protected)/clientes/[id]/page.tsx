@@ -125,7 +125,7 @@ export default async function ClienteDetailPage({
         <div className="bg-panel border border-line rounded-2xl p-6">
           <RevenueChart data={chartData} title="Ingresos por mes (facturas pagadas)" />
           {totalCommission > 0 && (
-            <p className="text-warn/60 text-xs mt-3 text-right">
+            <p className="text-warn text-xs mt-3 text-right">
               Comisiones descontadas en total: $
               {totalCommission.toLocaleString("en-US", { minimumFractionDigits: 2 })}
             </p>
@@ -220,7 +220,7 @@ function DocumentHistoryTable({
                 <td className="px-5 py-3">
                   <Link
                     href={`${basePath}/${doc.id}`}
-                    className="text-brand-fg/60 hover:text-brand-fg text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all"
+                    className="text-brand-fg hover:text-brand-fg text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all"
                   >
                     {doc.status === "PAID" && basePath.includes("facturas") ? "Ver →" : "Abrir →"}
                   </Link>

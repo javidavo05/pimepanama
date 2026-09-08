@@ -7,8 +7,8 @@ import type { SerializedTask } from "./tasks-view";
 import { daysDiff, taskLocalDate, taskLocalEndDate } from "./date-utils";
 
 const PRIORITY_DOT: Record<TaskPriority, string> = {
-  HIGH: "bg-red-400",
-  MEDIUM: "bg-amber-400",
+  HIGH: "bg-danger",
+  MEDIUM: "bg-warn",
   LOW: "bg-fill-3",
 };
 
@@ -18,7 +18,7 @@ function dueBadge(task: SerializedTask): { label: string; color: string } | null
   const days = daysDiff(local, new Date());
   if (days < 0) return { label: `vencido hace ${Math.abs(days)}d`, color: "text-danger" };
   if (days === 0) return { label: "vence hoy", color: "text-warn" };
-  if (days <= 7) return { label: `en ${days}d`, color: "text-warn/80" };
+  if (days <= 7) return { label: `en ${days}d`, color: "text-warn" };
   return { label: `en ${days}d`, color: "text-fg-faint" };
 }
 
@@ -138,7 +138,7 @@ export function TasksBoard({ tasks, onPatch, onDelete, onCreate }: TasksBoardPro
         />
 
         {link && (
-          <Link href={link.href} className="text-[10px] px-1.5 py-0.5 rounded border border-brand/25 text-brand-fg/60 hover:text-brand-fg shrink-0">
+          <Link href={link.href} className="text-[10px] px-1.5 py-0.5 rounded border border-brand/25 text-brand-fg hover:text-brand-fg shrink-0">
             🧾 {link.label}
           </Link>
         )}

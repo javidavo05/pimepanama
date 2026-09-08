@@ -46,6 +46,7 @@ export default {
         "brand-fg": "rgb(var(--c-brand-fg) / <alpha-value>)",
         "on-brand": "rgb(var(--c-on-brand) / <alpha-value>)",
         "on-accent": "rgb(var(--c-on-accent) / <alpha-value>)",
+        "on-solid": "rgb(var(--c-on-solid) / <alpha-value>)",
 
         sand: "rgb(var(--c-sand) / <alpha-value>)",
         "sand-lt": "rgb(var(--c-sand-lt) / <alpha-value>)",
@@ -62,6 +63,11 @@ export default {
         "warn-soft": "rgb(var(--c-warn-soft) / <alpha-value>)",
         danger: "rgb(var(--c-danger) / <alpha-value>)",
         "danger-soft": "rgb(var(--c-danger-soft) / <alpha-value>)",
+        // Rellenos sólidos de estado — pensados para llevar `text-on-brand`.
+        "ok-solid": "rgb(var(--c-ok-solid) / <alpha-value>)",
+        "warn-solid": "rgb(var(--c-warn-solid) / <alpha-value>)",
+        "danger-solid": "rgb(var(--c-danger-solid) / <alpha-value>)",
+        knob: "rgb(var(--c-knob) / <alpha-value>)",
         info: "rgb(var(--c-info) / <alpha-value>)",
         "info-soft": "rgb(var(--c-info-soft) / <alpha-value>)",
         grape: "rgb(var(--c-grape) / <alpha-value>)",

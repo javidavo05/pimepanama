@@ -33,9 +33,9 @@ interface ProjectBuilderProps {
 }
 
 const STATUS_OPTS = [
-  { value: "ACTIVE", label: "Activo", color: "border-green-500/30 text-ok" },
-  { value: "PAUSED", label: "Pausado", color: "border-amber-500/30 text-warn" },
-  { value: "COMPLETED", label: "Completado", color: "border-blue-500/30 text-info" },
+  { value: "ACTIVE", label: "Activo", color: "border-ok/30 text-ok" },
+  { value: "PAUSED", label: "Pausado", color: "border-warn/30 text-warn" },
+  { value: "COMPLETED", label: "Completado", color: "border-info/30 text-info" },
   { value: "CANCELLED", label: "Cancelado", color: "border-line-mid text-fg-dim" },
 ];
 
@@ -399,8 +399,8 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
           <div className="flex items-center gap-2">
             {recording ? (
               <button type="button" onClick={stopRecording}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/15 border border-red-500/30 text-danger text-xs font-medium hover:bg-red-500/20 transition-all">
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-danger/15 border border-danger/30 text-danger text-xs font-medium hover:bg-danger/20 transition-all">
+                <span className="w-2 h-2 rounded-full bg-danger animate-pulse" />
                 {isEs ? "Detener" : "Stop"}
               </button>
             ) : (
@@ -410,7 +410,7 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
               </button>
             )}
             <button type="button" onClick={expandWithAI} disabled={expanding || !String(rawNotes ?? "").trim()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-iris/10 border border-iris/25 text-iris text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-iris/10 border border-iris/25 text-iris-fg text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
               {expanding ? <><span className="w-1.5 h-1.5 rounded-full bg-iris animate-pulse" /> {isEs ? "Generando..." : "Generating..."}</> : "✦ " + (isEs ? "Generar proyecto con IA" : "Generate project with AI")}
             </button>
           </div>
@@ -587,7 +587,7 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
       />
 
       {error && (
-        <div className="bg-red-500/[0.07] border border-red-500/25 rounded-xl px-4 py-3">
+        <div className="bg-danger/[0.07] border border-danger/25 rounded-xl px-4 py-3">
           <p className="text-danger text-sm">{error}</p>
         </div>
       )}

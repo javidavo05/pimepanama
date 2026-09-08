@@ -23,6 +23,7 @@ export function SignaturePad({ onChange, className }: SignaturePadProps) {
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
     ctx.scale(dpr, dpr);
+    // theme-ok: tinta de la firma sobre el lienzo blanco que se incrusta en el PDF
     ctx.strokeStyle = "#1e293b";
     ctx.lineWidth = 2;
     ctx.lineCap = "round";
@@ -77,6 +78,7 @@ export function SignaturePad({ onChange, className }: SignaturePadProps) {
     <div className={className}>
       <canvas
         ref={canvasRef}
+        // theme-ok: lienzo de la firma — se incrusta en el PDF, que siempre es blanco
         className="w-full h-36 rounded-lg border border-line-mid bg-white touch-none cursor-crosshair"
         onPointerDown={start}
         onPointerMove={move}

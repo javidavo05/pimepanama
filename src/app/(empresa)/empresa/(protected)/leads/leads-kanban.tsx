@@ -71,7 +71,7 @@ export function LeadsKanban({ leads, onStatusChange }: LeadsKanbanProps) {
                     <div className="mt-2 flex items-center justify-between gap-2">
                       <LeadPriorityBadge priority={lead.priority} />
                       {lead.estimatedValue != null && (
-                        <span className="truncate font-mono text-xs text-sand-fg/70">
+                        <span className="truncate font-mono text-xs text-sand-fg">
                           ${lead.estimatedValue.toLocaleString("en-US", { maximumFractionDigits: 0 })}
                         </span>
                       )}

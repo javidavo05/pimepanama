@@ -9,9 +9,9 @@ const STATUS_LABEL: Record<string, string> = {
   ACTIVE: "Activo", PAUSED: "Pausado", COMPLETED: "Completado", CANCELLED: "Cancelado",
 };
 const STATUS_COLOR: Record<string, string> = {
-  ACTIVE: "bg-green-500/15 text-ok border-green-500/20",
-  PAUSED: "bg-amber-500/15 text-warn border-amber-500/20",
-  COMPLETED: "bg-blue-500/15 text-info border-blue-500/20",
+  ACTIVE: "bg-ok/15 text-ok border-ok/20",
+  PAUSED: "bg-warn/15 text-warn border-warn/20",
+  COMPLETED: "bg-info/15 text-info border-info/20",
   CANCELLED: "bg-fill-2 text-fg-dim border-line",
 };
 
@@ -74,13 +74,13 @@ export default async function ProyectosPage() {
                     {p.client.name}{p.client.company ? ` — ${p.client.company}` : ""}
                   </p>
                 ) : (
-                  <p className="text-warn/70 text-sm truncate">Sin cliente asignado</p>
+                  <p className="text-warn text-sm truncate">Sin cliente asignado</p>
                 )}
                 <div className="flex items-center gap-4 mt-2">
                   <span className="text-fg-faint text-xs">{p._count.documents} doc.</span>
                   <span className="text-fg-faint text-xs">{p._count.contracts} contrato{p._count.contracts !== 1 ? "s" : ""}</span>
                   {p.totalBudget && (
-                    <span className="text-sand-fg/60 text-xs font-mono">
+                    <span className="text-sand-fg text-xs font-mono">
                       ${Number(p.totalBudget).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
                   )}

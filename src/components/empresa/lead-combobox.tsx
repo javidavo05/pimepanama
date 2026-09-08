@@ -179,7 +179,7 @@ export function LeadCombobox({
                 </p>
                 <Link
                   href={`/empresa/leads/${selectedLeadId}`}
-                  className="text-brand-fg/60 text-[10px] hover:text-brand-fg transition-colors"
+                  className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors"
                   onClick={(e) => e.stopPropagation()}
                 >
                   Ver ficha →
@@ -196,7 +196,7 @@ export function LeadCombobox({
                           className="flex items-center justify-between gap-2 text-[10px] hover:text-fg-dim transition-colors group"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <span className="text-fg-dim font-mono group-hover:text-brand-fg/60">{doc.number ?? doc.title.slice(0, 30)}</span>
+                          <span className="text-fg-dim font-mono group-hover:text-brand-fg">{doc.number ?? doc.title.slice(0, 30)}</span>
                           <span className="px-1.5 py-0.5 rounded text-[9px] border border-line-mid text-fg-faint">{doc.status}</span>
                         </Link>
                       ))}
@@ -208,7 +208,7 @@ export function LeadCombobox({
           ) : history && history.totalDocs === 0 ? (
             <div className="px-4 py-3 text-fg-faint text-xs flex items-center justify-between">
               <span>Sin documentos previos con este lead</span>
-              <Link href={`/empresa/leads/${selectedLeadId}`} className="text-brand-fg/50 hover:text-brand-fg transition-colors text-[10px]">
+              <Link href={`/empresa/leads/${selectedLeadId}`} className="text-brand-fg hover:text-brand-fg transition-colors text-[10px]">
                 Ver ficha →
               </Link>
             </div>

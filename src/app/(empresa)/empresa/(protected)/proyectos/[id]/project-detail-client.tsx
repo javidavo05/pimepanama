@@ -22,9 +22,9 @@ import {
 } from "./types";
 
 const SCHEDULE_STATUS_COLOR: Record<string, string> = {
-  PENDING: "bg-blue-500/15 text-info border-blue-500/20",
-  OVERDUE: "bg-red-500/15 text-danger border-red-500/20",
-  PAID: "bg-green-500/15 text-ok border-green-500/20",
+  PENDING: "bg-info/15 text-info border-info/20",
+  OVERDUE: "bg-danger/15 text-danger border-danger/20",
+  PAID: "bg-ok/15 text-ok border-ok/20",
   CANCELLED: "bg-fill-2 text-fg-faint border-line",
 };
 
@@ -98,12 +98,12 @@ export function ProjectDetailClient({
             </span>
           </div>
           {project.clients.length === 0 ? (
-            <p className="text-warn/80 text-sm">Sin cliente asignado</p>
+            <p className="text-warn text-sm">Sin cliente asignado</p>
           ) : (
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
               {project.clients.map((c, i) => (
                 <span key={c.id} className="flex items-center gap-2">
-                  {i > 0 && <span className="text-fg-trace">·</span>}
+                  {i > 0 && <span className="text-fg-ghost">·</span>}
                   <Link
                     href={`/empresa/clientes/${c.id}`}
                     className="text-fg-dim hover:text-brand-fg transition-colors"
@@ -153,7 +153,7 @@ export function ProjectDetailClient({
                 <button
                   type="button"
                   onClick={() => setEditing("form")}
-                  className="text-brand-fg/60 text-[10px] hover:text-brand-fg transition-colors"
+                  className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors"
                 >
                   + agregar
                 </button>
@@ -212,7 +212,7 @@ export function ProjectDetailClient({
                 <button
                   onClick={handleGenerateProposal}
                   disabled={generatingProposal}
-                  className="text-brand-fg/70 text-[10px] hover:text-brand-fg transition-colors disabled:opacity-40"
+                  className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors disabled:opacity-40"
                 >
                   {generatingProposal ? "Generando…" : project.hasProposal ? "↻ Regenerar con IA" : "✦ Generar con IA"}
                 </button>
@@ -249,11 +249,11 @@ export function ProjectDetailClient({
               <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Documentos</h3>
               <div className="flex items-center gap-3">
                 <Link href={`/empresa/cotizaciones/nueva?projectId=${project.id}${mainClient ? `&clientId=${mainClient.id}` : ""}`}
-                  className="text-brand-fg/60 text-[10px] hover:text-brand-fg transition-colors">
+                  className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors">
                   + Cotización
                 </Link>
                 <Link href={`/empresa/facturas/nueva?projectId=${project.id}${mainClient ? `&clientId=${mainClient.id}` : ""}`}
-                  className="text-brand-fg/60 text-[10px] hover:text-brand-fg transition-colors">
+                  className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors">
                   + Factura
                 </Link>
               </div>
@@ -272,7 +272,7 @@ export function ProjectDetailClient({
                       </span>
                       <span className="text-fg-dim text-xs ml-2">{doc.clientName}</span>
                       {doc.type === "COTIZACION" && doc.status === "ACCEPTED" && !doc.linkedDocumentId && (
-                        <span className="ml-2 text-[10px] text-warn border border-amber-500/30 rounded px-1.5 py-0.5">⚠ Sin factura</span>
+                        <span className="ml-2 text-[10px] text-warn border border-warn/30 rounded px-1.5 py-0.5">⚠ Sin factura</span>
                       )}
                     </div>
                     <div className="flex items-center gap-3">
@@ -319,7 +319,7 @@ export function ProjectDetailClient({
                           <button
                             onClick={() => handleMarkPaid(sc.id)}
                             disabled={payingId === sc.id}
-                            className="text-[10px] text-ok/60 hover:text-ok transition-colors disabled:opacity-40">
+                            className="text-[10px] text-ok hover:text-ok transition-colors disabled:opacity-40">
                             ✓ Pagado
                           </button>
                         )}
@@ -343,7 +343,7 @@ export function ProjectDetailClient({
               <button
                 type="button"
                 onClick={() => setEditing("form")}
-                className="text-brand-fg/60 text-[10px] hover:text-brand-fg transition-colors"
+                className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors"
               >
                 editar
               </button>
@@ -386,7 +386,7 @@ export function ProjectDetailClient({
               <button
                 type="button"
                 onClick={() => setEditing("financing")}
-                className="text-brand-fg/60 text-[10px] hover:text-brand-fg transition-colors"
+                className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors"
               >
                 {plan ? "editar" : "+ agregar"}
               </button>

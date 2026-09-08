@@ -52,17 +52,17 @@ function toneOf(status: string | null | undefined): string {
     case "PAID":
     case "ACTIVE":
     case "COMPLETED":
-      return "border-green-500/30 bg-green-500/[0.06] text-ok";
+      return "border-ok/30 bg-ok/[0.06] text-ok";
     case "ACCEPTED":
       return "border-sand/30 bg-sand/[0.06] text-sand-fg";
     case "PARTIALLY_PAID":
-      return "border-amber-500/30 bg-amber-500/[0.06] text-warn";
+      return "border-warn/30 bg-warn/[0.06] text-warn";
     case "SENT":
       return "border-brand/30 bg-brand/[0.06] text-brand-fg";
     case "REJECTED":
     case "CANCELLED":
     case "TERMINATED":
-      return "border-red-500/30 bg-red-500/[0.06] text-danger";
+      return "border-danger/30 bg-danger/[0.06] text-danger";
     default:
       return "border-line-mid bg-fill text-fg-mute";
   }
@@ -120,7 +120,7 @@ function Node({ caption, icon, step, emptyLabel, actionHref, actionLabel = "Vinc
           {actionHref ? (
             <span className="text-[9px] text-brand-fg hover:text-sky">+ {actionLabel}</span>
           ) : (
-            <span className="text-[9px] text-fg-trace">—</span>
+            <span className="text-[9px] text-fg-ghost">—</span>
           )}
         </>
       )}
@@ -148,7 +148,7 @@ function CollectionNode({ collection }: { collection?: PipelineCollection | null
             Cobro
           </span>
           <span className="text-[11px] text-fg-ghost">Sin cobrar</span>
-          <span className="text-[9px] text-fg-trace">—</span>
+          <span className="text-[9px] text-fg-ghost">—</span>
         </div>
       </div>
     );
@@ -163,9 +163,9 @@ function CollectionNode({ collection }: { collection?: PipelineCollection | null
       <div
         className={`h-full flex flex-col gap-1 px-3 py-2.5 rounded-lg border ${
           settled
-            ? "border-green-500/30 bg-green-500/[0.06] text-ok"
+            ? "border-ok/30 bg-ok/[0.06] text-ok"
             : collected > 0
-              ? "border-amber-500/30 bg-amber-500/[0.06] text-warn"
+              ? "border-warn/30 bg-warn/[0.06] text-warn"
               : "border-line-mid bg-fill text-fg-dim"
         }`}
       >
@@ -179,7 +179,7 @@ function CollectionNode({ collection }: { collection?: PipelineCollection | null
         <div className="flex items-center gap-1.5">
           <div className="flex-1 h-1 rounded-full bg-fill-2 overflow-hidden">
             <div
-              className={`h-full rounded-full ${settled ? "bg-green-400" : "bg-amber-400"}`}
+              className={`h-full rounded-full ${settled ? "bg-ok" : "bg-warn"}`}
               style={{ width: `${pct}%` }}
             />
           </div>
@@ -212,7 +212,7 @@ export function PipelineStatus({
           actionHref={actions?.project}
           isCurrent={current === "project"}
         />
-        <span className="self-center text-fg-trace text-xs shrink-0">→</span>
+        <span className="self-center text-fg-ghost text-xs shrink-0">→</span>
         <Node
           caption="Cotización"
           icon="📋"
@@ -221,7 +221,7 @@ export function PipelineStatus({
           actionHref={actions?.cotizacion}
           isCurrent={current === "cotizacion"}
         />
-        <span className="self-center text-fg-trace text-xs shrink-0">→</span>
+        <span className="self-center text-fg-ghost text-xs shrink-0">→</span>
         <Node
           caption="Factura"
           icon="📄"
@@ -231,7 +231,7 @@ export function PipelineStatus({
           actionLabel="Facturar"
           isCurrent={current === "factura"}
         />
-        <span className="self-center text-fg-trace text-xs shrink-0">→</span>
+        <span className="self-center text-fg-ghost text-xs shrink-0">→</span>
         <CollectionNode collection={collection} />
       </div>
     </div>

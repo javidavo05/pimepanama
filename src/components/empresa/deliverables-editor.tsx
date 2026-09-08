@@ -47,7 +47,7 @@ export function DeliverablesEditor({ items, onChange, fromDocument = 0 }: Delive
           {items.map((it, i) => (
             <div key={i} className="border border-line rounded-lg p-3 space-y-2">
               <div className="flex items-center gap-2">
-                <span className="text-fg-trace text-[10px] font-mono w-5 shrink-0">{i + 1}.</span>
+                <span className="text-fg-ghost text-[10px] font-mono w-5 shrink-0">{i + 1}.</span>
                 <input
                   value={it.name}
                   onChange={(e) => update(i, { name: e.target.value })}

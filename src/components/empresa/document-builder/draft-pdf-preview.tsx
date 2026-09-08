@@ -100,7 +100,7 @@ export function DraftPdfPreview({
             </div>
           )}
           {error && (
-            <div className="absolute inset-0 flex items-center justify-center text-danger/70 text-sm px-6 text-center">
+            <div className="absolute inset-0 flex items-center justify-center text-danger text-sm px-6 text-center">
               No se pudo generar la vista previa. Completa los campos requeridos e intenta de nuevo.
             </div>
           )}

@@ -715,7 +715,7 @@ export function FacturaBuilder({
           </div>
 
           {collection === "partial" && (
-            <div className="bg-amber-500/[0.06] border border-amber-500/20 rounded-lg p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="bg-warn/[0.06] border border-warn/20 rounded-lg p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
                   {isEs ? "Monto recibido" : "Amount received"}
@@ -726,7 +726,7 @@ export function FacturaBuilder({
                   step="0.01"
                   value={collectedAmount}
                   onChange={(e) => setCollectedAmount(e.target.value)}
-                  className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-amber-400/40 transition-all"
+                  className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-warn/40 transition-all"
                 />
               </div>
               <div>
@@ -737,7 +737,7 @@ export function FacturaBuilder({
                   type="date"
                   value={balanceDueDate}
                   onChange={(e) => setBalanceDueDate(e.target.value)}
-                  className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-amber-400/40 transition-all [color-scheme:dark]"
+                  className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-warn/40 transition-all [color-scheme:dark]"
                 />
               </div>
               <p className="text-warn text-xs sm:col-span-2">

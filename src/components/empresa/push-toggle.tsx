@@ -166,7 +166,7 @@ export function PushToggle() {
 
   if (state.kind === "blocked") {
     return (
-      <p className="px-4 py-3 text-warn-soft/80 text-[11px] leading-snug">
+      <p className="px-4 py-3 text-warn-soft text-[11px] leading-snug">
         Este navegador tiene los avisos bloqueados. Habilítalos en los ajustes del sitio y vuelve a intentar.
       </p>
     );
@@ -198,7 +198,7 @@ export function PushToggle() {
       </div>
 
       {state.kind === "error" && (
-        <p className="text-danger-soft/80 text-[10px] leading-snug">{state.message}</p>
+        <p className="text-danger-soft text-[10px] leading-snug">{state.message}</p>
       )}
     </div>
   );

@@ -96,10 +96,10 @@ export function HubSyncButton({ accounts }: HubSyncButtonProps) {
         onClick={backfillSent}
         disabled={syncing !== null}
         title="Importar historial de enviados desde el servidor de correo (últimos 90 días)"
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-emerald-500/10 border border-emerald-500/20 hover:bg-emerald-500/15 disabled:opacity-40 text-ok/90 rounded-lg transition-all"
+        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-emerald2/10 border border-emerald2/20 hover:bg-emerald2/15 disabled:opacity-40 text-ok rounded-lg transition-all"
       >
         {syncing === "backfill" ? (
-          <span className="w-3 h-3 border border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
+          <span className="w-3 h-3 border border-emerald2/30 border-t-emerald-400 rounded-full animate-spin" />
         ) : (
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -135,7 +135,7 @@ export function HubSyncButton({ accounts }: HubSyncButtonProps) {
           <button
             onClick={() => syncAccount(acc.id)}
             disabled={syncing !== null}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-brand/[0.06] border border-brand/20 hover:bg-brand/[0.12] disabled:opacity-40 text-brand-fg/70 rounded-lg transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-brand/[0.06] border border-brand/20 hover:bg-brand/[0.12] disabled:opacity-40 text-brand-fg rounded-lg transition-all"
           >
             {syncing === acc.id ? (
               <span className="w-3 h-3 border border-brand/30 border-t-[#1AA7F0] rounded-full animate-spin" />
@@ -157,7 +157,7 @@ export function HubSyncButton({ accounts }: HubSyncButtonProps) {
             onClick={() => resyncBodiesOnly(acc.id)}
             disabled={syncing !== null}
             title="Recuperar HTML de correos guardados como texto"
-            className="px-2 py-1.5 text-[10px] bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 disabled:opacity-40 text-warn/80 rounded-lg transition-all"
+            className="px-2 py-1.5 text-[10px] bg-warn/10 border border-warn/20 hover:bg-warn/15 disabled:opacity-40 text-warn rounded-lg transition-all"
           >
             HTML
           </button>

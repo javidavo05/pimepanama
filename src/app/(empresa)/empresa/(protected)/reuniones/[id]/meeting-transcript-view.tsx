@@ -37,13 +37,13 @@ export function MeetingTranscriptView({ segments, fallback, onSeek }: MeetingTra
     : turns;
 
   if (turns.length === 0) {
-    if (!fallback) return <p className="text-white/40 text-sm">Esta reunión no tiene audio transcrito.</p>;
+    if (!fallback) return <p className="text-fg-ghost text-sm">Esta reunión no tiene audio transcrito.</p>;
     return (
       <>
-        <p className="text-white/40 text-xs">
+        <p className="text-fg-ghost text-xs">
           Sin atribuir todavía — corre la etapa «Hablantes» para separar quién dijo qué.
         </p>
-        <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap max-h-[70vh] overflow-y-auto">
+        <p className="text-fg-mute text-sm leading-relaxed whitespace-pre-wrap max-h-[70vh] overflow-y-auto">
           {fallback}
         </p>
       </>
@@ -57,9 +57,9 @@ export function MeetingTranscriptView({ segments, fallback, onSeek }: MeetingTra
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar en la transcripción…"
-          className="flex-1 min-w-[200px] bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/30 focus:border-[#1AA7F0]/50 focus:outline-none"
+          className="flex-1 min-w-[200px] bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
         />
-        <span className="text-white/35 text-xs shrink-0">
+        <span className="text-fg-ghost text-xs shrink-0">
           {term
             ? `${visible.length} de ${turns.length} intervenciones`
             : `${turns.length} intervenciones · pulsa el minuto para escucharlo`}
@@ -67,29 +67,29 @@ export function MeetingTranscriptView({ segments, fallback, onSeek }: MeetingTra
       </div>
 
       {echoCount > 0 && (
-        <p className="text-white/35 text-[11px]">
+        <p className="text-fg-ghost text-[11px]">
           Se apartaron {echoCount} fragmento{echoCount !== 1 ? "s" : ""} que tu micrófono captó del
           altavoz: eran la voz del cliente repetida. Con audífonos no ocurre.
         </p>
       )}
 
       {visible.length === 0 ? (
-        <p className="text-white/40 text-sm">Nadie dijo eso en esta reunión.</p>
+        <p className="text-fg-ghost text-sm">Nadie dijo eso en esta reunión.</p>
       ) : (
         <div className="space-y-3 max-h-[70vh] overflow-y-auto">
           {visible.map((turn, i) => (
             <div key={`${turn.start}-${i}`} className="flex gap-3">
               <div className="w-32 shrink-0 text-right">
-                <p className="text-[#1AA7F0] text-xs font-medium truncate">{turn.speaker}</p>
+                <p className="text-brand-fg text-xs font-medium truncate">{turn.speaker}</p>
                 <button
                   onClick={() => onSeek(turn.start)}
-                  className="text-white/30 hover:text-[#1AA7F0] text-[10px] font-mono transition-colors"
+                  className="text-fg-ghost hover:text-brand-fg text-[10px] font-mono transition-colors"
                   title="Escuchar desde aquí"
                 >
                   ▸ {formatTimestamp(turn.start)}
                 </button>
               </div>
-              <p className="text-white/75 text-sm leading-relaxed flex-1">{turn.text}</p>
+              <p className="text-fg-soft text-sm leading-relaxed flex-1">{turn.text}</p>
             </div>
           ))}
         </div>

@@ -6,6 +6,7 @@ import {
   ResponsiveContainer, Cell, Legend,
 } from "recharts";
 import type { RevenueDataPoint, YearlyRevenuePoint } from "@/lib/revenue-helpers";
+import { useChartColors } from "./theme/use-chart-colors";
 
 // Re-export so existing imports from this file keep working
 export type { RevenueDataPoint, YearlyRevenuePoint };
@@ -35,6 +36,7 @@ interface RevenueChartProps {
 }
 
 export function RevenueChart({ data, title }: RevenueChartProps) {
+  const c = useChartColors();
   if (data.length === 0) {
     return (
       <div className="flex items-center justify-center h-48 text-fg-faint text-sm">
@@ -47,16 +49,16 @@ export function RevenueChart({ data, title }: RevenueChartProps) {
       {title && <p className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">{title}</p>}
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data} barGap={2}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-          <XAxis dataKey="month" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11 }} axisLine={false} tickLine={false} />
-          <YAxis tickFormatter={fmt} tick={{ fill: "rgba(255,255,255,0.25)", fontSize: 10 }} axisLine={false} tickLine={false} width={48} />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
-          <Legend wrapperStyle={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", paddingTop: "12px" }} formatter={(v) => v === "bruto" ? "Bruto" : "Neto recibido"} />
+          <CartesianGrid strokeDasharray="3 3" stroke={c.grid} vertical={false} />
+          <XAxis dataKey="month" tick={{ fill: c.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis tickFormatter={fmt} tick={{ fill: c.tickMuted, fontSize: 10 }} axisLine={false} tickLine={false} width={48} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: c.cursor }} />
+          <Legend wrapperStyle={{ fontSize: "11px", color: c.legend, paddingTop: "12px" }} formatter={(v) => v === "bruto" ? "Bruto" : "Neto recibido"} />
           <Bar dataKey="bruto" radius={[3, 3, 0, 0]} maxBarSize={32}>
-            {data.map((_, i) => <Cell key={i} fill="#1AA7F0" fillOpacity={0.7} />)}
+            {data.map((_, i) => <Cell key={i} fill={c.primary} fillOpacity={0.85} />)}
           </Bar>
           <Bar dataKey="neto" radius={[3, 3, 0, 0]} maxBarSize={32}>
-            {data.map((_, i) => <Cell key={i} fill="#22c55e" fillOpacity={0.6} />)}
+            {data.map((_, i) => <Cell key={i} fill={c.secondary} fillOpacity={0.75} />)}
           </Bar>
         </BarChart>
       </ResponsiveContainer>
@@ -84,6 +86,7 @@ interface DashboardRevenueChartProps {
 
 export function DashboardRevenueChart({ monthlyData, yearlyData }: DashboardRevenueChartProps) {
   const [view, setView] = useState<"month" | "year">("month");
+  const c = useChartColors();
 
   const isEmpty = monthlyData.length === 0 && yearlyData.length === 0;
   if (isEmpty) {
@@ -114,16 +117,16 @@ export function DashboardRevenueChart({ monthlyData, yearlyData }: DashboardReve
       </div>
       <ResponsiveContainer width="100%" height={240}>
         <BarChart data={chartData} barGap={3}>
-          <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
-          <XAxis dataKey="label" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 11 }} axisLine={false} tickLine={false} />
-          <YAxis tickFormatter={fmt} tick={{ fill: "rgba(255,255,255,0.25)", fontSize: 10 }} axisLine={false} tickLine={false} width={52} />
-          <Tooltip content={<DashboardTooltip />} cursor={{ fill: "rgba(255,255,255,0.03)" }} />
-          <Legend wrapperStyle={{ fontSize: "11px", color: "rgba(255,255,255,0.4)", paddingTop: "12px" }} formatter={(v) => (v === "bruto" ? "Bruto" : "Neto recibido")} />
+          <CartesianGrid strokeDasharray="3 3" stroke={c.grid} vertical={false} />
+          <XAxis dataKey="label" tick={{ fill: c.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis tickFormatter={fmt} tick={{ fill: c.tickMuted, fontSize: 10 }} axisLine={false} tickLine={false} width={52} />
+          <Tooltip content={<DashboardTooltip />} cursor={{ fill: c.cursor }} />
+          <Legend wrapperStyle={{ fontSize: "11px", color: c.legend, paddingTop: "12px" }} formatter={(v) => (v === "bruto" ? "Bruto" : "Neto recibido")} />
           <Bar dataKey="bruto" radius={[3, 3, 0, 0]} maxBarSize={36}>
-            {chartData.map((_, i) => <Cell key={i} fill="#1AA7F0" fillOpacity={0.7} />)}
+            {chartData.map((_, i) => <Cell key={i} fill={c.primary} fillOpacity={0.85} />)}
           </Bar>
           <Bar dataKey="neto" radius={[3, 3, 0, 0]} maxBarSize={36}>
-            {chartData.map((_, i) => <Cell key={i} fill="#22c55e" fillOpacity={0.6} />)}
+            {chartData.map((_, i) => <Cell key={i} fill={c.secondary} fillOpacity={0.75} />)}
           </Bar>
         </BarChart>
       </ResponsiveContainer>

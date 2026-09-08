@@ -519,6 +519,7 @@ export function EmailComposeModal({
 
   if (!open || !mounted) return null;
 
+  // theme-ok: velo de modal — oscurece el fondo en ambos temas a propósito
   const modal = sendAccounts.length === 0 ? (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
       <div className="bg-pop border border-line rounded-2xl p-6 max-w-sm w-full text-center">
@@ -537,6 +538,7 @@ export function EmailComposeModal({
       aria-modal="true"
       aria-label={mode === "reply" ? "Responder correo" : "Redactar correo"}
     >
+      {/* theme-ok: velo de modal — oscurece el fondo en ambos temas a propósito */}
       <div className="absolute inset-0 bg-black/70 hidden sm:block" onClick={onClose} aria-hidden />
 
       <div className="relative flex flex-col w-full h-full max-h-full min-h-0 min-w-0 sm:h-auto sm:max-h-[min(92dvh,900px)] sm:max-w-3xl overflow-hidden bg-pop border-0 sm:border border-line sm:rounded-2xl shadow-2xl">
@@ -597,18 +599,18 @@ export function EmailComposeModal({
 
                 {mode === "reply" ? (
                   <>
-                    <div className="bg-black/25 border border-line rounded-lg p-3 space-y-2.5">
+                    <div className="bg-fill-2 border border-line rounded-lg p-3 space-y-2.5">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-fg-faint text-[10px] uppercase tracking-wider font-medium">
                           Análisis del correo
                         </p>
                         {replyAnalysis?.urgency === "high" && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-danger-soft border border-red-500/30">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-danger/20 text-danger-soft border border-danger/30">
                             Urgente
                           </span>
                         )}
                         {replyAnalysis?.urgency === "medium" && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-warn-soft/90 border border-amber-500/25">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-warn/15 text-warn-soft border border-warn/25">
                             Prioridad media
                           </span>
                         )}
@@ -620,7 +622,7 @@ export function EmailComposeModal({
 
                       {analysisError && !analyzingReply && (
                         <div className="space-y-2">
-                          <p className="text-danger/90 text-xs">{analysisError}</p>
+                          <p className="text-danger text-xs">{analysisError}</p>
                           <button
                             type="button"
                             onClick={() => {
@@ -646,7 +648,7 @@ export function EmailComposeModal({
                           )}
                           {replyAnalysis.senderAsk && (
                             <p className="text-fg-faint text-xs">
-                              <span className="text-brand-fg/80 font-medium">Pide: </span>
+                              <span className="text-brand-fg font-medium">Pide: </span>
                               {replyAnalysis.senderAsk}
                             </p>
                           )}
@@ -668,7 +670,7 @@ export function EmailComposeModal({
                           ? "Ej: acepto la cotización de $500, confirmar inicio la próxima semana..."
                           : "Espera el análisis del correo..."
                       }
-                      className="w-full bg-black/20 border border-line rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg-trace resize-none disabled:opacity-50"
+                      className="w-full bg-fill border border-line rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg-trace resize-none disabled:opacity-50"
                     />
                     <div className="flex flex-wrap gap-2">
                       <button
@@ -711,7 +713,7 @@ export function EmailComposeModal({
                       value={intent}
                       onChange={(e) => setIntent(e.target.value)}
                       placeholder="Describe el correo que quieres escribir..."
-                      className="w-full bg-black/20 border border-line rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg-trace"
+                      className="w-full bg-fill border border-line rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg-trace"
                     />
                     <div className="flex flex-wrap gap-2">
                       <button
@@ -735,7 +737,7 @@ export function EmailComposeModal({
                 )}
 
                 {composeNotice && (
-                  <p className="text-ok/90 text-xs">{composeNotice}</p>
+                  <p className="text-ok text-xs">{composeNotice}</p>
                 )}
               </div>
 
@@ -817,7 +819,7 @@ export function EmailComposeModal({
                         ? "Suelta los archivos aquí"
                         : "Arrastra archivos aquí o haz clic para adjuntar"}
                     </p>
-                    <p className="text-fg-trace text-[10px] mt-1.5">
+                    <p className="text-fg-ghost text-[10px] mt-1.5">
                       PDF, imágenes, Office, ZIP… máx. 10 MB por archivo, 25 MB total.
                     </p>
                   </div>
@@ -877,22 +879,23 @@ export function EmailComposeModal({
           ) : (
             <div className="space-y-3">
               <div className="text-xs text-fg-faint space-y-1 border-b border-line pb-3">
-                <p><span className="text-fg-trace">Para:</span> {to || "—"}</p>
+                <p><span className="text-fg-ghost">Para:</span> {to || "—"}</p>
                 {cc.trim() ? (
-                  <p><span className="text-fg-trace">CC:</span> {cc}</p>
+                  <p><span className="text-fg-ghost">CC:</span> {cc}</p>
                 ) : null}
-                {cc && <p><span className="text-fg-trace">CC:</span> {cc}</p>}
-                <p><span className="text-fg-trace">Asunto:</span> {subject || "—"}</p>
+                {cc && <p><span className="text-fg-ghost">CC:</span> {cc}</p>}
+                <p><span className="text-fg-ghost">Asunto:</span> {subject || "—"}</p>
                 {attachments.length > 0 && (
                   <p>
-                    <span className="text-fg-trace">Adjuntos:</span>{" "}
+                    <span className="text-fg-ghost">Adjuntos:</span>{" "}
                     {attachments.map((att) => att.file.name).join(", ")}
                   </p>
                 )}
               </div>
               {previewBodyHtml ? (
                 <div
-                  className="w-full min-h-[200px] sm:min-h-[420px] rounded-lg border border-line bg-white p-3 sm:p-4 overflow-auto"
+                  // theme-ok: lienzo del HTML del correo — se envía tal cual y el destinatario lo ve en blanco
+                  className="w-full min-h-[200px] sm:min-h-[420px] rounded-lg border border-line bg-white p-3 sm:p-4 overflow-auto" data-theme-surface="fixed"
                   dangerouslySetInnerHTML={{ __html: previewBodyHtml }}
                 />
               ) : (

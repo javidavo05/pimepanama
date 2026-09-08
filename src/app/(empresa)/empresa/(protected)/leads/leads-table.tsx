@@ -76,7 +76,7 @@ export function LeadsTable({ leads, onStatusChange, savingId }: LeadsTableProps)
                   </p>
                 </td>
 
-                <td className="whitespace-nowrap px-4 py-3 text-right font-mono text-xs text-sand-fg/75">
+                <td className="whitespace-nowrap px-4 py-3 text-right font-mono text-xs text-sand-fg">
                   {lead.estimatedValue != null
                     ? `$${lead.estimatedValue.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
                     : "—"}
@@ -127,7 +127,7 @@ export function LeadsCardList({ leads }: { leads: SerializedLead[] }) {
                 {status.label}
               </span>
               {lead.estimatedValue != null && (
-                <span className="font-mono text-xs text-sand-fg/75">
+                <span className="font-mono text-xs text-sand-fg">
                   ${lead.estimatedValue.toLocaleString("en-US", { maximumFractionDigits: 0 })}
                 </span>
               )}

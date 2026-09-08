@@ -126,7 +126,7 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
           <button
             type="button"
             onClick={startAdd}
-            className="text-brand-fg/60 text-[10px] hover:text-brand-fg transition-colors"
+            className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors"
           >
             + agregar
           </button>
@@ -153,7 +153,7 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
                   disabled={pending}
                   className={`mt-0.5 w-4 h-4 rounded border shrink-0 text-[10px] leading-none transition-all disabled:opacity-40 ${
                     d.completed
-                      ? "bg-green-500/20 border-green-500/40 text-ok"
+                      ? "bg-ok/20 border-ok/40 text-ok"
                       : "border-line-loud text-transparent hover:border-line-loud"
                   }`}
                 >
@@ -173,7 +173,7 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
                       </span>
                     )}
                     {d.source === "AI_CONTRACT" && (
-                      <span className="text-[9px] uppercase tracking-widest text-iris/70">del contrato</span>
+                      <span className="text-[9px] uppercase tracking-widest text-iris-fg">del contrato</span>
                     )}
                   </div>
                 </div>

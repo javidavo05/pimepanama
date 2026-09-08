@@ -52,11 +52,11 @@ interface InboxListProps {
 }
 
 const TAG_COLORS: Record<string, string> = {
-  urgent:     "bg-red-500/15 text-danger border-red-500/20",
-  invoice:    "bg-amber-500/15 text-warn border-amber-500/20",
-  payment:    "bg-green-500/15 text-ok border-green-500/20",
-  "follow-up":"bg-blue-500/15 text-info border-blue-500/20",
-  support:    "bg-purple-500/15 text-grape border-purple-500/20",
+  urgent:     "bg-danger/15 text-danger border-danger/20",
+  invoice:    "bg-warn/15 text-warn border-warn/20",
+  payment:    "bg-ok/15 text-ok border-ok/20",
+  "follow-up":"bg-info/15 text-info border-info/20",
+  support:    "bg-grape/15 text-grape border-grape/20",
   spam:       "bg-fill-3 text-fg-dim border-line-mid",
   general:    "bg-fill text-fg-dim border-line",
 };
@@ -423,10 +423,10 @@ export function InboxList({
               type="button"
               disabled={bulkBusy}
               onClick={bulkDelete}
-              className="px-3 py-1.5 text-xs rounded-lg bg-red-500/10 border border-red-500/20 text-danger hover:bg-red-500/15 disabled:opacity-40 transition-all"
+              className="px-3 py-1.5 text-xs rounded-lg bg-danger/10 border border-danger/20 text-danger hover:bg-danger/15 disabled:opacity-40 transition-all"
               title="Atajo: Supr"
             >
-              Eliminar <kbd className="ml-1 text-[10px] text-danger/50 font-mono">⌫</kbd>
+              Eliminar <kbd className="ml-1 text-[10px] text-danger font-mono">⌫</kbd>
             </button>
             <button
               type="button"

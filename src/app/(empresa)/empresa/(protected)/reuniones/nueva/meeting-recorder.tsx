@@ -2,7 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { AttendeeOrg, MeetingAttendee, MeetingSegment } from "@/lib/meetings/types";
+import {
+  LANGUAGE_LABEL,
+  MEETING_LANGUAGES,
+  type AttendeeOrg,
+  type MeetingAttendee,
+  type MeetingLanguage,
+  type MeetingSegment,
+} from "@/lib/meetings/types";
 import { withoutEchoes } from "@/lib/meetings/echo";
 import { importAudioFile, type ImportProgress } from "./audio-import";
 import { MeetingCapture, looksLikeLoopback, type CaptureChannel, type CaptureMode } from "./live-capture";
@@ -65,7 +72,7 @@ const CAPTURE_MODES: ModeOption[] = [
     detail:
       "Tu voz por un lado y la de la llamada por el otro, sin compartir pantalla. Necesita un dispositivo de audio virtual (BlackHole en Mac, VB-Cable en Windows) puesto como salida. Funciona con audífonos y sin ellos: por altavoz el micrófono capta también al cliente, pero esa repetición se descarta al analizar.",
     tag: "voces separadas",
-    tagClass: "bg-green-500/15 text-green-400 border-green-500/25",
+    tagClass: "bg-ok/15 text-ok border-ok/25",
   },
   {
     key: "ambient",
@@ -73,7 +80,7 @@ const CAPTURE_MODES: ModeOption[] = [
     detail:
       "El micrófono capta la sala completa: tu voz y lo que sale por los altavoces. No hay que compartir nada ni instalar nada, pero hay que estar sin audífonos y las voces se separan al final con IA, no en vivo.",
     tag: "sin configurar nada",
-    tagClass: "bg-[#1AA7F0]/15 text-[#1AA7F0] border-[#1AA7F0]/25",
+    tagClass: "bg-brand/15 text-brand-fg border-brand/25",
   },
   {
     key: "tab",
@@ -81,14 +88,14 @@ const CAPTURE_MODES: ModeOption[] = [
     detail:
       "Chrome pide compartir una pestaña: eliges la del Meet o Zoom y marcas «Compartir audio de la pestaña». Separa voces igual de bien, pero obliga a compartir pantalla.",
     tag: "voces separadas",
-    tagClass: "bg-green-500/15 text-green-400 border-green-500/25",
+    tagClass: "bg-ok/15 text-ok border-ok/25",
   },
   {
     key: "mic",
     title: "Solo mi micrófono",
     detail: "Para una nota de voz o una reunión presencial en la que solo hablas tú.",
     tag: "una sola voz",
-    tagClass: "bg-white/[0.06] text-white/60 border-white/[0.12]",
+    tagClass: "bg-fill-2 text-fg-dim border-line-mid",
   },
 ];
 
@@ -127,7 +134,7 @@ function LevelBar({ level, channel }: { level: number; channel: CaptureChannel }
   const accent = CHANNEL_ACCENT[channel];
   const talking = level > 0.12;
   return (
-    <div className="h-1.5 w-full bg-white/[0.06] rounded-full overflow-hidden">
+    <div className="h-1.5 w-full bg-fill-2 rounded-full overflow-hidden">
       <div
         className={`h-full rounded-full transition-[width] duration-75 ${accent.dot} ${
           talking ? "opacity-100" : "opacity-40"
@@ -150,6 +157,9 @@ export function MeetingRecorder({
   const [title, setTitle] = useState("");
   const [projectId, setProjectId] = useState(initialProjectId ?? "");
   const [clientId, setClientId] = useState("");
+  // Qué se habla en la reunión y en qué idioma sale la minuta son dos cosas
+  // distintas: una reunión bilingüe se redacta igual en un solo idioma.
+  const [spoken, setSpoken] = useState<MeetingLanguage[]>(["es"]);
   const [language, setLanguage] = useState<"es" | "en">("es");
   const [meetingDate, setMeetingDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [attendees, setAttendees] = useState<MeetingAttendee[]>([
@@ -216,7 +226,9 @@ export function MeetingRecorder({
   // IA al final, y por eso no se bloquea ningún hablante.
   const lockSpeakers = mode !== "ambient";
 
-  const interim = useInstantSpeech(phase === "recording" && instantPreview, language);
+  // El reconocimiento del navegador solo escucha un idioma a la vez; se usa el
+  // primero declarado. La transcripción buena, la de Whisper, sí es bilingüe.
+  const interim = useInstantSpeech(phase === "recording" && instantPreview, spoken[0] ?? "es");
   const interimSpeaker =
     mode === "ambient" ? "Vista previa" : channelSpeaker.LOCAL || "Tu micrófono";
 
@@ -349,6 +361,7 @@ export function MeetingRecorder({
         projectId: projectId || undefined,
         clientId: clientId || undefined,
         language,
+        spokenLanguages: spoken,
         meetingDate,
         audioSource,
         attendees: attendees.filter((a) => a.name.trim()),
@@ -556,22 +569,22 @@ export function MeetingRecorder({
 
   if (phase === "processing" || phase === "done") {
     return (
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-8">
-        <h2 className="text-white text-lg font-semibold mb-1">Procesando la reunión</h2>
-        <p className="text-white/60 text-sm mb-6">
+      <div className="bg-panel border border-line rounded-2xl p-8">
+        <h2 className="text-fg text-lg font-semibold mb-1">Procesando la reunión</h2>
+        <p className="text-fg-dim text-sm mb-6">
           No cierres esta pestaña. Tarda alrededor de un minuto por cada media hora grabada.
         </p>
         {importProgress && (
           <div className="mb-6">
             <div className="flex items-center justify-between gap-3 mb-1.5">
-              <span className="text-white/80 text-sm">Transcribiendo el archivo</span>
-              <span className="text-white/50 text-xs font-mono">
+              <span className="text-fg-soft text-sm">Transcribiendo el archivo</span>
+              <span className="text-fg-faint text-xs font-mono">
                 {importProgress.done} / {importProgress.total}
               </span>
             </div>
-            <div className="h-1.5 w-full bg-white/[0.06] rounded-full overflow-hidden">
+            <div className="h-1.5 w-full bg-fill-2 rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#1AA7F0] rounded-full transition-[width] duration-300"
+                className="h-full bg-brand rounded-full transition-[width] duration-300"
                 style={{
                   width: `${Math.round((importProgress.done / Math.max(1, importProgress.total)) * 100)}%`,
                 }}
@@ -587,22 +600,22 @@ export function MeetingRecorder({
                 <span
                   className={`w-5 h-5 rounded-full border flex items-center justify-center text-[10px] ${
                     state === "done"
-                      ? "bg-green-500/20 border-green-500/40 text-green-400"
+                      ? "bg-ok/20 border-ok/40 text-ok"
                       : state === "active"
-                        ? "bg-[#1AA7F0]/20 border-[#1AA7F0]/40 text-[#1AA7F0] animate-pulse"
-                        : "bg-white/[0.04] border-white/[0.08] text-white/40"
+                        ? "bg-brand/20 border-brand/40 text-brand-fg animate-pulse"
+                        : "bg-fill border-line text-fg-ghost"
                   }`}
                 >
                   {state === "done" ? "✓" : i + 1}
                 </span>
-                <span className={state === "pending" ? "text-white/40 text-sm" : "text-white/80 text-sm"}>
+                <span className={state === "pending" ? "text-fg-ghost text-sm" : "text-fg-soft text-sm"}>
                   {stage.label}
                 </span>
               </li>
             );
           })}
         </ol>
-        {error && <p className="text-red-400 text-sm mt-6">{error}</p>}
+        {error && <p className="text-danger text-sm mt-6">{error}</p>}
       </div>
     );
   }
@@ -610,37 +623,37 @@ export function MeetingRecorder({
   if (phase === "recording") {
     return (
       <div className="space-y-4">
-        <div className="bg-[#0a0a10] border border-red-500/20 rounded-2xl p-6">
+        <div className="bg-panel border border-danger/20 rounded-2xl p-6">
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="flex items-center gap-3">
-              <span className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+              <span className="w-3 h-3 rounded-full bg-danger animate-pulse" />
               <div>
-                <p className="text-white font-medium">{title}</p>
-                <p className="text-white/50 text-xs">
+                <p className="text-fg font-medium">{title}</p>
+                <p className="text-fg-faint text-xs">
                   {selectedProject ? selectedProject.name : "Sin proyecto"} ·{" "}
                   {CAPTURE_MODES.find((m) => m.key === mode)?.title.toLowerCase()}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <span className="text-white text-2xl font-mono tabular-nums">{formatClock(elapsed)}</span>
+              <span className="text-fg text-2xl font-mono tabular-nums">{formatClock(elapsed)}</span>
               <button
                 onClick={stopAndProcess}
-                className="px-5 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold rounded-lg transition-all"
+                className="px-5 py-2 bg-danger-solid hover:bg-danger-solid/85 text-on-solid text-sm font-semibold rounded-lg transition-all"
               >
                 Finalizar y procesar
               </button>
             </div>
           </div>
-          {notice && <p className="text-amber-400 text-xs mt-3">{notice}</p>}
-          {error && <p className="text-red-400 text-xs mt-2">{error}</p>}
+          {notice && <p className="text-warn text-xs mt-3">{notice}</p>}
+          {error && <p className="text-danger text-xs mt-2">{error}</p>}
         </div>
 
         {/* Quién es cada voz */}
-        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-5">
+        <div className="bg-panel border border-line rounded-2xl p-5">
           <div className="flex items-baseline justify-between gap-3 flex-wrap mb-3">
-            <h3 className="text-white/70 text-xs uppercase tracking-wider">Voces</h3>
-            <p className="text-white/35 text-[11px]">
+            <h3 className="text-fg-mute text-xs uppercase tracking-wider">Voces</h3>
+            <p className="text-fg-ghost text-[11px]">
               {lockSpeakers
                 ? "Cambiar el nombre corrige también lo ya transcrito."
                 : "Todo entra por un micrófono: las voces se separan al finalizar."}
@@ -656,7 +669,7 @@ export function MeetingRecorder({
                 <div
                   key={channel}
                   className={`border rounded-xl p-3.5 transition-colors ${
-                    talking ? "border-white/[0.16] bg-white/[0.03]" : "border-white/[0.06]"
+                    talking ? "border-line-mid bg-fill" : "border-line"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2 mb-2">
@@ -669,7 +682,7 @@ export function MeetingRecorder({
                       </span>
                     </span>
                     <span
-                      className={`text-[10px] ${talking ? "text-white/70" : "text-white/25"}`}
+                      className={`text-[10px] ${talking ? "text-fg-mute" : "text-fg-ghost"}`}
                     >
                       {talking ? "hablando" : "en silencio"}
                     </span>
@@ -693,7 +706,7 @@ export function MeetingRecorder({
                           void assignSpeaker(channel, customDraft[channel]);
                         }}
                         placeholder="Nombre de esta voz"
-                        className="w-full mt-3 bg-[#050508] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-white text-xs placeholder:text-white/30 focus:border-[#1AA7F0]/50 focus:outline-none"
+                        className="w-full mt-3 bg-canvas border border-line rounded-lg px-2.5 py-1.5 text-fg text-xs placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
                       />
                     ) : (
                       <select
@@ -715,7 +728,7 @@ export function MeetingRecorder({
                           }
                           void assignSpeaker(channel, e.target.value);
                         }}
-                        className="w-full mt-3 bg-[#050508] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-white text-xs focus:border-[#1AA7F0]/50 focus:outline-none"
+                        className="w-full mt-3 bg-canvas border border-line rounded-lg px-2.5 py-1.5 text-fg text-xs focus:border-brand/50 focus:outline-none"
                       >
                         <option value="">Sin asignar</option>
                         {namedAttendees.map((name) => (
@@ -733,10 +746,10 @@ export function MeetingRecorder({
         </div>
 
         {/* Conversación en vivo */}
-        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
+        <div className="bg-panel border border-line rounded-2xl p-6">
           <div className="flex items-baseline justify-between gap-3 flex-wrap mb-3">
-            <h3 className="text-white/70 text-xs uppercase tracking-wider">Conversación en vivo</h3>
-            <p className="text-white/35 text-[11px]">
+            <h3 className="text-fg-mute text-xs uppercase tracking-wider">Conversación en vivo</h3>
+            <p className="text-fg-ghost text-[11px]">
               {uploading > 0
                 ? `transcribiendo ${uploading} tramo${uploading !== 1 ? "s" : ""}…`
                 : `al día · tramos de ${SEGMENT_MS / 1000} s`}
@@ -757,8 +770,8 @@ export function MeetingRecorder({
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-white text-2xl font-semibold tracking-tight">Nueva reunión</h1>
-        <p className="text-white/60 text-sm mt-0.5">
+        <h1 className="text-fg text-2xl font-semibold tracking-tight">Nueva reunión</h1>
+        <p className="text-fg-dim text-sm mt-0.5">
           Grábala en vivo o sube un audio que ya tengas. En los dos casos obtienes minuta ejecutiva,
           minuta técnica, pendientes, el entregable técnico y el prompt para construirlo.
         </p>
@@ -787,41 +800,41 @@ export function MeetingRecorder({
             onClick={() => setEntry(option.key)}
             className={`text-left p-4 rounded-2xl border transition-all ${
               entry === option.key
-                ? "border-[#1AA7F0]/40 bg-[#1AA7F0]/[0.06]"
-                : "border-white/[0.06] bg-[#0a0a10] hover:border-white/[0.12]"
+                ? "border-brand/40 bg-brand/[0.06]"
+                : "border-line bg-panel hover:border-line-mid"
             }`}
           >
             <span className="text-lg">{option.icon}</span>
             <p
               className={`text-sm font-medium mt-1 ${
-                entry === option.key ? "text-[#1AA7F0]" : "text-white"
+                entry === option.key ? "text-brand-fg" : "text-fg"
               }`}
             >
               {option.title}
             </p>
-            <p className="text-white/50 text-xs mt-1 leading-relaxed">{option.detail}</p>
+            <p className="text-fg-faint text-xs mt-1 leading-relaxed">{option.detail}</p>
           </button>
         ))}
       </div>
 
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6 space-y-4">
+      <div className="bg-panel border border-line rounded-2xl p-6 space-y-4">
         <div>
-          <label className="block text-white/70 text-xs uppercase tracking-wider mb-1.5">Título</label>
+          <label className="block text-fg-mute text-xs uppercase tracking-wider mb-1.5">Título</label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Revisión de alcance — módulo de facturación"
-            className="w-full bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/30 focus:border-[#1AA7F0]/50 focus:outline-none"
+            className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
           />
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-white/70 text-xs uppercase tracking-wider mb-1.5">Proyecto</label>
+            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-1.5">Proyecto</label>
             <select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
-              className="w-full bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm focus:border-[#1AA7F0]/50 focus:outline-none"
+              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
             >
               <option value="">Sin proyecto</option>
               {projects.map((p) => (
@@ -830,7 +843,7 @@ export function MeetingRecorder({
                 </option>
               ))}
             </select>
-            <p className="text-white/40 text-xs mt-1">
+            <p className="text-fg-ghost text-xs mt-1">
               {projectId
                 ? "La IA leerá el alcance, los entregables y las reuniones anteriores del proyecto."
                 : "Puedes dejarlo en blanco y asignarle el proyecto después, desde el detalle de la reunión."}
@@ -838,11 +851,11 @@ export function MeetingRecorder({
           </div>
 
           <div>
-            <label className="block text-white/70 text-xs uppercase tracking-wider mb-1.5">Cliente</label>
+            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-1.5">Cliente</label>
             <select
               value={clientId}
               onChange={(e) => setClientId(e.target.value)}
-              className="w-full bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm focus:border-[#1AA7F0]/50 focus:outline-none"
+              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
             >
               <option value="">Sin cliente</option>
               {clients.map((c) => (
@@ -855,23 +868,23 @@ export function MeetingRecorder({
           </div>
 
           <div>
-            <label className="block text-white/70 text-xs uppercase tracking-wider mb-1.5">Fecha</label>
+            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-1.5">Fecha</label>
             <input
               type="date"
               value={meetingDate}
               onChange={(e) => setMeetingDate(e.target.value)}
-              className="w-full bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm focus:border-[#1AA7F0]/50 focus:outline-none"
+              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
             />
           </div>
 
           <div>
-            <label className="block text-white/70 text-xs uppercase tracking-wider mb-1.5">
+            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-1.5">
               Origen del audio
             </label>
             <select
               value={audioSource}
               onChange={(e) => setAudioSource(e.target.value as AudioSource)}
-              className="w-full bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm focus:border-[#1AA7F0]/50 focus:outline-none"
+              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
             >
               {AUDIO_SOURCES.map((s) => (
                 <option key={s.key} value={s.key}>
@@ -879,30 +892,72 @@ export function MeetingRecorder({
                 </option>
               ))}
             </select>
-            <p className="text-white/40 text-xs mt-1">
+            <p className="text-fg-ghost text-xs mt-1">
               Cambia cómo se separan las voces: no es lo mismo una llamada de dos personas que una
               sala con seis.
             </p>
           </div>
 
           <div>
-            <label className="block text-white/70 text-xs uppercase tracking-wider mb-1.5">Idioma</label>
+            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-1.5">
+              Idiomas que se hablan
+            </label>
+            <div className="flex gap-2">
+              {MEETING_LANGUAGES.map((code) => {
+                const on = spoken.includes(code);
+                return (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() =>
+                      setSpoken((prev) => {
+                        const next = on ? prev.filter((l) => l !== code) : [...prev, code];
+                        // Nunca cero: sin idioma no hay nada que transcribir.
+                        return next.length > 0 ? next : prev;
+                      })
+                    }
+                    className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-all ${
+                      on
+                        ? "border-brand/40 bg-brand/[0.08] text-brand-fg"
+                        : "border-line bg-canvas text-fg-faint hover:text-fg-soft"
+                    }`}
+                  >
+                    {on ? "✓ " : ""}
+                    {LANGUAGE_LABEL[code]}
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-fg-ghost text-xs mt-1">
+              {spoken.length > 1
+                ? "Bilingüe: se detecta el idioma tramo por tramo y las citas se conservan como se dijeron."
+                : "Marca los dos si en la reunión se cambia de idioma."}
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-1.5">
+              Idioma de la minuta
+            </label>
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as "es" | "en")}
-              className="w-full bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm focus:border-[#1AA7F0]/50 focus:outline-none"
+              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
             >
               <option value="es">Español</option>
               <option value="en">Inglés</option>
             </select>
+            <p className="text-fg-ghost text-xs mt-1">
+              En el que se redacta lo que sale hacia el cliente, hable lo que se hable.
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6 space-y-3">
+      <div className="bg-panel border border-line rounded-2xl p-6 space-y-3">
         <div>
-          <h2 className="text-white/70 text-xs uppercase tracking-wider">Asistentes</h2>
-          <p className="text-white/40 text-xs mt-1">
+          <h2 className="text-fg-mute text-xs uppercase tracking-wider">Asistentes</h2>
+          <p className="text-fg-ghost text-xs mt-1">
             Es la lista contra la que se resuelve quién habló, y de la que salen los nombres que le
             asignas a cada voz durante la reunión.
           </p>
@@ -914,18 +969,18 @@ export function MeetingRecorder({
               value={a.name}
               onChange={(e) => updateAttendee(i, { name: e.target.value })}
               placeholder="Nombre y apellido"
-              className="flex-1 bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/30 focus:border-[#1AA7F0]/50 focus:outline-none"
+              className="flex-1 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
             />
             <input
               value={a.role ?? ""}
               onChange={(e) => updateAttendee(i, { role: e.target.value })}
               placeholder="Rol (opcional)"
-              className="w-36 bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/30 focus:border-[#1AA7F0]/50 focus:outline-none"
+              className="w-36 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
             />
             <select
               value={a.org}
               onChange={(e) => updateAttendee(i, { org: e.target.value as AttendeeOrg })}
-              className="w-32 bg-[#050508] border border-white/[0.08] rounded-lg px-2 py-2 text-white text-sm focus:border-[#1AA7F0]/50 focus:outline-none"
+              className="w-32 bg-canvas border border-line rounded-lg px-2 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
             >
               <option value="PIME">Pime</option>
               <option value="CLIENTE">Cliente</option>
@@ -934,7 +989,7 @@ export function MeetingRecorder({
             <button
               type="button"
               onClick={() => setAttendees((prev) => prev.filter((_, idx) => idx !== i))}
-              className="px-3 text-white/40 hover:text-red-400 transition-colors"
+              className="px-3 text-fg-ghost hover:text-danger transition-colors"
               aria-label="Quitar asistente"
             >
               ✕
@@ -945,7 +1000,7 @@ export function MeetingRecorder({
         <button
           type="button"
           onClick={() => setAttendees((prev) => [...prev, { name: "", org: "CLIENTE" }])}
-          className="text-[#1AA7F0] hover:text-[#0E87C8] text-sm transition-colors"
+          className="text-brand-fg hover:text-brand-hi text-sm transition-colors"
         >
           + Agregar asistente
         </button>
@@ -953,10 +1008,10 @@ export function MeetingRecorder({
 
       {/* Cómo se capta el audio — solo tiene sentido grabando en vivo */}
       {entry === "record" && (
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6 space-y-3">
+      <div className="bg-panel border border-line rounded-2xl p-6 space-y-3">
         <div>
-          <h2 className="text-white/70 text-xs uppercase tracking-wider">Cómo se capta el audio</h2>
-          <p className="text-white/40 text-xs mt-1">
+          <h2 className="text-fg-mute text-xs uppercase tracking-wider">Cómo se capta el audio</h2>
+          <p className="text-fg-ghost text-xs mt-1">
             Cuando tu voz y la de la llamada entran por fuentes distintas, se sabe quién habla en el
             momento, sin que la IA tenga que adivinarlo.
           </p>
@@ -968,8 +1023,8 @@ export function MeetingRecorder({
               key={option.key}
               className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
                 mode === option.key
-                  ? "border-[#1AA7F0]/35 bg-[#1AA7F0]/[0.05]"
-                  : "border-white/[0.06] hover:border-white/[0.12]"
+                  ? "border-brand/35 bg-brand/[0.05]"
+                  : "border-line hover:border-line-mid"
               }`}
             >
               <input
@@ -977,16 +1032,16 @@ export function MeetingRecorder({
                 name="capture-mode"
                 checked={mode === option.key}
                 onChange={() => setMode(option.key)}
-                className="mt-1 accent-[#1AA7F0]"
+                className="mt-1 accent-brand"
               />
               <span className="min-w-0">
                 <span className="flex items-center gap-2 flex-wrap">
-                  <span className="text-white text-sm font-medium">{option.title}</span>
+                  <span className="text-fg text-sm font-medium">{option.title}</span>
                   <span className={`px-1.5 py-0.5 text-[10px] rounded border ${option.tagClass}`}>
                     {option.tag}
                   </span>
                 </span>
-                <span className="block text-white/50 text-xs mt-1 leading-relaxed">
+                <span className="block text-fg-faint text-xs mt-1 leading-relaxed">
                   {option.detail}
                 </span>
               </span>
@@ -995,15 +1050,15 @@ export function MeetingRecorder({
         </div>
 
         {mode === "device" && (
-          <div className="border border-white/[0.06] rounded-xl p-3.5 space-y-2">
+          <div className="border border-line rounded-xl p-3.5 space-y-2">
             <div className="flex items-center justify-between gap-3 flex-wrap">
-              <label className="text-white/70 text-xs uppercase tracking-wider">
+              <label className="text-fg-mute text-xs uppercase tracking-wider">
                 Entrada con el audio de la llamada
               </label>
               <button
                 type="button"
                 onClick={() => void loadDevices(true)}
-                className="text-[#1AA7F0] hover:text-[#0E87C8] text-xs transition-colors"
+                className="text-brand-fg hover:text-brand-hi text-xs transition-colors"
               >
                 Buscar dispositivos
               </button>
@@ -1011,7 +1066,7 @@ export function MeetingRecorder({
             <select
               value={systemDeviceId}
               onChange={(e) => setSystemDeviceId(e.target.value)}
-              className="w-full bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm focus:border-[#1AA7F0]/50 focus:outline-none"
+              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
             >
               <option value="">Elige un dispositivo…</option>
               {devices.map((d) => (
@@ -1022,12 +1077,12 @@ export function MeetingRecorder({
               ))}
             </select>
             {devices.length === 0 && (
-              <p className="text-white/40 text-xs">
+              <p className="text-fg-ghost text-xs">
                 Pulsa «Buscar dispositivos» y concede el permiso del micrófono para poder verlos por
                 nombre.
               </p>
             )}
-            <p className="text-white/40 text-xs leading-relaxed">
+            <p className="text-fg-ghost text-xs leading-relaxed">
               En Mac: instala BlackHole, crea un «Dispositivo de salida múltiple» con tus audífonos +
               BlackHole y ponlo como salida del sistema. Aquí elige BlackHole. En Windows, VB-Cable o
               «Mezcla estéreo».
@@ -1037,13 +1092,13 @@ export function MeetingRecorder({
 
         {devices.length > 0 && (
           <div>
-            <label className="block text-white/70 text-xs uppercase tracking-wider mb-1.5">
+            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-1.5">
               Micrófono
             </label>
             <select
               value={micDeviceId}
               onChange={(e) => setMicDeviceId(e.target.value)}
-              className="w-full bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm focus:border-[#1AA7F0]/50 focus:outline-none"
+              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
             >
               <option value="">Predeterminado del sistema</option>
               {devices.map((d) => (
@@ -1061,11 +1116,11 @@ export function MeetingRecorder({
               type="checkbox"
               checked={instantPreview}
               onChange={(e) => setInstantPreview(e.target.checked)}
-              className="mt-1 accent-[#1AA7F0]"
+              className="mt-1 accent-brand"
             />
             <span>
-              <span className="text-white text-sm font-medium">Vista previa instantánea</span>
-              <span className="block text-white/50 text-xs mt-1 leading-relaxed">
+              <span className="text-fg text-sm font-medium">Vista previa instantánea</span>
+              <span className="block text-fg-faint text-xs mt-1 leading-relaxed">
                 Muestra palabra por palabra lo que oye el micrófono mientras se graba, usando el
                 reconocimiento de voz de Chrome (procesa audio en servidores de Google). La
                 transcripción que se guarda es siempre la de Whisper.
@@ -1078,10 +1133,10 @@ export function MeetingRecorder({
 
       {/* El archivo — solo en el camino de subir */}
       {entry === "upload" && (
-        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6 space-y-3">
+        <div className="bg-panel border border-line rounded-2xl p-6 space-y-3">
           <div>
-            <h2 className="text-white/70 text-xs uppercase tracking-wider">El archivo de audio</h2>
-            <p className="text-white/40 text-xs mt-1 leading-relaxed">
+            <h2 className="text-fg-mute text-xs uppercase tracking-wider">El archivo de audio</h2>
+            <p className="text-fg-ghost text-xs mt-1 leading-relaxed">
               La exportación de un Zoom o un Meet, la grabación de una llamada, una nota de voz de
               WhatsApp o el mp3 de una grabadora. Se decodifica y se corta aquí mismo, en tu
               navegador, y se sube por tramos: para el sistema es igual que si la hubieras grabado
@@ -1092,8 +1147,8 @@ export function MeetingRecorder({
           <label
             className={`block border border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
               importFile
-                ? "border-[#1AA7F0]/35 bg-[#1AA7F0]/[0.04]"
-                : "border-white/[0.12] hover:border-white/[0.22]"
+                ? "border-brand/35 bg-brand/[0.04]"
+                : "border-line-mid hover:border-line-loud"
             }`}
           >
             <input
@@ -1104,20 +1159,20 @@ export function MeetingRecorder({
             />
             {importFile ? (
               <>
-                <p className="text-white text-sm font-medium">{importFile.name}</p>
-                <p className="text-white/45 text-xs mt-1">
+                <p className="text-fg text-sm font-medium">{importFile.name}</p>
+                <p className="text-fg-faint text-xs mt-1">
                   {(importFile.size / 1024 / 1024).toFixed(1)} MB · pulsa para cambiarlo
                 </p>
               </>
             ) : (
               <>
-                <p className="text-white/70 text-sm">Elige el archivo de audio</p>
-                <p className="text-white/40 text-xs mt-1">mp3, m4a, wav, webm, ogg o el audio de un mp4</p>
+                <p className="text-fg-mute text-sm">Elige el archivo de audio</p>
+                <p className="text-fg-ghost text-xs mt-1">mp3, m4a, wav, webm, ogg o el audio de un mp4</p>
               </>
             )}
           </label>
 
-          <p className="text-white/35 text-[11px] leading-relaxed">
+          <p className="text-fg-ghost text-[11px] leading-relaxed">
             En un archivo ya mezclado las voces las separa la IA, porque el audio no dice por sí
             solo quién habló. Declarar bien los asistentes y el origen arriba es lo que hace que
             acierte.
@@ -1126,21 +1181,21 @@ export function MeetingRecorder({
       )}
 
       {notice && (
-        <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
-          <p className="text-amber-400 text-sm">{notice}</p>
+        <div className="bg-warn/10 border border-warn/20 rounded-xl p-4">
+          <p className="text-warn text-sm">{notice}</p>
         </div>
       )}
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
-          <p className="text-red-400 text-sm">{error}</p>
+        <div className="bg-danger/10 border border-danger/20 rounded-xl p-4">
+          <p className="text-danger text-sm">{error}</p>
         </div>
       )}
 
       <button
         onClick={entry === "upload" ? startImport : startRecording}
         disabled={busy || (entry === "upload" && !importFile)}
-        className="w-full px-5 py-3 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-all"
+        className="w-full px-5 py-3 bg-brand hover:bg-brand-hi disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg transition-all"
       >
         {busy
           ? "Preparando…"
@@ -1151,7 +1206,7 @@ export function MeetingRecorder({
             : "🎙️ Iniciar grabación"}
       </button>
       {meetingId && phase === "setup" && (
-        <p className="text-white/40 text-xs text-center">Reunión creada: {meetingId}</p>
+        <p className="text-fg-ghost text-xs text-center">Reunión creada: {meetingId}</p>
       )}
     </div>
   );

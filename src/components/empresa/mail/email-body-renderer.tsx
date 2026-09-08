@@ -87,20 +87,20 @@ export function EmailBodyRenderer({ body, emailId, onBodyUpdated }: EmailBodyRen
     return (
       <div>
         {showResync && (
-          <div className="mb-3 text-xs text-warn/80 border border-amber-500/20 bg-amber-500/10 rounded-lg px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="mb-3 text-xs text-warn border border-warn/20 bg-warn/10 rounded-lg px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <span>Este correo se guardó sin HTML. Recupéralo desde el buzón IMAP.</span>
             <button
               type="button"
               onClick={handleResyncBody}
               disabled={resyncing}
-              className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-warn-soft hover:bg-amber-500/25 disabled:opacity-50 transition-all"
+              className="shrink-0 px-3 py-1.5 rounded-lg bg-warn/15 border border-warn/30 text-warn-soft hover:bg-warn/25 disabled:opacity-50 transition-all"
             >
               {resyncing ? "Recuperando…" : "Recuperar formato"}
             </button>
           </div>
         )}
         {resyncError && (
-          <p className="mb-3 text-xs text-danger/80 border border-red-500/20 bg-red-500/10 rounded-lg px-3 py-2">
+          <p className="mb-3 text-xs text-danger border border-danger/20 bg-danger/10 rounded-lg px-3 py-2">
             {resyncError}
           </p>
         )}
@@ -108,7 +108,7 @@ export function EmailBodyRenderer({ body, emailId, onBodyUpdated }: EmailBodyRen
           <div className="flex justify-end mb-3">
             <button
               onClick={() => setViewMode("html")}
-              className="text-[10px] text-brand-fg/60 hover:text-brand-fg transition-colors"
+              className="text-[10px] text-brand-fg hover:text-brand-fg transition-colors"
             >
               Ver con formato →
             </button>
@@ -134,7 +134,8 @@ export function EmailBodyRenderer({ body, emailId, onBodyUpdated }: EmailBodyRen
           </button>
         </div>
       )}
-      <div className="rounded-xl overflow-hidden border border-line bg-white w-full min-w-0">
+      {/* theme-ok: lienzo del HTML del correo — el remitente lo escribió para fondo blanco */}
+      <div className="rounded-xl overflow-hidden border border-line bg-white w-full min-w-0" data-theme-surface="fixed">
         <iframe
           ref={iframeRef}
           src={iframeSrc ?? undefined}

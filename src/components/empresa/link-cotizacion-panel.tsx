@@ -34,7 +34,7 @@ export function LinkCotizacionPanel({ facturaId, cotizaciones }: LinkCotizacionP
 
   if (done) {
     return (
-      <div className="bg-panel border border-green-500/20 rounded-xl p-5">
+      <div className="bg-panel border border-ok/20 rounded-xl p-5">
         <p className="text-ok text-sm font-medium">✓ Cotización vinculada correctamente</p>
         <p className="text-fg-dim text-xs mt-1">Recarga la página para ver el pipeline actualizado.</p>
       </div>
@@ -42,7 +42,7 @@ export function LinkCotizacionPanel({ facturaId, cotizaciones }: LinkCotizacionP
   }
 
   return (
-    <div className="bg-panel border border-amber-500/20 rounded-xl p-5 space-y-3">
+    <div className="bg-panel border border-warn/20 rounded-xl p-5 space-y-3">
       <div className="flex items-center gap-2">
         <span className="text-warn text-sm">⚠</span>
         <p className="text-fg-mute text-sm font-medium">Factura sin cotización vinculada</p>

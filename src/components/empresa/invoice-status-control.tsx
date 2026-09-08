@@ -14,12 +14,12 @@ import type { DocumentStatus } from "@prisma/client";
  */
 const FLOW: { value: DocumentStatus; label: string; hint: string; dot: string }[] = [
   { value: "DRAFT", label: "Borrador", hint: "Todavía no se envía al cliente", dot: "bg-fg-ghost" },
-  { value: "SENT", label: "Enviada", hint: "Entregada, esperando respuesta", dot: "bg-blue-400" },
-  { value: "ACCEPTED", label: "Aceptada", hint: "El cliente la aprobó", dot: "bg-green-400" },
+  { value: "SENT", label: "Enviada", hint: "Entregada, esperando respuesta", dot: "bg-info" },
+  { value: "ACCEPTED", label: "Aceptada", hint: "El cliente la aprobó", dot: "bg-ok" },
 ];
 
 const CLOSING: { value: DocumentStatus; label: string; hint: string; dot: string }[] = [
-  { value: "REJECTED", label: "Rechazada", hint: "El cliente no la aceptó", dot: "bg-red-400" },
+  { value: "REJECTED", label: "Rechazada", hint: "El cliente no la aceptó", dot: "bg-danger" },
   { value: "CANCELLED", label: "Cancelada", hint: "Anulada, sale de Por Cobrar", dot: "bg-fg-trace" },
 ];
 
@@ -35,11 +35,11 @@ const LABELS: Record<DocumentStatus, string> = {
 
 const CHIP: Record<DocumentStatus, string> = {
   DRAFT: "text-fg-dim bg-fill-2 border-line-mid",
-  SENT: "text-info bg-blue-500/10 border-blue-500/25",
-  ACCEPTED: "text-ok bg-green-500/10 border-green-500/25",
+  SENT: "text-info bg-info/10 border-info/25",
+  ACCEPTED: "text-ok bg-ok/10 border-ok/25",
   PAID: "text-sand-fg bg-sand/10 border-sand/25",
-  PARTIALLY_PAID: "text-warn bg-amber-500/10 border-amber-500/25",
-  REJECTED: "text-danger bg-red-500/10 border-red-500/25",
+  PARTIALLY_PAID: "text-warn bg-warn/10 border-warn/25",
+  REJECTED: "text-danger bg-danger/10 border-danger/25",
   CANCELLED: "text-fg-faint bg-fill border-line",
 };
 

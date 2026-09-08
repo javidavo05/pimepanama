@@ -75,7 +75,7 @@ export function ConfigForm({ config }: { config: SerializedCompanyConfig | null 
       {showSuccess && (
         <div
           role="status"
-          className="flex items-center gap-2 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20 text-ok text-sm"
+          className="flex items-center gap-2 px-4 py-3 rounded-xl bg-ok/10 border border-ok/20 text-ok text-sm"
         >
           <span aria-hidden>✓</span>
           Configuración guardada correctamente.
@@ -85,7 +85,7 @@ export function ConfigForm({ config }: { config: SerializedCompanyConfig | null 
       {state.error && (
         <div
           role="alert"
-          className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-danger text-sm"
+          className="flex items-center gap-2 px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-danger text-sm"
         >
           {state.error}
         </div>

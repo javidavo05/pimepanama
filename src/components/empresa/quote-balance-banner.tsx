@@ -17,7 +17,7 @@ export function QuoteBalanceBanner({ balance, quoteNumber, invoiceNumber }: Quot
   }
 
   return (
-    <div className="bg-amber-500/[0.06] border border-amber-500/20 rounded-xl px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+    <div className="bg-warn/[0.06] border border-warn/20 rounded-xl px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <div>
         <p className="text-warn text-sm font-medium">Saldo pendiente de cobro</p>
         <p className="text-fg-dim text-xs mt-1 leading-relaxed">
@@ -30,7 +30,7 @@ export function QuoteBalanceBanner({ balance, quoteNumber, invoiceNumber }: Quot
       </div>
       <Link
         href="/empresa/cuentas-por-cobrar"
-        className="shrink-0 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/25 text-warn-soft text-xs font-medium hover:bg-amber-500/15 transition-all text-center"
+        className="shrink-0 px-3 py-2 rounded-lg bg-warn/10 border border-warn/25 text-warn-soft text-xs font-medium hover:bg-warn/15 transition-all text-center"
       >
         Ver en cuentas por cobrar →
       </Link>

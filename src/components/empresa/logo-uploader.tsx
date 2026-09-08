@@ -96,7 +96,7 @@ export function LogoUploader({ value, onChange }: LogoUploaderProps) {
             PNG, JPG o SVG. Se guarda en R2. Después de subir, pulsa{" "}
             <span className="text-fg-dim">Guardar configuración</span>.
           </p>
-          {error && <p className="text-danger/80 text-xs">{error}</p>}
+          {error && <p className="text-danger text-xs">{error}</p>}
         </div>
       </div>
     </div>

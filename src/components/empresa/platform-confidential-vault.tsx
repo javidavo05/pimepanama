@@ -145,14 +145,14 @@ export function PlatformConfidentialVault({
   }
 
   return (
-    <div className="border border-amber-500/20 bg-amber-500/[0.04] rounded-lg p-3 space-y-2.5 mt-2">
+    <div className="border border-warn/20 bg-warn/[0.04] rounded-lg p-3 space-y-2.5 mt-2">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[10px] uppercase tracking-widest text-warn/90 font-medium flex items-center gap-1.5">
+        <p className="text-[10px] uppercase tracking-widest text-warn font-medium flex items-center gap-1.5">
           <span aria-hidden>🔒</span>
           Información confidencial
         </p>
         {hasVault && mode === "locked" && (
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/15 text-warn-soft/80 border border-amber-500/20">
+          <span className="text-[9px] px-1.5 py-0.5 rounded bg-warn/15 text-warn-soft border border-warn/20">
             Cifrado
           </span>
         )}
@@ -182,7 +182,7 @@ export function PlatformConfidentialVault({
             type="button"
             disabled={busy || !password}
             onClick={() => void handleCreate()}
-            className="w-full px-3 py-1.5 text-xs bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/30 text-warn-soft rounded-lg disabled:opacity-50"
+            className="w-full px-3 py-1.5 text-xs bg-warn/20 hover:bg-warn/30 border border-warn/30 text-warn-soft rounded-lg disabled:opacity-50"
           >
             {busy ? "Guardando..." : "Guardar información cifrada"}
           </button>
@@ -216,14 +216,14 @@ export function PlatformConfidentialVault({
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={5}
-            className="w-full bg-panel-2 border border-amber-500/20 rounded px-2 py-1.5 text-xs text-fg resize-y min-h-[100px]"
+            className="w-full bg-panel-2 border border-warn/20 rounded px-2 py-1.5 text-xs text-fg resize-y min-h-[100px]"
           />
           <div className="flex flex-wrap gap-1.5">
             <button
               type="button"
               disabled={busy}
               onClick={() => void handleSaveUnlocked()}
-              className="px-2.5 py-1 text-[11px] bg-green-600/60 hover:bg-green-600/80 text-fg rounded-md disabled:opacity-50"
+              className="px-2.5 py-1 text-[11px] bg-ok/60 hover:bg-ok/80 text-fg rounded-md disabled:opacity-50"
             >
               {busy ? "Guardando..." : "Guardar cambios"}
             </button>
@@ -237,7 +237,7 @@ export function PlatformConfidentialVault({
             <button
               type="button"
               onClick={() => void handleRemove()}
-              className="px-2.5 py-1 text-[11px] text-danger/80 rounded-md ml-auto"
+              className="px-2.5 py-1 text-[11px] text-danger rounded-md ml-auto"
             >
               Eliminar
             </button>

@@ -77,7 +77,7 @@ export function AccountActions({ accountId }: { accountId: string }) {
         {syncing ? "Sync..." : "Sincronizar"}
       </button>
       <button onClick={handleResyncBodies} disabled={syncing}
-        className="px-3 py-1.5 text-xs bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 disabled:opacity-40 text-warn/80 rounded-lg transition-all">
+        className="px-3 py-1.5 text-xs bg-warn/10 border border-warn/20 hover:bg-warn/15 disabled:opacity-40 text-warn rounded-lg transition-all">
         Recuperar HTML
       </button>
       <Link href={`/empresa/correos/cuentas/${accountId}`}
@@ -85,7 +85,7 @@ export function AccountActions({ accountId }: { accountId: string }) {
         Editar
       </Link>
       <button onClick={handleDelete}
-        className="px-3 py-1.5 text-xs border border-red-500/20 hover:bg-red-500/10 text-danger/60 hover:text-danger rounded-lg transition-all">
+        className="px-3 py-1.5 text-xs border border-danger/20 hover:bg-danger/10 text-danger hover:text-danger rounded-lg transition-all">
         Eliminar
       </button>
     </div>

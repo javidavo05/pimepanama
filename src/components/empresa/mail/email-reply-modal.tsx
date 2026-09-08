@@ -26,6 +26,7 @@ export function EmailReplyModal({
   onClose,
 }: EmailReplyModalProps) {
   if (!hasSmtp) {
+    // theme-ok: velo de modal — oscurece el fondo en ambos temas a propósito
     return (
       <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
         <div className="bg-pop border border-line rounded-2xl p-6 max-w-sm w-full text-center">

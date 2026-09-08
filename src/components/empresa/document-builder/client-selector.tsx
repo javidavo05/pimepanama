@@ -101,7 +101,7 @@ export function ClientSelector({ clients, register, setValue, watch, lang = "es"
             selectedClientId={watch("clientId") || undefined}
           />
           {watch("saveAsNewClient") && (
-            <p className="mt-1.5 text-[10px] text-brand-fg/70 flex items-center gap-1">
+            <p className="mt-1.5 text-[10px] text-brand-fg flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-brand/60 inline-block" />
               {t.newClientHint}
             </p>

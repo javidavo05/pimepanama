@@ -75,7 +75,7 @@ export default async function CuentasPorCobrarPage() {
           { label: "Total por cobrar", value: `$${fmtUSD(total)}`, color: "text-brand-fg", sub: "saldos pendientes" },
           { label: "Vencido", value: `$${fmtUSD(overdue)}`, color: overdue > 0 ? "text-danger" : "text-fg-dim", sub: "requiere atención" },
           { label: "Próximos 7 días", value: `$${fmtUSD(due7d)}`, color: "text-warn", sub: "por vencer" },
-          { label: "Próximos 30 días", value: `$${fmtUSD(due30d)}`, color: "text-iris", sub: "por vencer" },
+          { label: "Próximos 30 días", value: `$${fmtUSD(due30d)}`, color: "text-iris-fg", sub: "por vencer" },
         ].map(({ label, value, color, sub }) => (
           <div key={label} className="bg-panel border border-line rounded-2xl p-5">
             <p className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-3">{label}</p>
@@ -112,18 +112,18 @@ export default async function CuentasPorCobrarPage() {
                           <span className="text-[10px] px-1.5 py-0.5 rounded border border-iris/30 text-iris-fg">cuota</span>
                         )}
                         {item.kind === "quote" && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-amber-500/30 text-warn">⚠ sin factura</span>
+                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-warn/30 text-warn">⚠ sin factura</span>
                         )}
                         {item.kind === "invoice" && item.status === "DRAFT" && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded border border-line-loud text-fg-faint">borrador</span>
                         )}
                         {item.amountPaid > 0 && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-green-500/30 text-ok">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-ok/30 text-ok">
                             abonado ${fmtUSD(item.amountPaid)} de ${fmtUSD(item.documentTotal)}
                           </span>
                         )}
                         {item.projectName && (
-                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-brand/25 text-brand-fg/60">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-brand/25 text-brand-fg">
                             🗂️ {item.projectName}
                           </span>
                         )}
@@ -146,11 +146,11 @@ export default async function CuentasPorCobrarPage() {
 
                     <span className={`px-2 py-0.5 text-[10px] rounded border shrink-0 ${
                       item.status === "OVERDUE" || (item.daysLeft !== null && item.daysLeft < 0)
-                        ? "bg-red-500/15 text-danger border-red-500/20"
+                        ? "bg-danger/15 text-danger border-danger/20"
                         : item.status === "PARTIALLY_PAID"
-                          ? "bg-green-500/15 text-ok border-green-500/20"
+                          ? "bg-ok/15 text-ok border-ok/20"
                           : item.status === "ACCEPTED" || item.status === "SENT"
-                            ? "bg-blue-500/15 text-info border-blue-500/20"
+                            ? "bg-info/15 text-info border-info/20"
                             : "bg-fill-2 text-fg-dim border-line-mid"
                     }`}>
                       {DOC_STATUS_LABEL[item.status] ?? item.status}

@@ -190,8 +190,8 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
 
       {/* Lo que la IA completó por su cuenta: es lo primero que hay que revisar. */}
       {assumptions.length > 0 && (
-        <div className="rounded-lg border border-amber-500/25 bg-amber-500/[0.06] px-3 py-2.5">
-          <p className="text-warn/90 text-[11px] uppercase tracking-widest font-medium">
+        <div className="rounded-lg border border-warn/25 bg-warn/[0.06] px-3 py-2.5">
+          <p className="text-warn text-[11px] uppercase tracking-widest font-medium">
             Redactado por la IA — no venía en el documento
           </p>
           <ul className="mt-1.5 space-y-1">
@@ -204,7 +204,7 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
         </div>
       )}
 
-      <p className="text-fg-trace text-[10px]">
+      <p className="text-fg-ghost text-[10px]">
         Revisa siempre lo redactado: la IA puede equivocarse y nada se guarda hasta que pulses crear.
       </p>
     </div>

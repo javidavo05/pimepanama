@@ -69,7 +69,7 @@ export function MeetingAskPanel({ meetingId, hasTranscript, onSeek }: MeetingAsk
 
   if (!hasTranscript) {
     return (
-      <p className="text-white/40 text-sm">
+      <p className="text-fg-ghost text-sm">
         Esta reunión no tiene transcripción todavía, así que no hay nada que preguntarle.
       </p>
     );
@@ -77,7 +77,7 @@ export function MeetingAskPanel({ meetingId, hasTranscript, onSeek }: MeetingAsk
 
   return (
     <div className="space-y-4">
-      <p className="text-white/50 text-xs leading-relaxed">
+      <p className="text-fg-faint text-xs leading-relaxed">
         Responde solo con lo que se dijo en esta reunión, citando el minuto. Si algo no se habló, lo
         dice en vez de completarlo.
       </p>
@@ -89,7 +89,7 @@ export function MeetingAskPanel({ meetingId, hasTranscript, onSeek }: MeetingAsk
               key={s}
               onClick={() => void ask(s)}
               disabled={busy}
-              className="px-3 py-1.5 bg-white/[0.03] hover:bg-white/[0.07] disabled:opacity-40 border border-white/[0.06] text-white/60 text-xs rounded-lg transition-all"
+              className="px-3 py-1.5 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-dim text-xs rounded-lg transition-all"
             >
               {s}
             </button>
@@ -100,21 +100,21 @@ export function MeetingAskPanel({ meetingId, hasTranscript, onSeek }: MeetingAsk
       <div className="space-y-4">
         {history.map((ex, i) => (
           <div key={i} className="space-y-2">
-            <p className="text-white text-sm font-medium">{ex.question}</p>
-            <p className="text-white/75 text-sm leading-relaxed whitespace-pre-wrap">{ex.answer}</p>
+            <p className="text-fg text-sm font-medium">{ex.question}</p>
+            <p className="text-fg-soft text-sm leading-relaxed whitespace-pre-wrap">{ex.answer}</p>
             {ex.citations.length > 0 && (
-              <div className="space-y-1.5 pl-3 border-l border-[#1AA7F0]/25">
+              <div className="space-y-1.5 pl-3 border-l border-brand/25">
                 {ex.citations.map((c, j) => (
                   <div key={j} className="text-xs">
                     <button
                       onClick={() => onSeek(c.startMs)}
-                      className="text-[#1AA7F0]/80 hover:text-[#1AA7F0] font-mono transition-colors"
+                      className="text-brand-fg hover:text-brand-fg font-mono transition-colors"
                       title="Escuchar este momento"
                     >
                       ▸ {formatTimestamp(c.startMs)}
                     </button>
-                    <span className="text-white/40"> · {c.speaker}</span>
-                    <p className="text-white/60 italic leading-relaxed mt-0.5">«{c.quote}»</p>
+                    <span className="text-fg-ghost"> · {c.speaker}</span>
+                    <p className="text-fg-dim italic leading-relaxed mt-0.5">«{c.quote}»</p>
                   </div>
                 ))}
               </div>
@@ -131,18 +131,18 @@ export function MeetingAskPanel({ meetingId, hasTranscript, onSeek }: MeetingAsk
             if (e.key === "Enter") void ask(question);
           }}
           placeholder="¿Qué quieres saber de esta reunión?"
-          className="flex-1 bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/30 focus:border-[#1AA7F0]/50 focus:outline-none"
+          className="flex-1 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
         />
         <button
           onClick={() => void ask(question)}
           disabled={busy || !question.trim()}
-          className="px-4 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-all shrink-0"
+          className="px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all shrink-0"
         >
           {busy ? "Buscando…" : "Preguntar"}
         </button>
       </div>
 
-      {error && <p className="text-red-400 text-xs">{error}</p>}
+      {error && <p className="text-danger text-xs">{error}</p>}
     </div>
   );
 }

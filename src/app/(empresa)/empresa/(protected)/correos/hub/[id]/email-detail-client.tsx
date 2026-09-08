@@ -11,11 +11,11 @@ import { formatEmailReceivedAt } from "@/lib/format-datetime";
 import { resolveReplyRecipient } from "@/lib/mail/reply-recipient";
 
 const TAG_COLORS: Record<string, string> = {
-  urgent: "bg-red-500/15 text-danger border-red-500/20",
-  invoice: "bg-amber-500/15 text-warn border-amber-500/20",
-  payment: "bg-green-500/15 text-ok border-green-500/20",
-  "follow-up": "bg-blue-500/15 text-info border-blue-500/20",
-  support: "bg-purple-500/15 text-grape border-purple-500/20",
+  urgent: "bg-danger/15 text-danger border-danger/20",
+  invoice: "bg-warn/15 text-warn border-warn/20",
+  payment: "bg-ok/15 text-ok border-ok/20",
+  "follow-up": "bg-info/15 text-info border-info/20",
+  support: "bg-grape/15 text-grape border-grape/20",
   spam: "bg-fill-3 text-fg-dim border-line-mid",
   general: "bg-fill text-fg-dim border-line",
 };
@@ -209,7 +209,7 @@ export function EmailDetailClient({ email, accounts, company }: EmailDetailClien
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Análisis IA</h3>
             <button onClick={handleAnalyze} disabled={analyzing}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-iris/10 border border-iris/25 text-iris text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-iris/10 border border-iris/25 text-iris-fg text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
               {analyzing ? (
                 <><span className="w-1.5 h-1.5 rounded-full bg-iris animate-pulse" /> Analizando...</>
               ) : (
@@ -227,7 +227,7 @@ export function EmailDetailClient({ email, accounts, company }: EmailDetailClien
               {analysis?.urgency && (
                 <div>
                   <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Urgencia</p>
-                  <span className={`text-xs px-2 py-0.5 rounded border ${analysis.urgency === "high" ? "bg-red-500/15 text-danger border-red-500/20" : analysis.urgency === "medium" ? "bg-amber-500/15 text-warn border-amber-500/20" : "bg-fill text-fg-dim border-line"}`}>
+                  <span className={`text-xs px-2 py-0.5 rounded border ${analysis.urgency === "high" ? "bg-danger/15 text-danger border-danger/20" : analysis.urgency === "medium" ? "bg-warn/15 text-warn border-warn/20" : "bg-fill text-fg-dim border-line"}`}>
                     {analysis.urgency === "high" ? "Alta" : analysis.urgency === "medium" ? "Media" : "Baja"}
                   </span>
                 </div>

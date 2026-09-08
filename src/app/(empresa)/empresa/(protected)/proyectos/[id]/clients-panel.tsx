@@ -43,7 +43,7 @@ export function ClientsPanel({ projectId, clients, allClients }: ClientsPanelPro
   return (
     <div
       className={`bg-panel border rounded-xl p-5 space-y-3 ${
-        empty ? "border-amber-500/25" : "border-line"
+        empty ? "border-warn/25" : "border-line"
       }`}
     >
       <div className="flex items-center justify-between">
@@ -77,7 +77,7 @@ export function ClientsPanel({ projectId, clients, allClients }: ClientsPanelPro
                 <p className="text-fg-ghost text-[11px] truncate">
                   {c.company ?? ""}
                   {i === 0 && (
-                    <span className="text-[9px] uppercase tracking-widest text-sand-fg/70 ml-1">
+                    <span className="text-[9px] uppercase tracking-widest text-sand-fg ml-1">
                       principal
                     </span>
                   )}
@@ -133,7 +133,7 @@ export function ClientsPanel({ projectId, clients, allClients }: ClientsPanelPro
         allClients.length === 0 && (
           <Link
             href="/empresa/clientes"
-            className="inline-block text-brand-fg/70 text-xs hover:text-brand-fg transition-colors"
+            className="inline-block text-brand-fg text-xs hover:text-brand-fg transition-colors"
           >
             + Crear un cliente primero
           </Link>

@@ -137,8 +137,8 @@ export function RepoPanel({ projectId }: { projectId: string }) {
       </div>
 
       {state && !state.hasToken && (
-        <div className="border border-amber-500/20 bg-amber-500/[0.04] rounded-xl p-3.5 space-y-2">
-          <p className="text-warn/90 text-xs leading-relaxed">
+        <div className="border border-warn/20 bg-warn/[0.04] rounded-xl p-3.5 space-y-2">
+          <p className="text-warn text-xs leading-relaxed">
             No hay token de GitHub guardado. Sin él solo se pueden leer repositorios públicos.
           </p>
           {showToken ? (
@@ -209,7 +209,7 @@ export function RepoPanel({ projectId }: { projectId: string }) {
             </p>
           )}
           {state.stats.truncated && (
-            <p className="text-warn/70 text-xs">
+            <p className="text-warn text-xs">
               El repo es grande y el mapa quedó recortado; se priorizó el código sobre la
               configuración.
             </p>
@@ -226,7 +226,7 @@ export function RepoPanel({ projectId }: { projectId: string }) {
             <button
               onClick={() => void disconnect()}
               disabled={busy !== null}
-              className="px-3 py-1.5 bg-fill hover:bg-red-500/10 disabled:opacity-40 border border-line hover:border-red-500/25 text-fg-ghost hover:text-danger text-xs rounded-lg transition-all"
+              className="px-3 py-1.5 bg-fill hover:bg-danger/10 disabled:opacity-40 border border-line hover:border-danger/25 text-fg-ghost hover:text-danger text-xs rounded-lg transition-all"
             >
               Desconectar
             </button>

@@ -262,7 +262,7 @@ export function ContractsPanel({
         <button
           type="button"
           onClick={startCreate}
-          className="text-brand-fg/60 text-[10px] hover:text-brand-fg transition-colors"
+          className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors"
         >
           + agregar
         </button>
@@ -294,12 +294,12 @@ export function ContractsPanel({
                         {CONTRACT_STATUS_LABEL[c.status]}
                       </span>
                       {c.signedAt && (
-                        <span className="text-ok/70 text-[10px] shrink-0">✓ firmado</span>
+                        <span className="text-ok text-[10px] shrink-0">✓ firmado</span>
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-1">
                       {c.value != null && (
-                        <span className="text-sand-fg/70 text-xs font-mono">${fmtUSD(c.value)}</span>
+                        <span className="text-sand-fg text-xs font-mono">${fmtUSD(c.value)}</span>
                       )}
                       {(c.startsAt || c.endsAt) && (
                         <span className="text-fg-faint text-[11px]">
@@ -354,7 +354,7 @@ export function ContractsPanel({
                   <button
                     type="button"
                     onClick={() => setConfirmDeleteId(c.id)}
-                    className="text-fg-trace hover:text-danger text-[10px] mt-1 transition-colors opacity-0 group-hover:opacity-100"
+                    className="text-fg-ghost hover:text-danger text-[10px] mt-1 transition-colors opacity-0 group-hover:opacity-100"
                   >
                     eliminar
                   </button>

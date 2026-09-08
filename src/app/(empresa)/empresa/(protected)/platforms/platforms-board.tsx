@@ -362,7 +362,7 @@ function SlotBadge({
 }) {
   if (slot == null) {
     return (
-      <span className="text-[10px] px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-warn font-medium">
+      <span className="text-[10px] px-2 py-0.5 rounded-full border border-warn/30 bg-warn/10 text-warn font-medium">
         Sin cupo
       </span>
     );
@@ -372,7 +372,7 @@ function SlotBadge({
     <span
       className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold font-mono ${
         conflict || over
-          ? "border-red-500/40 bg-red-500/15 text-danger"
+          ? "border-danger/40 bg-danger/15 text-danger"
           : "border-brand/35 bg-brand/15 text-brand-fg"
       }`}
     >
@@ -439,7 +439,7 @@ function AccountSlotRow({
                       ? isThis
                         ? "bg-brand ring-1 ring-brand/50"
                         : "bg-fg-ghost"
-                      : "bg-green-500/40"
+                      : "bg-ok/40"
                   }`}
                 />
               );
@@ -490,8 +490,8 @@ function InventoryCard({ item }: { item: EmailSlotInventory }) {
               key={n}
               className={`rounded-lg px-2 py-1.5 text-[11px] border ${
                 occupant
-                  ? "border-line-mid bg-black/20 text-fg-soft"
-                  : "border-green-500/25 bg-green-500/10 text-ok"
+                  ? "border-line-mid bg-fill-2 text-fg-soft"
+                  : "border-ok/25 bg-ok/10 text-ok"
               }`}
             >
               <span className="font-mono font-semibold">#{n}</span>
@@ -661,10 +661,10 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <p className="text-fg-dim">{platforms.length} plataformas</p>
-          <span className="text-ok/90 text-xs font-mono">
+          <span className="text-ok text-xs font-mono">
             SB {totalFreeSupabase} cupos libres
           </span>
-          <span className="text-ok/90 text-xs font-mono">
+          <span className="text-ok text-xs font-mono">
             Vercel {totalFreeVercel} cupos libres
           </span>
         </div>
@@ -740,7 +740,7 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
                 onClick={() => setFilterAvailable(true)}
                 className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                   filterAvailable
-                    ? "bg-green-500/15 border-green-500/30 text-ok"
+                    ? "bg-ok/15 border-ok/30 text-ok"
                     : "border-line text-fg-faint"
                 }`}
               >
@@ -789,7 +789,7 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
             type="button"
             disabled={busy || !newName.trim()}
             onClick={addPlatform}
-            className="px-4 py-2 bg-green-600/80 hover:bg-green-600 text-on-brand text-sm rounded-lg disabled:opacity-50"
+            className="px-4 py-2 bg-ok-solid hover:bg-ok-solid/85 text-on-solid text-sm rounded-lg disabled:opacity-50"
           >
             Guardar
           </button>
@@ -822,7 +822,7 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
                   <h3 className="text-fg font-medium text-sm flex items-center gap-1.5">
                     {p.name}
                     {p.hasConfidential && (
-                      <span className="text-[9px] text-warn/80" title="Tiene información confidencial">
+                      <span className="text-[9px] text-warn" title="Tiene información confidencial">
                         🔒
                       </span>
                     )}
@@ -965,7 +965,7 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
                   <FieldRow label="Github" value={p.githubEmail} />
                   <FieldRow label="BREVO" value={p.brevoEmail} />
                   {p.notes && (
-                    <p className="text-[11px] text-warn/80 border-t border-line pt-2 mt-2">
+                    <p className="text-[11px] text-warn border-t border-line pt-2 mt-2">
                       {p.notes}
                     </p>
                   )}

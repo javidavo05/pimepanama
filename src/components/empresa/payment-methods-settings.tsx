@@ -141,7 +141,7 @@ function MethodRow({
       </div>
       <div className="flex gap-3 shrink-0">
         <button type="button" onClick={() => setEditing(true)} className="text-fg-dim hover:text-fg-mute text-xs">Editar</button>
-        <button type="button" onClick={() => void handleDelete()} className="text-danger/50 hover:text-danger text-xs">Eliminar</button>
+        <button type="button" onClick={() => void handleDelete()} className="text-danger hover:text-danger text-xs">Eliminar</button>
       </div>
     </div>
   );
@@ -185,7 +185,7 @@ function AddBankForm({ onAdded }: { onAdded: () => void }) {
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="text-sand-fg/70 hover:text-sand-fg text-xs font-medium">
+      <button type="button" onClick={() => setOpen(true)} className="text-sand-fg hover:text-sand-fg text-xs font-medium">
         + Agregar cuenta bancaria
       </button>
     );
@@ -265,7 +265,7 @@ function AddCommissionForm({ onAdded }: { onAdded: () => void }) {
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="text-sand-fg/70 hover:text-sand-fg text-xs font-medium">
+      <button type="button" onClick={() => setOpen(true)} className="text-sand-fg hover:text-sand-fg text-xs font-medium">
         + Agregar tarjeta o punto de pago
       </button>
     );

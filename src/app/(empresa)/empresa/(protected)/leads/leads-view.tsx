@@ -90,9 +90,9 @@ export function LeadsView({ leads: initialLeads }: { leads: SerializedLead[] }) 
   return (
     <div className="space-y-4">
       {notice && (
-        <div className="flex items-center justify-between rounded-lg border border-green-500/20 bg-green-500/[0.08] px-4 py-3 text-sm text-ok">
+        <div className="flex items-center justify-between rounded-lg border border-ok/20 bg-ok/[0.08] px-4 py-3 text-sm text-ok">
           <span>{notice}</span>
-          <button onClick={() => setNotice(null)} className="text-ok/50 hover:text-ok">
+          <button onClick={() => setNotice(null)} className="text-ok hover:text-ok">
             ×
           </button>
         </div>

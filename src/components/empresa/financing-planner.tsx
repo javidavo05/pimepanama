@@ -157,7 +157,7 @@ export function FinancingPlanner({
               </div>
               <div className="max-h-44 overflow-y-auto divide-y divide-line">
                 {built.downPayment > 0 && (
-                  <div className="flex items-center justify-between px-3 py-1.5 text-xs bg-green-500/[0.04]">
+                  <div className="flex items-center justify-between px-3 py-1.5 text-xs bg-ok/[0.04]">
                     <span className="text-ok">Abono inicial · a la firma</span>
                     <span className="text-ok font-mono">{fmt(built.downPayment)}</span>
                   </div>

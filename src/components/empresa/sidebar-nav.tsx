@@ -77,6 +77,7 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
       {/* Backdrop */}
       {open && (
         <div
+          // theme-ok: velo de modal — oscurece el fondo en ambos temas a propósito
           className="md:hidden fixed inset-0 bg-black/60 z-40"
           onClick={() => setOpen(false)}
           aria-hidden

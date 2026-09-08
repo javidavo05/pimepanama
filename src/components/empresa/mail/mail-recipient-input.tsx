@@ -146,7 +146,7 @@ export function MailRecipientInput({
       <label htmlFor={inputId} className="text-fg-ghost text-xs">
         {label}
         {multiple ? (
-          <span className="text-fg-trace font-normal ml-1">(varios con coma)</span>
+          <span className="text-fg-ghost font-normal ml-1">(varios con coma)</span>
         ) : null}
       </label>
 
@@ -227,12 +227,12 @@ export function MailRecipientInput({
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-fg text-sm truncate">{item.label}</p>
-                    <p className="text-brand-fg/80 text-xs truncate">{item.email}</p>
+                    <p className="text-brand-fg text-xs truncate">{item.email}</p>
                     {item.subtitle && (
                       <p className="text-fg-ghost text-[10px] truncate mt-0.5">{item.subtitle}</p>
                     )}
                   </div>
-                  <span className="text-fg-trace text-[10px] uppercase tracking-wide shrink-0 pt-0.5">
+                  <span className="text-fg-ghost text-[10px] uppercase tracking-wide shrink-0 pt-0.5">
                     {RECIPIENT_SOURCE_LABEL[item.source]}
                   </span>
                 </div>

@@ -107,7 +107,7 @@ export function CitasConfigClient() {
                 onChange={(e) => updateSlot(weekday, "startTime", e.target.value)}
                 className="bg-fill border border-line-mid rounded px-2 py-1 text-fg"
               />
-              <span className="text-fg-trace">—</span>
+              <span className="text-fg-ghost">—</span>
               <input
                 type="time"
                 value={row.endTime}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Document } from "@prisma/client";
 import { DocumentRowActions } from "./document-row-actions";
 import { ConvertToInvoiceButton } from "./convert-to-invoice-button";
+import { docTypePillStyle } from "@/lib/empresa/doc-type-colors";
 
 const TYPE_PATHS: Record<string, string> = {
   FACTURA: "facturas",
@@ -17,12 +18,7 @@ const TYPE_LABELS: Record<string, string> = {
   CORREO: "Correo",
 };
 
-const TYPE_COLORS: Record<string, string> = {
-  FACTURA: "#3B82F6",
-  COTIZACION: "#8B5CF6",
-  BITACORA: "#10B981",
-  CORREO: "#F59E0B",
-};
+
 
 // La lista es el registro de documentos emitidos: PARTIALLY_PAID no es un
 // estado del documento sino del cobro, así que se muestra como "Emitida" y el
@@ -39,11 +35,11 @@ const STATUS_LABELS: Record<string, string> = {
 
 const STATUS_COLORS: Record<string, string> = {
   DRAFT: "text-fg-dim bg-fill",
-  SENT: "text-info bg-blue-500/10",
-  ACCEPTED: "text-ok bg-green-500/10",
-  REJECTED: "text-danger bg-red-500/10",
+  SENT: "text-info bg-info/10",
+  ACCEPTED: "text-ok bg-ok/10",
+  REJECTED: "text-danger bg-danger/10",
   PAID: "text-sand-fg bg-sand/10",
-  PARTIALLY_PAID: "text-info bg-blue-500/10",
+  PARTIALLY_PAID: "text-info bg-info/10",
   CANCELLED: "text-fg-dim bg-fill",
 };
 
@@ -93,7 +89,7 @@ function AmountCell({ doc, align = "right" }: { doc: Document; align?: "right" |
         {doc.currency} {total.toLocaleString("en-US", { minimumFractionDigits: 2 })}
       </span>
       {partial && (
-        <p className="text-ok/80 font-mono text-[10px] mt-0.5">
+        <p className="text-ok font-mono text-[10px] mt-0.5">
           cobrado {collected.toLocaleString("en-US", { minimumFractionDigits: 2 })}
         </p>
       )}
@@ -160,7 +156,7 @@ export function DocumentListTable({
                   {showType && (
                     <span
                       className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium"
-                      style={{ color: TYPE_COLORS[doc.type], backgroundColor: `${TYPE_COLORS[doc.type]}15` }}
+                      style={docTypePillStyle(doc.type)}
                     >
                       {TYPE_LABELS[doc.type]}
                     </span>
@@ -236,10 +232,7 @@ export function DocumentListTable({
                   <td className="py-3 pr-4">
                     <span
                       className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium"
-                      style={{
-                        color: TYPE_COLORS[doc.type],
-                        backgroundColor: `${TYPE_COLORS[doc.type]}15`,
-                      }}
+                      style={docTypePillStyle(doc.type)}
                     >
                       {TYPE_LABELS[doc.type]}
                     </span>

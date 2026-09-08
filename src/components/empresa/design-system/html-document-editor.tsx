@@ -149,7 +149,8 @@ export function DesignSystemHtmlEditor({
       ) : (
         <div
           ref={containerRef}
-          className="relative bg-[#c8ccd6] overflow-auto"
+          // theme-ok: mesa del visor de documentos — gris fijo en ambos temas, como un lector de PDF
+          className="relative bg-[#c8ccd6] overflow-auto" data-theme-surface="fixed"
           style={{ height: "80vh" }}
         >
           <div

@@ -80,27 +80,27 @@ function DraftForm({
           value={draft.title}
           onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
           placeholder="Qué hay que hacer, en imperativo"
-          className="w-full bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/30 focus:border-[#1AA7F0]/50 focus:outline-none"
+          className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
         />
         <textarea
           value={draft.detail}
           onChange={(e) => setDraft((d) => ({ ...d, detail: e.target.value }))}
           rows={3}
           placeholder="Detalle y contexto de la reunión que lo justifica"
-          className="w-full bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/30 focus:border-[#1AA7F0]/50 focus:outline-none leading-relaxed"
+          className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none leading-relaxed"
         />
         <textarea
           value={draft.acceptance}
           onChange={(e) => setDraft((d) => ({ ...d, acceptance: e.target.value }))}
           rows={2}
           placeholder="Criterios de aceptación, uno por línea"
-          className="w-full bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/30 focus:border-[#1AA7F0]/50 focus:outline-none leading-relaxed"
+          className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none leading-relaxed"
         />
         <div className="grid sm:grid-cols-4 gap-2">
           <select
             value={draft.kind}
             onChange={(e) => setDraft((d) => ({ ...d, kind: e.target.value as Draft["kind"] }))}
-            className="bg-[#050508] border border-white/[0.08] rounded-lg px-2 py-2 text-white text-xs focus:border-[#1AA7F0]/50 focus:outline-none"
+            className="bg-canvas border border-line rounded-lg px-2 py-2 text-fg text-xs focus:border-brand/50 focus:outline-none"
           >
             {KINDS.map((k) => (
               <option key={k} value={k}>
@@ -113,7 +113,7 @@ function DraftForm({
             onChange={(e) =>
               setDraft((d) => ({ ...d, priority: e.target.value as Draft["priority"] }))
             }
-            className="bg-[#050508] border border-white/[0.08] rounded-lg px-2 py-2 text-white text-xs focus:border-[#1AA7F0]/50 focus:outline-none"
+            className="bg-canvas border border-line rounded-lg px-2 py-2 text-fg text-xs focus:border-brand/50 focus:outline-none"
           >
             {PRIORITIES.map((p) => (
               <option key={p} value={p}>
@@ -125,26 +125,26 @@ function DraftForm({
             value={draft.owner}
             onChange={(e) => setDraft((d) => ({ ...d, owner: e.target.value }))}
             placeholder="Responsable"
-            className="bg-[#050508] border border-white/[0.08] rounded-lg px-2.5 py-2 text-white text-xs placeholder:text-white/30 focus:border-[#1AA7F0]/50 focus:outline-none"
+            className="bg-canvas border border-line rounded-lg px-2.5 py-2 text-fg text-xs placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
           />
           <input
             type="date"
             value={draft.dueDate}
             onChange={(e) => setDraft((d) => ({ ...d, dueDate: e.target.value }))}
-            className="bg-[#050508] border border-white/[0.08] rounded-lg px-2.5 py-2 text-white text-xs focus:border-[#1AA7F0]/50 focus:outline-none"
+            className="bg-canvas border border-line rounded-lg px-2.5 py-2 text-fg text-xs focus:border-brand/50 focus:outline-none"
           />
         </div>
         <div className="flex gap-2">
           <button
             onClick={onSave}
             disabled={saving}
-            className="px-4 py-1.5 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-all"
+            className="px-4 py-1.5 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
           >
             {saving ? "Guardando…" : "Guardar"}
           </button>
           <button
             onClick={onCancel}
-            className="px-4 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-white/70 text-xs rounded-lg transition-all"
+            className="px-4 py-1.5 bg-fill hover:bg-fill-2 border border-line text-fg-mute text-xs rounded-lg transition-all"
           >
             Cancelar
           </button>
@@ -301,7 +301,7 @@ export function ActionItemsPanel({
   return (
     <div className="space-y-4">
       {items.length === 0 && !creating && (
-        <p className="text-white/40 text-sm">
+        <p className="text-fg-ghost text-sm">
           No hay pendientes. Corre la etapa «Pendientes» para extraerlos de la reunión, o agrega uno
           a mano.
         </p>
@@ -312,7 +312,7 @@ export function ActionItemsPanel({
           const isSelected = selected.includes(item.id);
           if (editing === item.id) {
             return (
-              <div key={item.id} className="border border-[#1AA7F0]/30 rounded-xl p-4">
+              <div key={item.id} className="border border-brand/30 rounded-xl p-4">
                 <DraftForm
                   draft={draft}
                   setDraft={setDraft}
@@ -328,10 +328,10 @@ export function ActionItemsPanel({
               key={item.id}
               className={`border rounded-xl p-4 transition-all ${
                 item.taskId
-                  ? "border-green-500/20 bg-green-500/[0.03]"
+                  ? "border-ok/20 bg-ok/[0.03]"
                   : isSelected
-                    ? "border-[#1AA7F0]/30 bg-[#1AA7F0]/[0.04]"
-                    : "border-white/[0.06]"
+                    ? "border-brand/30 bg-brand/[0.04]"
+                    : "border-line"
               }`}
             >
               <div className="flex items-start gap-3">
@@ -344,7 +344,7 @@ export function ActionItemsPanel({
                         e.target.checked ? [...prev, item.id] : prev.filter((id) => id !== item.id)
                       )
                     }
-                    className="mt-1 accent-[#1AA7F0]"
+                    className="mt-1 accent-brand"
                     aria-label={`Seleccionar ${item.title}`}
                   />
                 )}
@@ -353,31 +353,31 @@ export function ActionItemsPanel({
                     <span className={`px-2 py-0.5 text-[10px] rounded border ${KIND_COLOR[item.kind]}`}>
                       {KIND_LABEL[item.kind]}
                     </span>
-                    <span className="text-white/40 text-[10px]">
+                    <span className="text-fg-ghost text-[10px]">
                       Prioridad {PRIORITY_LABEL[item.priority]}
                     </span>
-                    {item.taskId && <span className="text-green-400 text-[10px]">✓ En tareas</span>}
+                    {item.taskId && <span className="text-ok text-[10px]">✓ En tareas</span>}
                   </div>
-                  <p className="text-white text-sm font-medium">{item.title}</p>
+                  <p className="text-fg text-sm font-medium">{item.title}</p>
                   {item.detail && (
-                    <p className="text-white/60 text-xs mt-1 leading-relaxed">{item.detail}</p>
+                    <p className="text-fg-dim text-xs mt-1 leading-relaxed">{item.detail}</p>
                   )}
                   {item.acceptance.length > 0 && (
                     <div className="mt-2">
-                      <p className="text-white/40 text-[10px] uppercase tracking-wider mb-1">
+                      <p className="text-fg-ghost text-[10px] uppercase tracking-wider mb-1">
                         Criterios de aceptación
                       </p>
                       <ul className="space-y-0.5">
                         {item.acceptance.map((a, i) => (
-                          <li key={i} className="text-white/60 text-xs flex gap-1.5">
-                            <span className="text-[#1AA7F0]/50">✓</span>
+                          <li key={i} className="text-fg-dim text-xs flex gap-1.5">
+                            <span className="text-brand-fg">✓</span>
                             <span>{a}</span>
                           </li>
                         ))}
                       </ul>
                     </div>
                   )}
-                  <div className="flex gap-3 flex-wrap mt-2 text-[11px] text-white/40">
+                  <div className="flex gap-3 flex-wrap mt-2 text-[11px] text-fg-ghost">
                     {item.owner && <span>👤 {item.owner}</span>}
                     {item.dueDate && (
                       <span>📅 {new Date(item.dueDate).toLocaleDateString("es-PA")}</span>
@@ -395,7 +395,7 @@ export function ActionItemsPanel({
                         setEditing(item.id);
                         setDraft(draftFrom(item));
                       }}
-                      className="text-white/30 hover:text-[#1AA7F0] text-xs transition-colors px-1"
+                      className="text-fg-ghost hover:text-brand-fg text-xs transition-colors px-1"
                       aria-label={`Editar ${item.title}`}
                     >
                       ✎
@@ -403,7 +403,7 @@ export function ActionItemsPanel({
                     <button
                       onClick={() => void remove(item.id)}
                       disabled={busy === item.id}
-                      className="text-white/30 hover:text-red-400 text-xs transition-colors px-1"
+                      className="text-fg-ghost hover:text-danger text-xs transition-colors px-1"
                       aria-label={`Borrar ${item.title}`}
                     >
                       ✕
@@ -417,7 +417,7 @@ export function ActionItemsPanel({
       </div>
 
       {creating ? (
-        <div className="border border-[#1AA7F0]/30 rounded-xl p-4">
+        <div className="border border-brand/30 rounded-xl p-4">
           <DraftForm
             draft={draft}
             setDraft={setDraft}
@@ -433,18 +433,18 @@ export function ActionItemsPanel({
             setDraft(EMPTY_DRAFT);
             setCreating(true);
           }}
-          className="text-[#1AA7F0] hover:text-[#0E87C8] text-sm transition-colors"
+          className="text-brand-fg hover:text-brand-hi text-sm transition-colors"
         >
           + Agregar pendiente a mano
         </button>
       )}
 
       {unsynced.length > 0 && (
-        <div className="flex flex-wrap gap-2 pt-3 border-t border-white/[0.06]">
+        <div className="flex flex-wrap gap-2 pt-3 border-t border-line">
           <button
             onClick={() => void syncTasks(false)}
             disabled={busy !== null || selected.length === 0}
-            className="px-4 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-all"
+            className="px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
           >
             {busy === "sync" ? "Creando…" : `✅ Pasar ${selected.length} a Tareas`}
           </button>
@@ -452,7 +452,7 @@ export function ActionItemsPanel({
             <button
               onClick={() => void syncTasks(true)}
               disabled={busy !== null || selected.length === 0}
-              className="px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] disabled:opacity-40 border border-white/[0.08] text-white/70 text-xs rounded-lg transition-all"
+              className="px-4 py-2 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all"
             >
               + también como entregables del proyecto
             </button>
@@ -460,8 +460,8 @@ export function ActionItemsPanel({
         </div>
       )}
 
-      {message && <p className="text-green-400 text-xs">{message}</p>}
-      {error && <p className="text-red-400 text-xs">{error}</p>}
+      {message && <p className="text-ok text-xs">{message}</p>}
+      {error && <p className="text-danger text-xs">{error}</p>}
     </div>
   );
 }

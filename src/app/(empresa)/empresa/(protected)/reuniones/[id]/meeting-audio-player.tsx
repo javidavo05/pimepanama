@@ -163,17 +163,17 @@ export function MeetingAudioPlayer({ meetingId, durationMs, seek }: MeetingAudio
 
   if (!loaded) {
     return (
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
+      <div className="bg-panel border border-line rounded-2xl px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
         <div>
-          <p className="text-white/70 text-xs uppercase tracking-wider">Audio de la reunión</p>
-          <p className="text-white/40 text-xs mt-0.5">
+          <p className="text-fg-mute text-xs uppercase tracking-wider">Audio de la reunión</p>
+          <p className="text-fg-ghost text-xs mt-0.5">
             {error ?? "Escucha la grabación y salta al minuto de cualquier turno."}
           </p>
         </div>
         <button
           onClick={() => void load()}
           disabled={loading}
-          className="px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] disabled:opacity-40 border border-white/[0.08] text-white/70 text-xs rounded-lg transition-all shrink-0"
+          className="px-4 py-2 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all shrink-0"
         >
           {loading ? "Cargando…" : "▶ Cargar audio"}
         </button>
@@ -184,11 +184,11 @@ export function MeetingAudioPlayer({ meetingId, durationMs, seek }: MeetingAudio
   const total = Math.max(durationMs, track[track.length - 1]?.offsetMs ?? 0);
 
   return (
-    <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl px-6 py-4 space-y-3">
+    <div className="bg-panel border border-line rounded-2xl px-6 py-4 space-y-3">
       <div className="flex items-center gap-4 flex-wrap">
         <button
           onClick={toggle}
-          className="w-10 h-10 rounded-full bg-[#1AA7F0] hover:bg-[#0E87C8] text-white flex items-center justify-center transition-all shrink-0"
+          className="w-10 h-10 rounded-full bg-brand hover:bg-brand-hi text-on-brand flex items-center justify-center transition-all shrink-0"
           aria-label={playing ? "Pausar" : "Reproducir"}
         >
           {playing ? "❚❚" : "▶"}
@@ -201,10 +201,10 @@ export function MeetingAudioPlayer({ meetingId, durationMs, seek }: MeetingAudio
             max={Math.max(total, 1)}
             value={Math.min(positionMs, total)}
             onChange={(e) => scrub(Number(e.target.value))}
-            className="w-full accent-[#1AA7F0]"
+            className="w-full accent-brand"
             aria-label="Posición en la reunión"
           />
-          <div className="flex justify-between text-white/40 text-[10px] font-mono mt-0.5">
+          <div className="flex justify-between text-fg-ghost text-[10px] font-mono mt-0.5">
             <span>{formatTimestamp(positionMs)}</span>
             <span>{formatTimestamp(total)}</span>
           </div>
@@ -218,7 +218,7 @@ export function MeetingAudioPlayer({ meetingId, durationMs, seek }: MeetingAudio
               setCurrent(0);
               setPositionMs(0);
             }}
-            className="bg-[#050508] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-white text-xs focus:border-[#1AA7F0]/50 focus:outline-none shrink-0"
+            className="bg-canvas border border-line rounded-lg px-2.5 py-1.5 text-fg text-xs focus:border-brand/50 focus:outline-none shrink-0"
           >
             {channels.map((c) => (
               <option key={c} value={c}>
@@ -229,7 +229,7 @@ export function MeetingAudioPlayer({ meetingId, durationMs, seek }: MeetingAudio
         )}
       </div>
 
-      <p className="text-white/30 text-[11px]">
+      <p className="text-fg-ghost text-[11px]">
         Tramo {current + 1} de {track.length}. La grabación se guardó por tramos, así que al pasar
         de uno a otro puede haber un salto de una fracción de segundo.
       </p>

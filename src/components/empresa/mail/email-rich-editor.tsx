@@ -38,6 +38,7 @@ const SIZES = [
 ];
 
 const COLORS = [
+  // theme-ok: paleta que el usuario aplica al texto del correo; viaja en el mensaje, no en la UI
   { name: "Negro", value: "#111111" },
   { name: "Gris", value: "#666666" },
   { name: "Azul Pime", value: "#1AA7F0" },
@@ -191,7 +192,8 @@ export function EmailRichEditor({
       </div>
 
       {/* Editing surface — fondo claro como el correo final */}
-      <div className="relative bg-white">
+      {/* theme-ok: lienzo del HTML del correo — se envía tal cual y el destinatario lo ve en blanco */}
+      <div className="relative bg-white" data-theme-surface="fixed">
         {!value && (
           <p className="absolute top-3 left-3 text-sm text-fg-faint pointer-events-none select-none">
             {placeholder}
@@ -203,6 +205,7 @@ export function EmailRichEditor({
           suppressContentEditableWarning
           onInput={syncToParent}
           onBlur={syncToParent}
+          // theme-ok: texto del correo sobre su lienzo blanco; viaja con el mensaje, no con la UI
           className="min-h-[140px] sm:min-h-[220px] sm:max-h-[360px] overflow-y-auto px-3 sm:px-4 py-3 text-sm text-gray-900 leading-relaxed outline-none touch-manipulation [&_a]:text-[#0A6FA8] [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-semibold [&_h4]:text-base [&_h4]:font-semibold [&_p]:my-0 [&_p]:mb-3"
           style={{ fontFamily: "'Segoe UI', Arial, sans-serif" }}
         />

@@ -95,7 +95,7 @@ export function CitasClient() {
                 <span
                   className={`text-xs px-2 py-1 rounded-full border ${
                     b.status === "CONFIRMED"
-                      ? "text-ok border-green-500/30"
+                      ? "text-ok border-ok/30"
                       : "text-fg-ghost border-line-mid"
                   }`}
                 >

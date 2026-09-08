@@ -43,9 +43,9 @@ interface ContractFormProps {
 
 const STATUS_OPTS = [
   { value: "DRAFT", label: "Borrador", color: "border-line text-fg-faint" },
-  { value: "ACTIVE", label: "Activo", color: "border-green-500/30 text-ok" },
+  { value: "ACTIVE", label: "Activo", color: "border-ok/30 text-ok" },
   { value: "EXPIRED", label: "Vencido", color: "border-line-mid text-fg-dim" },
-  { value: "TERMINATED", label: "Terminado", color: "border-red-500/30 text-danger" },
+  { value: "TERMINATED", label: "Terminado", color: "border-danger/30 text-danger" },
 ];
 
 export function ContractForm({ clients, projects, mode = "create", initial, defaultProjectId, defaultClientId, linkDocumentId, returnTo, signingManaged }: ContractFormProps) {

@@ -158,7 +158,7 @@ export function ImportarCotizacionForm({ clients, paymentMethods }: ImportarForm
               selectedClientId={selectedClient?.id}
             />
             {saveNewClient && !selectedClient && (
-              <p className="mt-1.5 text-[10px] text-brand-fg/70 flex items-center gap-1">
+              <p className="mt-1.5 text-[10px] text-brand-fg flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-brand/60 inline-block" />
                 Se guardará como nuevo cliente
               </p>
@@ -233,7 +233,7 @@ export function ImportarCotizacionForm({ clients, paymentMethods }: ImportarForm
 
       {/* Commission summary */}
       {commission && (
-        <div className="bg-green-500/5 border border-green-500/10 rounded-xl px-5 py-3 flex justify-between items-center">
+        <div className="bg-ok/5 border border-ok/10 rounded-xl px-5 py-3 flex justify-between items-center">
           <span className="text-fg-faint text-sm">Neto real para PIME</span>
           <span className="text-ok font-mono text-xl font-bold">${fmtUSD(commission.netAmount)}</span>
         </div>

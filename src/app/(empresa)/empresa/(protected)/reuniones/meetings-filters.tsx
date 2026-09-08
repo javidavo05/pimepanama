@@ -51,7 +51,7 @@ export function MeetingsFilters({ projects, clients }: MeetingsFiltersProps) {
   }, [q]);
 
   const selectClass =
-    "bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm focus:border-[#1AA7F0]/50 focus:outline-none";
+    "bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none";
 
   return (
     <div className="space-y-2 mb-4">
@@ -59,7 +59,7 @@ export function MeetingsFilters({ projects, clients }: MeetingsFiltersProps) {
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="Buscar por título o por lo que se dijo en la reunión…"
-        className="w-full bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/30 focus:border-[#1AA7F0]/50 focus:outline-none"
+        className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
       />
       <div className="flex gap-2 flex-wrap">
         <select
@@ -104,7 +104,7 @@ export function MeetingsFilters({ projects, clients }: MeetingsFiltersProps) {
               setQ("");
               router.replace("/empresa/reuniones");
             }}
-            className="px-3 py-2 text-white/50 hover:text-white/80 text-xs transition-colors"
+            className="px-3 py-2 text-fg-faint hover:text-fg-soft text-xs transition-colors"
           >
             Limpiar
           </button>

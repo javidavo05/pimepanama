@@ -290,7 +290,7 @@ export function BitacoraBuilder({
               selectedClientId={watch("clientId") || undefined}
             />
             {watch("saveAsNewClient") && (
-              <p className="mt-1.5 text-[10px] text-brand-fg/70 flex items-center gap-1">
+              <p className="mt-1.5 text-[10px] text-brand-fg flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-brand/60 inline-block" />
                 {isEs ? "Cliente nuevo al guardar" : "New client on save"}
               </p>
@@ -349,7 +349,7 @@ export function BitacoraBuilder({
               disabled={transcribing}
               className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                 recording
-                  ? "bg-red-500/10 border-red-500/30 text-danger animate-pulse"
+                  ? "bg-danger/10 border-danger/30 text-danger animate-pulse"
                   : "bg-fill border-line text-fg-dim hover:text-fg-soft"
               }`}
             >

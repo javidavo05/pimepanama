@@ -17,8 +17,8 @@ interface Notification {
 
 /** Los avisos llegan con prefijo de prioridad en el título; lo mostramos como chip. */
 const PRIORITY_PREFIXES = [
-  { label: "Urgente", match: /^urgente:\s*/i, className: "bg-red-500/15 text-danger-soft border-red-500/25" },
-  { label: "Atención", match: /^atenci[oó]n:\s*/i, className: "bg-amber-500/15 text-warn-soft border-amber-500/25" },
+  { label: "Urgente", match: /^urgente:\s*/i, className: "bg-danger/15 text-danger-soft border-danger/25" },
+  { label: "Atención", match: /^atenci[oó]n:\s*/i, className: "bg-warn/15 text-warn-soft border-warn/25" },
 ];
 
 function splitPriority(title: string) {
@@ -79,7 +79,7 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full text-[9px] text-on-brand font-bold flex items-center justify-center leading-none">
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-danger-solid rounded-full text-[9px] text-on-solid font-bold flex items-center justify-center leading-none">
             {unread > 9 ? "9+" : unread}
           </span>
         )}

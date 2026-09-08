@@ -45,7 +45,7 @@ export default async function CuentasPage() {
           {accounts.map((acc) => (
             <div key={acc.id} className="bg-panel border border-line rounded-xl p-5 flex items-center justify-between gap-4">
               <div className="flex items-center gap-4">
-                <div className={`w-2.5 h-2.5 rounded-full ${acc.active ? "bg-green-400" : "bg-fill-3"}`} />
+                <div className={`w-2.5 h-2.5 rounded-full ${acc.active ? "bg-ok" : "bg-fill-3"}`} />
                 <div>
                   <p className="text-fg font-medium text-sm">{acc.label}</p>
                   <p className="text-fg-dim text-xs">{acc.username} · {acc.host}:{acc.port}</p>

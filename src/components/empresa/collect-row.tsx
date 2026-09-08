@@ -61,7 +61,7 @@ export function CollectRow({
 
   if (done) {
     return (
-      <div className="w-full mt-2 rounded-lg border border-green-500/25 bg-green-500/[0.07] px-3 py-2">
+      <div className="w-full mt-2 rounded-lg border border-ok/25 bg-ok/[0.07] px-3 py-2">
         <p className="text-ok text-xs">
           ✓ Cobro registrado
           {done.number && (
@@ -93,7 +93,7 @@ export function CollectRow({
         className={`shrink-0 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
           open
             ? "bg-fill-2 border-line-loud text-fg-mute"
-            : "bg-green-500/10 border-green-500/25 text-ok hover:bg-green-500/20"
+            : "bg-ok/10 border-ok/25 text-ok hover:bg-ok/20"
         }`}
       >
         {open ? "Cerrar" : "Cobrar"}
@@ -145,7 +145,7 @@ export function CollectRow({
             type="button"
             onClick={submit}
             disabled={pending}
-            className="px-3 py-1.5 bg-green-500/90 hover:bg-green-500 disabled:opacity-40 text-on-accent text-xs font-semibold rounded-lg transition-all"
+            className="px-3 py-1.5 bg-ok-solid hover:bg-ok-solid/85 disabled:opacity-40 text-on-solid text-xs font-semibold rounded-lg transition-all"
           >
             {pending ? "Registrando…" : "Registrar cobro"}
           </button>

@@ -6,19 +6,19 @@ import type { MeetingChannel, MeetingSegment } from "@/lib/meetings/types";
 
 export const CHANNEL_ACCENT: Record<MeetingChannel | "NONE", { dot: string; name: string; bubble: string }> = {
   LOCAL: {
-    dot: "bg-[#1AA7F0]",
-    name: "text-[#1AA7F0]",
-    bubble: "bg-[#1AA7F0]/[0.07] border-[#1AA7F0]/20",
+    dot: "bg-brand",
+    name: "text-brand-fg",
+    bubble: "bg-brand/[0.07] border-brand/20",
   },
   REMOTE: {
-    dot: "bg-[#C8A96E]",
-    name: "text-[#C8A96E]",
-    bubble: "bg-[#C8A96E]/[0.07] border-[#C8A96E]/20",
+    dot: "bg-sand",
+    name: "text-sand-fg",
+    bubble: "bg-sand/[0.07] border-sand/20",
   },
   NONE: {
-    dot: "bg-white/30",
-    name: "text-white/50",
-    bubble: "bg-white/[0.03] border-white/[0.07]",
+    dot: "bg-fg-trace",
+    name: "text-fg-faint",
+    bubble: "bg-fill border-line",
   },
 };
 
@@ -68,7 +68,7 @@ export function LiveTranscript({
       onScroll={onScroll}
       className="space-y-2.5 max-h-[52vh] overflow-y-auto pr-1"
     >
-      {turns.length === 0 && !interim && <p className="text-white/40 text-sm">{emptyHint}</p>}
+      {turns.length === 0 && !interim && <p className="text-fg-ghost text-sm">{emptyHint}</p>}
 
       {turns.map((turn, i) => {
         const accent = CHANNEL_ACCENT[turn.channel ?? "NONE"];
@@ -77,21 +77,21 @@ export function LiveTranscript({
             <div className="flex items-baseline gap-2 mb-1">
               <span className={`w-1.5 h-1.5 rounded-full ${accent.dot}`} />
               <span className={`text-xs font-medium ${accent.name}`}>{turn.speaker}</span>
-              <span className="text-white/25 text-[10px] font-mono">{formatTimestamp(turn.start)}</span>
+              <span className="text-fg-ghost text-[10px] font-mono">{formatTimestamp(turn.start)}</span>
             </div>
-            <p className="text-white/80 text-sm leading-relaxed">{turn.text}</p>
+            <p className="text-fg-soft text-sm leading-relaxed">{turn.text}</p>
           </div>
         );
       })}
 
       {interim && (
-        <div className="border border-dashed border-white/[0.10] rounded-xl px-3.5 py-2.5">
+        <div className="border border-dashed border-line-mid rounded-xl px-3.5 py-2.5">
           <div className="flex items-baseline gap-2 mb-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse" />
-            <span className="text-white/45 text-xs font-medium">{interimSpeaker}</span>
-            <span className="text-white/25 text-[10px]">escuchando…</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-fg-ghost animate-pulse" />
+            <span className="text-fg-faint text-xs font-medium">{interimSpeaker}</span>
+            <span className="text-fg-ghost text-[10px]">escuchando…</span>
           </div>
-          <p className="text-white/45 text-sm leading-relaxed italic">{interim}</p>
+          <p className="text-fg-faint text-sm leading-relaxed italic">{interim}</p>
         </div>
       )}
     </div>

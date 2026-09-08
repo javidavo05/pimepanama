@@ -67,7 +67,7 @@ export function DocumentRowActions({
           type="button"
           onClick={handleDelete}
           disabled={deleting}
-          className="text-danger/50 hover:text-danger disabled:opacity-40 text-xs transition-colors"
+          className="text-danger hover:text-danger disabled:opacity-40 text-xs transition-colors"
         >
           {deleting ? "..." : "Eliminar"}
         </button>

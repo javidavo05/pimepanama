@@ -14,6 +14,7 @@ import {
 } from "@/lib/invoice-revenue";
 import { openQuoteWhere } from "@/lib/quote-list";
 import { getReceivables } from "@/lib/receivables";
+import { docTypeOutlineStyle } from "@/lib/empresa/doc-type-colors";
 
 export const metadata = { title: "Dashboard — Pime Suite" };
 
@@ -101,10 +102,10 @@ export default async function EmpresaDashboardPage() {
 
       {/* Doc type stat cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <DashboardStatCard label="Facturas" count={facturas} href="/empresa/facturas" newHref="/empresa/facturas/nueva" color="#3B82F6" />
-        <DashboardStatCard label="Cotizaciones" count={cotizaciones} href="/empresa/cotizaciones" newHref="/empresa/cotizaciones/nueva" color="#8B5CF6" />
-        <DashboardStatCard label="Bitácoras" count={bitacoras} href="/empresa/bitacoras" newHref="/empresa/bitacoras/nueva" color="#10B981" />
-        <DashboardStatCard label="Correos" count={correos} href="/empresa/correos" newHref="/empresa/correos/nueva" color="#F59E0B" />
+        <DashboardStatCard label="Facturas" count={facturas} href="/empresa/facturas" newHref="/empresa/facturas/nueva" color="rgb(var(--c-info))" />
+        <DashboardStatCard label="Cotizaciones" count={cotizaciones} href="/empresa/cotizaciones" newHref="/empresa/cotizaciones/nueva" color="rgb(var(--c-iris-fg))" />
+        <DashboardStatCard label="Bitácoras" count={bitacoras} href="/empresa/bitacoras" newHref="/empresa/bitacoras/nueva" color="rgb(var(--c-emerald2))" />
+        <DashboardStatCard label="Correos" count={correos} href="/empresa/correos" newHref="/empresa/correos/nueva" color="rgb(var(--c-warn))" />
       </div>
 
       {/* Proyectos + AR KPIs */}
@@ -116,16 +117,16 @@ export default async function EmpresaDashboardPage() {
           <p className="text-fg-faint text-xs mt-1.5 group-hover:text-fg-dim transition-colors">facturas + cotizaciones enviadas →</p>
         </Link>
         <Link href="/empresa/proyectos"
-          className="bg-panel border border-line hover:border-green-500/20 rounded-2xl p-5 transition-all group">
+          className="bg-panel border border-line hover:border-ok/20 rounded-2xl p-5 transition-all group">
           <p className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-3">Proyectos activos</p>
           <p className="font-mono text-2xl font-semibold text-ok">{activeProjects}</p>
           <p className="text-fg-faint text-xs mt-1.5 group-hover:text-fg-dim transition-colors">en curso →</p>
         </Link>
         <Link href="/empresa/cuentas-por-cobrar"
-          className={`bg-panel border rounded-2xl p-5 transition-all group ${overdueSchedules > 0 ? "border-red-500/20 hover:border-red-500/40" : "border-line hover:border-line-mid"}`}>
+          className={`bg-panel border rounded-2xl p-5 transition-all group ${overdueSchedules > 0 ? "border-danger/20 hover:border-danger/40" : "border-line hover:border-line-mid"}`}>
           <p className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-3">Pagos vencidos</p>
           <p className={`font-mono text-2xl font-semibold ${overdueSchedules > 0 ? "text-danger" : "text-fg-dim"}`}>{overdueSchedules}</p>
-          <p className={`text-xs mt-1.5 ${overdueSchedules > 0 ? "text-danger/50" : "text-fg-faint"} group-hover:opacity-80 transition-opacity`}>
+          <p className={`text-xs mt-1.5 ${overdueSchedules > 0 ? "text-danger" : "text-fg-faint"} group-hover:opacity-80 transition-opacity`}>
             {overdueSchedules > 0 ? "requieren atención →" : "al día"}
           </p>
         </Link>
@@ -137,7 +138,7 @@ export default async function EmpresaDashboardPage() {
           { label: "Ingresos brutos", value: `$${fmtUSD(totalBruto)}`, color: "text-brand-fg", sub: "facturas pagadas" },
           { label: "Neto recibido", value: `$${fmtUSD(totalNeto)}`, color: "text-ok", sub: "facturas pagadas" },
           { label: "Comisiones", value: `$${fmtUSD(totalComisiones)}`, color: "text-warn", sub: "pagadas a pasarelas" },
-          { label: "Tasa de cierre", value: `${tasaCierre}%`, color: "text-iris", sub: `${acceptedCotizaciones} de ${totalCotizaciones} cot.` },
+          { label: "Tasa de cierre", value: `${tasaCierre}%`, color: "text-iris-fg", sub: `${acceptedCotizaciones} de ${totalCotizaciones} cot.` },
         ].map(({ label, value, color, sub }) => (
           <div key={label} className="bg-panel border border-line rounded-2xl p-5">
             <p className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-3">{label}</p>
@@ -159,17 +160,17 @@ export default async function EmpresaDashboardPage() {
           <div className="flex gap-4">
             {(
               [
-                ["facturas", "#3B82F6"],
-                ["cotizaciones", "#8B5CF6"],
-                ["bitacoras", "#10B981"],
-                ["correos", "#F59E0B"],
+                ["facturas", "--c-info"],
+                ["cotizaciones", "--c-iris-fg"],
+                ["bitacoras", "--c-emerald2"],
+                ["correos", "--c-warn"],
               ] as const
             ).map(([type, color]) => (
               <Link
                 key={type}
                 href={`/empresa/${type}/nueva`}
                 className="text-xs font-medium px-3 py-1.5 rounded-lg border transition-all hover:opacity-80"
-                style={{ color, borderColor: `${color}30`, backgroundColor: `${color}10` }}
+                style={docTypeOutlineStyle(color)}
               >
                 + {type.slice(0, -1)}
               </Link>

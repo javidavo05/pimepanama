@@ -84,7 +84,7 @@ html[data-theme="dark"],
   --c-fg-mute: 196 202 214;
   --c-fg-dim: 160 168 184;
   --c-fg-faint: 132 141 158;
-  --c-fg-ghost: 108 117 134;
+  --c-fg-ghost: 120 129 146;
   --c-fg-trace: 84 92 108;
 
   --c-line: 26 26 33;
@@ -98,8 +98,13 @@ html[data-theme="dark"],
   --c-brand: 26 167 240;
   --c-brand-hi: 14 135 200;
   --c-brand-fg: 26 167 240;
-  --c-on-brand: 255 255 255;
+  /* El azul de marca en oscuro es luminoso, así que encima va tinta oscura, no
+     blanca: en blanco daba 2.68:1. En claro la marca es oscura y `--c-on-brand`
+     sí es blanco. Cada relleno decide su propia tinta. */
+  --c-on-brand: 3 6 17;
   --c-on-accent: 3 6 17;
+  /* Los rellenos sólidos de estado son oscuros en ambos temas: siempre blanco. */
+  --c-on-solid: 255 255 255;
 
   --c-sand: 200 169 110;
   --c-sand-lt: 212 184 122;
@@ -115,6 +120,19 @@ html[data-theme="dark"],
   --c-warn-soft: 252 211 77;
   --c-danger: 248 113 113;
   --c-danger-soft: 252 165 165;
+
+  /* Superficies de estado sólidas: llevan siempre texto blanco (`text-on-brand`),
+     así que el tono se elige por contraste contra blanco (>= 4.5:1), no por
+     legibilidad contra el canvas. Por eso apenas cambian entre temas: `--c-ok`
+     (verde claro) sirve para un tinte al 10%, pero un botón relleno con ese
+     verde y texto blanco queda ilegible. */
+  --c-ok-solid: 21 128 61;
+  --c-warn-solid: 180 83 9;
+  --c-danger-solid: 220 38 38;
+
+  /* Perilla del interruptor: tiene que contrastar con la pista tanto encendida
+     (`bg-brand`) como apagada (`bg-fill-3`). */
+  --c-knob: 226 230 236;
   --c-info: 96 165 250;
   --c-info-soft: 147 197 253;
   --c-grape: 192 132 252;
@@ -140,9 +158,13 @@ html[data-theme="light"] {
   --c-fg-soft: 23 32 46;
   --c-fg-mute: 44 54 70;
   --c-fg-dim: 74 85 103;
-  --c-fg-faint: 100 112 130;
-  --c-fg-ghost: 124 135 152;
-  --c-fg-trace: 154 163 178;
+  /* Rampa neutra del tema claro, monótona y con suelo AA: hasta `fg-ghost`
+     todo pasa 4.5:1 sobre el canvas. `fg-trace` queda por debajo a propósito —
+     es el paso de los placeholders (ver la regla ::placeholder más abajo) y no
+     debe usarse para texto o controles con significado. */
+  --c-fg-faint: 92 104 122;
+  --c-fg-ghost: 99 108 123;
+  --c-fg-trace: 140 149 164;
 
   --c-line: 226 230 236;
   --c-line-mid: 213 218 226;
@@ -152,31 +174,48 @@ html[data-theme="light"] {
   --c-fill-2: 239 241 245;
   --c-fill-3: 229 232 238;
 
-  --c-brand: 17 129 196;
+  /* Estos tonos están resueltos contra el fondo real sobre el que caen, no
+     elegidos a ojo: `--c-brand` lleva texto blanco encima (4.60:1) y los `-fg`
+     caen sobre su propio tinte al 10-18 % (>= 4.6:1). Ver la auditoría en
+     scripts/theme-contrast-audit.js. */
+  --c-brand: 15 118 178;
   --c-brand-hi: 12 99 150;
-  --c-brand-fg: 10 111 168;
+  --c-brand-fg: 9 98 149;
   --c-on-brand: 255 255 255;
   --c-on-accent: 3 6 17;
+  --c-on-solid: 255 255 255;
 
   --c-sand: 169 128 58;
   --c-sand-lt: 185 143 69;
-  --c-sand-fg: 138 101 32;
+  /* 130 95 30 y no un arena más vivo: el texto arena suele ir sobre `bg-sand/10`,
+     y sobre ese fondo tintado el valor anterior (138 101 32) daba 4.42:1, justo
+     por debajo de AA. Aquí da 4.86:1 sobre el tinte y 5.83:1 sobre blanco. */
+  --c-sand-fg: 130 95 30;
   --c-iris: 91 63 214;
   --c-iris-fg: 84 51 201;
   --c-azure: 10 106 203;
   --c-sky: 10 111 168;
 
-  --c-ok: 21 128 61;
-  --c-ok-soft: 22 163 74;
-  --c-warn: 180 83 9;
-  --c-warn-soft: 217 119 6;
-  --c-danger: 220 38 38;
-  --c-danger-soft: 239 68 68;
+  --c-ok: 18 113 54;
+  /* En oscuro los `-soft` son la variante más clara del par. En claro eso los
+     dejaría bajo AA sobre su propio tinte (el ámbar caía a 2.25:1), así que aquí
+     son la variante *más oscura*: el rol se conserva, el tono se invierte. */
+  --c-ok-soft: 14 106 48;
+  --c-warn: 164 76 9;
+  --c-warn-soft: 141 77 4;
+  --c-danger: 186 32 32;
+  --c-danger-soft: 167 48 48;
+
+  --c-ok-solid: 21 128 61;
+  --c-warn-solid: 180 83 9;
+  --c-danger-solid: 185 28 28;
+
+  --c-knob: 255 255 255;
   --c-info: 29 78 216;
-  --c-info-soft: 37 99 235;
+  --c-info-soft: 31 84 200;
   --c-grape: 126 34 206;
-  --c-grape-soft: 147 51 234;
-  --c-emerald2: 4 120 87;
+  --c-grape-soft: 126 44 201;
+  --c-emerald2: 4 116 84;
   --c-mint: 14 122 82;
   --c-amber2: 161 98 7;
   --c-flame: 194 65 12;

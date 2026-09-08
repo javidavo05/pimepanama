@@ -8,12 +8,12 @@ export const MEETING_STATUS_LABEL: Record<string, string> = {
 };
 
 export const MEETING_STATUS_COLOR: Record<string, string> = {
-  DRAFT: "bg-white/[0.05] text-white/55 border-white/[0.08]",
-  RECORDING: "bg-red-500/15 text-red-400 border-red-500/20",
-  TRANSCRIBED: "bg-blue-500/15 text-blue-400 border-blue-500/20",
-  PROCESSING: "bg-amber-500/15 text-amber-400 border-amber-500/20",
-  READY: "bg-green-500/15 text-green-400 border-green-500/20",
-  FAILED: "bg-red-500/15 text-red-400 border-red-500/20",
+  DRAFT: "bg-fill-2 text-fg-dim border-line",
+  RECORDING: "bg-danger/15 text-danger border-danger/20",
+  TRANSCRIBED: "bg-info/15 text-info border-info/20",
+  PROCESSING: "bg-warn/15 text-warn border-warn/20",
+  READY: "bg-ok/15 text-ok border-ok/20",
+  FAILED: "bg-danger/15 text-danger border-danger/20",
 };
 
 export const KIND_LABEL: Record<string, string> = {
@@ -25,11 +25,11 @@ export const KIND_LABEL: Record<string, string> = {
 };
 
 export const KIND_COLOR: Record<string, string> = {
-  TECNICO: "bg-[#1AA7F0]/15 text-[#1AA7F0] border-[#1AA7F0]/25",
-  COMERCIAL: "bg-[#C8A96E]/15 text-[#C8A96E] border-[#C8A96E]/25",
-  ADMINISTRATIVO: "bg-white/[0.06] text-white/70 border-white/[0.12]",
-  DECISION: "bg-purple-500/15 text-purple-300 border-purple-500/25",
-  RIESGO: "bg-red-500/15 text-red-400 border-red-500/25",
+  TECNICO: "bg-brand/15 text-brand-fg border-brand/25",
+  COMERCIAL: "bg-sand/15 text-sand-fg border-sand/25",
+  ADMINISTRATIVO: "bg-fill-2 text-fg-mute border-line-mid",
+  DECISION: "bg-grape/15 text-grape-soft border-grape/25",
+  RIESGO: "bg-danger/15 text-danger border-danger/25",
 };
 
 export const PRIORITY_LABEL: Record<string, string> = {

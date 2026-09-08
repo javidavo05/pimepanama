@@ -22,9 +22,9 @@ import {
 } from "./types";
 
 const STATUS_OPTS: { value: ProjectStatus; label: string; color: string }[] = [
-  { value: "ACTIVE", label: "Activo", color: "border-green-500/30 text-ok" },
-  { value: "PAUSED", label: "Pausado", color: "border-amber-500/30 text-warn" },
-  { value: "COMPLETED", label: "Completado", color: "border-blue-500/30 text-info" },
+  { value: "ACTIVE", label: "Activo", color: "border-ok/30 text-ok" },
+  { value: "PAUSED", label: "Pausado", color: "border-warn/30 text-warn" },
+  { value: "COMPLETED", label: "Completado", color: "border-info/30 text-info" },
   { value: "CANCELLED", label: "Cancelado", color: "border-line-mid text-fg-dim" },
 ];
 
@@ -300,7 +300,7 @@ export function ProjectEditForm({
       </div>
 
       {error && (
-        <div className="bg-red-500/[0.07] border border-red-500/25 rounded-xl px-4 py-3">
+        <div className="bg-danger/[0.07] border border-danger/25 rounded-xl px-4 py-3">
           <p className="text-danger text-sm">{error}</p>
         </div>
       )}
@@ -313,7 +313,7 @@ export function ProjectEditForm({
               type="button"
               onClick={handleDelete}
               disabled={deleting}
-              className="px-3 py-1.5 rounded-lg bg-red-500/15 border border-red-500/30 text-danger text-xs font-medium hover:bg-red-500/20 disabled:opacity-40 transition-all"
+              className="px-3 py-1.5 rounded-lg bg-danger/15 border border-danger/30 text-danger text-xs font-medium hover:bg-danger/20 disabled:opacity-40 transition-all"
             >
               {deleting ? "Eliminando..." : "Sí, eliminar"}
             </button>
@@ -329,7 +329,7 @@ export function ProjectEditForm({
           <button
             type="button"
             onClick={() => setConfirmDelete(true)}
-            className="text-danger/60 hover:text-danger text-xs transition-colors"
+            className="text-danger hover:text-danger text-xs transition-colors"
           >
             Eliminar proyecto
           </button>

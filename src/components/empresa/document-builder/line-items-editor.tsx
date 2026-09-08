@@ -283,7 +283,7 @@ export function LineItemsEditor({
               discount: 0,
             })
           }
-          className="text-sand-fg/70 hover:text-sand-fg text-xs font-medium transition-colors"
+          className="text-sand-fg hover:text-sand-fg text-xs font-medium transition-colors"
         >
           {t.add}
         </button>

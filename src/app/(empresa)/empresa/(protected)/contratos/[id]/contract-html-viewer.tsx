@@ -38,7 +38,8 @@ export function ContractHtmlViewer({ pagesHtml, refreshKey }: ContractHtmlViewer
       <div className="px-4 py-3 border-b border-line">
         <span className="text-fg-dim text-xs uppercase tracking-widest font-medium">Vista del documento</span>
       </div>
-      <div ref={containerRef} className="relative bg-[#c8ccd6] overflow-auto" style={{ height: "70vh" }}>
+      {/* theme-ok: mesa del visor de documentos — gris fijo en ambos temas, como un lector de PDF */}
+      <div ref={containerRef} className="relative bg-[#c8ccd6] overflow-auto" data-theme-surface="fixed" style={{ height: "70vh" }}>
         <div className="mx-auto py-4" style={{ width: A4_WIDTH * scale }}>
           <iframe
             ref={iframeRef}

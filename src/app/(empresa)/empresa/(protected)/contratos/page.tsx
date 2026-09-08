@@ -10,9 +10,9 @@ const STATUS_LABEL: Record<string, string> = {
 };
 const STATUS_COLOR: Record<string, string> = {
   DRAFT: "bg-fill-2 text-fg-dim border-line",
-  ACTIVE: "bg-green-500/15 text-ok border-green-500/20",
+  ACTIVE: "bg-ok/15 text-ok border-ok/20",
   EXPIRED: "bg-fill-2 text-fg-dim border-line-mid",
-  TERMINATED: "bg-red-500/15 text-danger border-red-500/20",
+  TERMINATED: "bg-danger/15 text-danger border-danger/20",
 };
 
 export default async function ContratosPage() {
@@ -70,13 +70,13 @@ export default async function ContratosPage() {
                 <div className="flex items-center gap-3 text-sm">
                   {c.client && <span className="text-fg-dim">{c.client.name}{c.client.company ? ` — ${c.client.company}` : ""}</span>}
                   {c.project && (
-                    <span className="text-brand-fg/50 text-xs">🗂️ {c.project.name}</span>
+                    <span className="text-brand-fg text-xs">🗂️ {c.project.name}</span>
                   )}
                 </div>
                 <div className="flex items-center gap-4 mt-2">
                   <span className="text-fg-faint text-xs">{c._count.documents} doc.</span>
                   {c.value != null && (
-                    <span className="text-sand-fg/60 text-xs font-mono">
+                    <span className="text-sand-fg text-xs font-mono">
                       ${Number(c.value).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
                   )}

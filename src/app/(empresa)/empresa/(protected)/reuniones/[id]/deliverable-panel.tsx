@@ -15,12 +15,12 @@ const KIND_LABEL: Record<DeliverableKind, string> = {
 };
 
 const KIND_COLOR: Record<DeliverableKind, string> = {
-  SISTEMA_NUEVO: "bg-purple-500/15 text-purple-300 border-purple-500/25",
-  MODIFICACION: "bg-[#1AA7F0]/15 text-[#1AA7F0] border-[#1AA7F0]/25",
-  PROPUESTA_COMERCIAL: "bg-[#C8A96E]/15 text-[#C8A96E] border-[#C8A96E]/25",
-  CONTRATO: "bg-[#C8A96E]/15 text-[#C8A96E] border-[#C8A96E]/25",
-  MANTENIMIENTO: "bg-white/[0.06] text-white/70 border-white/[0.12]",
-  SEGUIMIENTO: "bg-white/[0.06] text-white/70 border-white/[0.12]",
+  SISTEMA_NUEVO: "bg-grape/15 text-grape-soft border-grape/25",
+  MODIFICACION: "bg-brand/15 text-brand-fg border-brand/25",
+  PROPUESTA_COMERCIAL: "bg-sand/15 text-sand-fg border-sand/25",
+  CONTRATO: "bg-sand/15 text-sand-fg border-sand/25",
+  MANTENIMIENTO: "bg-fill-2 text-fg-mute border-line-mid",
+  SEGUIMIENTO: "bg-fill-2 text-fg-mute border-line-mid",
 };
 
 const DESTINATION_HINT: Record<string, string> = {
@@ -45,11 +45,11 @@ function List({ title, items, marker }: { title: string; items: string[]; marker
   if (items.length === 0) return null;
   return (
     <div>
-      <p className="text-white/40 text-[10px] uppercase tracking-wider mb-1">{title}</p>
+      <p className="text-fg-ghost text-[10px] uppercase tracking-wider mb-1">{title}</p>
       <ul className="space-y-1">
         {items.map((item, i) => (
-          <li key={i} className="text-white/70 text-xs flex gap-1.5 leading-relaxed">
-            <span className="text-[#1AA7F0]/50 shrink-0">{marker}</span>
+          <li key={i} className="text-fg-mute text-xs flex gap-1.5 leading-relaxed">
+            <span className="text-brand-fg shrink-0">{marker}</span>
             <span>{item}</span>
           </li>
         ))}
@@ -103,7 +103,7 @@ export function DeliverablePanel({
 
   if (!deliverable) {
     return (
-      <p className="text-white/40 text-sm">
+      <p className="text-fg-ghost text-sm">
         Todavía no se determinó el entregable técnico. Corre la etapa «Entregable» — toda reunión
         deja uno, aunque sea el estado de lo que ya estaba en curso.
       </p>
@@ -118,19 +118,19 @@ export function DeliverablePanel({
             {KIND_LABEL[deliverable.kind]}
           </span>
           {deliverable.estimateHours && (
-            <span className="text-white/40 text-[10px]">≈ {deliverable.estimateHours} h</span>
+            <span className="text-fg-ghost text-[10px]">≈ {deliverable.estimateHours} h</span>
           )}
           {!hasRepo && (
-            <span className="text-amber-400/70 text-[10px]">
+            <span className="text-warn text-[10px]">
               sin repositorio conectado — no sabe qué existe ya
             </span>
           )}
         </div>
-        <h3 className="text-white text-base font-medium">{deliverable.title}</h3>
-        <p className="text-white/70 text-sm leading-relaxed mt-1.5 whitespace-pre-wrap">
+        <h3 className="text-fg text-base font-medium">{deliverable.title}</h3>
+        <p className="text-fg-mute text-sm leading-relaxed mt-1.5 whitespace-pre-wrap">
           {deliverable.summary}
         </p>
-        <p className="text-white/40 text-xs mt-2">{DESTINATION_HINT[deliverable.readyFor]}</p>
+        <p className="text-fg-ghost text-xs mt-2">{DESTINATION_HINT[deliverable.readyFor]}</p>
       </div>
 
       <div className="grid sm:grid-cols-2 gap-5">
@@ -143,25 +143,25 @@ export function DeliverablePanel({
       </div>
 
       {deliverable.recommendation && (
-        <div className="border border-white/[0.06] rounded-xl p-4">
-          <p className="text-white/40 text-[10px] uppercase tracking-wider mb-1.5">
+        <div className="border border-line rounded-xl p-4">
+          <p className="text-fg-ghost text-[10px] uppercase tracking-wider mb-1.5">
             Recomendación técnica
           </p>
-          <p className="text-white/75 text-sm leading-relaxed whitespace-pre-wrap">
+          <p className="text-fg-soft text-sm leading-relaxed whitespace-pre-wrap">
             {deliverable.recommendation}
           </p>
         </div>
       )}
 
-      <div className="pt-3 border-t border-white/[0.06] space-y-3">
+      <div className="pt-3 border-t border-line space-y-3">
         {!hasProject ? (
-          <p className="text-amber-400/70 text-xs">
+          <p className="text-warn text-xs">
             Asigna la reunión a un proyecto para poder crear el entregable, la propuesta o el
             contrato.
           </p>
         ) : (
           <>
-            <p className="text-white/40 text-xs">
+            <p className="text-fg-ghost text-xs">
               Materializa el entregable sin volver a teclearlo en otro módulo. Lo que ya se creó no
               se duplica.
             </p>
@@ -169,7 +169,7 @@ export function DeliverablePanel({
               {deliverableId ? (
                 <Link
                   href={`/empresa/proyectos/${projectId}`}
-                  className="px-4 py-2 bg-green-500/10 border border-green-500/20 text-green-400 text-xs rounded-lg transition-all"
+                  className="px-4 py-2 bg-ok/10 border border-ok/20 text-ok text-xs rounded-lg transition-all"
                 >
                   ✓ Entregable creado — ver proyecto
                 </Link>
@@ -177,7 +177,7 @@ export function DeliverablePanel({
                 <button
                   onClick={() => void materialize({ deliverable: true })}
                   disabled={busy}
-                  className="px-4 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-all"
+                  className="px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
                 >
                   + Crear entregable del proyecto
                 </button>
@@ -186,7 +186,7 @@ export function DeliverablePanel({
               {proposalDraftedAt ? (
                 <Link
                   href={`/empresa/proyectos/${projectId}`}
-                  className="px-4 py-2 bg-green-500/10 border border-green-500/20 text-green-400 text-xs rounded-lg transition-all"
+                  className="px-4 py-2 bg-ok/10 border border-ok/20 text-ok text-xs rounded-lg transition-all"
                 >
                   ✓ Propuesta redactada
                 </Link>
@@ -194,7 +194,7 @@ export function DeliverablePanel({
                 <button
                   onClick={() => void materialize({ proposal: true })}
                   disabled={busy}
-                  className="px-4 py-2 bg-[#C8A96E]/15 hover:bg-[#C8A96E]/25 disabled:opacity-40 border border-[#C8A96E]/25 text-[#C8A96E] text-xs rounded-lg transition-all"
+                  className="px-4 py-2 bg-sand/15 hover:bg-sand/25 disabled:opacity-40 border border-sand/25 text-sand-fg text-xs rounded-lg transition-all"
                 >
                   📄 Redactar propuesta comercial
                 </button>
@@ -203,7 +203,7 @@ export function DeliverablePanel({
               {contractId ? (
                 <Link
                   href={`/empresa/contratos/${contractId}`}
-                  className="px-4 py-2 bg-green-500/10 border border-green-500/20 text-green-400 text-xs rounded-lg transition-all"
+                  className="px-4 py-2 bg-ok/10 border border-ok/20 text-ok text-xs rounded-lg transition-all"
                 >
                   ✓ Contrato redactado — abrir
                 </Link>
@@ -211,7 +211,7 @@ export function DeliverablePanel({
                 <button
                   onClick={() => void materialize({ contract: true })}
                   disabled={busy}
-                  className="px-4 py-2 bg-white/[0.04] hover:bg-white/[0.08] disabled:opacity-40 border border-white/[0.08] text-white/70 text-xs rounded-lg transition-all"
+                  className="px-4 py-2 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all"
                 >
                   📝 Redactar borrador de contrato
                 </button>
@@ -220,13 +220,13 @@ export function DeliverablePanel({
           </>
         )}
 
-        {busy && <p className="text-white/50 text-xs">Redactando… puede tardar medio minuto.</p>}
+        {busy && <p className="text-fg-faint text-xs">Redactando… puede tardar medio minuto.</p>}
         {message.map((m, i) => (
-          <p key={i} className="text-green-400 text-xs">
+          <p key={i} className="text-ok text-xs">
             {m}
           </p>
         ))}
-        {error && <p className="text-red-400 text-xs">{error}</p>}
+        {error && <p className="text-danger text-xs">{error}</p>}
       </div>
     </div>
   );

@@ -294,7 +294,7 @@ export function ClientCombobox({
                 </p>
                 <Link
                   href={`/empresa/clientes/${selectedClientId}`}
-                  className="text-brand-fg/60 text-[10px] hover:text-brand-fg transition-colors"
+                  className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors"
                   onClick={(e) => e.stopPropagation()}
                 >
                   Ver perfil →
@@ -327,14 +327,14 @@ export function ClientCombobox({
                           className="flex items-center justify-between gap-2 text-[10px] hover:text-fg-dim transition-colors group"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <span className="text-fg-dim font-mono group-hover:text-brand-fg/60">{doc.number ?? doc.title.slice(0, 30)}</span>
+                          <span className="text-fg-dim font-mono group-hover:text-brand-fg">{doc.number ?? doc.title.slice(0, 30)}</span>
                           <span className="flex items-center gap-1.5 shrink-0">
                             {doc.total != null && Number(doc.total) > 0 && (
                               <span className="text-fg-mute font-mono text-[10px]">
                                 ${Number(doc.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                               </span>
                             )}
-                            <span className={`px-1.5 py-0.5 rounded text-[9px] border ${doc.status === "ACCEPTED" || doc.status === "PAID" ? "border-green-500/20 text-ok/60" : doc.status === "SENT" ? "border-blue-500/20 text-info/60" : doc.status === "REJECTED" ? "border-red-500/20 text-danger/60" : "border-line-mid text-fg-faint"}`}>
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] border ${doc.status === "ACCEPTED" || doc.status === "PAID" ? "border-ok/20 text-ok" : doc.status === "SENT" ? "border-info/20 text-info" : doc.status === "REJECTED" ? "border-danger/20 text-danger" : "border-line-mid text-fg-faint"}`}>
                               {DOC_STATUS_ES[doc.status] ?? doc.status}
                             </span>
                           </span>
@@ -348,7 +348,7 @@ export function ClientCombobox({
           ) : history && history.totalDocs === 0 ? (
             <div className="px-4 py-3 text-fg-faint text-xs flex items-center justify-between">
               <span>Sin documentos previos con este cliente</span>
-              <Link href={`/empresa/clientes/${selectedClientId}`} className="text-brand-fg/50 hover:text-brand-fg transition-colors text-[10px]">
+              <Link href={`/empresa/clientes/${selectedClientId}`} className="text-brand-fg hover:text-brand-fg transition-colors text-[10px]">
                 Ver perfil →
               </Link>
             </div>

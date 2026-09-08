@@ -95,8 +95,8 @@ export function PaymentSelector({
       </div>
 
       {!multiple && showCommission && commission && selected && (
-        <div className="bg-amber-500/5 border border-amber-500/15 rounded-xl p-4 space-y-1.5">
-          <p className="text-warn/80 text-xs uppercase tracking-widest font-semibold mb-2">
+        <div className="bg-warn/5 border border-warn/15 rounded-xl p-4 space-y-1.5">
+          <p className="text-warn text-xs uppercase tracking-widest font-semibold mb-2">
             {lang === "es" ? "Desglose de comisión — " : "Commission breakdown — "}
             {selected.name}
           </p>
@@ -109,7 +109,7 @@ export function PaymentSelector({
           {commission.commissionTaxAmt > 0 && (
             <Row label="ITBMS (7%) sobre comisión" value={`−$${fmtUSD(commission.commissionTaxAmt)}`} dim />
           )}
-          <div className="border-t border-amber-500/10 pt-2 mt-2 flex justify-between items-center">
+          <div className="border-t border-warn/10 pt-2 mt-2 flex justify-between items-center">
             <span className="text-fg-dim text-sm font-semibold">
               {lang === "es" ? "Neto recibido" : "Net received"}
             </span>
@@ -127,7 +127,7 @@ function Row({ label, value, dim }: { label: string; value: string; dim?: boolea
   return (
     <div className="flex justify-between items-center">
       <span className={`text-xs ${dim ? "text-fg-dim" : "text-fg-faint"}`}>{label}</span>
-      <span className={`text-xs font-mono ${dim ? "text-warn/50" : "text-fg-mute"}`}>{value}</span>
+      <span className={`text-xs font-mono ${dim ? "text-warn" : "text-fg-mute"}`}>{value}</span>
     </div>
   );
 }

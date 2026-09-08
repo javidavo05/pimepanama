@@ -32,10 +32,10 @@ const STATUS_LABEL: Record<SigningStatus, string> = {
 
 const STATUS_COLOR: Record<SigningStatus, string> = {
   DRAFT: "text-fg-faint border-line-mid",
-  PENDING_CLIENT: "text-warn border-amber-500/30",
-  PENDING_COMPANY: "text-info border-blue-500/30",
-  COMPLETED: "text-ok border-green-500/30",
-  DECLINED: "text-danger border-red-500/30",
+  PENDING_CLIENT: "text-warn border-warn/30",
+  PENDING_COMPANY: "text-info border-info/30",
+  COMPLETED: "text-ok border-ok/30",
+  DECLINED: "text-danger border-danger/30",
   EXPIRED: "text-fg-ghost border-line-mid",
 };
 
@@ -121,7 +121,7 @@ export function ContractSigningPanel({
 
       <div className="p-5 space-y-4">
         {!clientEmail ? (
-          <p className="text-warn/90 text-sm">Asigna un cliente con email para enviar a firma.</p>
+          <p className="text-warn text-sm">Asigna un cliente con email para enviar a firma.</p>
         ) : canSend && status !== "COMPLETED" ? (
           <button
             type="button"
@@ -151,7 +151,7 @@ export function ContractSigningPanel({
               type="button"
               disabled={loading}
               onClick={companySign}
-              className="px-4 py-2.5 bg-brand hover:bg-[#33b4f3] disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg"
+              className="px-4 py-2.5 bg-brand hover:bg-brand-hi disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg"
             >
               {loading ? "Firmando…" : "Firmar como empresa"}
             </button>

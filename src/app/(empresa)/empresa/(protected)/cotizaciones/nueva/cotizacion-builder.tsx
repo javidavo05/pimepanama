@@ -35,9 +35,9 @@ interface CotizacionBuilderProps {
 
 const STATUS_OPTS = [
   { value: "DRAFT",    label: "Borrador",  labelEn: "Draft",    color: "border-line text-fg-faint" },
-  { value: "SENT",     label: "Enviada",   labelEn: "Sent",     color: "border-blue-500/30 text-info" },
-  { value: "ACCEPTED", label: "Aceptada",  labelEn: "Accepted", color: "border-green-500/30 text-ok" },
-  { value: "REJECTED", label: "Rechazada", labelEn: "Rejected", color: "border-red-500/30 text-danger" },
+  { value: "SENT",     label: "Enviada",   labelEn: "Sent",     color: "border-info/30 text-info" },
+  { value: "ACCEPTED", label: "Aceptada",  labelEn: "Accepted", color: "border-ok/30 text-ok" },
+  { value: "REJECTED", label: "Rechazada", labelEn: "Rejected", color: "border-danger/30 text-danger" },
 ];
 
 function getInitialValues(doc?: SerializedDocument, currency = "USD", taxRate = 7): Partial<DocumentFormValues> {
@@ -364,7 +364,7 @@ export function CotizacionBuilder({
                 type="button"
                 onClick={translateAll}
                 disabled={translating}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-iris/10 border border-iris/25 text-iris text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-iris/10 border border-iris/25 text-iris-fg text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
               >
                 {translating ? (
                   <><span className="w-2 h-2 rounded-full bg-iris animate-pulse" /> Traduciendo...</>
@@ -431,7 +431,7 @@ export function CotizacionBuilder({
                   ))}
                 </select>
                 {selectedProject && (
-                  <p className="text-brand-fg/50 text-xs mt-1 truncate">🗂️ {selectedProject.name}</p>
+                  <p className="text-brand-fg text-xs mt-1 truncate">🗂️ {selectedProject.name}</p>
                 )}
               </div>
             )}
@@ -451,7 +451,7 @@ export function CotizacionBuilder({
             )}
           </div>
           {activeContract && (
-            <div className="bg-green-500/[0.05] border border-green-500/15 rounded-lg p-3">
+            <div className="bg-ok/[0.05] border border-ok/15 rounded-lg p-3">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-ok text-xs">📑 Contrato activo:</span>
                 <span className="text-fg-mute text-xs font-medium">{activeContract.title}</span>
@@ -525,7 +525,7 @@ export function CotizacionBuilder({
               />
             )}
             {watch("saveAsNewClient") && (
-              <p className="mt-1.5 text-[10px] text-brand-fg/70 flex items-center gap-1">
+              <p className="mt-1.5 text-[10px] text-brand-fg flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-brand/60 inline-block" />
                 {isEs ? "Se guardará como nuevo cliente" : "Will be saved as new client"}
               </p>
@@ -620,7 +620,7 @@ export function CotizacionBuilder({
             </h3>
             <button type="button"
               onClick={() => appendSchedule({ description: "", amount: 0, dueDate: "" })}
-              className="text-iris text-xs font-medium hover:text-iris-fg transition-colors">
+              className="text-iris-fg text-xs font-medium hover:text-iris-fg transition-colors">
               + {isEs ? "Agregar cuota" : "Add installment"}
             </button>
           </div>

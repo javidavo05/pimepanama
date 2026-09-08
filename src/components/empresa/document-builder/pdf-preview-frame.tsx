@@ -24,7 +24,7 @@ export function PdfPreviewFrame({ url, title = "Vista previa", refreshKey, class
       <div className="px-4 py-3 border-b border-line flex items-center justify-between">
         <p className="text-fg-faint text-xs uppercase tracking-widest font-medium">{title}</p>
         <a href={src.replace("&inline=1", "").replace("?inline=1", "")} target="_blank" rel="noreferrer"
-          className="text-brand-fg/60 text-[10px] hover:text-brand-fg transition-colors">
+          className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors">
           Abrir en pestaña nueva ↗
         </a>
       </div>

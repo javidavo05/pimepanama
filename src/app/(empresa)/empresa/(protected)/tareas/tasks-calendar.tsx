@@ -6,8 +6,8 @@ import type { SerializedTask } from "./tasks-view";
 import { addDays, allDayISO, mondayOf, sameDay, startOfDay, taskLocalDate, taskLocalEndDate, timedISO } from "./date-utils";
 
 const PRIORITY_DOT: Record<TaskPriority, string> = {
-  HIGH: "bg-red-400",
-  MEDIUM: "bg-amber-400",
+  HIGH: "bg-danger",
+  MEDIUM: "bg-warn",
   LOW: "bg-fill-3",
 };
 
@@ -259,6 +259,7 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
       setPopover(null);
     }
 
+    // theme-ok: velo de modal — oscurece el fondo en ambos temas a propósito
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setPopover(null)}>
         <div
@@ -357,7 +358,7 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
                   onDelete(task!.id);
                   setPopover(null);
                 }}
-                className="text-danger/70 hover:text-danger text-xs px-2 py-1"
+                className="text-danger hover:text-danger text-xs px-2 py-1"
               >
                 Eliminar
               </button>

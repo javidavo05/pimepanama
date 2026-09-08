@@ -42,9 +42,9 @@ const STATUS_LABEL: Record<ExpenseStatus, string> = {
 };
 
 const TYPE_STYLE: Record<LedgerEntry["type"], string> = {
-  INGRESO: "border-green-500/25 bg-green-500/[0.06] text-ok",
-  EGRESO: "border-red-500/25 bg-red-500/[0.06] text-danger",
-  PENDIENTE: "border-amber-500/25 bg-amber-500/[0.06] text-warn",
+  INGRESO: "border-ok/25 bg-ok/[0.06] text-ok",
+  EGRESO: "border-danger/25 bg-danger/[0.06] text-danger",
+  PENDIENTE: "border-warn/25 bg-warn/[0.06] text-warn",
 };
 
 export function PorPagarClient({
@@ -268,7 +268,7 @@ export function PorPagarClient({
                 type="button"
                 disabled={busy}
                 onClick={createExpense}
-                className="px-4 py-2 bg-green-600/80 hover:bg-green-600 text-on-brand text-sm rounded-lg disabled:opacity-50"
+                className="px-4 py-2 bg-ok-solid hover:bg-ok-solid/85 text-on-solid text-sm rounded-lg disabled:opacity-50"
               >
                 Guardar gasto
               </button>
@@ -314,8 +314,8 @@ export function PorPagarClient({
                           onClick={() => togglePaid(exp)}
                           className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
                             exp.status === "PAID"
-                              ? "bg-green-500/10 border-green-500/25 text-ok"
-                              : "bg-amber-500/10 border-amber-500/25 text-warn hover:bg-amber-500/20"
+                              ? "bg-ok/10 border-ok/25 text-ok"
+                              : "bg-warn/10 border-warn/25 text-warn hover:bg-warn/20"
                           }`}
                         >
                           {exp.status === "PAID" ? "✓ Pagado" : "Marcar pagado"}

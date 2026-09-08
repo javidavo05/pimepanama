@@ -40,11 +40,11 @@ interface Lead {
 
 const STATUS_OPTS: { value: LeadStatus; label: string; color: string }[] = [
   { value: "NUEVO", label: "Nuevo", color: "border-line-mid text-fg-faint" },
-  { value: "CONTACTADO", label: "Contactado", color: "border-blue-500/30 text-info" },
+  { value: "CONTACTADO", label: "Contactado", color: "border-info/30 text-info" },
   { value: "COTIZANDO", label: "Cotizando", color: "border-sand/30 text-sand-fg" },
-  { value: "NEGOCIACION", label: "Negociación", color: "border-amber-500/30 text-warn" },
-  { value: "GANADO", label: "Ganado", color: "border-green-500/30 text-ok" },
-  { value: "PERDIDO", label: "Perdido", color: "border-red-500/30 text-danger" },
+  { value: "NEGOCIACION", label: "Negociación", color: "border-warn/30 text-warn" },
+  { value: "GANADO", label: "Ganado", color: "border-ok/30 text-ok" },
+  { value: "PERDIDO", label: "Perdido", color: "border-danger/30 text-danger" },
 ];
 
 const DOC_TYPE_PATH: Record<string, string> = {
@@ -108,10 +108,10 @@ export function LeadDetailClient({ lead: initialLead }: { lead: Lead }) {
       </div>
 
       {(notice || lead.convertedClientId) && (
-        <div className="bg-green-500/[0.08] border border-green-500/20 rounded-lg px-4 py-3 flex items-center justify-between">
+        <div className="bg-ok/[0.08] border border-ok/20 rounded-lg px-4 py-3 flex items-center justify-between">
           <span className="text-ok text-sm">✓ {notice ?? "Este lead ya fue convertido a cliente."}</span>
           {lead.convertedClient && (
-            <Link href={`/empresa/clientes/${lead.convertedClient.id}`} className="text-ok/70 hover:text-ok text-xs font-medium">
+            <Link href={`/empresa/clientes/${lead.convertedClient.id}`} className="text-ok hover:text-ok text-xs font-medium">
               Ver perfil de cliente →
             </Link>
           )}

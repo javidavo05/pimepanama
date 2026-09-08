@@ -128,7 +128,7 @@ export function EmailThreadPanel({
 
       {summary && (
         <div className="flex flex-wrap gap-2 text-[10px]">
-          <span className="px-2 py-1 rounded bg-emerald-500/10 text-ok-soft border border-emerald-500/20">
+          <span className="px-2 py-1 rounded bg-emerald2/10 text-ok-soft border border-emerald2/20">
             {summary.received} recibido{summary.received !== 1 ? "s" : ""}
           </span>
           <span className="px-2 py-1 rounded bg-brand/10 text-brand-fg border border-brand/20">
@@ -140,17 +140,17 @@ export function EmailThreadPanel({
             </span>
           )}
           {summary.opened > 0 && (
-            <span className="px-2 py-1 rounded bg-violet-500/10 text-grape-soft border border-violet-500/20">
+            <span className="px-2 py-1 rounded bg-iris/10 text-grape-soft border border-iris/20">
               {summary.opened} abierto{summary.opened !== 1 ? "s" : ""}
             </span>
           )}
           {summary.pending > 0 && (
-            <span className="px-2 py-1 rounded bg-amber-500/10 text-warn-soft/80 border border-amber-500/20">
+            <span className="px-2 py-1 rounded bg-warn/10 text-warn-soft border border-warn/20">
               {summary.pending} pendiente{summary.pending !== 1 ? "s" : ""}
             </span>
           )}
           {summary.bounced > 0 && (
-            <span className="px-2 py-1 rounded bg-red-500/10 text-danger-soft border border-red-500/20">
+            <span className="px-2 py-1 rounded bg-danger/10 text-danger-soft border border-danger/20">
               {summary.bounced} rebote{summary.bounced !== 1 ? "s" : ""}
             </span>
           )}
@@ -158,7 +158,7 @@ export function EmailThreadPanel({
       )}
 
       {loading && <p className="text-fg-faint text-sm">Cargando hilo…</p>}
-      {error && <p className="text-danger/80 text-sm">{error}</p>}
+      {error && <p className="text-danger text-sm">{error}</p>}
 
       {!loading && !error && messages.length <= 1 && (
         <p className="text-fg-faint text-sm">
@@ -205,7 +205,7 @@ export function EmailThreadPanel({
           const bg = msg.isCurrent
             ? isSent
               ? "bg-brand/[0.06]"
-              : "bg-emerald-500/[0.06]"
+              : "bg-emerald2/[0.06]"
             : "bg-fill";
 
           return (

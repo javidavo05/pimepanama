@@ -213,7 +213,7 @@ export default async function FacturaDetailPage({
           <p className="text-fg-faint text-xs mt-4">Método de pago: {doc.paymentMethod.name}</p>
         )}
         {doc.netAmount != null && Number(doc.netAmount) !== total && (
-          <p className="text-ok/70 font-mono text-xs mt-1">
+          <p className="text-ok font-mono text-xs mt-1">
             Neto tras comisión: {money(doc.currency, Number(doc.netAmount))}
           </p>
         )}
@@ -224,7 +224,7 @@ export default async function FacturaDetailPage({
           </p>
         )}
         {outstanding > 0 && !isClosed && (
-          <p className="text-warn/80 text-xs mt-4">
+          <p className="text-warn text-xs mt-4">
             Saldo vivo en{" "}
             <Link href="/empresa/cuentas-por-cobrar" className="underline hover:text-warn-soft">
               Cuentas por Cobrar

@@ -7,8 +7,9 @@ interface SignaturePreviewProps {
 }
 
 function SignatureBody({ html }: { html: string }) {
+  // theme-ok: previsualización de la firma tal como la verá el destinatario, sobre blanco
   return (
-    <div className="bg-white p-3 sm:p-4 min-h-[80px] overflow-x-auto">
+    <div className="bg-white p-3 sm:p-4 min-h-[80px] overflow-x-auto" data-theme-surface="fixed">
       <div
         className="min-w-0 max-w-full [&_table]:max-w-full [&_img]:h-auto [&_img]:max-w-[120px]"
         dangerouslySetInnerHTML={{ __html: html }}
@@ -24,7 +25,7 @@ export function SignaturePreview({ html, className = "", collapsibleOnMobile = f
         <details className={`sm:hidden rounded-xl border border-line overflow-hidden ${className}`}>
           <summary className="px-3 py-2.5 bg-fill text-fg-faint text-[10px] uppercase tracking-widest cursor-pointer list-none flex items-center justify-between">
             <span>Vista previa de firma</span>
-            <span className="text-fg-trace text-xs">▼</span>
+            <span className="text-fg-ghost text-xs">▼</span>
           </summary>
           <SignatureBody html={html} />
         </details>

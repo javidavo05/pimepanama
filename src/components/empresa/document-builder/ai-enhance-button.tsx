@@ -43,7 +43,7 @@ export function AiEnhanceButton({ text, language, context, onEnhanced }: AiEnhan
         onClick={enhance}
         disabled={loading || !safeText.trim()}
         title="Mejorar con IA"
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-iris/10 border border-iris/25 text-iris text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-iris/10 border border-iris/25 text-iris-fg text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
       >
         {loading ? (
           <>
