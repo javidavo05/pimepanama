@@ -34,10 +34,10 @@ interface CotizacionBuilderProps {
 }
 
 const STATUS_OPTS = [
-  { value: "DRAFT",    label: "Borrador",  labelEn: "Draft",    color: "border-white/[0.07] text-white/50" },
-  { value: "SENT",     label: "Enviada",   labelEn: "Sent",     color: "border-blue-500/30 text-blue-400" },
-  { value: "ACCEPTED", label: "Aceptada",  labelEn: "Accepted", color: "border-green-500/30 text-green-400" },
-  { value: "REJECTED", label: "Rechazada", labelEn: "Rejected", color: "border-red-500/30 text-red-400" },
+  { value: "DRAFT",    label: "Borrador",  labelEn: "Draft",    color: "border-line text-fg-faint" },
+  { value: "SENT",     label: "Enviada",   labelEn: "Sent",     color: "border-blue-500/30 text-info" },
+  { value: "ACCEPTED", label: "Aceptada",  labelEn: "Accepted", color: "border-green-500/30 text-ok" },
+  { value: "REJECTED", label: "Rechazada", labelEn: "Rejected", color: "border-red-500/30 text-danger" },
 ];
 
 function getInitialValues(doc?: SerializedDocument, currency = "USD", taxRate = 7): Partial<DocumentFormValues> {
@@ -348,13 +348,13 @@ export function CotizacionBuilder({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-white text-2xl font-semibold tracking-tight">
+          <h1 className="text-fg text-2xl font-semibold tracking-tight">
             {mode === "edit"
               ? (isEs ? "Editar Cotización" : "Edit Quote")
               : (isEs ? "Nueva Cotización" : "New Quote")}
           </h1>
           {mode === "edit" && initialDocument?.number && (
-            <p className="text-white/60 text-sm mt-1 font-mono">{initialDocument.number}</p>
+            <p className="text-fg-dim text-sm mt-1 font-mono">{initialDocument.number}</p>
           )}
         </div>
         <div className="flex items-center gap-3">
@@ -364,16 +364,16 @@ export function CotizacionBuilder({
                 type="button"
                 onClick={translateAll}
                 disabled={translating}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#6344E8]/10 border border-[#6344E8]/25 text-[#6344E8] text-xs font-medium hover:bg-[#6344E8]/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-iris/10 border border-iris/25 text-iris text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
               >
                 {translating ? (
-                  <><span className="w-2 h-2 rounded-full bg-[#6344E8] animate-pulse" /> Traduciendo...</>
+                  <><span className="w-2 h-2 rounded-full bg-iris animate-pulse" /> Traduciendo...</>
                 ) : (
                   <>✦ Traducir al inglés</>
                 )}
               </button>
               {lastTranslateCost != null && !translating && (
-                <span className="text-[10px] text-white/50 font-mono">
+                <span className="text-[10px] text-fg-faint font-mono">
                   ${lastTranslateCost.toFixed(4)}
                 </span>
               )}
@@ -389,8 +389,8 @@ export function CotizacionBuilder({
       </div>
 
       {/* Status selector */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
-        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">
+      <div className="bg-panel border border-line rounded-xl p-5">
+        <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">
           {isEs ? "Estado de la cotización" : "Quote status"}
         </h3>
         <div className="flex flex-wrap gap-2">
@@ -401,8 +401,8 @@ export function CotizacionBuilder({
               onClick={() => setValue("quoteStatus", opt.value as DocumentFormValues["quoteStatus"])}
               className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
                 quoteStatus === opt.value
-                  ? `${opt.color} bg-white/[0.04]`
-                  : "border-white/[0.05] text-white/55 hover:text-white/60"
+                  ? `${opt.color} bg-fill`
+                  : "border-line text-fg-dim hover:text-fg-dim"
               }`}
             >
               {isEs ? opt.label : opt.labelEn}
@@ -413,35 +413,35 @@ export function CotizacionBuilder({
 
       {/* Proyecto + Contrato */}
       {(projects.length > 0 || contracts.length > 0) && (
-        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
-          <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">
+        <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
+          <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">
             {isEs ? "Proyecto y contrato" : "Project and contract"}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {projects.length > 0 && (
               <div>
-                <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">
+                <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">
                   {isEs ? "Proyecto vinculado" : "Linked project"}
                 </label>
                 <select {...register("projectId")} aria-label={isEs ? "Proyecto vinculado" : "Linked project"}
-                  className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all">
+                  className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-brand/40 transition-all">
                   <option value="">{isEs ? "Sin proyecto" : "No project"}</option>
                   {projects.map((p) => (
                     <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
                 {selectedProject && (
-                  <p className="text-[#1AA7F0]/50 text-xs mt-1 truncate">🗂️ {selectedProject.name}</p>
+                  <p className="text-brand-fg/50 text-xs mt-1 truncate">🗂️ {selectedProject.name}</p>
                 )}
               </div>
             )}
             {(contracts.length > 0 || filteredContracts.length > 0) && (
               <div>
-                <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">
+                <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">
                   {isEs ? "Contrato aplicable" : "Applicable contract"}
                 </label>
                 <select {...register("contractId")} aria-label={isEs ? "Contrato aplicable" : "Applicable contract"}
-                  className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all">
+                  className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-brand/40 transition-all">
                   <option value="">{isEs ? "Sin contrato" : "No contract"}</option>
                   {filteredContracts.map((c) => (
                     <option key={c.id} value={c.id}>{c.title} {c.status === "ACTIVE" ? "✓" : ""}</option>
@@ -453,11 +453,11 @@ export function CotizacionBuilder({
           {activeContract && (
             <div className="bg-green-500/[0.05] border border-green-500/15 rounded-lg p-3">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-green-400 text-xs">📑 Contrato activo:</span>
-                <span className="text-white/70 text-xs font-medium">{activeContract.title}</span>
+                <span className="text-ok text-xs">📑 Contrato activo:</span>
+                <span className="text-fg-mute text-xs font-medium">{activeContract.title}</span>
               </div>
               {activeContract.responsibilities && (
-                <p className="text-white/60 text-xs leading-relaxed">{activeContract.responsibilities.slice(0, 200)}{activeContract.responsibilities.length > 200 ? "..." : ""}</p>
+                <p className="text-fg-dim text-xs leading-relaxed">{activeContract.responsibilities.slice(0, 200)}{activeContract.responsibilities.length > 200 ? "..." : ""}</p>
               )}
             </div>
           )}
@@ -465,12 +465,12 @@ export function CotizacionBuilder({
       )}
 
       {/* Client picker */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
+      <div className="bg-panel border border-line rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">
+          <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">
             {isEs ? "Cliente" : "Client"}
           </h3>
-          <div className="inline-flex rounded-lg border border-white/[0.08] overflow-hidden">
+          <div className="inline-flex rounded-lg border border-line overflow-hidden">
             {([
               { value: "client" as const, label: isEs ? "Cliente" : "Client" },
               { value: "lead" as const, label: "Lead" },
@@ -485,7 +485,7 @@ export function CotizacionBuilder({
                   setValue("saveAsNewClient", false);
                 }}
                 className={`px-3 py-1.5 text-xs font-medium transition-all ${
-                  contactMode === opt.value ? "bg-[#1AA7F0]/10 text-[#1AA7F0]" : "text-white/60 hover:text-white/60"
+                  contactMode === opt.value ? "bg-brand/10 text-brand-fg" : "text-fg-dim hover:text-fg-dim"
                 }`}
               >
                 {opt.label}
@@ -525,8 +525,8 @@ export function CotizacionBuilder({
               />
             )}
             {watch("saveAsNewClient") && (
-              <p className="mt-1.5 text-[10px] text-[#1AA7F0]/70 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#1AA7F0]/60 inline-block" />
+              <p className="mt-1.5 text-[10px] text-brand-fg/70 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-brand/60 inline-block" />
                 {isEs ? "Se guardará como nuevo cliente" : "Will be saved as new client"}
               </p>
             )}
@@ -538,21 +538,21 @@ export function CotizacionBuilder({
             { name: "clientPhone", label: isEs ? "Teléfono" : "Phone", placeholder: "+507 6000-0000" },
           ].map(({ name, label, placeholder, type }) => (
             <div key={name}>
-              <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">{label}</label>
+              <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">{label}</label>
               <input
                 {...register(name as keyof DocumentFormValues)}
                 type={type ?? "text"}
                 placeholder={placeholder}
-                className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 transition-all"
+                className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 transition-all"
               />
             </div>
           ))}
           <div className="col-span-2">
-            <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">{isEs ? "Dirección" : "Address"}</label>
+            <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">{isEs ? "Dirección" : "Address"}</label>
             <input
               {...register("clientAddress")}
               placeholder="Calle 50, Ciudad de Panamá"
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 transition-all"
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 transition-all"
             />
           </div>
           <div className="col-span-2 flex items-center gap-3 pt-1 hidden">
@@ -560,9 +560,9 @@ export function CotizacionBuilder({
               {...register("saveAsNewClient")}
               type="checkbox"
               id="saveAsNewClient"
-              className="rounded border-white/20 bg-white/[0.03] accent-[#1AA7F0]"
+              className="rounded border-line-loud bg-fill accent-brand"
             />
-            <label htmlFor="saveAsNewClient" className="text-white/50 text-sm">
+            <label htmlFor="saveAsNewClient" className="text-fg-faint text-sm">
               {isEs ? "Guardar como nuevo cliente en el historial" : "Save as new client in history"}
             </label>
           </div>
@@ -570,18 +570,18 @@ export function CotizacionBuilder({
       </div>
 
       {/* Dates */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
-        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">
+      <div className="bg-panel border border-line rounded-xl p-5">
+        <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">
           {isEs ? "Vigencia" : "Validity"}
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">{isEs ? "Fecha de emisión" : "Issue date"}</label>
-            <input {...register("issueDate")} type="date" className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all" />
+            <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">{isEs ? "Fecha de emisión" : "Issue date"}</label>
+            <input {...register("issueDate")} type="date" className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-brand/40 transition-all" />
           </div>
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">{isEs ? "Válida hasta" : "Valid until"}</label>
-            <input {...register("validUntil")} type="date" className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all" />
+            <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">{isEs ? "Válida hasta" : "Valid until"}</label>
+            <input {...register("validUntil")} type="date" className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-brand/40 transition-all" />
           </div>
         </div>
       </div>
@@ -590,42 +590,42 @@ export function CotizacionBuilder({
       <LineItemsEditor control={control} register={register} setValue={setValue} language={language} taxRateDefault={taxRateDefault} />
 
       {/* Notes + Terms */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
+      <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-white/60 text-xs uppercase tracking-widest font-medium">
+            <label className="text-fg-dim text-xs uppercase tracking-widest font-medium">
               {isEs ? "Alcance del proyecto" : "Project scope"}
             </label>
             <AiEnhanceButton text={notes ?? ""} language={language} context="project scope for a corporate proposal" onEnhanced={(t) => setValue("notes", t)} />
           </div>
-          <textarea {...register("notes")} rows={3} placeholder={isEs ? "Describe el alcance del proyecto..." : "Describe project scope..."} className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 resize-none transition-all" />
+          <textarea {...register("notes")} rows={3} placeholder={isEs ? "Describe el alcance del proyecto..." : "Describe project scope..."} className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg-soft text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 resize-none transition-all" />
         </div>
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-white/60 text-xs uppercase tracking-widest font-medium">
+            <label className="text-fg-dim text-xs uppercase tracking-widest font-medium">
               {isEs ? "Términos y condiciones" : "Terms and conditions"}
             </label>
             <AiEnhanceButton text={terms ?? ""} language={language} context="terms and conditions for a corporate quote" onEnhanced={(t) => setValue("terms", t)} />
           </div>
-          <textarea {...register("terms")} rows={3} placeholder={isEs ? "Condiciones generales, garantías..." : "General conditions, warranties..."} className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 resize-none transition-all" />
+          <textarea {...register("terms")} rows={3} placeholder={isEs ? "Condiciones generales, garantías..." : "General conditions, warranties..."} className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg-soft text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 resize-none transition-all" />
         </div>
       </div>
 
       {/* Plan de pagos — solo si hay proyecto vinculado */}
       {selectedProjectId && (
-        <div className="bg-[#0a0a10] border border-[#6344E8]/20 rounded-xl p-5">
+        <div className="bg-panel border border-iris/20 rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">
+            <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">
               {isEs ? "Plan de pagos (cuotas)" : "Payment schedule (installments)"}
             </h3>
             <button type="button"
               onClick={() => appendSchedule({ description: "", amount: 0, dueDate: "" })}
-              className="text-[#6344E8] text-xs font-medium hover:text-[#8B6FFF] transition-colors">
+              className="text-iris text-xs font-medium hover:text-iris-fg transition-colors">
               + {isEs ? "Agregar cuota" : "Add installment"}
             </button>
           </div>
           {scheduleFields.length === 0 ? (
-            <p className="text-white/50 text-sm text-center py-3">
+            <p className="text-fg-faint text-sm text-center py-3">
               {isEs ? "Sin cuotas — agrega para habilitar pagos parciales" : "No installments — add to enable partial payments"}
             </p>
           ) : (
@@ -633,33 +633,33 @@ export function CotizacionBuilder({
               {scheduleFields.map((field, i) => (
                 <div key={field.id} className="grid grid-cols-2 gap-2 sm:grid-cols-[1fr_120px_140px_24px] sm:items-end">
                   <div className="col-span-2 sm:col-span-1">
-                    <label className={`block text-white/55 text-[10px] uppercase tracking-widest mb-1 ${i === 0 ? "" : "sm:hidden"}`}>{isEs ? "Descripción" : "Description"}</label>
+                    <label className={`block text-fg-dim text-[10px] uppercase tracking-widest mb-1 ${i === 0 ? "" : "sm:hidden"}`}>{isEs ? "Descripción" : "Description"}</label>
                     <input {...register(`paymentSchedules.${i}.description`)}
                       placeholder={isEs ? `Cuota ${i + 1}` : `Installment ${i + 1}`}
-                      className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#6344E8]/40 transition-all" />
+                      className="w-full bg-fill border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-iris/40 transition-all" />
                   </div>
                   <div>
-                    <label className={`block text-white/55 text-[10px] uppercase tracking-widest mb-1 ${i === 0 ? "" : "sm:hidden"}`}>{isEs ? "Monto" : "Amount"}</label>
+                    <label className={`block text-fg-dim text-[10px] uppercase tracking-widest mb-1 ${i === 0 ? "" : "sm:hidden"}`}>{isEs ? "Monto" : "Amount"}</label>
                     <input {...register(`paymentSchedules.${i}.amount`, { valueAsNumber: true })}
                       type="number" min="0" step="0.01" placeholder="0.00"
-                      className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#6344E8]/40 transition-all" />
+                      className="w-full bg-fill border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-iris/40 transition-all" />
                   </div>
                   <div>
-                    <label className={`block text-white/55 text-[10px] uppercase tracking-widest mb-1 ${i === 0 ? "" : "sm:hidden"}`}>{isEs ? "Vencimiento" : "Due date"}</label>
+                    <label className={`block text-fg-dim text-[10px] uppercase tracking-widest mb-1 ${i === 0 ? "" : "sm:hidden"}`}>{isEs ? "Vencimiento" : "Due date"}</label>
                     <input {...register(`paymentSchedules.${i}.dueDate`)}
                       type="date"
-                      className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#6344E8]/40 transition-all" />
+                      className="w-full bg-fill border border-line rounded-lg px-3 py-2 text-fg text-sm focus:outline-none focus:border-iris/40 transition-all" />
                   </div>
                   <div className="col-span-2 flex justify-end sm:col-span-1 sm:block sm:pb-1.5">
                     <button type="button" onClick={() => removeSchedule(i)}
-                      className="text-white/50 hover:text-red-400 transition-colors text-sm">×</button>
+                      className="text-fg-faint hover:text-danger transition-colors text-sm">×</button>
                   </div>
                 </div>
               ))}
               <div className="flex justify-end pt-1">
-                <span className="text-white/55 text-xs font-mono">
+                <span className="text-fg-dim text-xs font-mono">
                   {isEs ? "Total cuotas:" : "Total installments:"}{" "}
-                  <span className="text-[#C8A96E]">
+                  <span className="text-sand-fg">
                     ${(watch("paymentSchedules") ?? []).reduce((s, sc) => s + (Number(sc.amount) || 0), 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                   </span>
                 </span>
@@ -671,11 +671,11 @@ export function CotizacionBuilder({
 
       {/* Payment methods on PDF */}
       {paymentMethods.length > 0 && (
-        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
-          <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">
+        <div className="bg-panel border border-line rounded-xl p-5">
+          <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">
             {isEs ? "Formas de pago" : "Payment methods"}
           </h3>
-          <p className="text-white/55 text-xs mb-4">
+          <p className="text-fg-dim text-xs mb-4">
             {isEs
               ? "Seleccione las formas de pago que aparecerán en el PDF de la cotización."
               : "Select the payment methods to include on the quote PDF."}
@@ -694,8 +694,8 @@ export function CotizacionBuilder({
 
       {/* Payment method received (shown when Accepted or Paid) */}
       {(quoteStatus === "ACCEPTED" || quoteStatus === "PAID") && paymentMethods.length > 0 && (
-        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
-          <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">
+        <div className="bg-panel border border-line rounded-xl p-5">
+          <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">
             {isEs ? "Método de pago recibido" : "Payment method received"}
           </h3>
           <PaymentSelector
@@ -711,10 +711,10 @@ export function CotizacionBuilder({
       <DraftPdfPreview endpoint="/api/empresa/documents/preview" payload={previewPayload} title={isEs ? "Vista previa del documento" : "Document preview"} />
 
       <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-white/50 hover:text-white/80 text-sm transition-colors">
+        <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-fg-faint hover:text-fg-soft text-sm transition-colors">
           {isEs ? "Cancelar" : "Cancel"}
         </button>
-        <button type="submit" disabled={saving} className="px-6 py-2.5 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-all">
+        <button type="submit" disabled={saving} className="px-6 py-2.5 bg-brand hover:bg-brand-hi disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg transition-all">
           {saving
             ? (isEs ? "Guardando..." : "Saving...")
             : mode === "edit"

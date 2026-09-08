@@ -21,16 +21,16 @@ export function SignaturePreview({ html, className = "", collapsibleOnMobile = f
   if (collapsibleOnMobile) {
     return (
       <>
-        <details className={`sm:hidden rounded-xl border border-white/[0.08] overflow-hidden ${className}`}>
-          <summary className="px-3 py-2.5 bg-white/[0.03] text-white/50 text-[10px] uppercase tracking-widest cursor-pointer list-none flex items-center justify-between">
+        <details className={`sm:hidden rounded-xl border border-line overflow-hidden ${className}`}>
+          <summary className="px-3 py-2.5 bg-fill text-fg-faint text-[10px] uppercase tracking-widest cursor-pointer list-none flex items-center justify-between">
             <span>Vista previa de firma</span>
-            <span className="text-white/30 text-xs">▼</span>
+            <span className="text-fg-trace text-xs">▼</span>
           </summary>
           <SignatureBody html={html} />
         </details>
-        <div className={`hidden sm:block rounded-xl border border-white/[0.08] overflow-hidden ${className}`}>
-          <div className="px-3 py-2 bg-white/[0.03] border-b border-white/[0.06]">
-            <p className="text-white/45 text-[10px] uppercase tracking-widest">Vista previa de firma</p>
+        <div className={`hidden sm:block rounded-xl border border-line overflow-hidden ${className}`}>
+          <div className="px-3 py-2 bg-fill border-b border-line">
+            <p className="text-fg-faint text-[10px] uppercase tracking-widest">Vista previa de firma</p>
           </div>
           <SignatureBody html={html} />
         </div>
@@ -39,9 +39,9 @@ export function SignaturePreview({ html, className = "", collapsibleOnMobile = f
   }
 
   return (
-    <div className={`rounded-xl border border-white/[0.08] overflow-hidden ${className}`}>
-      <div className="px-3 py-2 bg-white/[0.03] border-b border-white/[0.06]">
-        <p className="text-white/45 text-[10px] uppercase tracking-widest">Vista previa de firma</p>
+    <div className={`rounded-xl border border-line overflow-hidden ${className}`}>
+      <div className="px-3 py-2 bg-fill border-b border-line">
+        <p className="text-fg-faint text-[10px] uppercase tracking-widest">Vista previa de firma</p>
       </div>
       <SignatureBody html={html} />
     </div>

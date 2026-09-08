@@ -15,8 +15,8 @@ export default async function ImportarCotizacionPage() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-white text-2xl font-semibold tracking-tight">Importar cotización antigua</h1>
-        <p className="text-white/60 text-sm mt-1">
+        <h1 className="text-fg text-2xl font-semibold tracking-tight">Importar cotización antigua</h1>
+        <p className="text-fg-dim text-sm mt-1">
           Digitaliza el registro de una cotización anterior. Sube el PDF (opcional) y completa los datos.
         </p>
       </div>

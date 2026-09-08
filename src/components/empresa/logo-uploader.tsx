@@ -55,11 +55,11 @@ export function LogoUploader({ value, onChange }: LogoUploaderProps) {
 
   return (
     <div className="col-span-2">
-      <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
+      <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
         Logo de la empresa
       </label>
       <div className="flex items-start gap-4">
-        <div className="w-28 h-16 rounded-lg bg-white/[0.03] border border-white/[0.07] flex items-center justify-center overflow-hidden shrink-0">
+        <div className="w-28 h-16 rounded-lg bg-fill border border-line flex items-center justify-center overflow-hidden shrink-0">
           {value ? (
             <Image
               src={resolveCompanyLogoUrl(value)}
@@ -70,7 +70,7 @@ export function LogoUploader({ value, onChange }: LogoUploaderProps) {
               unoptimized
             />
           ) : (
-            <span className="text-white/50 text-[10px] text-center px-2">Sin logo</span>
+            <span className="text-fg-faint text-[10px] text-center px-2">Sin logo</span>
           )}
         </div>
         <div className="flex-1 space-y-2">
@@ -88,15 +88,15 @@ export function LogoUploader({ value, onChange }: LogoUploaderProps) {
             type="button"
             disabled={uploading}
             onClick={() => inputRef.current?.click()}
-            className="px-4 py-2 bg-white/[0.04] border border-white/[0.08] rounded-lg text-white/60 text-sm hover:text-white/80 hover:border-white/20 disabled:opacity-40 transition-all"
+            className="px-4 py-2 bg-fill border border-line rounded-lg text-fg-dim text-sm hover:text-fg-soft hover:border-line-loud disabled:opacity-40 transition-all"
           >
             {uploading ? "Subiendo..." : value ? "Cambiar logo" : "Subir logo"}
           </button>
-          <p className="text-white/55 text-[10px] leading-relaxed">
+          <p className="text-fg-dim text-[10px] leading-relaxed">
             PNG, JPG o SVG. Se guarda en R2. Después de subir, pulsa{" "}
-            <span className="text-white/55">Guardar configuración</span>.
+            <span className="text-fg-dim">Guardar configuración</span>.
           </p>
-          {error && <p className="text-red-400/80 text-xs">{error}</p>}
+          {error && <p className="text-danger/80 text-xs">{error}</p>}
         </div>
       </div>
     </div>

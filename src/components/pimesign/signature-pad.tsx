@@ -77,15 +77,15 @@ export function SignaturePad({ onChange, className }: SignaturePadProps) {
     <div className={className}>
       <canvas
         ref={canvasRef}
-        className="w-full h-36 rounded-lg border border-white/10 bg-white touch-none cursor-crosshair"
+        className="w-full h-36 rounded-lg border border-line-mid bg-white touch-none cursor-crosshair"
         onPointerDown={start}
         onPointerMove={move}
         onPointerUp={end}
         onPointerLeave={end}
       />
       <div className="flex justify-between items-center mt-2">
-        <span className="text-white/40 text-xs">{empty ? "Dibuja tu firma arriba" : "Firma capturada"}</span>
-        <button type="button" onClick={clear} className="text-xs text-white/50 hover:text-white/70">
+        <span className="text-fg-ghost text-xs">{empty ? "Dibuja tu firma arriba" : "Firma capturada"}</span>
+        <button type="button" onClick={clear} className="text-xs text-fg-faint hover:text-fg-mute">
           Limpiar
         </button>
       </div>

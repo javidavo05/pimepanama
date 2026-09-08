@@ -21,15 +21,15 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const inputCls =
-  "no-number-spinner w-full bg-[#12121a] border border-white/10 rounded-lg px-3 py-2.5 text-white/90 text-sm placeholder:text-white/40 focus:outline-none focus:border-[#C8A96E]/50 transition-all";
+  "no-number-spinner w-full bg-panel-3 border border-line-mid rounded-lg px-3 py-2.5 text-fg text-sm placeholder:text-fg-ghost focus:outline-none focus:border-sand/50 transition-all";
 
 const selectCls = `${inputCls} appearance-none cursor-pointer`;
 
-const optionCls = "bg-[#12121a] text-white";
+const optionCls = "bg-panel-3 text-fg";
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <label className="block text-white/55 text-[10px] uppercase tracking-widest font-medium mb-1">
+    <label className="block text-fg-dim text-[10px] uppercase tracking-widest font-medium mb-1">
       {children}
     </label>
   );
@@ -91,7 +91,7 @@ function MethodRow({
 
   if (editing) {
     return (
-      <div className="p-4 rounded-xl bg-[#0a0a10] border border-white/[0.08] space-y-3">
+      <div className="p-4 rounded-xl bg-panel border border-line space-y-3">
         <input
           className={inputCls}
           value={form.name}
@@ -113,8 +113,8 @@ function MethodRow({
           </div>
         )}
         <div className="flex gap-2 justify-end">
-          <button type="button" onClick={() => setEditing(false)} className="text-white/60 text-xs hover:text-white/70">Cancelar</button>
-          <button type="button" disabled={saving} onClick={() => void handleSave()} className="px-3 py-1.5 bg-[#C8A96E]/15 text-[#C8A96E] text-xs font-medium rounded-lg">
+          <button type="button" onClick={() => setEditing(false)} className="text-fg-dim text-xs hover:text-fg-mute">Cancelar</button>
+          <button type="button" disabled={saving} onClick={() => void handleSave()} className="px-3 py-1.5 bg-sand/15 text-sand-fg text-xs font-medium rounded-lg">
             {saving ? "..." : "Guardar"}
           </button>
         </div>
@@ -123,16 +123,16 @@ function MethodRow({
   }
 
   return (
-    <div className="flex items-start justify-between gap-4 py-3 border-b border-white/[0.04] last:border-0">
+    <div className="flex items-start justify-between gap-4 py-3 border-b border-line last:border-0">
       <div className="min-w-0">
-        <p className="text-white/80 text-sm font-medium">{method.name}</p>
-        <p className="text-white/55 text-xs mt-0.5">{TYPE_LABELS[method.type] ?? method.type}</p>
+        <p className="text-fg-soft text-sm font-medium">{method.name}</p>
+        <p className="text-fg-dim text-xs mt-0.5">{TYPE_LABELS[method.type] ?? method.type}</p>
         {isBank ? (
-          <p className="text-white/60 text-xs mt-1 font-mono">
+          <p className="text-fg-dim text-xs mt-1 font-mono">
             {[method.bankName, method.accountNumber, method.accountType, method.accountHolder].filter(Boolean).join(" · ")}
           </p>
         ) : (
-          <p className="text-white/60 text-xs mt-1">
+          <p className="text-fg-dim text-xs mt-1">
             {Number(method.commissionPct) > 0 || Number(method.commissionFlat) > 0
               ? `${Number(method.commissionPct)}% + $${Number(method.commissionFlat).toFixed(2)} · ITBMS ${Number(method.commissionTax)}%`
               : "Sin comisión"}
@@ -140,8 +140,8 @@ function MethodRow({
         )}
       </div>
       <div className="flex gap-3 shrink-0">
-        <button type="button" onClick={() => setEditing(true)} className="text-white/60 hover:text-white/70 text-xs">Editar</button>
-        <button type="button" onClick={() => void handleDelete()} className="text-red-400/50 hover:text-red-400 text-xs">Eliminar</button>
+        <button type="button" onClick={() => setEditing(true)} className="text-fg-dim hover:text-fg-mute text-xs">Editar</button>
+        <button type="button" onClick={() => void handleDelete()} className="text-danger/50 hover:text-danger text-xs">Eliminar</button>
       </div>
     </div>
   );
@@ -185,14 +185,14 @@ function AddBankForm({ onAdded }: { onAdded: () => void }) {
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="text-[#C8A96E]/70 hover:text-[#C8A96E] text-xs font-medium">
+      <button type="button" onClick={() => setOpen(true)} className="text-sand-fg/70 hover:text-sand-fg text-xs font-medium">
         + Agregar cuenta bancaria
       </button>
     );
   }
 
   return (
-    <div className="p-4 rounded-xl bg-[#0a0a10] border border-[#C8A96E]/20 space-y-3">
+    <div className="p-4 rounded-xl bg-panel border border-sand/20 space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div>
           <FieldLabel>Etiqueta</FieldLabel>
@@ -219,8 +219,8 @@ function AddBankForm({ onAdded }: { onAdded: () => void }) {
         </div>
       </div>
       <div className="flex gap-2 justify-end">
-        <button type="button" onClick={() => setOpen(false)} className="text-white/50 hover:text-white/80 text-xs">Cancelar</button>
-        <button type="button" disabled={saving} onClick={() => void handleAdd()} className="px-3 py-1.5 bg-[#C8A96E] text-[#030611] text-xs font-semibold rounded-lg">
+        <button type="button" onClick={() => setOpen(false)} className="text-fg-faint hover:text-fg-soft text-xs">Cancelar</button>
+        <button type="button" disabled={saving} onClick={() => void handleAdd()} className="px-3 py-1.5 bg-sand text-on-accent text-xs font-semibold rounded-lg">
           {saving ? "..." : "Agregar"}
         </button>
       </div>
@@ -265,14 +265,14 @@ function AddCommissionForm({ onAdded }: { onAdded: () => void }) {
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="text-[#C8A96E]/70 hover:text-[#C8A96E] text-xs font-medium">
+      <button type="button" onClick={() => setOpen(true)} className="text-sand-fg/70 hover:text-sand-fg text-xs font-medium">
         + Agregar tarjeta o punto de pago
       </button>
     );
   }
 
   return (
-    <div className="p-4 rounded-xl bg-[#0a0a10] border border-[#C8A96E]/20 space-y-3">
+    <div className="p-4 rounded-xl bg-panel border border-sand/20 space-y-3">
       <div className="grid grid-cols-2 gap-3">
         <div>
           <FieldLabel>Nombre</FieldLabel>
@@ -300,8 +300,8 @@ function AddCommissionForm({ onAdded }: { onAdded: () => void }) {
         </div>
       </div>
       <div className="flex gap-2 justify-end">
-        <button type="button" onClick={() => setOpen(false)} className="text-white/50 hover:text-white/80 text-xs">Cancelar</button>
-        <button type="button" disabled={saving} onClick={() => void handleAdd()} className="px-3 py-1.5 bg-[#C8A96E] text-[#030611] text-xs font-semibold rounded-lg">
+        <button type="button" onClick={() => setOpen(false)} className="text-fg-faint hover:text-fg-soft text-xs">Cancelar</button>
+        <button type="button" disabled={saving} onClick={() => void handleAdd()} className="px-3 py-1.5 bg-sand text-on-accent text-xs font-semibold rounded-lg">
           {saving ? "..." : "Agregar"}
         </button>
       </div>
@@ -324,11 +324,11 @@ export function PaymentMethodsSettings({
 
   return (
     <div className="space-y-6">
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
-        <h2 className="text-[#C8A96E] text-xs uppercase tracking-widest font-medium mb-2">
+      <div className="bg-panel border border-line rounded-2xl p-6">
+        <h2 className="text-sand-fg text-xs uppercase tracking-widest font-medium mb-2">
           Cuentas bancarias
         </h2>
-        <p className="text-white/55 text-xs mb-4">
+        <p className="text-fg-dim text-xs mb-4">
           Cuentas para transferencias que aparecen en cotizaciones y facturas.
         </p>
         {bankMethods.length > 0 ? (
@@ -338,16 +338,16 @@ export function PaymentMethodsSettings({
             ))}
           </div>
         ) : (
-          <p className="text-white/50 text-sm mb-4">No hay cuentas registradas.</p>
+          <p className="text-fg-faint text-sm mb-4">No hay cuentas registradas.</p>
         )}
         <AddBankForm onAdded={refresh} />
       </div>
 
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
-        <h2 className="text-[#C8A96E] text-xs uppercase tracking-widest font-medium mb-2">
+      <div className="bg-panel border border-line rounded-2xl p-6">
+        <h2 className="text-sand-fg text-xs uppercase tracking-widest font-medium mb-2">
           Tarjetas y puntos de pago — comisiones
         </h2>
-        <p className="text-white/55 text-xs mb-4">
+        <p className="text-fg-dim text-xs mb-4">
           Define el costo de procesamiento para calcular el neto recibido en cotizaciones y facturas.
         </p>
         {cardMethods.length > 0 ? (
@@ -357,7 +357,7 @@ export function PaymentMethodsSettings({
             ))}
           </div>
         ) : (
-          <p className="text-white/50 text-sm mb-4">No hay métodos con comisión registrados.</p>
+          <p className="text-fg-faint text-sm mb-4">No hay métodos con comisión registrados.</p>
         )}
         <AddCommissionForm onAdded={refresh} />
       </div>

@@ -37,9 +37,9 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   return (
     <div className="max-w-3xl mx-auto">
       <div className="flex items-center gap-2 mb-5 text-sm">
-        <Link href="/empresa/leads" className="text-white/60 hover:text-white/70 transition-colors">Leads</Link>
-        <span className="text-white/50">/</span>
-        <span className="text-white/60 truncate max-w-xs">{lead.name}</span>
+        <Link href="/empresa/leads" className="text-fg-dim hover:text-fg-mute transition-colors">Leads</Link>
+        <span className="text-fg-faint">/</span>
+        <span className="text-fg-dim truncate max-w-xs">{lead.name}</span>
       </div>
 
       <LeadDetailClient lead={serialized} />

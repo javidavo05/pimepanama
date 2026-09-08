@@ -77,8 +77,8 @@ export function PaymentSelector({
             onClick={() => handleClick(m.id)}
             className={`px-3 py-2.5 rounded-lg text-sm text-left transition-all border ${
               isSelected(m.id)
-                ? "bg-[#1AA7F0]/10 border-[#1AA7F0]/40 text-[#1AA7F0]"
-                : "border-white/[0.07] text-white/50 hover:text-white/80 hover:border-white/20"
+                ? "bg-brand/10 border-brand/40 text-brand-fg"
+                : "border-line text-fg-faint hover:text-fg-soft hover:border-line-loud"
             }`}
           >
             <span className="block font-medium truncate">{m.name}</span>
@@ -96,7 +96,7 @@ export function PaymentSelector({
 
       {!multiple && showCommission && commission && selected && (
         <div className="bg-amber-500/5 border border-amber-500/15 rounded-xl p-4 space-y-1.5">
-          <p className="text-amber-400/80 text-xs uppercase tracking-widest font-semibold mb-2">
+          <p className="text-warn/80 text-xs uppercase tracking-widest font-semibold mb-2">
             {lang === "es" ? "Desglose de comisión — " : "Commission breakdown — "}
             {selected.name}
           </p>
@@ -110,10 +110,10 @@ export function PaymentSelector({
             <Row label="ITBMS (7%) sobre comisión" value={`−$${fmtUSD(commission.commissionTaxAmt)}`} dim />
           )}
           <div className="border-t border-amber-500/10 pt-2 mt-2 flex justify-between items-center">
-            <span className="text-white/60 text-sm font-semibold">
+            <span className="text-fg-dim text-sm font-semibold">
               {lang === "es" ? "Neto recibido" : "Net received"}
             </span>
-            <span className="text-green-400 font-mono text-lg font-bold">
+            <span className="text-ok font-mono text-lg font-bold">
               ${fmtUSD(commission.netAmount)}
             </span>
           </div>
@@ -126,8 +126,8 @@ export function PaymentSelector({
 function Row({ label, value, dim }: { label: string; value: string; dim?: boolean }) {
   return (
     <div className="flex justify-between items-center">
-      <span className={`text-xs ${dim ? "text-white/55" : "text-white/50"}`}>{label}</span>
-      <span className={`text-xs font-mono ${dim ? "text-amber-400/50" : "text-white/70"}`}>{value}</span>
+      <span className={`text-xs ${dim ? "text-fg-dim" : "text-fg-faint"}`}>{label}</span>
+      <span className={`text-xs font-mono ${dim ? "text-warn/50" : "text-fg-mute"}`}>{value}</span>
     </div>
   );
 }

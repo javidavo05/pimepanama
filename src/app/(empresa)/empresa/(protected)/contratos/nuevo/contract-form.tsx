@@ -42,10 +42,10 @@ interface ContractFormProps {
 }
 
 const STATUS_OPTS = [
-  { value: "DRAFT", label: "Borrador", color: "border-white/[0.07] text-white/50" },
-  { value: "ACTIVE", label: "Activo", color: "border-green-500/30 text-green-400" },
-  { value: "EXPIRED", label: "Vencido", color: "border-white/[0.1] text-white/60" },
-  { value: "TERMINATED", label: "Terminado", color: "border-red-500/30 text-red-400" },
+  { value: "DRAFT", label: "Borrador", color: "border-line text-fg-faint" },
+  { value: "ACTIVE", label: "Activo", color: "border-green-500/30 text-ok" },
+  { value: "EXPIRED", label: "Vencido", color: "border-line-mid text-fg-dim" },
+  { value: "TERMINATED", label: "Terminado", color: "border-red-500/30 text-danger" },
 ];
 
 export function ContractForm({ clients, projects, mode = "create", initial, defaultProjectId, defaultClientId, linkDocumentId, returnTo, signingManaged }: ContractFormProps) {
@@ -152,38 +152,38 @@ export function ContractForm({ clients, projects, mode = "create", initial, defa
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-6xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-white text-2xl font-semibold tracking-tight">
+        <h1 className="text-fg text-2xl font-semibold tracking-tight">
           {mode === "edit" ? "Editar contrato" : "Nuevo contrato"}
         </h1>
       </div>
 
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
-        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">Estado</h3>
+      <div className="bg-panel border border-line rounded-xl p-5">
+        <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">Estado</h3>
         <div className="flex flex-wrap gap-2">
           {STATUS_OPTS.map((opt) => (
             <button key={opt.value} type="button"
               onClick={() => setValue("status", opt.value as ContractFormValues["status"])}
-              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${status === opt.value ? opt.color + " bg-white/[0.04]" : "border-white/[0.05] text-white/55 hover:text-white/60"}`}>
+              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${status === opt.value ? opt.color + " bg-fill" : "border-line text-fg-dim hover:text-fg-dim"}`}>
               {opt.label}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
-        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">Información</h3>
+      <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
+        <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Información</h3>
         <div>
-          <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
-            Título del contrato <span className="text-red-400">*</span>
+          <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
+            Título del contrato <span className="text-danger">*</span>
           </label>
           <input {...register("title", { required: true })}
             placeholder="Ej. Propuesta Academyx REGULAR"
-            className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#0586FE]/40 transition-all" />
+            className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-azure/40 transition-all" />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">Cliente</label>
+            <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">Cliente</label>
             <ClientCombobox
               clients={clients}
               value={watch("clientName")}
@@ -194,9 +194,9 @@ export function ContractForm({ clients, projects, mode = "create", initial, defa
             />
           </div>
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">Proyecto</label>
+            <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">Proyecto</label>
             <select {...register("projectId")} aria-label="Proyecto"
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#0586FE]/40 transition-all">
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-azure/40 transition-all">
               <option value="">Sin proyecto</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
@@ -207,48 +207,48 @@ export function ContractForm({ clients, projects, mode = "create", initial, defa
 
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">Valor (USD)</label>
+            <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">Valor (USD)</label>
             <input {...register("value")} type="number" min="0" step="0.01" placeholder="0.00"
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#0586FE]/40 transition-all" />
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-azure/40 transition-all" />
           </div>
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">Fecha firma</label>
+            <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">Fecha firma</label>
             {signingManaged ? (
-              <p className="text-white/45 text-sm py-2.5">Gestionada por PimeSign al completar la firma.</p>
+              <p className="text-fg-faint text-sm py-2.5">Gestionada por PimeSign al completar la firma.</p>
             ) : (
               <input {...register("signedAt")} type="date"
-                className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#0586FE]/40 transition-all" />
+                className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-azure/40 transition-all" />
             )}
           </div>
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">Vigencia inicio</label>
+            <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">Vigencia inicio</label>
             <input {...register("startsAt")} type="date"
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#0586FE]/40 transition-all" />
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-azure/40 transition-all" />
           </div>
         </div>
 
         <div>
-          <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">Vigencia fin</label>
+          <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">Vigencia fin</label>
           <input {...register("endsAt")} type="date"
-            className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#0586FE]/40 transition-all" />
+            className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-azure/40 transition-all" />
         </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">Documento visual (plantilla Pime)</h3>
+        <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Documento visual (plantilla Pime)</h3>
         <div className="flex gap-2">
           <button
             type="button"
             disabled={htmlBootstrapping}
             onClick={() => void bootstrapHtml()}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-white/[0.08] text-white/50 hover:text-white/70 disabled:opacity-50 transition-colors"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-faint hover:text-fg-mute disabled:opacity-50 transition-colors"
           >
             {htmlBootstrapping ? "Generando…" : "Regenerar desde campos"}
           </button>
           <button
             type="button"
             onClick={() => setShowLegacyFields((v) => !v)}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-white/[0.08] text-white/50 hover:text-white/70 transition-colors"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-faint hover:text-fg-mute transition-colors"
           >
             {showLegacyFields ? "Ocultar campos texto" : "Campos de texto"}
           </button>
@@ -256,34 +256,34 @@ export function ContractForm({ clients, projects, mode = "create", initial, defa
       </div>
 
       {showLegacyFields && (
-        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
-          <p className="text-white/40 text-xs">Estos campos alimentan la plantilla al regenerar. El documento final se edita visualmente abajo.</p>
+        <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
+          <p className="text-fg-ghost text-xs">Estos campos alimentan la plantilla al regenerar. El documento final se edita visualmente abajo.</p>
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-white/50 text-xs uppercase tracking-widest font-medium">Descripción</label>
+              <label className="text-fg-faint text-xs uppercase tracking-widest font-medium">Descripción</label>
               <AiEnhanceButton text={watch("description")} language="es" context="contract description"
                 onEnhanced={(v) => setValue("description", v)} />
             </div>
             <textarea {...register("description")} rows={3}
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm resize-none focus:outline-none focus:border-[#0586FE]/40 transition-all" />
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg-soft text-sm resize-none focus:outline-none focus:border-azure/40 transition-all" />
           </div>
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-white/50 text-xs uppercase tracking-widest font-medium">Responsabilidades</label>
+              <label className="text-fg-faint text-xs uppercase tracking-widest font-medium">Responsabilidades</label>
               <AiEnhanceButton text={watch("responsibilities")} language="es" context="company responsibilities in contract"
                 onEnhanced={(v) => setValue("responsibilities", v)} />
             </div>
             <textarea {...register("responsibilities")} rows={3}
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm resize-none focus:outline-none focus:border-[#0586FE]/40 transition-all" />
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg-soft text-sm resize-none focus:outline-none focus:border-azure/40 transition-all" />
           </div>
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="text-white/50 text-xs uppercase tracking-widest font-medium">Términos</label>
+              <label className="text-fg-faint text-xs uppercase tracking-widest font-medium">Términos</label>
               <AiEnhanceButton text={watch("terms")} language="es" context="contract terms and conditions"
                 onEnhanced={(v) => setValue("terms", v)} />
             </div>
             <textarea {...register("terms")} rows={3}
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm resize-none focus:outline-none focus:border-[#0586FE]/40 transition-all" />
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg-soft text-sm resize-none focus:outline-none focus:border-azure/40 transition-all" />
           </div>
         </div>
       )}
@@ -291,15 +291,15 @@ export function ContractForm({ clients, projects, mode = "create", initial, defa
       {htmlContent ? (
         <DesignSystemHtmlEditor value={htmlContent} onChange={setHtmlContent} />
       ) : (
-        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-8 text-center text-white/45 text-sm">
+        <div className="bg-panel border border-line rounded-xl p-8 text-center text-fg-faint text-sm">
           {htmlBootstrapping ? "Generando plantilla del design-system…" : "Completa el título y espera la plantilla, o pulsa Regenerar."}
         </div>
       )}
 
       <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-white/50 hover:text-white/80 text-sm transition-colors">Cancelar</button>
+        <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-fg-faint hover:text-fg-soft text-sm transition-colors">Cancelar</button>
         <button type="submit" disabled={saving}
-          className="px-6 py-2.5 bg-[#0586FE] hover:bg-[#0470d4] disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-all">
+          className="px-6 py-2.5 bg-azure hover:bg-brand-hi disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg transition-all">
           {saving ? "Guardando..." : mode === "edit" ? "Guardar cambios" : "Crear contrato"}
         </button>
       </div>

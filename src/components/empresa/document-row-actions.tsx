@@ -51,14 +51,14 @@ export function DocumentRowActions({
     <div className="flex items-center justify-end gap-3 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
       <Link
         href={editHref}
-        className="text-white/60 hover:text-white/80 text-xs transition-colors"
+        className="text-fg-dim hover:text-fg-soft text-xs transition-colors"
       >
         {editLabel}
       </Link>
       <Link
         href={`/api/empresa/documents/${documentId}/pdf`}
         target="_blank"
-        className="text-[#C8A96E] hover:text-[#d4b87a] text-xs font-medium transition-colors"
+        className="text-sand-fg hover:text-sand-lt text-xs font-medium transition-colors"
       >
         PDF
       </Link>
@@ -67,7 +67,7 @@ export function DocumentRowActions({
           type="button"
           onClick={handleDelete}
           disabled={deleting}
-          className="text-red-400/50 hover:text-red-400 disabled:opacity-40 text-xs transition-colors"
+          className="text-danger/50 hover:text-danger disabled:opacity-40 text-xs transition-colors"
         >
           {deleting ? "..." : "Eliminar"}
         </button>

@@ -227,7 +227,7 @@ export function BitacoraBuilder({
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-white text-2xl font-semibold tracking-tight">
+          <h1 className="text-fg text-2xl font-semibold tracking-tight">
             {mode === "edit"
               ? isEs
                 ? "Editar Bitácora"
@@ -236,7 +236,7 @@ export function BitacoraBuilder({
                 ? "Nueva Bitácora"
                 : "New Log"}
           </h1>
-          <p className="text-white/60 text-sm mt-1">
+          <p className="text-fg-dim text-sm mt-1">
             {mode === "edit" && initialDocument?.number ? (
               <span className="font-mono">{initialDocument.number}</span>
             ) : isEs ? (
@@ -250,22 +250,22 @@ export function BitacoraBuilder({
       </div>
 
       {/* Meeting info */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
-        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">
+      <div className="bg-panel border border-line rounded-xl p-5">
+        <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">
           {isEs ? "Información de la reunión" : "Meeting information"}
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">
+            <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">
               {isEs ? "Proyecto" : "Project"}
             </label>
-            <input {...register("project")} placeholder={isEs ? "Nombre del proyecto" : "Project name"} className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/40 transition-all" />
+            <input {...register("project")} placeholder={isEs ? "Nombre del proyecto" : "Project name"} className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 transition-all" />
           </div>
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">
+            <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">
               {isEs ? "Fecha" : "Date"}
             </label>
-            <input {...register("meetingDate")} type="date" className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#C8A96E]/40 transition-all" />
+            <input {...register("meetingDate")} type="date" className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-sand/40 transition-all" />
           </div>
           <div>
             <ClientCombobox
@@ -290,8 +290,8 @@ export function BitacoraBuilder({
               selectedClientId={watch("clientId") || undefined}
             />
             {watch("saveAsNewClient") && (
-              <p className="mt-1.5 text-[10px] text-[#1AA7F0]/70 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#1AA7F0]/60 inline-block" />
+              <p className="mt-1.5 text-[10px] text-brand-fg/70 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-brand/60 inline-block" />
                 {isEs ? "Cliente nuevo al guardar" : "New client on save"}
               </p>
             )}
@@ -299,30 +299,30 @@ export function BitacoraBuilder({
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">
+            <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">
               {isEs ? "Participantes — cliente" : "Attendees — client"}
             </label>
             <input
               {...register("attendees")}
               placeholder={isEs ? "Juan, María, Pedro..." : "John, Mary, Peter..."}
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/40 transition-all"
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 transition-all"
             />
-            <p className="mt-1 text-[10px] text-white/50">
+            <p className="mt-1 text-[10px] text-fg-faint">
               {isEs
                 ? "Se completa al elegir un cliente del perfil"
                 : "Filled when selecting a client from the directory"}
             </p>
           </div>
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">
+            <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">
               {isEs ? "Participantes — Pime" : "Attendees — Pime"}
             </label>
             <input
               {...register("pimeAttendees")}
               placeholder="Javier Vallejo, ..."
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/40 transition-all"
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 transition-all"
             />
-            <p className="mt-1 text-[10px] text-white/50">
+            <p className="mt-1 text-[10px] text-fg-faint">
               {isEs
                 ? "Javier Vallejo se incluye siempre como responsable"
                 : "Javier Vallejo is always included as owner"}
@@ -332,14 +332,14 @@ export function BitacoraBuilder({
       </div>
 
       {/* Voice / raw notes */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
+      <div className="bg-panel border border-line rounded-xl p-5">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">
+          <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">
             {isEs ? "Notas / dictado" : "Notes / dictation"}
           </h3>
           <div className="flex items-center gap-3">
             {transcribing && (
-              <span className="text-white/60 text-xs animate-pulse">
+              <span className="text-fg-dim text-xs animate-pulse">
                 {isEs ? "Transcribiendo..." : "Transcribing..."}
               </span>
             )}
@@ -349,8 +349,8 @@ export function BitacoraBuilder({
               disabled={transcribing}
               className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                 recording
-                  ? "bg-red-500/10 border-red-500/30 text-red-400 animate-pulse"
-                  : "bg-white/[0.04] border-white/[0.08] text-white/60 hover:text-white/80"
+                  ? "bg-red-500/10 border-red-500/30 text-danger animate-pulse"
+                  : "bg-fill border-line text-fg-dim hover:text-fg-soft"
               }`}
             >
               {recording ? (
@@ -365,7 +365,7 @@ export function BitacoraBuilder({
           {...register("rawNotes")}
           rows={5}
           placeholder={isEs ? "Escribe o dicta las notas de la reunión aquí..." : "Write or dictate meeting notes here..."}
-          className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/40 resize-none transition-all"
+          className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg-soft text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 resize-none transition-all"
         />
 
         <div className="mt-3 flex justify-end">
@@ -373,10 +373,10 @@ export function BitacoraBuilder({
             type="button"
             onClick={restructureWithAI}
             disabled={!rawNotes?.trim() || restructuring}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-[#C8A96E]/10 border border-[#C8A96E]/20 text-[#C8A96E] text-xs font-semibold rounded-lg hover:bg-[#C8A96E]/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-sand/10 border border-sand/20 text-sand-fg text-xs font-semibold rounded-lg hover:bg-sand/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
             {restructuring ? (
-              <><span className="w-3 h-3 border-2 border-[#C8A96E]/30 border-t-[#C8A96E] rounded-full animate-spin" /> {isEs ? "Restructurando..." : "Restructuring..."}</>
+              <><span className="w-3 h-3 border-2 border-sand/30 border-t-[#C8A96E] rounded-full animate-spin" /> {isEs ? "Restructurando..." : "Restructuring..."}</>
             ) : (
               <>✦ {isEs ? "Restructurar con IA" : "Restructure with AI"}</>
             )}
@@ -385,8 +385,8 @@ export function BitacoraBuilder({
       </div>
 
       {/* Structured output */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
-        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">
+      <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
+        <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">
           {isEs ? "Contenido estructurado" : "Structured content"}
         </h3>
 
@@ -398,7 +398,7 @@ export function BitacoraBuilder({
         ] as const).map(([field, label, context]) => (
           <div key={field}>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="text-white/50 text-xs uppercase tracking-widest font-medium">{label}</label>
+              <label className="text-fg-faint text-xs uppercase tracking-widest font-medium">{label}</label>
               <AiEnhanceButton
                 text={watch(field as keyof DocumentFormValues) as string ?? ""}
                 language={language}
@@ -410,7 +410,7 @@ export function BitacoraBuilder({
               {...register(field as keyof DocumentFormValues)}
               rows={3}
               placeholder={isEs ? "Se completará con IA o escribe manualmente..." : "Will be filled by AI or write manually..."}
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/40 resize-none transition-all"
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg-soft text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 resize-none transition-all"
             />
           </div>
         ))}
@@ -419,10 +419,10 @@ export function BitacoraBuilder({
       <DraftPdfPreview endpoint="/api/empresa/documents/preview" payload={previewPayload} title={isEs ? "Vista previa del documento" : "Document preview"} />
 
       <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-white/50 hover:text-white/80 text-sm transition-colors">
+        <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-fg-faint hover:text-fg-soft text-sm transition-colors">
           {isEs ? "Cancelar" : "Cancel"}
         </button>
-        <button type="submit" disabled={saving} className="px-6 py-2.5 bg-[#C8A96E] hover:bg-[#d4b87a] disabled:opacity-50 text-[#030611] text-sm font-semibold rounded-lg transition-all">
+        <button type="submit" disabled={saving} className="px-6 py-2.5 bg-sand hover:bg-sand-lt disabled:opacity-50 text-on-accent text-sm font-semibold rounded-lg transition-all">
           {saving
             ? isEs
               ? "Guardando..."

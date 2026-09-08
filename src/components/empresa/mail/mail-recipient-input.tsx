@@ -143,18 +143,18 @@ export function MailRecipientInput({
 
   return (
     <div ref={rootRef} className="relative">
-      <label htmlFor={inputId} className="text-white/40 text-xs">
+      <label htmlFor={inputId} className="text-fg-ghost text-xs">
         {label}
         {multiple ? (
-          <span className="text-white/25 font-normal ml-1">(varios con coma)</span>
+          <span className="text-fg-trace font-normal ml-1">(varios con coma)</span>
         ) : null}
       </label>
 
       <div
         className={`mt-1 min-h-[38px] flex flex-wrap items-center gap-1.5 rounded-lg border px-2 py-1.5 transition-colors ${
           disabled
-            ? "bg-white/[0.02] border-white/[0.06] opacity-60"
-            : "bg-white/[0.03] border-white/[0.07] focus-within:border-[#1AA7F0]/40"
+            ? "bg-fill border-line opacity-60"
+            : "bg-fill border-line focus-within:border-brand/40"
         }`}
         onClick={() => inputRef.current?.focus()}
       >
@@ -162,7 +162,7 @@ export function MailRecipientInput({
           committed.map((email) => (
             <span
               key={email}
-              className="inline-flex items-center gap-1 max-w-full pl-2 pr-1 py-0.5 rounded-md bg-[#0586FE]/15 border border-[#0586FE]/25 text-[#9ed0ff] text-xs"
+              className="inline-flex items-center gap-1 max-w-full pl-2 pr-1 py-0.5 rounded-md bg-azure/15 border border-azure/25 text-sky text-xs"
             >
               <span className="truncate">{email}</span>
               {!disabled && (
@@ -172,7 +172,7 @@ export function MailRecipientInput({
                     e.stopPropagation();
                     removeAddress(email);
                   }}
-                  className="shrink-0 w-4 h-4 rounded hover:bg-white/10 text-white/50 hover:text-white/80 leading-none"
+                  className="shrink-0 w-4 h-4 rounded hover:bg-fill-3 text-fg-faint hover:text-fg-soft leading-none"
                   aria-label={`Quitar ${email}`}
                 >
                   ×
@@ -208,12 +208,12 @@ export function MailRecipientInput({
             setOpen(true);
           }}
           onKeyDown={handleKeyDown}
-          className="flex-1 min-w-[140px] bg-transparent border-0 px-1 py-0.5 text-sm text-white placeholder:text-white/25 focus:outline-none disabled:cursor-not-allowed"
+          className="flex-1 min-w-[140px] bg-transparent border-0 px-1 py-0.5 text-sm text-fg placeholder:text-fg-trace focus:outline-none disabled:cursor-not-allowed"
         />
       </div>
 
       {showDropdown && (
-        <ul className="absolute z-50 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-xl border border-white/[0.08] bg-[#0d0d18] shadow-xl py-1">
+        <ul className="absolute z-50 left-0 right-0 mt-1 max-h-56 overflow-y-auto rounded-xl border border-line bg-pop shadow-xl py-1">
           {filtered.map((item, index) => (
             <li key={item.email}>
               <button
@@ -221,18 +221,18 @@ export function MailRecipientInput({
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => selectSuggestion(item)}
                 className={`w-full text-left px-3 py-2.5 transition-colors ${
-                  index === cursor ? "bg-[#1AA7F0]/10" : "hover:bg-white/[0.04]"
+                  index === cursor ? "bg-brand/10" : "hover:bg-fill"
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="text-white/85 text-sm truncate">{item.label}</p>
-                    <p className="text-[#1AA7F0]/80 text-xs truncate">{item.email}</p>
+                    <p className="text-fg text-sm truncate">{item.label}</p>
+                    <p className="text-brand-fg/80 text-xs truncate">{item.email}</p>
                     {item.subtitle && (
-                      <p className="text-white/35 text-[10px] truncate mt-0.5">{item.subtitle}</p>
+                      <p className="text-fg-ghost text-[10px] truncate mt-0.5">{item.subtitle}</p>
                     )}
                   </div>
-                  <span className="text-white/30 text-[10px] uppercase tracking-wide shrink-0 pt-0.5">
+                  <span className="text-fg-trace text-[10px] uppercase tracking-wide shrink-0 pt-0.5">
                     {RECIPIENT_SOURCE_LABEL[item.source]}
                   </span>
                 </div>

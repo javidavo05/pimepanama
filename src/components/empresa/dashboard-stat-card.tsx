@@ -16,9 +16,9 @@ export function DashboardStatCard({
   color,
 }: DashboardStatCardProps) {
   return (
-    <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6 flex flex-col gap-4">
+    <div className="bg-panel border border-line rounded-2xl p-6 flex flex-col gap-4">
       <div className="flex items-center justify-between">
-        <p className="text-white/50 text-xs uppercase tracking-widest font-medium">
+        <p className="text-fg-faint text-xs uppercase tracking-widest font-medium">
           {label}
         </p>
         <span
@@ -26,19 +26,19 @@ export function DashboardStatCard({
           style={{ backgroundColor: color }}
         />
       </div>
-      <p className="text-4xl font-semibold text-white tracking-tight">
+      <p className="text-4xl font-semibold text-fg tracking-tight">
         {count}
       </p>
       <div className="flex gap-3">
         <Link
           href={href}
-          className="text-white/60 hover:text-white/70 text-xs transition-colors"
+          className="text-fg-dim hover:text-fg-mute text-xs transition-colors"
         >
           Ver todos →
         </Link>
         <Link
           href={newHref}
-          className="text-[#C8A96E] hover:text-[#d4b87a] text-xs font-medium transition-colors"
+          className="text-sand-fg hover:text-sand-lt text-xs font-medium transition-colors"
         >
           + Nuevo
         </Link>

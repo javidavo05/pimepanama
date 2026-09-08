@@ -77,30 +77,30 @@ export function DraftPdfPreview({
   );
 
   return (
-    <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl overflow-hidden">
+    <div className="bg-panel border border-line rounded-xl overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="w-full px-4 py-3 border-b border-white/[0.05] flex items-center justify-between text-left"
+        className="w-full px-4 py-3 border-b border-line flex items-center justify-between text-left"
       >
-        <span className="text-white/60 text-xs uppercase tracking-widest font-medium">{title}</span>
-        <span className="text-white/40 text-[10px] flex items-center gap-2">
+        <span className="text-fg-dim text-xs uppercase tracking-widest font-medium">{title}</span>
+        <span className="text-fg-ghost text-[10px] flex items-center gap-2">
           {open && loading && (
-            <span className="w-2.5 h-2.5 border-2 border-white/20 border-t-white/50 rounded-full animate-spin" />
+            <span className="w-2.5 h-2.5 border-2 border-line-loud border-t-fg-faint rounded-full animate-spin" />
           )}
           {open ? "Ocultar ▲" : "Mostrar ▼"}
         </span>
       </button>
       {open && (
-        <div className="relative bg-[#050508]" style={{ height: "75vh" }}>
+        <div className="relative bg-canvas" style={{ height: "75vh" }}>
           {!url && !error && (
-            <div className="absolute inset-0 flex items-center justify-center text-white/40 text-sm gap-2">
-              <span className="w-3 h-3 border-2 border-white/20 border-t-white/50 rounded-full animate-spin" />
+            <div className="absolute inset-0 flex items-center justify-center text-fg-ghost text-sm gap-2">
+              <span className="w-3 h-3 border-2 border-line-loud border-t-fg-faint rounded-full animate-spin" />
               Generando vista previa…
             </div>
           )}
           {error && (
-            <div className="absolute inset-0 flex items-center justify-center text-red-400/70 text-sm px-6 text-center">
+            <div className="absolute inset-0 flex items-center justify-center text-danger/70 text-sm px-6 text-center">
               No se pudo generar la vista previa. Completa los campos requeridos e intenta de nuevo.
             </div>
           )}

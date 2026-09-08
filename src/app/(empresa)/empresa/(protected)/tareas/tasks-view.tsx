@@ -99,14 +99,14 @@ export function TasksView({ initialTasks }: TasksViewProps) {
         ))}
       </datalist>
 
-      <div className="inline-flex items-center gap-1 bg-[#0a0a10] border border-white/[0.06] rounded-lg p-1 mb-6">
+      <div className="inline-flex items-center gap-1 bg-panel border border-line rounded-lg p-1 mb-6">
         {VIEWS.map((v) => (
           <button
             key={v.mode}
             type="button"
             onClick={() => setView(v.mode)}
             className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-              view === v.mode ? "bg-[#1AA7F0]/15 text-[#1AA7F0]" : "text-white/60 hover:text-white/70"
+              view === v.mode ? "bg-brand/15 text-brand-fg" : "text-fg-dim hover:text-fg-mute"
             }`}
           >
             {v.label}

@@ -52,11 +52,11 @@ export default async function EmailDetailPage({ params }: { params: Promise<{ id
   return (
     <div className="w-full space-y-0">
       <div className="flex items-center gap-3 mb-5">
-        <Link href="/empresa/correos/hub" className="text-white/55 text-sm hover:text-white/60 transition-colors">
+        <Link href="/empresa/correos/hub" className="text-fg-dim text-sm hover:text-fg-dim transition-colors">
           ← Bandeja
         </Link>
-        <span className="text-white/50">/</span>
-        <span className="text-white/60 text-sm truncate">{email.subject ?? "(Sin asunto)"}</span>
+        <span className="text-fg-faint">/</span>
+        <span className="text-fg-dim text-sm truncate">{email.subject ?? "(Sin asunto)"}</span>
       </div>
 
       <EmailDetailClient

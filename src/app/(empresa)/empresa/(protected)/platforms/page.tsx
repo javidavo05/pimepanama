@@ -21,8 +21,8 @@ export default async function PlatformsPage() {
   return (
     <div className="w-full max-w-6xl">
       <div className="mb-6">
-        <h1 className="text-white text-xl font-semibold tracking-tight">Platforms</h1>
-        <p className="text-white/50 text-sm mt-1">
+        <h1 className="text-fg text-xl font-semibold tracking-tight">Platforms</h1>
+        <p className="text-fg-faint text-sm mt-1">
           Registro de accesos, cuentas Supabase/Vercel y enlaces por proyecto.
         </p>
       </div>

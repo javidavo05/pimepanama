@@ -42,9 +42,9 @@ const STATUS_LABEL: Record<ExpenseStatus, string> = {
 };
 
 const TYPE_STYLE: Record<LedgerEntry["type"], string> = {
-  INGRESO: "border-green-500/25 bg-green-500/[0.06] text-green-400",
-  EGRESO: "border-red-500/25 bg-red-500/[0.06] text-red-400",
-  PENDIENTE: "border-amber-500/25 bg-amber-500/[0.06] text-amber-400",
+  INGRESO: "border-green-500/25 bg-green-500/[0.06] text-ok",
+  EGRESO: "border-red-500/25 bg-red-500/[0.06] text-danger",
+  PENDIENTE: "border-amber-500/25 bg-amber-500/[0.06] text-warn",
 };
 
 export function PorPagarClient({
@@ -157,13 +157,13 @@ export function PorPagarClient({
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: "Ingresos (mes)", value: summary.ingresos, color: "text-green-400" },
-          { label: "Por pagar", value: summary.gastosPendientes, color: "text-amber-400" },
-          { label: "Pagado (mes)", value: summary.gastosPagados, color: "text-red-400" },
-          { label: "Neto", value: summary.neto, color: summary.neto >= 0 ? "text-[#1AA7F0]" : "text-red-400" },
+          { label: "Ingresos (mes)", value: summary.ingresos, color: "text-ok" },
+          { label: "Por pagar", value: summary.gastosPendientes, color: "text-warn" },
+          { label: "Pagado (mes)", value: summary.gastosPagados, color: "text-danger" },
+          { label: "Neto", value: summary.neto, color: summary.neto >= 0 ? "text-brand-fg" : "text-danger" },
         ].map((kpi) => (
-          <div key={kpi.label} className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-4">
-            <p className="text-white/45 text-xs uppercase tracking-wider">{kpi.label}</p>
+          <div key={kpi.label} className="bg-panel border border-line rounded-xl p-4">
+            <p className="text-fg-faint text-xs uppercase tracking-wider">{kpi.label}</p>
             <p className={`text-lg font-semibold font-mono mt-1 ${kpi.color}`}>
               ${fmtUSD(kpi.value)}
             </p>
@@ -172,7 +172,7 @@ export function PorPagarClient({
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-white/[0.06] pb-2">
+      <div className="flex gap-2 border-b border-line pb-2">
         {(["gastos", "libro"] as Tab[]).map((t) => (
           <button
             key={t}
@@ -180,8 +180,8 @@ export function PorPagarClient({
             onClick={() => setTab(t)}
             className={`px-4 py-2 text-sm rounded-lg transition-colors ${
               tab === t
-                ? "bg-[#1AA7F0]/10 text-[#1AA7F0] border border-[#1AA7F0]/20"
-                : "text-white/50 hover:text-white/80"
+                ? "bg-brand/10 text-brand-fg border border-brand/20"
+                : "text-fg-faint hover:text-fg-soft"
             }`}
           >
             {t === "gastos" ? "Gastos" : "Libro"}
@@ -200,8 +200,8 @@ export function PorPagarClient({
                   onClick={() => setStatusFilter(f)}
                   className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                     statusFilter === f
-                      ? "bg-white/10 border-white/20 text-white"
-                      : "border-white/[0.08] text-white/45 hover:text-white/70"
+                      ? "bg-fill-3 border-line-loud text-fg"
+                      : "border-line text-fg-faint hover:text-fg-mute"
                   }`}
                 >
                   {f === "ALL" ? "Todos" : STATUS_LABEL[f]}
@@ -211,20 +211,20 @@ export function PorPagarClient({
             <button
               type="button"
               onClick={() => setShowForm((v) => !v)}
-              className="px-4 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] text-white text-sm font-medium rounded-lg"
+              className="px-4 py-2 bg-brand hover:bg-brand-hi text-on-brand text-sm font-medium rounded-lg"
             >
               + Gasto
             </button>
           </div>
 
           {showForm && (
-            <div className="bg-white/[0.03] border border-white/[0.08] rounded-xl p-4 space-y-3">
+            <div className="bg-fill border border-line rounded-xl p-4 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input
                   placeholder="Título (ej. Vercel Pro)"
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                  className="bg-[#0a0a10] border border-white/[0.1] rounded-lg px-3 py-2 text-sm text-white"
+                  className="bg-panel border border-line-mid rounded-lg px-3 py-2 text-sm text-fg"
                 />
                 <input
                   type="number"
@@ -232,12 +232,12 @@ export function PorPagarClient({
                   placeholder="Monto USD"
                   value={form.amount}
                   onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
-                  className="bg-[#0a0a10] border border-white/[0.1] rounded-lg px-3 py-2 text-sm text-white"
+                  className="bg-panel border border-line-mid rounded-lg px-3 py-2 text-sm text-fg"
                 />
                 <select
                   value={form.category}
                   onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as ExpenseCategory }))}
-                  className="bg-[#0a0a10] border border-white/[0.1] rounded-lg px-3 py-2 text-sm text-white"
+                  className="bg-panel border border-line-mid rounded-lg px-3 py-2 text-sm text-fg"
                 >
                   {EXPENSE_CATEGORIES.map((c) => (
                     <option key={c} value={c}>{getCategoryLabel(c)}</option>
@@ -247,16 +247,16 @@ export function PorPagarClient({
                   type="date"
                   value={form.dueDate}
                   onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
-                  className="bg-[#0a0a10] border border-white/[0.1] rounded-lg px-3 py-2 text-sm text-white"
+                  className="bg-panel border border-line-mid rounded-lg px-3 py-2 text-sm text-fg"
                 />
                 <input
                   placeholder="Proveedor (opcional)"
                   value={form.vendor}
                   onChange={(e) => setForm((f) => ({ ...f, vendor: e.target.value }))}
-                  className="bg-[#0a0a10] border border-white/[0.1] rounded-lg px-3 py-2 text-sm text-white sm:col-span-2"
+                  className="bg-panel border border-line-mid rounded-lg px-3 py-2 text-sm text-fg sm:col-span-2"
                 />
               </div>
-              <label className="flex items-center gap-2 text-sm text-white/60">
+              <label className="flex items-center gap-2 text-sm text-fg-dim">
                 <input
                   type="checkbox"
                   checked={form.isRecurring}
@@ -268,7 +268,7 @@ export function PorPagarClient({
                 type="button"
                 disabled={busy}
                 onClick={createExpense}
-                className="px-4 py-2 bg-green-600/80 hover:bg-green-600 text-white text-sm rounded-lg disabled:opacity-50"
+                className="px-4 py-2 bg-green-600/80 hover:bg-green-600 text-on-brand text-sm rounded-lg disabled:opacity-50"
               >
                 Guardar gasto
               </button>
@@ -276,46 +276,46 @@ export function PorPagarClient({
           )}
 
           {grouped.length === 0 ? (
-            <p className="text-white/45 text-sm text-center py-12">Sin gastos registrados.</p>
+            <p className="text-fg-faint text-sm text-center py-12">Sin gastos registrados.</p>
           ) : (
             grouped.map(([monthKey, items]) => (
               <div key={monthKey}>
-                <h3 className="text-white/50 text-xs uppercase tracking-widest mb-2">
+                <h3 className="text-fg-faint text-xs uppercase tracking-widest mb-2">
                   {new Date(monthKey + "-01").toLocaleDateString("es-PA", { month: "long", year: "numeric" })}
                 </h3>
                 <div className="space-y-2">
                   {items.map((exp) => (
                     <div
                       key={exp.id}
-                      className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3"
+                      className="bg-panel border border-line rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3"
                     >
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-white font-medium text-sm">{exp.title}</p>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/[0.06] text-white/55 border border-white/[0.08]">
+                          <p className="text-fg font-medium text-sm">{exp.title}</p>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-fill-2 text-fg-dim border border-line">
                             {getCategoryLabel(exp.category)}
                           </span>
                           {exp.isRecurring && (
-                            <span className="text-[10px] text-[#1AA7F0]">↻ recurrente</span>
+                            <span className="text-[10px] text-brand-fg">↻ recurrente</span>
                           )}
                         </div>
-                        {exp.vendor && <p className="text-white/45 text-xs mt-0.5">{exp.vendor}</p>}
+                        {exp.vendor && <p className="text-fg-faint text-xs mt-0.5">{exp.vendor}</p>}
                         {exp.dueDate && (
-                          <p className="text-white/40 text-xs mt-1">
+                          <p className="text-fg-ghost text-xs mt-1">
                             Vence: {new Date(exp.dueDate).toLocaleDateString("es-PA")}
                           </p>
                         )}
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
-                        <p className="text-white font-mono text-sm">${fmtUSD(Number(exp.amount))}</p>
+                        <p className="text-fg font-mono text-sm">${fmtUSD(Number(exp.amount))}</p>
                         <button
                           type="button"
                           disabled={busy}
                           onClick={() => togglePaid(exp)}
                           className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
                             exp.status === "PAID"
-                              ? "bg-green-500/10 border-green-500/25 text-green-400"
-                              : "bg-amber-500/10 border-amber-500/25 text-amber-400 hover:bg-amber-500/20"
+                              ? "bg-green-500/10 border-green-500/25 text-ok"
+                              : "bg-amber-500/10 border-amber-500/25 text-warn hover:bg-amber-500/20"
                           }`}
                         >
                           {exp.status === "PAID" ? "✓ Pagado" : "Marcar pagado"}
@@ -323,7 +323,7 @@ export function PorPagarClient({
                         <button
                           type="button"
                           onClick={() => removeExpense(exp.id)}
-                          className="text-white/35 hover:text-red-400 text-sm px-1"
+                          className="text-fg-ghost hover:text-danger text-sm px-1"
                         >
                           ×
                         </button>
@@ -340,7 +340,7 @@ export function PorPagarClient({
       {tab === "libro" && (
         <div className="space-y-2">
           {ledgerWithBalance.length === 0 ? (
-            <p className="text-white/45 text-sm text-center py-12">Sin movimientos este mes.</p>
+            <p className="text-fg-faint text-sm text-center py-12">Sin movimientos este mes.</p>
           ) : (
             ledgerWithBalance.map((entry) => (
               <div

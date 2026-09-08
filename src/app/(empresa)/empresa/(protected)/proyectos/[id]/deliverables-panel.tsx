@@ -71,7 +71,7 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
   }
 
   const draftForm = (
-    <div className="px-5 py-4 space-y-2 bg-white/[0.015]">
+    <div className="px-5 py-4 space-y-2 bg-fill">
       <div className="grid grid-cols-1 sm:grid-cols-[1fr_10rem] gap-2">
         <input
           autoFocus
@@ -99,7 +99,7 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
         <button
           type="button"
           onClick={() => { setAdding(false); setEditingId(null); setError(null); }}
-          className="text-white/50 hover:text-white/80 text-xs transition-colors"
+          className="text-fg-faint hover:text-fg-soft text-xs transition-colors"
         >
           Cancelar
         </button>
@@ -107,7 +107,7 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
           type="button"
           onClick={submitDraft}
           disabled={pending}
-          className="px-3 py-1.5 rounded-lg bg-[#1AA7F0]/10 border border-[#1AA7F0]/25 text-[#1AA7F0] text-xs font-medium hover:bg-[#1AA7F0]/15 disabled:opacity-40 transition-all"
+          className="px-3 py-1.5 rounded-lg bg-brand/10 border border-brand/25 text-brand-fg text-xs font-medium hover:bg-brand/15 disabled:opacity-40 transition-all"
         >
           {pending ? "Guardando..." : editingId ? "Guardar" : "Agregar"}
         </button>
@@ -116,31 +116,31 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
   );
 
   return (
-    <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-white/[0.05] flex items-center justify-between">
-        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">Entregables</h3>
+    <div className="bg-panel border border-line rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-line flex items-center justify-between">
+        <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Entregables</h3>
         <div className="flex items-center gap-3">
           {deliverables.length > 0 && (
-            <span className="text-white/45 text-xs font-mono">{done}/{deliverables.length}</span>
+            <span className="text-fg-faint text-xs font-mono">{done}/{deliverables.length}</span>
           )}
           <button
             type="button"
             onClick={startAdd}
-            className="text-[#1AA7F0]/60 text-[10px] hover:text-[#1AA7F0] transition-colors"
+            className="text-brand-fg/60 text-[10px] hover:text-brand-fg transition-colors"
           >
             + agregar
           </button>
         </div>
       </div>
 
-      {error && <div className="px-5 pt-3 text-red-400 text-xs">{error}</div>}
+      {error && <div className="px-5 pt-3 text-danger text-xs">{error}</div>}
 
       {deliverables.length === 0 && !adding ? (
-        <div className="px-5 py-6 text-white/50 text-sm text-center">
+        <div className="px-5 py-6 text-fg-faint text-sm text-center">
           Sin entregables definidos
         </div>
       ) : (
-        <div className="divide-y divide-white/[0.04]">
+        <div className="divide-y divide-line">
           {deliverables.map((d) =>
             editingId === d.id ? (
               <div key={d.id}>{draftForm}</div>
@@ -153,27 +153,27 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
                   disabled={pending}
                   className={`mt-0.5 w-4 h-4 rounded border shrink-0 text-[10px] leading-none transition-all disabled:opacity-40 ${
                     d.completed
-                      ? "bg-green-500/20 border-green-500/40 text-green-400"
-                      : "border-white/20 text-transparent hover:border-white/40"
+                      ? "bg-green-500/20 border-green-500/40 text-ok"
+                      : "border-line-loud text-transparent hover:border-line-loud"
                   }`}
                 >
                   ✓
                 </button>
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm ${d.completed ? "text-white/40 line-through" : "text-white/75"}`}>
+                  <p className={`text-sm ${d.completed ? "text-fg-ghost line-through" : "text-fg-soft"}`}>
                     {d.name}
                   </p>
                   {d.description && (
-                    <p className="text-white/50 text-xs mt-0.5 whitespace-pre-wrap">{d.description}</p>
+                    <p className="text-fg-faint text-xs mt-0.5 whitespace-pre-wrap">{d.description}</p>
                   )}
                   <div className="flex items-center gap-2 mt-1">
                     {d.dueDate && (
-                      <span className="text-white/45 text-[11px]">
+                      <span className="text-fg-faint text-[11px]">
                         {new Date(d.dueDate).toLocaleDateString("es-PA")}
                       </span>
                     )}
                     {d.source === "AI_CONTRACT" && (
-                      <span className="text-[9px] uppercase tracking-widest text-[#6344E8]/70">del contrato</span>
+                      <span className="text-[9px] uppercase tracking-widest text-iris/70">del contrato</span>
                     )}
                   </div>
                 </div>
@@ -181,7 +181,7 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
                   <button
                     type="button"
                     onClick={() => startEdit(d)}
-                    className="text-white/45 hover:text-[#1AA7F0] text-[10px] transition-colors"
+                    className="text-fg-faint hover:text-brand-fg text-[10px] transition-colors"
                   >
                     editar
                   </button>
@@ -189,7 +189,7 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
                     type="button"
                     onClick={() => run(() => deleteDeliverableAction(d.id))}
                     disabled={pending}
-                    className="text-white/45 hover:text-red-400 text-[10px] transition-colors disabled:opacity-40"
+                    className="text-fg-faint hover:text-danger text-[10px] transition-colors disabled:opacity-40"
                   >
                     eliminar
                   </button>

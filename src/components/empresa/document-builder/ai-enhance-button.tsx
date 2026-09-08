@@ -43,11 +43,11 @@ export function AiEnhanceButton({ text, language, context, onEnhanced }: AiEnhan
         onClick={enhance}
         disabled={loading || !safeText.trim()}
         title="Mejorar con IA"
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#6344E8]/10 border border-[#6344E8]/25 text-[#6344E8] text-xs font-medium hover:bg-[#6344E8]/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-iris/10 border border-iris/25 text-iris text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
       >
         {loading ? (
           <>
-            <span className="w-2 h-2 rounded-full bg-[#6344E8] animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-iris animate-pulse" />
             Mejorando...
           </>
         ) : (
@@ -56,7 +56,7 @@ export function AiEnhanceButton({ text, language, context, onEnhanced }: AiEnhan
       </button>
       {lastCost != null && !loading && (
         <span
-          className="text-[10px] text-white/50 font-mono"
+          className="text-[10px] text-fg-faint font-mono"
           title={`Costo real: $${lastCost.toFixed(6)}`}
         >
           {fmtCost(lastCost)}

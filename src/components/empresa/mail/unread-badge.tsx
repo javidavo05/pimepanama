@@ -43,8 +43,8 @@ export function UnreadBadge({ count, active, searchParams }: UnreadBadgeProps) {
       title={active ? "Quitar filtro de no leídos" : "Ver solo no leídos (todas las bandejas)"}
       className={`text-xs rounded-full px-2 py-0.5 font-medium transition-all ${
         active
-          ? "bg-[#1AA7F0]/30 text-[#1AA7F0] border border-[#1AA7F0]/40 ring-1 ring-[#1AA7F0]/20"
-          : "bg-[#1AA7F0]/20 text-[#1AA7F0] hover:bg-[#1AA7F0]/30"
+          ? "bg-brand/30 text-brand-fg border border-brand/40 ring-1 ring-brand/20"
+          : "bg-brand/20 text-brand-fg hover:bg-brand/30"
       }`}
     >
       {count} sin leer

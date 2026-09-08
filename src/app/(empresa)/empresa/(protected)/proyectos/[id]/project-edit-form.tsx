@@ -22,10 +22,10 @@ import {
 } from "./types";
 
 const STATUS_OPTS: { value: ProjectStatus; label: string; color: string }[] = [
-  { value: "ACTIVE", label: "Activo", color: "border-green-500/30 text-green-400" },
-  { value: "PAUSED", label: "Pausado", color: "border-amber-500/30 text-amber-400" },
-  { value: "COMPLETED", label: "Completado", color: "border-blue-500/30 text-blue-400" },
-  { value: "CANCELLED", label: "Cancelado", color: "border-white/[0.1] text-white/55" },
+  { value: "ACTIVE", label: "Activo", color: "border-green-500/30 text-ok" },
+  { value: "PAUSED", label: "Pausado", color: "border-amber-500/30 text-warn" },
+  { value: "COMPLETED", label: "Completado", color: "border-blue-500/30 text-info" },
+  { value: "CANCELLED", label: "Cancelado", color: "border-line-mid text-fg-dim" },
 ];
 
 const EMPTY_PLAN: FinancingPlan = {
@@ -153,15 +153,15 @@ export function ProjectEditForm({
 
   return (
     <div ref={rootRef} className="space-y-5 mb-6 scroll-mt-6">
-      <div className="bg-[#0a0a10] border border-[#1AA7F0]/20 rounded-xl p-5 space-y-5">
+      <div className="bg-panel border border-brand/20 rounded-xl p-5 space-y-5">
         <div className="flex items-center justify-between">
-          <h2 className="text-white/60 text-xs uppercase tracking-widest font-medium">
+          <h2 className="text-fg-dim text-xs uppercase tracking-widest font-medium">
             Editar proyecto
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-white/40 hover:text-white/70 text-sm transition-colors"
+            className="text-fg-ghost hover:text-fg-mute text-sm transition-colors"
           >
             ✕
           </button>
@@ -169,7 +169,7 @@ export function ProjectEditForm({
 
         <div>
           <label className={LABEL_CLASS}>
-            Nombre <span className="text-red-400">*</span>
+            Nombre <span className="text-danger">*</span>
           </label>
           <input value={name} onChange={(e) => setName(e.target.value)} className={INPUT_CLASS} />
         </div>
@@ -184,8 +184,8 @@ export function ProjectEditForm({
                 onClick={() => setStatus(opt.value)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
                   status === opt.value
-                    ? `${opt.color} bg-white/[0.04]`
-                    : "border-white/[0.05] text-white/55 hover:text-white/60"
+                    ? `${opt.color} bg-fill`
+                    : "border-line text-fg-dim hover:text-fg-dim"
                 }`}
               >
                 {opt.label}
@@ -196,23 +196,23 @@ export function ProjectEditForm({
 
         <div>
           <label className={LABEL_CLASS}>
-            Clientes <span className="text-red-400">*</span>
+            Clientes <span className="text-danger">*</span>
           </label>
           {clients.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2">
               {clients.map((c, i) => (
                 <span
                   key={c.id}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#1AA7F0]/10 border border-[#1AA7F0]/25 text-[#1AA7F0] text-xs"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand/10 border border-brand/25 text-brand-fg text-xs"
                 >
                   {c.name}
                   {i === 0 && (
-                    <span className="text-[9px] text-white/45 uppercase tracking-widest">principal</span>
+                    <span className="text-[9px] text-fg-faint uppercase tracking-widest">principal</span>
                   )}
                   <button
                     type="button"
                     onClick={() => setClients((list) => list.filter((x) => x.id !== c.id))}
-                    className="text-white/40 hover:text-red-400 ml-0.5"
+                    className="text-fg-ghost hover:text-danger ml-0.5"
                   >
                     ×
                   </button>
@@ -262,7 +262,7 @@ export function ProjectEditForm({
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-white/50 text-xs uppercase tracking-widest font-medium">Descripción</label>
+            <label className="text-fg-faint text-xs uppercase tracking-widest font-medium">Descripción</label>
             <AiEnhanceButton text={description} onEnhanced={setDescription} language="es" context="project description" />
           </div>
           <textarea
@@ -276,7 +276,7 @@ export function ProjectEditForm({
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-white/50 text-xs uppercase tracking-widest font-medium">Alcance</label>
+            <label className="text-fg-faint text-xs uppercase tracking-widest font-medium">Alcance</label>
             <AiEnhanceButton text={scope} onEnhanced={setScope} language="es" context="project scope" />
           </div>
           <textarea
@@ -301,26 +301,26 @@ export function ProjectEditForm({
 
       {error && (
         <div className="bg-red-500/[0.07] border border-red-500/25 rounded-xl px-4 py-3">
-          <p className="text-red-400 text-sm">{error}</p>
+          <p className="text-danger text-sm">{error}</p>
         </div>
       )}
 
       <div className="flex items-center justify-between gap-3">
         {confirmDelete ? (
           <div className="flex items-center gap-2">
-            <span className="text-white/60 text-xs">¿Eliminar el proyecto y todo lo que cuelga de él?</span>
+            <span className="text-fg-dim text-xs">¿Eliminar el proyecto y todo lo que cuelga de él?</span>
             <button
               type="button"
               onClick={handleDelete}
               disabled={deleting}
-              className="px-3 py-1.5 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-medium hover:bg-red-500/20 disabled:opacity-40 transition-all"
+              className="px-3 py-1.5 rounded-lg bg-red-500/15 border border-red-500/30 text-danger text-xs font-medium hover:bg-red-500/20 disabled:opacity-40 transition-all"
             >
               {deleting ? "Eliminando..." : "Sí, eliminar"}
             </button>
             <button
               type="button"
               onClick={() => setConfirmDelete(false)}
-              className="text-white/50 hover:text-white/80 text-xs transition-colors"
+              className="text-fg-faint hover:text-fg-soft text-xs transition-colors"
             >
               Cancelar
             </button>
@@ -329,7 +329,7 @@ export function ProjectEditForm({
           <button
             type="button"
             onClick={() => setConfirmDelete(true)}
-            className="text-red-400/60 hover:text-red-400 text-xs transition-colors"
+            className="text-danger/60 hover:text-danger text-xs transition-colors"
           >
             Eliminar proyecto
           </button>
@@ -339,7 +339,7 @@ export function ProjectEditForm({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 text-white/50 hover:text-white/80 text-sm transition-colors"
+            className="px-4 py-2.5 text-fg-faint hover:text-fg-soft text-sm transition-colors"
           >
             Cancelar
           </button>
@@ -347,7 +347,7 @@ export function ProjectEditForm({
             type="button"
             onClick={handleSave}
             disabled={saving}
-            className="px-6 py-2.5 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-all"
+            className="px-6 py-2.5 bg-brand hover:bg-brand-hi disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg transition-all"
           >
             {saving ? "Guardando..." : "Guardar cambios"}
           </button>

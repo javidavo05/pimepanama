@@ -34,9 +34,9 @@ export function ContractHtmlViewer({ pagesHtml, refreshKey }: ContractHtmlViewer
   }, []);
 
   return (
-    <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl overflow-hidden mb-6">
-      <div className="px-4 py-3 border-b border-white/[0.05]">
-        <span className="text-white/60 text-xs uppercase tracking-widest font-medium">Vista del documento</span>
+    <div className="bg-panel border border-line rounded-xl overflow-hidden mb-6">
+      <div className="px-4 py-3 border-b border-line">
+        <span className="text-fg-dim text-xs uppercase tracking-widest font-medium">Vista del documento</span>
       </div>
       <div ref={containerRef} className="relative bg-[#c8ccd6] overflow-auto" style={{ height: "70vh" }}>
         <div className="mx-auto py-4" style={{ width: A4_WIDTH * scale }}>

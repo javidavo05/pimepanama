@@ -45,8 +45,8 @@ export default async function PorPagarPage({
   return (
     <div className="w-full max-w-4xl">
       <div className="mb-6">
-        <h1 className="text-white text-xl font-semibold tracking-tight">Por pagar</h1>
-        <p className="text-white/50 text-sm mt-1">
+        <h1 className="text-fg text-xl font-semibold tracking-tight">Por pagar</h1>
+        <p className="text-fg-faint text-sm mt-1">
           Gastos mensuales, cuentas por pagar y libro contable simplificado.
         </p>
       </div>

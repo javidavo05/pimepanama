@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signOutAction } from "@/app/(empresa)/empresa/actions";
 import { NotificationBell } from "@/components/empresa/mail/notification-bell";
+import { ThemeToggle } from "@/components/empresa/theme/theme-toggle";
 
 const NAV_ITEMS = [
   { href: "/empresa", label: "Dashboard", icon: "⬛", exact: true },
@@ -57,19 +58,19 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
   return (
     <>
       {/* Mobile top bar */}
-      <div className="md:hidden fixed top-0 inset-x-0 h-14 z-40 bg-[#07070e] border-b border-white/[0.05] flex items-center gap-3 px-4">
+      <div className="md:hidden fixed top-0 inset-x-0 h-14 z-40 bg-panel-2 border-b border-line flex items-center gap-3 px-4">
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-label={open ? "Cerrar menú" : "Abrir menú"}
-          className="w-9 h-9 flex items-center justify-center rounded-lg text-white/70 hover:text-white hover:bg-white/[0.06] transition-all text-lg shrink-0"
+          className="w-9 h-9 flex items-center justify-center rounded-lg text-fg-mute hover:text-fg hover:bg-fill-2 transition-all text-lg shrink-0"
         >
           {open ? "✕" : "☰"}
         </button>
-        <div className="relative w-7 h-7 rounded-md bg-[#1AA7F0]/10 border border-[#1AA7F0]/25 flex items-center justify-center shrink-0 overflow-hidden">
+        <div className="relative w-7 h-7 rounded-md bg-brand/10 border border-brand/25 flex items-center justify-center shrink-0 overflow-hidden">
           <Image src={logoSrc} alt={companyName} fill sizes="28px" className="object-contain p-0.5" onError={() => setLogoFailed(true)} />
         </div>
-        <p className="text-white text-xs font-semibold tracking-widest uppercase flex-1 truncate">{companyName}</p>
+        <p className="text-fg text-xs font-semibold tracking-widest uppercase flex-1 truncate">{companyName}</p>
         <NotificationBell />
       </div>
 
@@ -83,14 +84,14 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
       )}
 
       <aside
-        className={`fixed left-0 top-0 h-full w-60 bg-[#07070e] border-r border-white/[0.05] flex flex-col z-50 transform transition-transform duration-200 ease-out ${
+        className={`fixed left-0 top-0 h-full w-60 bg-panel-2 border-r border-line flex flex-col z-50 transform transition-transform duration-200 ease-out ${
           open ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0`}
       >
         {/* Brand */}
-        <div className="px-5 py-6 border-b border-white/[0.05]">
+        <div className="px-5 py-6 border-b border-line">
           <div className="flex items-center gap-3">
-            <div className="relative w-8 h-8 rounded-md bg-[#1AA7F0]/10 border border-[#1AA7F0]/25 flex items-center justify-center shrink-0 overflow-hidden">
+            <div className="relative w-8 h-8 rounded-md bg-brand/10 border border-brand/25 flex items-center justify-center shrink-0 overflow-hidden">
               <Image
                 src={logoSrc}
                 alt={companyName}
@@ -101,10 +102,10 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
               />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-white text-xs font-semibold tracking-widest uppercase truncate">
+              <p className="text-fg text-xs font-semibold tracking-widest uppercase truncate">
                 {companyName}
               </p>
-              <p className="text-[#1AA7F0] text-[10px] tracking-[0.25em] uppercase mt-0.5">
+              <p className="text-brand-fg text-[10px] tracking-[0.25em] uppercase mt-0.5">
                 Suite
               </p>
             </div>
@@ -120,8 +121,8 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
                 isActive(item.href, item.exact)
-                  ? "bg-[#1AA7F0]/10 text-[#1AA7F0] border border-[#1AA7F0]/20"
-                  : "text-white/50 hover:text-white/80 hover:bg-white/[0.04]"
+                  ? "bg-brand/10 text-brand-fg border border-brand/20"
+                  : "text-fg-faint hover:text-fg-soft hover:bg-fill"
               }`}
             >
               <span className="text-base w-5 text-center">{item.icon}</span>
@@ -131,15 +132,15 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
         </nav>
 
         {/* Bottom items */}
-        <div className="px-3 py-3 border-t border-white/[0.05] space-y-0.5">
+        <div className="px-3 py-3 border-t border-line space-y-0.5">
           {BOTTOM_ITEMS.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
                 isActive(item.href)
-                  ? "bg-[#1AA7F0]/10 text-[#1AA7F0] border border-[#1AA7F0]/20"
-                  : "text-white/50 hover:text-white/80 hover:bg-white/[0.04]"
+                  ? "bg-brand/10 text-brand-fg border border-brand/20"
+                  : "text-fg-faint hover:text-fg-soft hover:bg-fill"
               }`}
             >
               <span className="text-base w-5 text-center">{item.icon}</span>
@@ -147,13 +148,22 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
             </Link>
           ))}
 
+          {/* Tema — visible siempre, no escondido en Configuración: es un ajuste
+              que se cambia según la luz del ambiente, no una vez y nunca más. */}
+          <div className="mt-2 px-3 py-3 rounded-lg bg-fill border border-line">
+            <p className="text-fg-faint text-[10px] font-medium uppercase tracking-wider mb-2">
+              Tema
+            </p>
+            <ThemeToggle />
+          </div>
+
           {/* User + sign out */}
-          <div className="mt-2 px-3 py-2.5 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-            <p className="text-white/60 text-xs truncate">{userEmail}</p>
+          <div className="mt-2 px-3 py-3 rounded-lg bg-fill border border-line">
+            <p className="text-fg-dim text-xs truncate">{userEmail}</p>
             <form action={signOutAction} className="mt-1.5">
               <button
                 type="submit"
-                className="text-white/55 hover:text-red-400 text-xs transition-colors"
+                className="text-fg-dim hover:text-danger text-xs transition-colors"
               >
                 Cerrar sesión →
               </button>

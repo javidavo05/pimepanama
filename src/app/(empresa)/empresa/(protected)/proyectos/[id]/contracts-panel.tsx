@@ -155,11 +155,11 @@ export function ContractsPanel({
   }
 
   const form = (
-    <div className="px-5 py-4 space-y-3 bg-white/[0.015]">
+    <div className="px-5 py-4 space-y-3 bg-fill">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="sm:col-span-2">
           <label className={LABEL_CLASS}>
-            Título <span className="text-red-400">*</span>
+            Título <span className="text-danger">*</span>
           </label>
           <input
             value={draft.title}
@@ -239,7 +239,7 @@ export function ContractsPanel({
         <button
           type="button"
           onClick={() => { setCreating(false); setEditingId(null); setError(null); }}
-          className="text-white/50 hover:text-white/80 text-xs transition-colors"
+          className="text-fg-faint hover:text-fg-soft text-xs transition-colors"
         >
           Cancelar
         </button>
@@ -247,7 +247,7 @@ export function ContractsPanel({
           type="button"
           onClick={submitDraft}
           disabled={pending}
-          className="px-4 py-2 rounded-lg bg-[#1AA7F0]/10 border border-[#1AA7F0]/25 text-[#1AA7F0] text-xs font-medium hover:bg-[#1AA7F0]/15 disabled:opacity-40 transition-all"
+          className="px-4 py-2 rounded-lg bg-brand/10 border border-brand/25 text-brand-fg text-xs font-medium hover:bg-brand/15 disabled:opacity-40 transition-all"
         >
           {pending ? "Guardando..." : editingId ? "Guardar contrato" : "Crear contrato"}
         </button>
@@ -256,26 +256,26 @@ export function ContractsPanel({
   );
 
   return (
-    <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-white/[0.05] flex items-center justify-between">
-        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">Contratos</h3>
+    <div className="bg-panel border border-line rounded-xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-line flex items-center justify-between">
+        <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Contratos</h3>
         <button
           type="button"
           onClick={startCreate}
-          className="text-[#1AA7F0]/60 text-[10px] hover:text-[#1AA7F0] transition-colors"
+          className="text-brand-fg/60 text-[10px] hover:text-brand-fg transition-colors"
         >
           + agregar
         </button>
       </div>
 
-      {error && <div className="px-5 pt-3 text-red-400 text-xs">{error}</div>}
+      {error && <div className="px-5 pt-3 text-danger text-xs">{error}</div>}
 
       {contracts.length === 0 && !creating ? (
-        <div className="px-5 py-6 text-white/50 text-sm text-center">
+        <div className="px-5 py-6 text-fg-faint text-sm text-center">
           Sin contratos. Créalo aquí mismo con «+ agregar».
         </div>
       ) : (
-        <div className="divide-y divide-white/[0.04]">
+        <div className="divide-y divide-line">
           {contracts.map((c) =>
             editingId === c.id ? (
               <div key={c.id}>{form}</div>
@@ -286,7 +286,7 @@ export function ContractsPanel({
                     <div className="flex items-center gap-2">
                       <Link
                         href={`/empresa/contratos/${c.id}`}
-                        className="text-white/75 text-sm hover:text-[#1AA7F0] transition-colors truncate"
+                        className="text-fg-soft text-sm hover:text-brand-fg transition-colors truncate"
                       >
                         {c.title}
                       </Link>
@@ -294,15 +294,15 @@ export function ContractsPanel({
                         {CONTRACT_STATUS_LABEL[c.status]}
                       </span>
                       {c.signedAt && (
-                        <span className="text-green-400/70 text-[10px] shrink-0">✓ firmado</span>
+                        <span className="text-ok/70 text-[10px] shrink-0">✓ firmado</span>
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-1">
                       {c.value != null && (
-                        <span className="text-[#C8A96E]/70 text-xs font-mono">${fmtUSD(c.value)}</span>
+                        <span className="text-sand-fg/70 text-xs font-mono">${fmtUSD(c.value)}</span>
                       )}
                       {(c.startsAt || c.endsAt) && (
-                        <span className="text-white/45 text-[11px]">
+                        <span className="text-fg-faint text-[11px]">
                           {c.startsAt ? new Date(c.startsAt).toLocaleDateString("es-PA") : "—"}
                           {" → "}
                           {c.endsAt ? new Date(c.endsAt).toLocaleDateString("es-PA") : "—"}
@@ -310,7 +310,7 @@ export function ContractsPanel({
                       )}
                     </div>
                     {c.responsibilities && (
-                      <p className="text-white/50 text-xs mt-1 line-clamp-2">{c.responsibilities}</p>
+                      <p className="text-fg-faint text-xs mt-1 line-clamp-2">{c.responsibilities}</p>
                     )}
                   </div>
 
@@ -318,13 +318,13 @@ export function ContractsPanel({
                     <button
                       type="button"
                       onClick={() => startEdit(c)}
-                      className="text-white/45 hover:text-[#1AA7F0] text-[10px] transition-colors"
+                      className="text-fg-faint hover:text-brand-fg text-[10px] transition-colors"
                     >
                       editar
                     </button>
                     <Link
                       href={`/empresa/contratos/${c.id}`}
-                      className="text-white/45 hover:text-white/80 text-[10px] transition-colors"
+                      className="text-fg-faint hover:text-fg-soft text-[10px] transition-colors"
                     >
                       abrir →
                     </Link>
@@ -333,19 +333,19 @@ export function ContractsPanel({
 
                 {confirmDeleteId === c.id ? (
                   <div className="flex items-center gap-2 mt-2">
-                    <span className="text-white/55 text-[11px]">¿Eliminar este contrato?</span>
+                    <span className="text-fg-dim text-[11px]">¿Eliminar este contrato?</span>
                     <button
                       type="button"
                       onClick={() => run(() => deleteContractAction(c.id), () => setConfirmDeleteId(null))}
                       disabled={pending}
-                      className="text-red-400 text-[10px] hover:underline disabled:opacity-40"
+                      className="text-danger text-[10px] hover:underline disabled:opacity-40"
                     >
                       sí, eliminar
                     </button>
                     <button
                       type="button"
                       onClick={() => setConfirmDeleteId(null)}
-                      className="text-white/45 text-[10px] hover:text-white/70"
+                      className="text-fg-faint text-[10px] hover:text-fg-mute"
                     >
                       cancelar
                     </button>
@@ -354,7 +354,7 @@ export function ContractsPanel({
                   <button
                     type="button"
                     onClick={() => setConfirmDeleteId(c.id)}
-                    className="text-white/30 hover:text-red-400 text-[10px] mt-1 transition-colors opacity-0 group-hover:opacity-100"
+                    className="text-fg-trace hover:text-danger text-[10px] mt-1 transition-colors opacity-0 group-hover:opacity-100"
                   >
                     eliminar
                   </button>

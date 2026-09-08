@@ -26,7 +26,7 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
+      <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
         {label}
       </label>
       <input
@@ -35,7 +35,7 @@ function Field({
         defaultValue={defaultValue ?? ""}
         placeholder={placeholder}
         step={type === "number" ? "0.01" : undefined}
-        className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/40 transition-all"
+        className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 transition-all"
       />
     </div>
   );
@@ -47,7 +47,7 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="px-6 py-2.5 bg-[#C8A96E] hover:bg-[#d4b87a] disabled:opacity-50 text-[#030611] text-sm font-semibold rounded-lg transition-all"
+      className="px-6 py-2.5 bg-sand hover:bg-sand-lt disabled:opacity-50 text-on-accent text-sm font-semibold rounded-lg transition-all"
     >
       {pending ? "Guardando..." : "Guardar configuración"}
     </button>
@@ -75,7 +75,7 @@ export function ConfigForm({ config }: { config: SerializedCompanyConfig | null 
       {showSuccess && (
         <div
           role="status"
-          className="flex items-center gap-2 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20 text-green-400 text-sm"
+          className="flex items-center gap-2 px-4 py-3 rounded-xl bg-green-500/10 border border-green-500/20 text-ok text-sm"
         >
           <span aria-hidden>✓</span>
           Configuración guardada correctamente.
@@ -85,14 +85,14 @@ export function ConfigForm({ config }: { config: SerializedCompanyConfig | null 
       {state.error && (
         <div
           role="alert"
-          className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm"
+          className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-danger text-sm"
         >
           {state.error}
         </div>
       )}
 
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
-        <h2 className="text-[#C8A96E] text-xs uppercase tracking-widest font-medium mb-5">
+      <div className="bg-panel border border-line rounded-2xl p-6">
+        <h2 className="text-sand-fg text-xs uppercase tracking-widest font-medium mb-5">
           Identidad corporativa
         </h2>
         <div className="grid grid-cols-2 gap-4">
@@ -144,8 +144,8 @@ export function ConfigForm({ config }: { config: SerializedCompanyConfig | null 
         </div>
       </div>
 
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
-        <h2 className="text-[#C8A96E] text-xs uppercase tracking-widest font-medium mb-5">
+      <div className="bg-panel border border-line rounded-2xl p-6">
+        <h2 className="text-sand-fg text-xs uppercase tracking-widest font-medium mb-5">
           Configuración de documentos
         </h2>
         <div className="grid grid-cols-2 gap-4">
@@ -175,13 +175,13 @@ export function ConfigForm({ config }: { config: SerializedCompanyConfig | null 
         </div>
       </div>
 
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
-        <h2 className="text-[#C8A96E] text-xs uppercase tracking-widest font-medium mb-5">
+      <div className="bg-panel border border-line rounded-2xl p-6">
+        <h2 className="text-sand-fg text-xs uppercase tracking-widest font-medium mb-5">
           Pie de página en documentos
         </h2>
         <div className="space-y-4">
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
+            <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
               Pie de página (español)
             </label>
             <textarea
@@ -189,11 +189,11 @@ export function ConfigForm({ config }: { config: SerializedCompanyConfig | null 
               defaultValue={config?.footerNotes_es ?? ""}
               rows={2}
               placeholder="Ej: Gracias por su confianza. Servicios sujetos a los términos y condiciones."
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/40 resize-none transition-all"
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg-soft text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 resize-none transition-all"
             />
           </div>
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
+            <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
               Pie de página (inglés)
             </label>
             <textarea
@@ -201,34 +201,34 @@ export function ConfigForm({ config }: { config: SerializedCompanyConfig | null 
               defaultValue={config?.footerNotes_en ?? ""}
               rows={2}
               placeholder="E.g.: Thank you for your trust. Services subject to terms and conditions."
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/40 resize-none transition-all"
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg-soft text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 resize-none transition-all"
             />
           </div>
         </div>
       </div>
 
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
-        <h2 className="text-[#1AA7F0] text-xs uppercase tracking-widest font-medium mb-3">
+      <div className="bg-panel border border-line rounded-2xl p-6">
+        <h2 className="text-brand-fg text-xs uppercase tracking-widest font-medium mb-3">
           Integraciones
         </h2>
-        <p className="text-white/55 text-sm mb-4">
+        <p className="text-fg-dim text-sm mb-4">
           PimeSign y PimeBook usan tu cuenta de correo con SMTP para notificaciones.
         </p>
-        <ul className="text-sm text-white/60 space-y-2 list-disc pl-5">
+        <ul className="text-sm text-fg-dim space-y-2 list-disc pl-5">
           <li>
-            <a href="/empresa/citas/config" className="text-[#1AA7F0] hover:underline">
+            <a href="/empresa/citas/config" className="text-brand-fg hover:underline">
               Configurar horarios de citas (PimeBook)
             </a>
           </li>
           <li>
-            <a href="/agendar" target="_blank" rel="noreferrer" className="text-[#1AA7F0] hover:underline">
+            <a href="/agendar" target="_blank" rel="noreferrer" className="text-brand-fg hover:underline">
               Página pública de agendamiento
             </a>
           </li>
         </ul>
-        <p className="text-white/40 text-xs mt-4">
-          Variables: <code className="text-white/50">SIGNING_TOKEN_SECRET</code>,{" "}
-          <code className="text-white/50">BOOKING_OWNER_EMAIL</code> (opcional)
+        <p className="text-fg-ghost text-xs mt-4">
+          Variables: <code className="text-fg-faint">SIGNING_TOKEN_SECRET</code>,{" "}
+          <code className="text-fg-faint">BOOKING_OWNER_EMAIL</code> (opcional)
         </p>
       </div>
 

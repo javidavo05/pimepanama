@@ -48,9 +48,9 @@ export default async function ContratoDetailPage({ params }: { params: Promise<{
     <div className="max-w-6xl mx-auto">
       <div className="flex items-center justify-between gap-2 mb-5 text-sm">
         <div className="flex items-center gap-2">
-          <Link href="/empresa/contratos" className="text-white/60 hover:text-white/70 transition-colors">Contratos</Link>
-          <span className="text-white/50">/</span>
-          <span className="text-white/60 truncate max-w-xs">{contract.title}</span>
+          <Link href="/empresa/contratos" className="text-fg-dim hover:text-fg-mute transition-colors">Contratos</Link>
+          <span className="text-fg-faint">/</span>
+          <span className="text-fg-dim truncate max-w-xs">{contract.title}</span>
         </div>
         <PdfDownloadButton
           url={`/api/empresa/contracts/${contract.id}/pdf?inline=1`}
@@ -73,17 +73,17 @@ export default async function ContratoDetailPage({ params }: { params: Promise<{
       />
 
       {contract.documents.length > 0 && (
-        <div className="mt-6 bg-[#0a0a10] border border-white/[0.06] rounded-xl overflow-hidden">
-          <div className="px-5 py-3 border-b border-white/[0.05]">
-            <h3 className="text-white/50 text-xs uppercase tracking-widest font-medium">Documentos vinculados</h3>
+        <div className="mt-6 bg-panel border border-line rounded-xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-line">
+            <h3 className="text-fg-faint text-xs uppercase tracking-widest font-medium">Documentos vinculados</h3>
           </div>
-          <div className="divide-y divide-white/[0.04]">
+          <div className="divide-y divide-line">
             {contract.documents.map((d) => (
               <Link key={d.id}
                 href={`/empresa/${d.type === "FACTURA" ? "facturas" : "cotizaciones"}/${d.id}`}
-                className="flex items-center justify-between px-5 py-3 hover:bg-white/[0.02] transition-colors text-sm">
-                <span className="text-white/60 font-mono">{d.number ?? d.type}</span>
-                <span className="text-white/55 text-xs">{new Date(d.issueDate).toLocaleDateString("es-PA")}</span>
+                className="flex items-center justify-between px-5 py-3 hover:bg-fill transition-colors text-sm">
+                <span className="text-fg-dim font-mono">{d.number ?? d.type}</span>
+                <span className="text-fg-dim text-xs">{new Date(d.issueDate).toLocaleDateString("es-PA")}</span>
               </Link>
             ))}
           </div>

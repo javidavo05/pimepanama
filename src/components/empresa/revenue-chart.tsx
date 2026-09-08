@@ -20,11 +20,11 @@ function fmt(n: number) {
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-[#0d0d18] border border-white/[0.08] rounded-xl px-4 py-3 shadow-2xl text-sm">
-      <p className="text-white/60 font-semibold mb-2">{label}</p>
-      <p className="text-[#1AA7F0] font-mono">Bruto: ${payload[0]?.value?.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
-      <p className="text-green-400 font-mono">Neto: ${payload[1]?.value?.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
-      <p className="text-white/55 text-xs mt-1">{payload[0]?.payload?.count} cotizaciones aceptadas</p>
+    <div className="bg-pop border border-line rounded-xl px-4 py-3 shadow-2xl text-sm">
+      <p className="text-fg-dim font-semibold mb-2">{label}</p>
+      <p className="text-brand-fg font-mono">Bruto: ${payload[0]?.value?.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+      <p className="text-ok font-mono">Neto: ${payload[1]?.value?.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+      <p className="text-fg-dim text-xs mt-1">{payload[0]?.payload?.count} cotizaciones aceptadas</p>
     </div>
   );
 }
@@ -37,14 +37,14 @@ interface RevenueChartProps {
 export function RevenueChart({ data, title }: RevenueChartProps) {
   if (data.length === 0) {
     return (
-      <div className="flex items-center justify-center h-48 text-white/50 text-sm">
+      <div className="flex items-center justify-center h-48 text-fg-faint text-sm">
         Sin datos de cotizaciones aceptadas aún
       </div>
     );
   }
   return (
     <div>
-      {title && <p className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">{title}</p>}
+      {title && <p className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">{title}</p>}
       <ResponsiveContainer width="100%" height={220}>
         <BarChart data={data} barGap={2}>
           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" vertical={false} />
@@ -68,11 +68,11 @@ export function RevenueChart({ data, title }: RevenueChartProps) {
 function DashboardTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-[#0d0d18] border border-white/[0.08] rounded-xl px-4 py-3 shadow-2xl text-sm">
-      <p className="text-white/60 font-semibold mb-2">{label}</p>
-      <p className="text-[#1AA7F0] font-mono">Bruto: ${payload[0]?.value?.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
-      <p className="text-green-400 font-mono">Neto: ${payload[1]?.value?.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
-      <p className="text-white/55 text-xs mt-1">{payload[0]?.payload?.count} docs aceptados</p>
+    <div className="bg-pop border border-line rounded-xl px-4 py-3 shadow-2xl text-sm">
+      <p className="text-fg-dim font-semibold mb-2">{label}</p>
+      <p className="text-brand-fg font-mono">Bruto: ${payload[0]?.value?.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+      <p className="text-ok font-mono">Neto: ${payload[1]?.value?.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p>
+      <p className="text-fg-dim text-xs mt-1">{payload[0]?.payload?.count} docs aceptados</p>
     </div>
   );
 }
@@ -88,7 +88,7 @@ export function DashboardRevenueChart({ monthlyData, yearlyData }: DashboardReve
   const isEmpty = monthlyData.length === 0 && yearlyData.length === 0;
   if (isEmpty) {
     return (
-      <div className="flex items-center justify-center h-48 text-white/50 text-sm">
+      <div className="flex items-center justify-center h-48 text-fg-faint text-sm">
         Sin ingresos registrados aún
       </div>
     );
@@ -102,11 +102,11 @@ export function DashboardRevenueChart({ monthlyData, yearlyData }: DashboardReve
   return (
     <div>
       <div className="flex items-center justify-between mb-5">
-        <p className="text-white/60 text-xs uppercase tracking-widest font-medium">Rendimiento económico</p>
-        <div className="flex gap-1 bg-white/[0.03] rounded-lg p-0.5 border border-white/[0.06]">
+        <p className="text-fg-dim text-xs uppercase tracking-widest font-medium">Rendimiento económico</p>
+        <div className="flex gap-1 bg-fill rounded-lg p-0.5 border border-line">
           {(["month", "year"] as const).map((v) => (
             <button key={v} onClick={() => setView(v)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${view === v ? "bg-[#1AA7F0]/15 text-[#1AA7F0] border border-[#1AA7F0]/20" : "text-white/55 hover:text-white/60"}`}>
+              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${view === v ? "bg-brand/15 text-brand-fg border border-brand/20" : "text-fg-dim hover:text-fg-dim"}`}>
               {v === "month" ? "Por mes" : "Por año"}
             </button>
           ))}

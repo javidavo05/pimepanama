@@ -493,7 +493,7 @@ export function FacturaBuilder({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-white text-2xl font-semibold tracking-tight">
+          <h1 className="text-fg text-2xl font-semibold tracking-tight">
             {mode === "edit"
               ? isEs
                 ? "Editar Factura"
@@ -502,7 +502,7 @@ export function FacturaBuilder({
                 ? "Nueva Factura"
                 : "New Invoice"}
           </h1>
-          <p className="text-white/60 text-sm mt-1">
+          <p className="text-fg-dim text-sm mt-1">
             {mode === "edit" && initialDocument?.number ? (
               <span className="font-mono">{initialDocument.number}</span>
             ) : isEs ? (
@@ -537,20 +537,20 @@ export function FacturaBuilder({
 
       {/* Proyecto y Contrato */}
       {projects.length > 0 && (filteredProjects.length > 0 || !watchedClientId) && (
-        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
-          <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">
+        <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
+          <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">
             {isEs ? "Proyecto y contrato" : "Project & contract"}
           </h3>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
+              <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
                 {isEs ? "Proyecto" : "Project"}
               </label>
               <select
                 {...register("projectId")}
                 onChange={(e) => { setValue("projectId", e.target.value); setValue("contractId", ""); }}
                 aria-label={isEs ? "Proyecto" : "Project"}
-                className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all"
+                className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-brand/40 transition-all"
               >
                 <option value="">{isEs ? "Sin proyecto" : "No project"}</option>
                 {filteredProjects.map((p) => (
@@ -559,13 +559,13 @@ export function FacturaBuilder({
               </select>
             </div>
             <div>
-              <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
+              <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
                 {isEs ? "Contrato" : "Contract"}
               </label>
               <select
                 {...register("contractId")}
                 aria-label={isEs ? "Contrato" : "Contract"}
-                className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all"
+                className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-brand/40 transition-all"
               >
                 <option value="">{isEs ? "Sin contrato" : "No contract"}</option>
                 {filteredContracts.map((c) => (
@@ -577,11 +577,11 @@ export function FacturaBuilder({
 
           {/* Active contract banner */}
           {activeContract?.responsibilities && (
-            <div className="bg-[#C8A96E]/[0.05] border border-[#C8A96E]/20 rounded-lg p-4">
-              <p className="text-[#C8A96E] text-[10px] uppercase tracking-widest font-medium mb-1.5">
+            <div className="bg-sand/[0.05] border border-sand/20 rounded-lg p-4">
+              <p className="text-sand-fg text-[10px] uppercase tracking-widest font-medium mb-1.5">
                 {isEs ? "Responsabilidades del contrato" : "Contract responsibilities"}
               </p>
-              <p className="text-white/60 text-xs leading-relaxed whitespace-pre-line line-clamp-4">
+              <p className="text-fg-dim text-xs leading-relaxed whitespace-pre-line line-clamp-4">
                 {activeContract.responsibilities}
               </p>
             </div>
@@ -589,29 +589,29 @@ export function FacturaBuilder({
 
           {/* Presupuesto del proyecto — solo informativo */}
           {selectedProject?.totalBudget != null && (
-            <div className="border-t border-white/[0.05] pt-4 flex items-center justify-between">
+            <div className="border-t border-line pt-4 flex items-center justify-between">
               <div>
-                <p className="text-white/50 text-xs uppercase tracking-widest font-medium">
+                <p className="text-fg-faint text-xs uppercase tracking-widest font-medium">
                   {isEs ? "Presupuesto del proyecto" : "Project budget"}
                 </p>
-                <p className="text-[#C8A96E] font-mono text-base font-semibold mt-0.5">
+                <p className="text-sand-fg font-mono text-base font-semibold mt-0.5">
                   ${selectedProject.totalBudget.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-white/50 text-xs uppercase tracking-widest font-medium">
+                <p className="text-fg-faint text-xs uppercase tracking-widest font-medium">
                   {isEs ? "Esta factura" : "This invoice"}
                 </p>
-                <p className="text-white/70 font-mono text-base mt-0.5">
+                <p className="text-fg-mute font-mono text-base mt-0.5">
                   ${grossTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                 </p>
               </div>
               {grossTotal < selectedProject.totalBudget && (
                 <div className="text-right">
-                  <p className="text-white/50 text-xs uppercase tracking-widest font-medium">
+                  <p className="text-fg-faint text-xs uppercase tracking-widest font-medium">
                     {isEs ? "Resto del presupuesto" : "Budget remaining"}
                   </p>
-                  <p className="text-amber-400 font-mono text-base font-semibold mt-0.5">
+                  <p className="text-warn font-mono text-base font-semibold mt-0.5">
                     ${(selectedProject.totalBudget - grossTotal).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                   </p>
                 </div>
@@ -622,39 +622,39 @@ export function FacturaBuilder({
       )}
 
       {/* Dates + currency */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
-        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">
+      <div className="bg-panel border border-line rounded-xl p-5">
+        <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">
           {isEs ? "Detalles del documento" : "Document details"}
         </h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">
+            <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">
               {isEs ? "Fecha de emisión" : "Issue date"}
             </label>
             <input
               {...register("issueDate")}
               type="date"
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#C8A96E]/40 transition-all"
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-sand/40 transition-all"
             />
           </div>
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">
+            <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">
               {isEs ? "Fecha de vencimiento" : "Due date"}
             </label>
             <input
               {...register("dueDate")}
               type="date"
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#C8A96E]/40 transition-all"
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-sand/40 transition-all"
             />
           </div>
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">
+            <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">
               {isEs ? "Moneda" : "Currency"}
             </label>
             <select
               {...register("currency")}
               aria-label={isEs ? "Moneda" : "Currency"}
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#C8A96E]/40 transition-all"
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-sand/40 transition-all"
             >
               <option value="USD">USD — Dólar</option>
               <option value="PAB">PAB — Balboa</option>
@@ -675,12 +675,12 @@ export function FacturaBuilder({
 
       {/* Cobro — funciona sin proyecto, sin contrato y sin cotización previa */}
       {mode === "create" && (
-        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
+        <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
           <div>
-            <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">
+            <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">
               {isEs ? "Cobro" : "Collection"}
             </h3>
-            <p className="text-white/55 text-xs mt-1">
+            <p className="text-fg-dim text-xs mt-1">
               {isEs
                 ? "Registra aquí el dinero que ya entró. El saldo pendiente aparece solo en Cuentas por Cobrar."
                 : "Register money already received. The outstanding balance shows up in Receivables automatically."}
@@ -705,8 +705,8 @@ export function FacturaBuilder({
                 }}
                 className={`px-3 py-2.5 rounded-lg text-xs font-medium border transition-all ${
                   collection === opt.key
-                    ? "bg-[#1AA7F0]/10 border-[#1AA7F0]/35 text-[#1AA7F0]"
-                    : "border-white/[0.07] text-white/55 hover:text-white/80 hover:border-white/20"
+                    ? "bg-brand/10 border-brand/35 text-brand-fg"
+                    : "border-line text-fg-dim hover:text-fg-soft hover:border-line-loud"
                 }`}
               >
                 {isEs ? opt.es : opt.en}
@@ -717,7 +717,7 @@ export function FacturaBuilder({
           {collection === "partial" && (
             <div className="bg-amber-500/[0.06] border border-amber-500/20 rounded-lg p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
+                <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
                   {isEs ? "Monto recibido" : "Amount received"}
                 </label>
                 <input
@@ -726,21 +726,21 @@ export function FacturaBuilder({
                   step="0.01"
                   value={collectedAmount}
                   onChange={(e) => setCollectedAmount(e.target.value)}
-                  className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400/40 transition-all"
+                  className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-amber-400/40 transition-all"
                 />
               </div>
               <div>
-                <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
+                <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
                   {isEs ? "Vencimiento del saldo" : "Balance due date"}
                 </label>
                 <input
                   type="date"
                   value={balanceDueDate}
                   onChange={(e) => setBalanceDueDate(e.target.value)}
-                  className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-amber-400/40 transition-all [color-scheme:dark]"
+                  className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-amber-400/40 transition-all [color-scheme:dark]"
                 />
               </div>
-              <p className="text-amber-400 text-xs sm:col-span-2">
+              <p className="text-warn text-xs sm:col-span-2">
                 {isEs
                   ? `Saldo por cobrar: $${Math.max(0, grossTotal - (Number(collectedAmount) || 0)).toLocaleString("en-US", { minimumFractionDigits: 2 })}`
                   : `Outstanding: $${Math.max(0, grossTotal - (Number(collectedAmount) || 0)).toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
@@ -749,7 +749,7 @@ export function FacturaBuilder({
           )}
 
           {collection === "full" && (
-            <p className="text-green-400 text-xs">
+            <p className="text-ok text-xs">
               ✓ {isEs
                 ? `Se registrará el cobro completo de $${grossTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })}. La factura no entrará a Cuentas por Cobrar.`
                 : `Full payment of $${grossTotal.toLocaleString("en-US", { minimumFractionDigits: 2 })} will be recorded. The invoice skips Receivables.`}
@@ -757,9 +757,9 @@ export function FacturaBuilder({
           )}
 
           {/* Plan de cuotas opcional */}
-          <div className="border-t border-white/[0.05] pt-4 space-y-2">
+          <div className="border-t border-line pt-4 space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-white/50 text-xs uppercase tracking-widest font-medium">
+              <p className="text-fg-faint text-xs uppercase tracking-widest font-medium">
                 {isEs ? "Plan de cuotas (opcional)" : "Installment plan (optional)"}
               </p>
               <button
@@ -770,14 +770,14 @@ export function FacturaBuilder({
                     { description: "", amount: "", dueDate: addDaysISO(30 * (rows.length + 1)) },
                   ])
                 }
-                className="text-[#1AA7F0] text-xs hover:text-[#4FC0FF] transition-colors"
+                className="text-brand-fg text-xs hover:text-sky transition-colors"
               >
                 + {isEs ? "Agregar cuota" : "Add installment"}
               </button>
             </div>
 
             {installments.length === 0 ? (
-              <p className="text-white/40 text-xs">
+              <p className="text-fg-ghost text-xs">
                 {isEs
                   ? "Sin cuotas: el saldo se cobra completo en la fecha de vencimiento."
                   : "No installments: the balance is due in full on the due date."}
@@ -791,7 +791,7 @@ export function FacturaBuilder({
                     onChange={(e) =>
                       setInstallments((rows) => rows.map((r, i) => (i === idx ? { ...r, description: e.target.value } : r)))
                     }
-                    className="bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40"
+                    className="bg-fill border border-line rounded-lg px-3 py-2 text-fg text-sm focus:outline-none focus:border-brand/40"
                   />
                   <input
                     type="number"
@@ -802,7 +802,7 @@ export function FacturaBuilder({
                     onChange={(e) =>
                       setInstallments((rows) => rows.map((r, i) => (i === idx ? { ...r, amount: e.target.value } : r)))
                     }
-                    className="bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-[#1AA7F0]/40"
+                    className="bg-fill border border-line rounded-lg px-3 py-2 text-fg text-sm font-mono focus:outline-none focus:border-brand/40"
                   />
                   <input
                     type="date"
@@ -810,12 +810,12 @@ export function FacturaBuilder({
                     onChange={(e) =>
                       setInstallments((rows) => rows.map((r, i) => (i === idx ? { ...r, dueDate: e.target.value } : r)))
                     }
-                    className="bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 [color-scheme:dark]"
+                    className="bg-fill border border-line rounded-lg px-3 py-2 text-fg text-sm focus:outline-none focus:border-brand/40 [color-scheme:dark]"
                   />
                   <button
                     type="button"
                     onClick={() => setInstallments((rows) => rows.filter((_, i) => i !== idx))}
-                    className="text-white/35 hover:text-red-400 text-sm"
+                    className="text-fg-ghost hover:text-danger text-sm"
                   >
                     ×
                   </button>
@@ -827,11 +827,11 @@ export function FacturaBuilder({
       )}
 
       {paymentMethods.length > 0 && (
-        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
-          <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">
+        <div className="bg-panel border border-line rounded-xl p-5">
+          <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">
             {isEs ? "Método de pago" : "Payment method"}
           </h3>
-          <p className="text-white/55 text-xs mb-4">
+          <p className="text-fg-dim text-xs mb-4">
             {isEs
               ? "Seleccione cómo se recibió el pago para calcular comisión y neto recibido. Solo el método elegido aparecerá en el PDF."
               : "Select how payment was received to calculate commission and net amount. Only the selected method appears on the PDF."}
@@ -847,9 +847,9 @@ export function FacturaBuilder({
       )}
 
       {/* Notes */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
+      <div className="bg-panel border border-line rounded-xl p-5">
         <div className="flex items-center justify-between mb-3">
-          <label className="text-white/60 text-xs uppercase tracking-widest font-medium">
+          <label className="text-fg-dim text-xs uppercase tracking-widest font-medium">
             {isEs ? "Notas / términos de pago" : "Notes / payment terms"}
           </label>
           <AiEnhanceButton
@@ -863,7 +863,7 @@ export function FacturaBuilder({
           {...register("notes")}
           rows={3}
           placeholder={isEs ? "Condiciones de pago, instrucciones bancarias..." : "Payment conditions, bank details..."}
-          className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/40 resize-none transition-all"
+          className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg-soft text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 resize-none transition-all"
         />
       </div>
 
@@ -874,14 +874,14 @@ export function FacturaBuilder({
         <button
           type="button"
           onClick={() => router.back()}
-          className="px-4 py-2.5 text-white/50 hover:text-white/80 text-sm transition-colors"
+          className="px-4 py-2.5 text-fg-faint hover:text-fg-soft text-sm transition-colors"
         >
           {isEs ? "Cancelar" : "Cancel"}
         </button>
         <button
           type="submit"
           disabled={saving}
-          className="px-6 py-2.5 bg-[#C8A96E] hover:bg-[#d4b87a] disabled:opacity-50 text-[#030611] text-sm font-semibold rounded-lg transition-all"
+          className="px-6 py-2.5 bg-sand hover:bg-sand-lt disabled:opacity-50 text-on-accent text-sm font-semibold rounded-lg transition-all"
         >
           {saving
             ? isEs

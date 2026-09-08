@@ -116,12 +116,12 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
   }
 
   return (
-    <div className="bg-[#0a0a10] border border-[#6344E8]/20 rounded-xl p-5 space-y-3">
+    <div className="bg-panel border border-iris/20 rounded-xl p-5 space-y-3">
       <div>
-        <h3 className="text-[#8B6FFF] text-xs uppercase tracking-widest font-medium">
+        <h3 className="text-iris-fg text-xs uppercase tracking-widest font-medium">
           ¿Tienes una propuesta, cotización o contrato?
         </h3>
-        <p className="text-white/50 text-xs mt-1">
+        <p className="text-fg-faint text-xs mt-1">
           Adjunta lo que tengas —propuesta, cotización, detalle del producto o el
           contrato firmado— y la IA redacta el contrato: alcance, responsabilidades,
           términos, entregables y forma de pago.
@@ -143,7 +143,7 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
           type="button"
           disabled={busy}
           onClick={() => inputRef.current?.click()}
-          className="px-4 py-2 rounded-lg bg-[#6344E8]/15 border border-[#6344E8]/30 text-[#8B6FFF] text-sm font-medium hover:bg-[#6344E8]/25 disabled:opacity-50 transition-all"
+          className="px-4 py-2 rounded-lg bg-iris/15 border border-iris/30 text-iris-fg text-sm font-medium hover:bg-iris/25 disabled:opacity-50 transition-all"
         >
           {busy ? "Analizando…" : "📎 Adjuntar documento (PDF)"}
         </button>
@@ -151,12 +151,12 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
           type="button"
           disabled={busy}
           onClick={() => setShowPaste((v) => !v)}
-          className="text-white/50 hover:text-white/80 text-xs px-2 py-1 transition-colors"
+          className="text-fg-faint hover:text-fg-soft text-xs px-2 py-1 transition-colors"
         >
           o pegar el texto
         </button>
         {fileName && !busy && (
-          <span className="text-white/45 text-xs font-mono truncate max-w-[220px]">{fileName}</span>
+          <span className="text-fg-faint text-xs font-mono truncate max-w-[220px]">{fileName}</span>
         )}
       </div>
 
@@ -167,13 +167,13 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
             value={pasted}
             onChange={(e) => setPasted(e.target.value)}
             placeholder="Pega aquí la propuesta, el alcance o el contrato..."
-            className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm placeholder-white/20 focus:outline-none focus:border-[#6344E8]/40 resize-none"
+            className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg-soft text-sm placeholder-fg-trace focus:outline-none focus:border-iris/40 resize-none"
           />
           <button
             type="button"
             disabled={busy || !pasted.trim()}
             onClick={() => void analyze({ text: pasted })}
-            className="px-3 py-1.5 rounded-lg bg-[#6344E8]/15 border border-[#6344E8]/30 text-[#8B6FFF] text-xs font-medium disabled:opacity-40"
+            className="px-3 py-1.5 rounded-lg bg-iris/15 border border-iris/30 text-iris-fg text-xs font-medium disabled:opacity-40"
           >
             {busy ? "Analizando…" : "Analizar texto"}
           </button>
@@ -181,22 +181,22 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
       )}
 
       {busy && (
-        <p className="text-white/45 text-xs">
+        <p className="text-fg-faint text-xs">
           Leyendo el documento y redactando el contrato… suele tardar entre 10 y 25 segundos.
         </p>
       )}
-      {error && <p className="text-red-400 text-xs">{error}</p>}
-      {done && <p className="text-green-400 text-xs">✓ {done}</p>}
+      {error && <p className="text-danger text-xs">{error}</p>}
+      {done && <p className="text-ok text-xs">✓ {done}</p>}
 
       {/* Lo que la IA completó por su cuenta: es lo primero que hay que revisar. */}
       {assumptions.length > 0 && (
         <div className="rounded-lg border border-amber-500/25 bg-amber-500/[0.06] px-3 py-2.5">
-          <p className="text-amber-400/90 text-[11px] uppercase tracking-widest font-medium">
+          <p className="text-warn/90 text-[11px] uppercase tracking-widest font-medium">
             Redactado por la IA — no venía en el documento
           </p>
           <ul className="mt-1.5 space-y-1">
             {assumptions.map((a, i) => (
-              <li key={i} className="text-white/60 text-xs leading-relaxed">
+              <li key={i} className="text-fg-dim text-xs leading-relaxed">
                 • {a}
               </li>
             ))}
@@ -204,7 +204,7 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
         </div>
       )}
 
-      <p className="text-white/30 text-[10px]">
+      <p className="text-fg-trace text-[10px]">
         Revisa siempre lo redactado: la IA puede equivocarse y nada se guarda hasta que pulses crear.
       </p>
     </div>

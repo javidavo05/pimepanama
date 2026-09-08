@@ -17,12 +17,12 @@ const fecha = (iso: string) =>
 
 export function LeadsTable({ leads, onStatusChange, savingId }: LeadsTableProps) {
   return (
-    <div className="overflow-hidden rounded-xl border border-white/[0.06] bg-[#0a0a10]">
+    <div className="overflow-hidden rounded-xl border border-line bg-panel">
       {/* La tabla scrollea dentro de su caja; la página nunca se va de ancho. */}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[880px] border-collapse text-left">
           <thead>
-            <tr className="border-b border-white/[0.06] text-[10px] uppercase tracking-widest text-white/45">
+            <tr className="border-b border-line text-[10px] uppercase tracking-widest text-fg-faint">
               <th className="px-4 py-3 font-medium">Prospecto</th>
               <th className="px-4 py-3 font-medium">Prioridad</th>
               <th className="px-4 py-3 font-medium">Etapa</th>
@@ -35,14 +35,14 @@ export function LeadsTable({ leads, onStatusChange, savingId }: LeadsTableProps)
             {leads.map((lead) => (
               <tr
                 key={lead.id}
-                className="border-b border-white/[0.04] transition-colors last:border-0 hover:bg-white/[0.02]"
+                className="border-b border-line transition-colors last:border-0 hover:bg-fill"
               >
                 <td className="max-w-[260px] px-4 py-3">
                   <Link href={`/empresa/leads/${lead.id}`} className="block group">
-                    <p className="truncate text-sm font-medium text-white/85 group-hover:text-white">
+                    <p className="truncate text-sm font-medium text-fg group-hover:text-fg">
                       {lead.name}
                     </p>
-                    <p className="truncate text-xs text-white/50">
+                    <p className="truncate text-xs text-fg-faint">
                       {lead.company || lead.email || "—"}
                     </p>
                   </Link>
@@ -63,7 +63,7 @@ export function LeadsTable({ leads, onStatusChange, savingId }: LeadsTableProps)
                     className={`cursor-pointer rounded border bg-transparent px-2 py-1 text-xs font-medium outline-none transition-colors disabled:opacity-50 ${leadStatusMeta(lead.status).className}`}
                   >
                     {LEAD_STATUSES.map((s) => (
-                      <option key={s.value} value={s.value} className="bg-[#0d0d18] text-white">
+                      <option key={s.value} value={s.value} className="bg-pop text-fg">
                         {s.label}
                       </option>
                     ))}
@@ -71,18 +71,18 @@ export function LeadsTable({ leads, onStatusChange, savingId }: LeadsTableProps)
                 </td>
 
                 <td className="max-w-[320px] px-4 py-3">
-                  <p className="truncate text-xs leading-relaxed text-white/45" title={lead.priorityReason ?? ""}>
+                  <p className="truncate text-xs leading-relaxed text-fg-faint" title={lead.priorityReason ?? ""}>
                     {lead.priorityReason || "—"}
                   </p>
                 </td>
 
-                <td className="whitespace-nowrap px-4 py-3 text-right font-mono text-xs text-[#C8A96E]/75">
+                <td className="whitespace-nowrap px-4 py-3 text-right font-mono text-xs text-sand-fg/75">
                   {lead.estimatedValue != null
                     ? `$${lead.estimatedValue.toLocaleString("en-US", { maximumFractionDigits: 0 })}`
                     : "—"}
                 </td>
 
-                <td className="whitespace-nowrap px-4 py-3 text-right text-xs text-white/45">
+                <td className="whitespace-nowrap px-4 py-3 text-right text-xs text-fg-faint">
                   {fecha(lead.createdAt)}
                 </td>
               </tr>
@@ -104,18 +104,18 @@ export function LeadsCardList({ leads }: { leads: SerializedLead[] }) {
           <Link
             key={lead.id}
             href={`/empresa/leads/${lead.id}`}
-            className="block rounded-xl border border-white/[0.06] bg-[#0a0a10] p-4 transition-colors hover:border-white/[0.12]"
+            className="block rounded-xl border border-line bg-panel p-4 transition-colors hover:border-line-mid"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-white/85">{lead.name}</p>
-                <p className="truncate text-xs text-white/50">{lead.company || lead.email || "—"}</p>
+                <p className="truncate text-sm font-medium text-fg">{lead.name}</p>
+                <p className="truncate text-xs text-fg-faint">{lead.company || lead.email || "—"}</p>
               </div>
               <LeadPriorityBadge priority={lead.priority} />
             </div>
 
             {lead.priorityReason && (
-              <p className="mt-2 text-xs leading-relaxed text-white/45 line-clamp-2">
+              <p className="mt-2 text-xs leading-relaxed text-fg-faint line-clamp-2">
                 {lead.priorityReason}
               </p>
             )}
@@ -127,11 +127,11 @@ export function LeadsCardList({ leads }: { leads: SerializedLead[] }) {
                 {status.label}
               </span>
               {lead.estimatedValue != null && (
-                <span className="font-mono text-xs text-[#C8A96E]/75">
+                <span className="font-mono text-xs text-sand-fg/75">
                   ${lead.estimatedValue.toLocaleString("en-US", { maximumFractionDigits: 0 })}
                 </span>
               )}
-              <span className="ml-auto text-xs text-white/40">{fecha(lead.createdAt)}</span>
+              <span className="ml-auto text-xs text-fg-ghost">{fecha(lead.createdAt)}</span>
             </div>
           </Link>
         );

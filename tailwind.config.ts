@@ -15,6 +15,63 @@ export default {
         body: ["var(--font-body)", "sans-serif"],
       },
       colors: {
+        // ── Sistema de temas /empresa ─────────────────────────────────────
+        // Los valores viven en globals.css bajo [data-theme]. Se declaran como
+        // canales RGB para que los modificadores de opacidad (bg-brand/10) sigan
+        // funcionando. Ver "Sistema de color" en globals.css.
+        canvas: "rgb(var(--c-canvas) / <alpha-value>)",
+        panel: "rgb(var(--c-panel) / <alpha-value>)",
+        "panel-2": "rgb(var(--c-panel-2) / <alpha-value>)",
+        "panel-3": "rgb(var(--c-panel-3) / <alpha-value>)",
+        pop: "rgb(var(--c-pop) / <alpha-value>)",
+
+        fg: "rgb(var(--c-fg) / <alpha-value>)",
+        "fg-soft": "rgb(var(--c-fg-soft) / <alpha-value>)",
+        "fg-mute": "rgb(var(--c-fg-mute) / <alpha-value>)",
+        "fg-dim": "rgb(var(--c-fg-dim) / <alpha-value>)",
+        "fg-faint": "rgb(var(--c-fg-faint) / <alpha-value>)",
+        "fg-ghost": "rgb(var(--c-fg-ghost) / <alpha-value>)",
+        "fg-trace": "rgb(var(--c-fg-trace) / <alpha-value>)",
+
+        line: "rgb(var(--c-line) / <alpha-value>)",
+        "line-mid": "rgb(var(--c-line-mid) / <alpha-value>)",
+        "line-loud": "rgb(var(--c-line-loud) / <alpha-value>)",
+
+        fill: "rgb(var(--c-fill) / <alpha-value>)",
+        "fill-2": "rgb(var(--c-fill-2) / <alpha-value>)",
+        "fill-3": "rgb(var(--c-fill-3) / <alpha-value>)",
+
+        brand: "rgb(var(--c-brand) / <alpha-value>)",
+        "brand-hi": "rgb(var(--c-brand-hi) / <alpha-value>)",
+        "brand-fg": "rgb(var(--c-brand-fg) / <alpha-value>)",
+        "on-brand": "rgb(var(--c-on-brand) / <alpha-value>)",
+        "on-accent": "rgb(var(--c-on-accent) / <alpha-value>)",
+
+        sand: "rgb(var(--c-sand) / <alpha-value>)",
+        "sand-lt": "rgb(var(--c-sand-lt) / <alpha-value>)",
+        "sand-fg": "rgb(var(--c-sand-fg) / <alpha-value>)",
+        iris: "rgb(var(--c-iris) / <alpha-value>)",
+        "iris-fg": "rgb(var(--c-iris-fg) / <alpha-value>)",
+        azure: "rgb(var(--c-azure) / <alpha-value>)",
+        sky: "rgb(var(--c-sky) / <alpha-value>)",
+
+        // Estados — el tono cambia por tema para no perder contraste en claro.
+        ok: "rgb(var(--c-ok) / <alpha-value>)",
+        "ok-soft": "rgb(var(--c-ok-soft) / <alpha-value>)",
+        warn: "rgb(var(--c-warn) / <alpha-value>)",
+        "warn-soft": "rgb(var(--c-warn-soft) / <alpha-value>)",
+        danger: "rgb(var(--c-danger) / <alpha-value>)",
+        "danger-soft": "rgb(var(--c-danger-soft) / <alpha-value>)",
+        info: "rgb(var(--c-info) / <alpha-value>)",
+        "info-soft": "rgb(var(--c-info-soft) / <alpha-value>)",
+        grape: "rgb(var(--c-grape) / <alpha-value>)",
+        "grape-soft": "rgb(var(--c-grape-soft) / <alpha-value>)",
+        emerald2: "rgb(var(--c-emerald2) / <alpha-value>)",
+        mint: "rgb(var(--c-mint) / <alpha-value>)",
+        amber2: "rgb(var(--c-amber2) / <alpha-value>)",
+        flame: "rgb(var(--c-flame) / <alpha-value>)",
+        tangerine: "rgb(var(--c-tangerine) / <alpha-value>)",
+
         // Premium blue palette (primary)
         navy: {
           950: "#020511",

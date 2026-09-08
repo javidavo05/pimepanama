@@ -16,12 +16,12 @@ export const metadata = { title: "Bandeja de entrada — Pime Suite" };
 export const dynamic = "force-dynamic";
 
 const ACCOUNT_PALETTE = [
-  { borderColor: "bg-[#1AA7F0]", dotColor: "bg-[#1AA7F0]", badgeBg: "bg-[#1AA7F0]/15", badgeText: "text-[#1AA7F0]", activeBg: "bg-[#1AA7F0]/10 text-[#1AA7F0]" },
-  { borderColor: "bg-[#6344E8]", dotColor: "bg-[#6344E8]", badgeBg: "bg-[#6344E8]/15", badgeText: "text-[#8B6FFF]", activeBg: "bg-[#6344E8]/10 text-[#8B6FFF]" },
-  { borderColor: "bg-[#E85D04]", dotColor: "bg-[#E85D04]", badgeBg: "bg-[#E85D04]/15", badgeText: "text-[#FF7A2B]", activeBg: "bg-[#E85D04]/10 text-[#FF7A2B]" },
-  { borderColor: "bg-[#06D6A0]", dotColor: "bg-[#06D6A0]", badgeBg: "bg-[#06D6A0]/15", badgeText: "text-[#06D6A0]", activeBg: "bg-[#06D6A0]/10 text-[#06D6A0]" },
-  { borderColor: "bg-[#FFB703]", dotColor: "bg-[#FFB703]", badgeBg: "bg-[#FFB703]/15", badgeText: "text-[#FFB703]", activeBg: "bg-[#FFB703]/10 text-[#FFB703]" },
-  { borderColor: "bg-[#FB5607]", dotColor: "bg-[#FB5607]", badgeBg: "bg-[#FB5607]/15", badgeText: "text-[#FB5607]", activeBg: "bg-[#FB5607]/10 text-[#FB5607]" },
+  { borderColor: "bg-brand", dotColor: "bg-brand", badgeBg: "bg-brand/15", badgeText: "text-brand-fg", activeBg: "bg-brand/10 text-brand-fg" },
+  { borderColor: "bg-iris", dotColor: "bg-iris", badgeBg: "bg-iris/15", badgeText: "text-iris-fg", activeBg: "bg-iris/10 text-iris-fg" },
+  { borderColor: "bg-flame", dotColor: "bg-flame", badgeBg: "bg-flame/15", badgeText: "text-tangerine", activeBg: "bg-flame/10 text-tangerine" },
+  { borderColor: "bg-emerald2", dotColor: "bg-emerald2", badgeBg: "bg-emerald2/15", badgeText: "text-emerald2", activeBg: "bg-emerald2/10 text-emerald2" },
+  { borderColor: "bg-amber2", dotColor: "bg-amber2", badgeBg: "bg-amber2/15", badgeText: "text-amber2", activeBg: "bg-amber2/10 text-amber2" },
+  { borderColor: "bg-flame", dotColor: "bg-flame", badgeBg: "bg-flame/15", badgeText: "text-flame", activeBg: "bg-flame/10 text-flame" },
 ];
 
 export default async function HubPage({
@@ -135,12 +135,12 @@ export default async function HubPage({
       <AutoSyncOnMount accountIds={accounts.map((a) => a.id)} />
 
       {accounts.length === 0 ? (
-        <div className="bg-gradient-to-r from-[#1AA7F0]/[0.07] to-[#6344E8]/[0.07] border border-[#1AA7F0]/15 rounded-xl p-6 text-center space-y-3">
-          <p className="text-white/70 font-medium">No tienes cuentas IMAP conectadas</p>
-          <p className="text-white/55 text-sm">Conecta tu correo para leer, clasificar con IA y responder desde aquí.</p>
+        <div className="bg-gradient-to-r from-brand/[0.07] to-iris/[0.07] border border-brand/15 rounded-xl p-6 text-center space-y-3">
+          <p className="text-fg-mute font-medium">No tienes cuentas IMAP conectadas</p>
+          <p className="text-fg-dim text-sm">Conecta tu correo para leer, clasificar con IA y responder desde aquí.</p>
           <Link
             href="/empresa/correos/cuentas/nueva"
-            className="inline-block px-5 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] text-white text-sm font-semibold rounded-lg transition-all"
+            className="inline-block px-5 py-2 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-all"
           >
             Conectar cuenta
           </Link>

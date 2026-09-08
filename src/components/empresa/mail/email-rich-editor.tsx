@@ -68,8 +68,8 @@ function ToolbarButton({
       }}
       className={`min-w-[28px] h-7 px-1.5 rounded text-xs font-medium transition-colors shrink-0 ${
         active
-          ? "bg-[#1AA7F0]/20 text-[#1AA7F0] border border-[#1AA7F0]/30"
-          : "text-white/55 hover:text-white/80 hover:bg-white/[0.06] border border-transparent"
+          ? "bg-brand/20 text-brand-fg border border-brand/30"
+          : "text-fg-dim hover:text-fg-soft hover:bg-fill-2 border border-transparent"
       } ${className}`}
     >
       {label}
@@ -126,12 +126,12 @@ export function EmailRichEditor({
   }
 
   return (
-    <div className="rounded-lg border border-white/[0.07] overflow-hidden bg-[#0a0a10] min-w-0">
+    <div className="rounded-lg border border-line overflow-hidden bg-panel min-w-0">
       {/* Toolbar — scroll horizontal en móvil */}
-      <div className="flex items-center gap-0.5 p-1.5 sm:p-2 border-b border-white/[0.06] bg-white/[0.02] overflow-x-auto overscroll-x-contain flex-nowrap sm:flex-wrap [-webkit-overflow-scrolling:touch]">
+      <div className="flex items-center gap-0.5 p-1.5 sm:p-2 border-b border-line bg-fill overflow-x-auto overscroll-x-contain flex-nowrap sm:flex-wrap [-webkit-overflow-scrolling:touch]">
         <ToolbarButton title="Deshacer" label="↶" onClick={() => runCommand({ cmd: "undo" })} />
         <ToolbarButton title="Rehacer" label="↷" onClick={() => runCommand({ cmd: "redo" })} />
-        <span className="w-px h-5 bg-white/[0.08] mx-0.5 sm:mx-1 shrink-0" />
+        <span className="w-px h-5 bg-fill-2 mx-0.5 sm:mx-1 shrink-0" />
 
         {TOOLBAR.map((t) => (
           <ToolbarButton
@@ -143,19 +143,19 @@ export function EmailRichEditor({
           />
         ))}
 
-        <span className="w-px h-5 bg-white/[0.08] mx-0.5 sm:mx-1 shrink-0" />
+        <span className="w-px h-5 bg-fill-2 mx-0.5 sm:mx-1 shrink-0" />
 
         {BLOCKS.map((t) => (
           <ToolbarButton key={t.title} title={t.title} label={t.label} onClick={() => runCommand(t.run)} />
         ))}
 
-        <span className="w-px h-5 bg-white/[0.08] mx-0.5 sm:mx-1 shrink-0" />
+        <span className="w-px h-5 bg-fill-2 mx-0.5 sm:mx-1 shrink-0" />
 
         {SIZES.map((t) => (
           <ToolbarButton key={t.title} title={t.title} label={t.label} onClick={() => runCommand(t.run)} />
         ))}
 
-        <span className="w-px h-5 bg-white/[0.08] mx-0.5 sm:mx-1 shrink-0" />
+        <span className="w-px h-5 bg-fill-2 mx-0.5 sm:mx-1 shrink-0" />
 
         <ToolbarButton title="Lista con viñetas" label="•≡" onClick={() => runCommand({ cmd: "insertUnorderedList" })} />
         <ToolbarButton title="Lista numerada" label="1." onClick={() => runCommand({ cmd: "insertOrderedList" })} />
@@ -163,13 +163,13 @@ export function EmailRichEditor({
         <ToolbarButton title="Quitar formato" label="✕" onClick={() => runCommand({ cmd: "removeFormat" })} />
         <ToolbarButton title="Línea divisoria" label="—" onClick={insertHorizontalRule} />
 
-        <span className="w-px h-5 bg-white/[0.08] mx-0.5 sm:mx-1 shrink-0" />
+        <span className="w-px h-5 bg-fill-2 mx-0.5 sm:mx-1 shrink-0" />
 
         <ToolbarButton title="Alinear izquierda" label="⫷" onClick={() => runCommand({ cmd: "justifyLeft" })} />
         <ToolbarButton title="Centrar" label="≡" onClick={() => runCommand({ cmd: "justifyCenter" })} />
         <ToolbarButton title="Alinear derecha" label="⫸" onClick={() => runCommand({ cmd: "justifyRight" })} />
 
-        <span className="w-px h-5 bg-white/[0.08] mx-0.5 sm:mx-1 shrink-0" />
+        <span className="w-px h-5 bg-fill-2 mx-0.5 sm:mx-1 shrink-0" />
 
         <div className="flex items-center gap-1 px-1 shrink-0">
           {COLORS.map((c) => (
@@ -183,7 +183,7 @@ export function EmailRichEditor({
                 document.execCommand("foreColor", false, c.value);
                 syncToParent();
               }}
-              className="w-4 h-4 rounded-full border border-white/20 shrink-0 hover:scale-110 transition-transform"
+              className="w-4 h-4 rounded-full border border-line-loud shrink-0 hover:scale-110 transition-transform"
               style={{ backgroundColor: c.value }}
             />
           ))}
@@ -193,7 +193,7 @@ export function EmailRichEditor({
       {/* Editing surface — fondo claro como el correo final */}
       <div className="relative bg-white">
         {!value && (
-          <p className="absolute top-3 left-3 text-sm text-gray-400 pointer-events-none select-none">
+          <p className="absolute top-3 left-3 text-sm text-fg-faint pointer-events-none select-none">
             {placeholder}
           </p>
         )}
@@ -203,7 +203,7 @@ export function EmailRichEditor({
           suppressContentEditableWarning
           onInput={syncToParent}
           onBlur={syncToParent}
-          className="min-h-[140px] sm:min-h-[220px] sm:max-h-[360px] overflow-y-auto px-3 sm:px-4 py-3 text-sm text-gray-900 leading-relaxed outline-none touch-manipulation [&_a]:text-[#1AA7F0] [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-semibold [&_h4]:text-base [&_h4]:font-semibold [&_p]:my-0 [&_p]:mb-3"
+          className="min-h-[140px] sm:min-h-[220px] sm:max-h-[360px] overflow-y-auto px-3 sm:px-4 py-3 text-sm text-gray-900 leading-relaxed outline-none touch-manipulation [&_a]:text-[#0A6FA8] [&_a]:underline [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h2]:text-xl [&_h2]:font-semibold [&_h3]:text-lg [&_h3]:font-semibold [&_h4]:text-base [&_h4]:font-semibold [&_p]:my-0 [&_p]:mb-3"
           style={{ fontFamily: "'Segoe UI', Arial, sans-serif" }}
         />
       </div>

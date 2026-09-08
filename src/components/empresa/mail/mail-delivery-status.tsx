@@ -33,48 +33,48 @@ export function MailDeliveryStatusBadge({
 
   if (status === "OPENED") {
     return (
-      <span className={`${pad} rounded-full bg-violet-500/15 text-violet-300 border border-violet-500/25`}>
+      <span className={`${pad} rounded-full bg-violet-500/15 text-grape-soft border border-violet-500/25`}>
         Abierto
       </span>
     );
   }
   if (status === "DELIVERED") {
     return (
-      <span className={`${pad} rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/25`}>
+      <span className={`${pad} rounded-full bg-emerald-500/15 text-ok-soft border border-emerald-500/25`}>
         Entregado
       </span>
     );
   }
   if (status === "SENT" || status === "ACCEPTED" || email.resendId) {
     return (
-      <span className={`${pad} rounded-full bg-[#1AA7F0]/15 text-[#1AA7F0] border border-[#1AA7F0]/25`}>
+      <span className={`${pad} rounded-full bg-brand/15 text-brand-fg border border-brand/25`}>
         Enviado
       </span>
     );
   }
   if (status === "BOUNCED") {
     return (
-      <span className={`${pad} rounded-full bg-red-500/15 text-red-300 border border-red-500/25`} title={email.bounceReason ?? undefined}>
+      <span className={`${pad} rounded-full bg-red-500/15 text-danger-soft border border-red-500/25`} title={email.bounceReason ?? undefined}>
         Rebote{email.bounceReason ? `: ${email.bounceReason.slice(0, 40)}` : ""}
       </span>
     );
   }
   if (status === "REJECTED") {
     return (
-      <span className={`${pad} rounded-full bg-red-500/15 text-red-300 border border-red-500/25`}>
+      <span className={`${pad} rounded-full bg-red-500/15 text-danger-soft border border-red-500/25`}>
         Rechazado
       </span>
     );
   }
   if (status === "COMPLAINED") {
     return (
-      <span className={`${pad} rounded-full bg-amber-500/15 text-amber-200 border border-amber-500/25`}>
+      <span className={`${pad} rounded-full bg-amber-500/15 text-warn-soft border border-amber-500/25`}>
         Marcado como spam
       </span>
     );
   }
   return (
-    <span className={`${pad} rounded-full bg-amber-500/10 text-amber-200/80 border border-amber-500/20`}>
+    <span className={`${pad} rounded-full bg-amber-500/10 text-warn-soft/80 border border-amber-500/20`}>
       Sin tracking Resend
     </span>
   );

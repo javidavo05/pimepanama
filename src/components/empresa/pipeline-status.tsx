@@ -52,19 +52,19 @@ function toneOf(status: string | null | undefined): string {
     case "PAID":
     case "ACTIVE":
     case "COMPLETED":
-      return "border-green-500/30 bg-green-500/[0.06] text-green-400";
+      return "border-green-500/30 bg-green-500/[0.06] text-ok";
     case "ACCEPTED":
-      return "border-[#C8A96E]/30 bg-[#C8A96E]/[0.06] text-[#C8A96E]";
+      return "border-sand/30 bg-sand/[0.06] text-sand-fg";
     case "PARTIALLY_PAID":
-      return "border-amber-500/30 bg-amber-500/[0.06] text-amber-400";
+      return "border-amber-500/30 bg-amber-500/[0.06] text-warn";
     case "SENT":
-      return "border-[#1AA7F0]/30 bg-[#1AA7F0]/[0.06] text-[#1AA7F0]";
+      return "border-brand/30 bg-brand/[0.06] text-brand-fg";
     case "REJECTED":
     case "CANCELLED":
     case "TERMINATED":
-      return "border-red-500/30 bg-red-500/[0.06] text-red-400";
+      return "border-red-500/30 bg-red-500/[0.06] text-danger";
     default:
-      return "border-white/[0.12] bg-white/[0.03] text-white/70";
+      return "border-line-mid bg-fill text-fg-mute";
   }
 }
 
@@ -87,15 +87,15 @@ interface NodeProps {
 
 function Node({ caption, icon, step, emptyLabel, actionHref, actionLabel = "Vincular", isCurrent }: NodeProps) {
   const filled = Boolean(step?.id);
-  const tone = filled ? toneOf(step?.status) : "border-dashed border-white/[0.12] bg-transparent text-white/40";
+  const tone = filled ? toneOf(step?.status) : "border-dashed border-line-mid bg-transparent text-fg-ghost";
 
   const body = (
     <div
       className={`h-full flex flex-col gap-1 px-3 py-2.5 rounded-lg border transition-all ${tone} ${
-        isCurrent ? "ring-1 ring-white/20" : ""
+        isCurrent ? "ring-1 ring-line-mid" : ""
       } ${step?.href ? "hover:brightness-125" : ""}`}
     >
-      <span className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-white/40 font-medium">
+      <span className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-fg-ghost font-medium">
         <span className="text-[11px] leading-none">{icon}</span>
         {caption}
       </span>
@@ -108,7 +108,7 @@ function Node({ caption, icon, step, emptyLabel, actionHref, actionLabel = "Vinc
               <span className="text-[9px] opacity-80">{STATUS_ES[step!.status] ?? step!.status}</span>
             )}
             {step!.amount != null && step!.amount > 0 && (
-              <span className="text-[9px] font-mono text-white/50">
+              <span className="text-[9px] font-mono text-fg-faint">
                 {step!.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
               </span>
             )}
@@ -116,11 +116,11 @@ function Node({ caption, icon, step, emptyLabel, actionHref, actionLabel = "Vinc
         </>
       ) : (
         <>
-          <span className="text-[11px] text-white/35">{emptyLabel}</span>
+          <span className="text-[11px] text-fg-ghost">{emptyLabel}</span>
           {actionHref ? (
-            <span className="text-[9px] text-[#1AA7F0] hover:text-[#4FC0FF]">+ {actionLabel}</span>
+            <span className="text-[9px] text-brand-fg hover:text-sky">+ {actionLabel}</span>
           ) : (
-            <span className="text-[9px] text-white/25">—</span>
+            <span className="text-[9px] text-fg-trace">—</span>
           )}
         </>
       )}
@@ -142,13 +142,13 @@ function CollectionNode({ collection }: { collection?: PipelineCollection | null
   if (!collection || collection.total <= 0) {
     return (
       <div className="flex-1 min-w-0">
-        <div className="h-full flex flex-col gap-1 px-3 py-2.5 rounded-lg border border-dashed border-white/[0.12] text-white/40">
-          <span className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-white/40 font-medium">
+        <div className="h-full flex flex-col gap-1 px-3 py-2.5 rounded-lg border border-dashed border-line-mid text-fg-ghost">
+          <span className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-fg-ghost font-medium">
             <span className="text-[11px] leading-none">💰</span>
             Cobro
           </span>
-          <span className="text-[11px] text-white/35">Sin cobrar</span>
-          <span className="text-[9px] text-white/25">—</span>
+          <span className="text-[11px] text-fg-ghost">Sin cobrar</span>
+          <span className="text-[9px] text-fg-trace">—</span>
         </div>
       </div>
     );
@@ -163,13 +163,13 @@ function CollectionNode({ collection }: { collection?: PipelineCollection | null
       <div
         className={`h-full flex flex-col gap-1 px-3 py-2.5 rounded-lg border ${
           settled
-            ? "border-green-500/30 bg-green-500/[0.06] text-green-400"
+            ? "border-green-500/30 bg-green-500/[0.06] text-ok"
             : collected > 0
-              ? "border-amber-500/30 bg-amber-500/[0.06] text-amber-400"
-              : "border-white/[0.12] bg-white/[0.03] text-white/60"
+              ? "border-amber-500/30 bg-amber-500/[0.06] text-warn"
+              : "border-line-mid bg-fill text-fg-dim"
         }`}
       >
-        <span className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-white/40 font-medium">
+        <span className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-fg-ghost font-medium">
           <span className="text-[11px] leading-none">{settled ? "✅" : "💰"}</span>
           Cobro
         </span>
@@ -177,7 +177,7 @@ function CollectionNode({ collection }: { collection?: PipelineCollection | null
           {settled ? money(total, currency) : `${collected.toLocaleString("en-US", { minimumFractionDigits: 2 })} / ${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}`}
         </span>
         <div className="flex items-center gap-1.5">
-          <div className="flex-1 h-1 rounded-full bg-white/[0.08] overflow-hidden">
+          <div className="flex-1 h-1 rounded-full bg-fill-2 overflow-hidden">
             <div
               className={`h-full rounded-full ${settled ? "bg-green-400" : "bg-amber-400"}`}
               style={{ width: `${pct}%` }}
@@ -199,8 +199,8 @@ export function PipelineStatus({
   current,
 }: PipelineStatusProps) {
   return (
-    <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-4">
-      <p className="text-white/60 text-[10px] uppercase tracking-widest font-medium mb-3">
+    <div className="bg-panel border border-line rounded-xl p-4">
+      <p className="text-fg-dim text-[10px] uppercase tracking-widest font-medium mb-3">
         Pipeline
       </p>
       <div className="flex items-stretch gap-1.5">
@@ -212,7 +212,7 @@ export function PipelineStatus({
           actionHref={actions?.project}
           isCurrent={current === "project"}
         />
-        <span className="self-center text-white/25 text-xs shrink-0">→</span>
+        <span className="self-center text-fg-trace text-xs shrink-0">→</span>
         <Node
           caption="Cotización"
           icon="📋"
@@ -221,7 +221,7 @@ export function PipelineStatus({
           actionHref={actions?.cotizacion}
           isCurrent={current === "cotizacion"}
         />
-        <span className="self-center text-white/25 text-xs shrink-0">→</span>
+        <span className="self-center text-fg-trace text-xs shrink-0">→</span>
         <Node
           caption="Factura"
           icon="📄"
@@ -231,7 +231,7 @@ export function PipelineStatus({
           actionLabel="Facturar"
           isCurrent={current === "factura"}
         />
-        <span className="self-center text-white/25 text-xs shrink-0">→</span>
+        <span className="self-center text-fg-trace text-xs shrink-0">→</span>
         <CollectionNode collection={collection} />
       </div>
     </div>

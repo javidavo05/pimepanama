@@ -34,27 +34,27 @@ export function LinkFacturaPanel({ cotizacionId, facturas }: LinkFacturaPanelPro
 
   if (done) {
     return (
-      <div className="bg-[#0a0a10] border border-green-500/20 rounded-xl p-5">
-        <p className="text-green-400 text-sm font-medium">✓ Factura vinculada correctamente</p>
-        <p className="text-white/55 text-xs mt-1">Recarga la página para ver el pipeline actualizado.</p>
+      <div className="bg-panel border border-green-500/20 rounded-xl p-5">
+        <p className="text-ok text-sm font-medium">✓ Factura vinculada correctamente</p>
+        <p className="text-fg-dim text-xs mt-1">Recarga la página para ver el pipeline actualizado.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#0a0a10] border border-amber-500/20 rounded-xl p-5 space-y-3">
+    <div className="bg-panel border border-amber-500/20 rounded-xl p-5 space-y-3">
       <div className="flex items-center gap-2">
-        <span className="text-amber-400 text-sm">⚠</span>
-        <p className="text-white/70 text-sm font-medium">Cotización sin factura vinculada</p>
+        <span className="text-warn text-sm">⚠</span>
+        <p className="text-fg-mute text-sm font-medium">Cotización sin factura vinculada</p>
       </div>
-      <p className="text-white/60 text-xs">
+      <p className="text-fg-dim text-xs">
         Si ya existe una factura para esta cotización, vincúlala aquí.
       </p>
 
       {facturas.length === 0 ? (
         <Link
           href="/empresa/facturas/nueva"
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/60 text-xs hover:text-white hover:border-white/20 transition-all"
+          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-fill border border-line text-fg-dim text-xs hover:text-fg hover:border-line-loud transition-all"
         >
           + Crear factura retroactiva
         </Link>
@@ -64,7 +64,7 @@ export function LinkFacturaPanel({ cotizacionId, facturas }: LinkFacturaPanelPro
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
             aria-label="Factura a vincular"
-            className="flex-1 bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all"
+            className="flex-1 bg-fill border border-line rounded-lg px-3 py-2 text-fg text-sm focus:outline-none focus:border-brand/40 transition-all"
           >
             <option value="">Seleccionar factura...</option>
             {facturas.map((f) => (
@@ -76,7 +76,7 @@ export function LinkFacturaPanel({ cotizacionId, facturas }: LinkFacturaPanelPro
           <button
             onClick={handleLink}
             disabled={!selected || pending}
-            className="px-4 py-2 rounded-lg bg-[#1AA7F0]/10 border border-[#1AA7F0]/25 text-[#1AA7F0] text-sm font-medium hover:bg-[#1AA7F0]/15 disabled:opacity-40 transition-all shrink-0"
+            className="px-4 py-2 rounded-lg bg-brand/10 border border-brand/25 text-brand-fg text-sm font-medium hover:bg-brand/15 disabled:opacity-40 transition-all shrink-0"
           >
             {pending ? "Vinculando..." : "Vincular"}
           </button>

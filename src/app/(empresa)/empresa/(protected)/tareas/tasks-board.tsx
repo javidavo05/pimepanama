@@ -9,17 +9,17 @@ import { daysDiff, taskLocalDate, taskLocalEndDate } from "./date-utils";
 const PRIORITY_DOT: Record<TaskPriority, string> = {
   HIGH: "bg-red-400",
   MEDIUM: "bg-amber-400",
-  LOW: "bg-white/20",
+  LOW: "bg-fill-3",
 };
 
 function dueBadge(task: SerializedTask): { label: string; color: string } | null {
   const local = taskLocalDate(task);
   if (!local) return null;
   const days = daysDiff(local, new Date());
-  if (days < 0) return { label: `vencido hace ${Math.abs(days)}d`, color: "text-red-400" };
-  if (days === 0) return { label: "vence hoy", color: "text-amber-400" };
-  if (days <= 7) return { label: `en ${days}d`, color: "text-amber-400/80" };
-  return { label: `en ${days}d`, color: "text-white/50" };
+  if (days < 0) return { label: `vencido hace ${Math.abs(days)}d`, color: "text-danger" };
+  if (days === 0) return { label: "vence hoy", color: "text-warn" };
+  if (days <= 7) return { label: `en ${days}d`, color: "text-warn/80" };
+  return { label: `en ${days}d`, color: "text-fg-faint" };
 }
 
 function taskLink(task: SerializedTask): { href: string; label: string } | null {
@@ -89,15 +89,15 @@ export function TasksBoard({ tasks, onPatch, onDelete, onCreate }: TasksBoardPro
   }
 
   const groups: { label: string; color: string; items: SerializedTask[] }[] = [
-    { label: "Vencidas", color: "text-red-400", items: open.filter((t) => (dueDays(t) ?? 1) < 0) },
-    { label: "Hoy", color: "text-amber-400", items: open.filter((t) => dueDays(t) === 0) },
+    { label: "Vencidas", color: "text-danger", items: open.filter((t) => (dueDays(t) ?? 1) < 0) },
+    { label: "Hoy", color: "text-warn", items: open.filter((t) => dueDays(t) === 0) },
     {
       label: "Próximos 7 días",
-      color: "text-[#1AA7F0]",
+      color: "text-brand-fg",
       items: open.filter((t) => { const d = dueDays(t); return d !== null && d > 0 && d <= 7; }),
     },
-    { label: "Más adelante", color: "text-white/60", items: open.filter((t) => (dueDays(t) ?? 0) > 7) },
-    { label: "Sin fecha", color: "text-white/50", items: open.filter((t) => !t.dueDate) },
+    { label: "Más adelante", color: "text-fg-dim", items: open.filter((t) => (dueDays(t) ?? 0) > 7) },
+    { label: "Sin fecha", color: "text-fg-faint", items: open.filter((t) => !t.dueDate) },
   ].filter((g) => g.items.length > 0);
 
   function Row({ task }: { task: SerializedTask }) {
@@ -109,12 +109,12 @@ export function TasksBoard({ tasks, onPatch, onDelete, onCreate }: TasksBoardPro
           type="button"
           onClick={() => onPatch(task.id, { completed: !task.completed })}
           className={`w-5 h-5 rounded-full border shrink-0 flex items-center justify-center transition-all ${
-            task.completed ? "bg-[#1AA7F0] border-[#1AA7F0]" : "border-white/20 hover:border-[#1AA7F0]"
+            task.completed ? "bg-brand border-brand" : "border-line-loud hover:border-brand"
           }`}
           aria-label={task.completed ? "Marcar como pendiente" : "Marcar como completada"}
         >
           {task.completed && (
-            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+            <svg className="w-3 h-3 text-fg" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           )}
@@ -132,13 +132,13 @@ export function TasksBoard({ tasks, onPatch, onDelete, onCreate }: TasksBoardPro
           onKeyDown={(e) => {
             if (e.key === "Enter") (e.target as HTMLInputElement).blur();
           }}
-          className={`flex-1 min-w-0 bg-transparent text-sm outline-none border-b border-transparent focus:border-white/20 transition-colors truncate ${
-            task.completed ? "text-white/55 line-through" : "text-white/80"
+          className={`flex-1 min-w-0 bg-transparent text-sm outline-none border-b border-transparent focus:border-line-loud transition-colors truncate ${
+            task.completed ? "text-fg-dim line-through" : "text-fg-soft"
           }`}
         />
 
         {link && (
-          <Link href={link.href} className="text-[10px] px-1.5 py-0.5 rounded border border-[#1AA7F0]/25 text-[#1AA7F0]/60 hover:text-[#1AA7F0] shrink-0">
+          <Link href={link.href} className="text-[10px] px-1.5 py-0.5 rounded border border-brand/25 text-brand-fg/60 hover:text-brand-fg shrink-0">
             🧾 {link.label}
           </Link>
         )}
@@ -151,7 +151,7 @@ export function TasksBoard({ tasks, onPatch, onDelete, onCreate }: TasksBoardPro
             const v = e.target.value.trim() || null;
             if (v !== task.assignee) onPatch(task.id, { assignee: v });
           }}
-          className="w-28 shrink-0 bg-transparent text-xs text-white/50 placeholder:text-white/15 outline-none border-b border-transparent focus:border-white/20 transition-colors"
+          className="w-28 shrink-0 bg-transparent text-xs text-fg-faint placeholder:text-fg-trace outline-none border-b border-transparent focus:border-line-loud transition-colors"
         />
 
         <input
@@ -175,7 +175,7 @@ export function TasksBoard({ tasks, onPatch, onDelete, onCreate }: TasksBoardPro
               onPatch(task.id, patch);
             }
           }}
-          className="w-[124px] shrink-0 bg-transparent text-xs text-white/60 outline-none border-b border-transparent focus:border-white/20 transition-colors [color-scheme:dark]"
+          className="w-[124px] shrink-0 bg-transparent text-xs text-fg-dim outline-none border-b border-transparent focus:border-line-loud transition-colors [color-scheme:dark]"
         />
 
         {task.dueDate && (
@@ -199,12 +199,12 @@ export function TasksBoard({ tasks, onPatch, onDelete, onCreate }: TasksBoardPro
               if (durationMs !== null) patch.endDate = new Date(local.getTime() + durationMs).toISOString();
               onPatch(task.id, patch);
             }}
-            className="w-[74px] shrink-0 bg-transparent text-xs text-white/60 outline-none border-b border-transparent focus:border-white/20 transition-colors [color-scheme:dark]"
+            className="w-[74px] shrink-0 bg-transparent text-xs text-fg-dim outline-none border-b border-transparent focus:border-line-loud transition-colors [color-scheme:dark]"
           />
         )}
 
         {!task.allDay && task.endDate && (
-          <span className="text-[10px] text-white/50 shrink-0 font-mono">
+          <span className="text-[10px] text-fg-faint shrink-0 font-mono">
             –{taskLocalEndDate(task)!.toLocaleTimeString("es-PA", { hour: "2-digit", minute: "2-digit" })}
           </span>
         )}
@@ -215,7 +215,7 @@ export function TasksBoard({ tasks, onPatch, onDelete, onCreate }: TasksBoardPro
         <button
           type="button"
           onClick={() => onDelete(task.id)}
-          className="text-white/50 hover:text-red-400 text-sm shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+          className="text-fg-faint hover:text-danger text-sm shrink-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
           aria-label="Eliminar tarea"
         >
           ×
@@ -227,7 +227,7 @@ export function TasksBoard({ tasks, onPatch, onDelete, onCreate }: TasksBoardPro
   return (
     <div>
       {/* Quick add */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-4 mb-6 flex flex-wrap items-center gap-2">
+      <div className="bg-panel border border-line rounded-2xl p-4 mb-6 flex flex-wrap items-center gap-2">
         <input
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
@@ -235,33 +235,33 @@ export function TasksBoard({ tasks, onPatch, onDelete, onCreate }: TasksBoardPro
             if (e.key === "Enter") handleCreate();
           }}
           placeholder="+ Agregar tarea…"
-          className="flex-1 min-w-[180px] bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/85 placeholder:text-white/25 outline-none focus:border-[#1AA7F0]/40"
+          className="flex-1 min-w-[180px] bg-fill border border-line rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg-trace outline-none focus:border-brand/40"
         />
         <input
           value={newAssignee}
           onChange={(e) => setNewAssignee(e.target.value)}
           list="task-assignees"
           placeholder="Responsable"
-          className="w-32 bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-white/70 placeholder:text-white/25 outline-none focus:border-[#1AA7F0]/40"
+          className="w-32 bg-fill border border-line rounded-lg px-3 py-2 text-xs text-fg-mute placeholder:text-fg-trace outline-none focus:border-brand/40"
         />
         <input
           type="date"
           value={newDueDate}
           onChange={(e) => setNewDueDate(e.target.value)}
-          className="bg-white/[0.03] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-white/70 outline-none focus:border-[#1AA7F0]/40 [color-scheme:dark]"
+          className="bg-fill border border-line rounded-lg px-3 py-2 text-xs text-fg-mute outline-none focus:border-brand/40 [color-scheme:dark]"
         />
         <input
           type="time"
           value={newTime}
           onChange={(e) => setNewTime(e.target.value)}
           title="Hora de entrega"
-          className="w-[90px] bg-white/[0.03] border border-white/[0.08] rounded-lg px-2 py-2 text-xs text-white/70 outline-none focus:border-[#1AA7F0]/40 [color-scheme:dark]"
+          className="w-[90px] bg-fill border border-line rounded-lg px-2 py-2 text-xs text-fg-mute outline-none focus:border-brand/40 [color-scheme:dark]"
         />
         <select
           value={newPriority}
           onChange={(e) => setNewPriority(e.target.value as TaskPriority)}
           aria-label="Prioridad"
-          className="bg-white/[0.03] border border-white/[0.08] rounded-lg px-2 py-2 text-xs text-white/70 outline-none focus:border-[#1AA7F0]/40"
+          className="bg-fill border border-line rounded-lg px-2 py-2 text-xs text-fg-mute outline-none focus:border-brand/40"
         >
           <option value="LOW">Baja</option>
           <option value="MEDIUM">Media</option>
@@ -271,32 +271,32 @@ export function TasksBoard({ tasks, onPatch, onDelete, onCreate }: TasksBoardPro
           type="button"
           onClick={handleCreate}
           disabled={!newTitle.trim() || creating}
-          className="px-4 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-40 disabled:hover:bg-[#1AA7F0] text-white text-sm font-semibold rounded-lg transition-all"
+          className="px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 disabled:hover:bg-brand text-on-brand text-sm font-semibold rounded-lg transition-all"
         >
           Agregar
         </button>
       </div>
 
       {tasks.length === 0 ? (
-        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-12 text-center">
-          <p className="text-white/60 font-medium">Sin tareas</p>
-          <p className="text-white/55 text-sm mt-2">Agrega tu primera tarea arriba.</p>
+        <div className="bg-panel border border-line rounded-2xl p-12 text-center">
+          <p className="text-fg-dim font-medium">Sin tareas</p>
+          <p className="text-fg-dim text-sm mt-2">Agrega tu primera tarea arriba.</p>
         </div>
       ) : (
         <div className="space-y-6">
           {open.length === 0 && (
-            <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-8 text-center">
-              <p className="text-white/60 text-sm">🎉 No hay tareas pendientes</p>
+            <div className="bg-panel border border-line rounded-2xl p-8 text-center">
+              <p className="text-fg-dim text-sm">🎉 No hay tareas pendientes</p>
             </div>
           )}
 
           {groups.map((group) => (
-            <div key={group.label} className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl overflow-hidden">
-              <div className="px-5 py-3 border-b border-white/[0.05] flex items-center justify-between">
+            <div key={group.label} className="bg-panel border border-line rounded-2xl overflow-hidden">
+              <div className="px-5 py-3 border-b border-line flex items-center justify-between">
                 <h2 className={`text-xs uppercase tracking-widest font-medium ${group.color}`}>{group.label}</h2>
-                <span className="text-white/55 text-xs font-mono">{group.items.length}</span>
+                <span className="text-fg-dim text-xs font-mono">{group.items.length}</span>
               </div>
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-line">
                 {group.items.map((task) => (
                   <Row key={task.id} task={task} />
                 ))}
@@ -305,19 +305,19 @@ export function TasksBoard({ tasks, onPatch, onDelete, onCreate }: TasksBoardPro
           ))}
 
           {completed.length > 0 && (
-            <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl overflow-hidden">
+            <div className="bg-panel border border-line rounded-2xl overflow-hidden">
               <button
                 type="button"
                 onClick={() => setShowCompleted((v) => !v)}
-                className="w-full px-5 py-3 border-b border-white/[0.05] flex items-center justify-between text-left"
+                className="w-full px-5 py-3 border-b border-line flex items-center justify-between text-left"
               >
-                <h2 className="text-xs uppercase tracking-widest font-medium text-white/50">
+                <h2 className="text-xs uppercase tracking-widest font-medium text-fg-faint">
                   Completadas {showCompleted ? "▾" : "▸"}
                 </h2>
-                <span className="text-white/50 text-xs font-mono">{completed.length}</span>
+                <span className="text-fg-faint text-xs font-mono">{completed.length}</span>
               </button>
               {showCompleted && (
-                <div className="divide-y divide-white/[0.04]">
+                <div className="divide-y divide-line">
                   {completed.map((task) => (
                     <Row key={task.id} task={task} />
                   ))}

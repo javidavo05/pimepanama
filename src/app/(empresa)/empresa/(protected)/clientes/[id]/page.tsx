@@ -45,36 +45,36 @@ export default async function ClienteDetailPage({
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center gap-2 text-sm text-white/60">
-        <Link href="/empresa/clientes" className="hover:text-white/70 transition-colors">
+      <div className="flex items-center gap-2 text-sm text-fg-dim">
+        <Link href="/empresa/clientes" className="hover:text-fg-mute transition-colors">
           Clientes
         </Link>
         <span>/</span>
-        <span className="text-white/70">{client.name}</span>
+        <span className="text-fg-mute">{client.name}</span>
       </div>
 
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
+      <div className="bg-panel border border-line rounded-2xl p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-white text-2xl font-semibold">{client.name}</h1>
-            {client.company && <p className="text-white/50 text-sm mt-1">{client.company}</p>}
+            <h1 className="text-fg text-2xl font-semibold">{client.name}</h1>
+            {client.company && <p className="text-fg-faint text-sm mt-1">{client.company}</p>}
             <div className="flex flex-wrap gap-4 mt-3">
-              {client.ruc && <span className="text-white/55 text-xs font-mono">RUC: {client.ruc}</span>}
-              {client.email && <span className="text-white/55 text-xs">{client.email}</span>}
-              {client.phone && <span className="text-white/55 text-xs">{client.phone}</span>}
-              {client.address && <span className="text-white/55 text-xs">{client.address}</span>}
+              {client.ruc && <span className="text-fg-dim text-xs font-mono">RUC: {client.ruc}</span>}
+              {client.email && <span className="text-fg-dim text-xs">{client.email}</span>}
+              {client.phone && <span className="text-fg-dim text-xs">{client.phone}</span>}
+              {client.address && <span className="text-fg-dim text-xs">{client.address}</span>}
             </div>
           </div>
           <div className="flex gap-2 shrink-0">
             <Link
               href={`/empresa/cotizaciones/nueva?clientId=${client.id}`}
-              className="px-4 py-2.5 bg-[#1AA7F0] hover:bg-[#0E87C8] text-white text-sm font-semibold rounded-lg transition-all"
+              className="px-4 py-2.5 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-all"
             >
               + Cotización
             </Link>
             <Link
               href={`/empresa/facturas/nueva?clientId=${client.id}`}
-              className="px-4 py-2.5 bg-[#C8A96E] hover:bg-[#d4b87a] text-[#030611] text-sm font-semibold rounded-lg transition-all"
+              className="px-4 py-2.5 bg-sand hover:bg-sand-lt text-on-accent text-sm font-semibold rounded-lg transition-all"
             >
               + Factura
             </Link>
@@ -89,43 +89,43 @@ export default async function ClienteDetailPage({
             label: "Cotiz. aceptadas",
             value: `${stats.acceptedQuotes} (${stats.quoteAcceptanceRate}%)`,
             mono: true,
-            color: "text-white/70",
+            color: "text-fg-mute",
           },
           { label: "Facturas", value: String(stats.totalInvoices), mono: false },
           {
             label: "Facturas pagadas",
             value: String(stats.paidInvoices),
             mono: true,
-            color: "text-green-400",
+            color: "text-ok",
           },
           {
             label: "Ingresos brutos",
             value: `$${totalGross.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
             mono: true,
-            color: "text-[#1AA7F0]",
+            color: "text-brand-fg",
           },
         ].map(({ label, value, mono, color }) => (
-          <div key={label} className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-4">
-            <p className="text-white/60 text-xs uppercase tracking-widest mb-2">{label}</p>
-            <p className={`text-lg font-semibold ${mono ? "font-mono" : ""} ${color ?? "text-white"}`}>
+          <div key={label} className="bg-panel border border-line rounded-xl p-4">
+            <p className="text-fg-dim text-xs uppercase tracking-widest mb-2">{label}</p>
+            <p className={`text-lg font-semibold ${mono ? "font-mono" : ""} ${color ?? "text-fg"}`}>
               {value}
             </p>
           </div>
         ))}
       </div>
 
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-4 flex items-center justify-between">
-        <p className="text-white/60 text-xs uppercase tracking-widest">Neto recibido (facturas pagadas)</p>
-        <p className="text-green-400 font-mono text-xl font-semibold">
+      <div className="bg-panel border border-line rounded-xl p-4 flex items-center justify-between">
+        <p className="text-fg-dim text-xs uppercase tracking-widest">Neto recibido (facturas pagadas)</p>
+        <p className="text-ok font-mono text-xl font-semibold">
           ${totalNet.toLocaleString("en-US", { minimumFractionDigits: 2 })}
         </p>
       </div>
 
       {chartData.length > 0 && (
-        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
+        <div className="bg-panel border border-line rounded-2xl p-6">
           <RevenueChart data={chartData} title="Ingresos por mes (facturas pagadas)" />
           {totalCommission > 0 && (
-            <p className="text-amber-400/60 text-xs mt-3 text-right">
+            <p className="text-warn/60 text-xs mt-3 text-right">
               Comisiones descontadas en total: $
               {totalCommission.toLocaleString("en-US", { minimumFractionDigits: 2 })}
             </p>
@@ -170,57 +170,57 @@ function DocumentHistoryTable({
   emptyMessage: string;
 }) {
   return (
-    <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-white/[0.06]">
-        <h2 className="text-white/70 text-sm font-medium uppercase tracking-widest">{title}</h2>
+    <div className="bg-panel border border-line rounded-2xl overflow-hidden">
+      <div className="px-5 py-4 border-b border-line">
+        <h2 className="text-fg-mute text-sm font-medium uppercase tracking-widest">{title}</h2>
       </div>
       {documents.length === 0 ? (
-        <div className="p-10 text-center text-white/55 text-sm">{emptyMessage}</div>
+        <div className="p-10 text-center text-fg-dim text-sm">{emptyMessage}</div>
       ) : (
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-white/[0.04]">
+            <tr className="border-b border-line">
               {["Número", "Fecha", "Total bruto", "Neto", "Método pago", "Estado", ""].map((h) => (
                 <th
                   key={h}
-                  className="text-left text-white/55 text-xs uppercase tracking-widest font-medium px-5 py-3"
+                  className="text-left text-fg-dim text-xs uppercase tracking-widest font-medium px-5 py-3"
                 >
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/[0.03]">
+          <tbody className="divide-y divide-line">
             {documents.map((doc) => (
-              <tr key={doc.id} className="group hover:bg-white/[0.02] transition-colors">
-                <td className="px-5 py-3 font-mono text-white/60 text-xs">{doc.number ?? "—"}</td>
-                <td className="px-5 py-3 text-white/60 text-xs">
+              <tr key={doc.id} className="group hover:bg-fill transition-colors">
+                <td className="px-5 py-3 font-mono text-fg-dim text-xs">{doc.number ?? "—"}</td>
+                <td className="px-5 py-3 text-fg-dim text-xs">
                   {new Date(doc.issueDate).toLocaleDateString("es-PA", {
                     day: "2-digit",
                     month: "short",
                     year: "numeric",
                   })}
                 </td>
-                <td className="px-5 py-3 font-mono text-white/60 text-sm">
+                <td className="px-5 py-3 font-mono text-fg-dim text-sm">
                   ${Number(doc.total ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                 </td>
                 <td className="px-5 py-3 font-mono text-sm">
                   {doc.netAmount ? (
-                    <span className="text-green-400">
+                    <span className="text-ok">
                       ${Number(doc.netAmount).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                     </span>
                   ) : (
-                    <span className="text-white/50">—</span>
+                    <span className="text-fg-faint">—</span>
                   )}
                 </td>
-                <td className="px-5 py-3 text-white/60 text-xs">{doc.paymentMethod?.name ?? "—"}</td>
+                <td className="px-5 py-3 text-fg-dim text-xs">{doc.paymentMethod?.name ?? "—"}</td>
                 <td className="px-5 py-3">
                   <StatusBadge status={doc.status} />
                 </td>
                 <td className="px-5 py-3">
                   <Link
                     href={`${basePath}/${doc.id}`}
-                    className="text-[#1AA7F0]/60 hover:text-[#1AA7F0] text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all"
+                    className="text-brand-fg/60 hover:text-brand-fg text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all"
                   >
                     {doc.status === "PAID" && basePath.includes("facturas") ? "Ver →" : "Abrir →"}
                   </Link>

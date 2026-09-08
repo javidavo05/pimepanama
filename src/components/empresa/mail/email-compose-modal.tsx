@@ -521,11 +521,11 @@ export function EmailComposeModal({
 
   const modal = sendAccounts.length === 0 ? (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4">
-      <div className="bg-[#0d0d18] border border-white/[0.08] rounded-2xl p-6 max-w-sm w-full text-center">
-        <p className="text-white/60 text-sm mb-4">
+      <div className="bg-pop border border-line rounded-2xl p-6 max-w-sm w-full text-center">
+        <p className="text-fg-dim text-sm mb-4">
           Configura al menos una cuenta de correo (IMAP) para enviar vía Resend.
         </p>
-        <button type="button" onClick={onClose} className="px-4 py-2 bg-white/[0.06] text-white/70 text-sm rounded-lg">
+        <button type="button" onClick={onClose} className="px-4 py-2 bg-fill-2 text-fg-mute text-sm rounded-lg">
           Cerrar
         </button>
       </div>
@@ -539,21 +539,21 @@ export function EmailComposeModal({
     >
       <div className="absolute inset-0 bg-black/70 hidden sm:block" onClick={onClose} aria-hidden />
 
-      <div className="relative flex flex-col w-full h-full max-h-full min-h-0 min-w-0 sm:h-auto sm:max-h-[min(92dvh,900px)] sm:max-w-3xl overflow-hidden bg-[#0d0d18] border-0 sm:border border-white/[0.08] sm:rounded-2xl shadow-2xl">
+      <div className="relative flex flex-col w-full h-full max-h-full min-h-0 min-w-0 sm:h-auto sm:max-h-[min(92dvh,900px)] sm:max-w-3xl overflow-hidden bg-pop border-0 sm:border border-line sm:rounded-2xl shadow-2xl">
         {/* Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-white/[0.06] shrink-0 pt-[max(0.75rem,env(safe-area-inset-top))]">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between px-4 sm:px-5 py-3 sm:py-4 border-b border-line shrink-0 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <div className="min-w-0 flex-1">
-            <p className="text-white font-medium text-sm">
+            <p className="text-fg font-medium text-sm">
               {mode === "reply" ? "Responder con IA" : "Redactar correo"}
             </p>
             {mode === "new" && (
               <select
                 value={accountId}
                 onChange={(e) => setAccountId(e.target.value)}
-                className="mt-1 w-full max-w-full sm:max-w-xs bg-transparent text-[#1AA7F0] text-xs focus:outline-none truncate"
+                className="mt-1 w-full max-w-full sm:max-w-xs bg-transparent text-brand-fg text-xs focus:outline-none truncate"
               >
                 {sendAccounts.map((a) => (
-                  <option key={a.id} value={a.id} className="bg-[#0d0d18]">
+                  <option key={a.id} value={a.id} className="bg-pop">
                     {a.label} ({a.username})
                   </option>
                 ))}
@@ -562,7 +562,7 @@ export function EmailComposeModal({
           </div>
           <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
             <LanguageToggle value={language} onChange={setLanguage} />
-            <button type="button" onClick={onClose} className="text-white/50 hover:text-white p-2 -mr-1" aria-label="Cerrar">
+            <button type="button" onClick={onClose} className="text-fg-faint hover:text-fg p-2 -mr-1" aria-label="Cerrar">
               ✕
             </button>
           </div>
@@ -577,8 +577,8 @@ export function EmailComposeModal({
               onClick={() => setTab(t)}
               className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
                 tab === t
-                  ? "bg-[#1AA7F0]/10 border-[#1AA7F0]/25 text-[#1AA7F0]"
-                  : "border-white/[0.07] text-white/50"
+                  ? "bg-brand/10 border-brand/25 text-brand-fg"
+                  : "border-line text-fg-faint"
               }`}
             >
               {t === "edit" ? "Editor" : "Vista previa"}
@@ -590,44 +590,44 @@ export function EmailComposeModal({
           {tab === "edit" ? (
             <>
               {/* AI block */}
-              <div className="bg-gradient-to-r from-[#6344E8]/10 to-[#1AA7F0]/10 border border-[#6344E8]/20 rounded-xl p-4 space-y-3">
-                <p className="text-[#8B6FFF] text-xs uppercase tracking-widest font-medium">
+              <div className="bg-gradient-to-r from-iris/10 to-brand/10 border border-iris/20 rounded-xl p-4 space-y-3">
+                <p className="text-iris-fg text-xs uppercase tracking-widest font-medium">
                   {mode === "reply" ? "Respuesta con IA" : "Asistente IA"}
                 </p>
 
                 {mode === "reply" ? (
                   <>
-                    <div className="bg-black/25 border border-white/[0.06] rounded-lg p-3 space-y-2.5">
+                    <div className="bg-black/25 border border-line rounded-lg p-3 space-y-2.5">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="text-white/50 text-[10px] uppercase tracking-wider font-medium">
+                        <p className="text-fg-faint text-[10px] uppercase tracking-wider font-medium">
                           Análisis del correo
                         </p>
                         {replyAnalysis?.urgency === "high" && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-red-300 border border-red-500/30">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/20 text-danger-soft border border-red-500/30">
                             Urgente
                           </span>
                         )}
                         {replyAnalysis?.urgency === "medium" && (
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-200/90 border border-amber-500/25">
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-warn-soft/90 border border-amber-500/25">
                             Prioridad media
                           </span>
                         )}
                       </div>
 
                       {analyzingReply && (
-                        <p className="text-white/45 text-xs animate-pulse">Analizando el mensaje original...</p>
+                        <p className="text-fg-faint text-xs animate-pulse">Analizando el mensaje original...</p>
                       )}
 
                       {analysisError && !analyzingReply && (
                         <div className="space-y-2">
-                          <p className="text-red-400/90 text-xs">{analysisError}</p>
+                          <p className="text-danger/90 text-xs">{analysisError}</p>
                           <button
                             type="button"
                             onClick={() => {
                               replyAnalysisFetchedRef.current = false;
                               void fetchReplyAnalysis();
                             }}
-                            className="text-xs text-[#8B6FFF] hover:text-[#a894ff]"
+                            className="text-xs text-iris-fg hover:text-iris-fg"
                           >
                             Reintentar análisis
                           </button>
@@ -636,17 +636,17 @@ export function EmailComposeModal({
 
                       {replyAnalysis && !analyzingReply && (
                         <div className="space-y-2.5">
-                          <p className="text-white/85 text-sm leading-relaxed">{replyAnalysis.topic}</p>
+                          <p className="text-fg text-sm leading-relaxed">{replyAnalysis.topic}</p>
                           {replyAnalysis.keyPoints.length > 0 && (
-                            <ul className="space-y-1 pl-4 list-disc text-white/55 text-xs leading-relaxed">
+                            <ul className="space-y-1 pl-4 list-disc text-fg-dim text-xs leading-relaxed">
                               {replyAnalysis.keyPoints.map((point) => (
                                 <li key={point}>{point}</li>
                               ))}
                             </ul>
                           )}
                           {replyAnalysis.senderAsk && (
-                            <p className="text-white/50 text-xs">
-                              <span className="text-[#1AA7F0]/80 font-medium">Pide: </span>
+                            <p className="text-fg-faint text-xs">
+                              <span className="text-brand-fg/80 font-medium">Pide: </span>
                               {replyAnalysis.senderAsk}
                             </p>
                           )}
@@ -654,7 +654,7 @@ export function EmailComposeModal({
                       )}
                     </div>
 
-                    <p className="text-white/45 text-xs leading-relaxed">
+                    <p className="text-fg-faint text-xs leading-relaxed">
                       Con ese contexto, dime en pocas palabras qué quieres responder. La IA redacta el
                       correo completo según tu indicación.
                     </p>
@@ -668,14 +668,14 @@ export function EmailComposeModal({
                           ? "Ej: acepto la cotización de $500, confirmar inicio la próxima semana..."
                           : "Espera el análisis del correo..."
                       }
-                      className="w-full bg-black/20 border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30 resize-none disabled:opacity-50"
+                      className="w-full bg-black/20 border border-line rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg-trace resize-none disabled:opacity-50"
                     />
                     <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
                         disabled={composing || analyzingReply || !replyAnalysis || !intent.trim()}
                         onClick={replyWithAI}
-                        className="px-3 py-1.5 text-xs bg-[#6344E8]/30 hover:bg-[#6344E8]/40 text-white rounded-lg disabled:opacity-50"
+                        className="px-3 py-1.5 text-xs bg-iris/30 hover:bg-iris/40 text-fg rounded-lg disabled:opacity-50"
                       >
                         {composing ? "Ampliando..." : "Ampliar respuesta"}
                       </button>
@@ -683,7 +683,7 @@ export function EmailComposeModal({
                         type="button"
                         disabled={translating}
                         onClick={translateEmail}
-                        className="px-3 py-1.5 text-xs border border-white/10 text-white/60 rounded-lg disabled:opacity-50"
+                        className="px-3 py-1.5 text-xs border border-line-mid text-fg-dim rounded-lg disabled:opacity-50"
                       >
                         {translating ? "Traduciendo..." : `Traducir a ${language === "es" ? "EN" : "ES"}`}
                       </button>
@@ -699,8 +699,8 @@ export function EmailComposeModal({
                           onClick={() => setEmailType(t)}
                           className={`px-2.5 py-1 text-xs rounded-full border ${
                             emailType === t
-                              ? "bg-[#6344E8]/20 border-[#6344E8]/30 text-[#8B6FFF]"
-                              : "border-white/10 text-white/50"
+                              ? "bg-iris/20 border-iris/30 text-iris-fg"
+                              : "border-line-mid text-fg-faint"
                           }`}
                         >
                           {t}
@@ -711,14 +711,14 @@ export function EmailComposeModal({
                       value={intent}
                       onChange={(e) => setIntent(e.target.value)}
                       placeholder="Describe el correo que quieres escribir..."
-                      className="w-full bg-black/20 border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/30"
+                      className="w-full bg-black/20 border border-line rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg-trace"
                     />
                     <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
                         disabled={composing || !intent.trim()}
                         onClick={composeWithAI}
-                        className="px-3 py-1.5 text-xs bg-[#6344E8]/30 hover:bg-[#6344E8]/40 text-white rounded-lg disabled:opacity-50"
+                        className="px-3 py-1.5 text-xs bg-iris/30 hover:bg-iris/40 text-fg rounded-lg disabled:opacity-50"
                       >
                         {composing ? "Generando..." : "Generar borrador"}
                       </button>
@@ -726,7 +726,7 @@ export function EmailComposeModal({
                         type="button"
                         disabled={translating}
                         onClick={translateEmail}
-                        className="px-3 py-1.5 text-xs border border-white/10 text-white/60 rounded-lg disabled:opacity-50"
+                        className="px-3 py-1.5 text-xs border border-line-mid text-fg-dim rounded-lg disabled:opacity-50"
                       >
                         {translating ? "Traduciendo..." : `Traducir a ${language === "es" ? "EN" : "ES"}`}
                       </button>
@@ -735,7 +735,7 @@ export function EmailComposeModal({
                 )}
 
                 {composeNotice && (
-                  <p className="text-green-400/90 text-xs">{composeNotice}</p>
+                  <p className="text-ok/90 text-xs">{composeNotice}</p>
                 )}
               </div>
 
@@ -759,7 +759,7 @@ export function EmailComposeModal({
                 />
                 <div>
                   <div className="flex items-center justify-between">
-                    <label className="text-white/40 text-xs">Asunto</label>
+                    <label className="text-fg-ghost text-xs">Asunto</label>
                     <AiEnhanceButton
                       text={subject}
                       language={language}
@@ -770,12 +770,12 @@ export function EmailComposeModal({
                   <input
                     value={subject}
                     onChange={(e) => setSubject(e.target.value)}
-                    className="w-full mt-1 bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2 text-sm text-white"
+                    className="w-full mt-1 bg-fill border border-line rounded-lg px-3 py-2 text-sm text-fg"
                   />
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <label className="text-white/40 text-xs">Mensaje</label>
+                    <label className="text-fg-ghost text-xs">Mensaje</label>
                     <AiEnhanceButton
                       text={htmlToPlainText(body)}
                       language={language}
@@ -791,7 +791,7 @@ export function EmailComposeModal({
                 </div>
 
                 <div>
-                  <label className="text-white/40 text-xs mb-2 block">Adjuntos</label>
+                  <label className="text-fg-ghost text-xs mb-2 block">Adjuntos</label>
                   <div
                     role="button"
                     tabIndex={0}
@@ -808,16 +808,16 @@ export function EmailComposeModal({
                     onDrop={handleAttachmentDrop}
                     className={`rounded-xl border border-dashed px-4 py-5 text-center transition-colors cursor-pointer ${
                       isDraggingFiles
-                        ? "border-[#1AA7F0]/50 bg-[#1AA7F0]/10"
-                        : "border-white/[0.12] bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.03]"
+                        ? "border-brand/50 bg-brand/10"
+                        : "border-line-mid bg-fill hover:border-line-loud hover:bg-fill"
                     }`}
                   >
-                    <p className="text-white/55 text-xs">
+                    <p className="text-fg-dim text-xs">
                       {isDraggingFiles
                         ? "Suelta los archivos aquí"
                         : "Arrastra archivos aquí o haz clic para adjuntar"}
                     </p>
-                    <p className="text-white/30 text-[10px] mt-1.5">
+                    <p className="text-fg-trace text-[10px] mt-1.5">
                       PDF, imágenes, Office, ZIP… máx. 10 MB por archivo, 25 MB total.
                     </p>
                   </div>
@@ -839,23 +839,23 @@ export function EmailComposeModal({
                       {attachments.map((att) => (
                         <li
                           key={att.id}
-                          className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06]"
+                          className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-fill border border-line"
                         >
                           <div className="min-w-0">
-                            <p className="text-white/75 text-xs truncate">{att.file.name}</p>
-                            <p className="text-white/35 text-[10px]">{formatAttachmentSize(att.file.size)}</p>
+                            <p className="text-fg-soft text-xs truncate">{att.file.name}</p>
+                            <p className="text-fg-ghost text-[10px]">{formatAttachmentSize(att.file.size)}</p>
                           </div>
                           <button
                             type="button"
                             onClick={() => removeAttachment(att.id)}
-                            className="text-white/45 hover:text-red-300 text-xs shrink-0 px-2 py-1"
+                            className="text-fg-faint hover:text-danger-soft text-xs shrink-0 px-2 py-1"
                             aria-label={`Quitar ${att.file.name}`}
                           >
                             Quitar
                           </button>
                         </li>
                       ))}
-                      <p className="text-white/35 text-[10px] pt-1">
+                      <p className="text-fg-ghost text-[10px] pt-1">
                         Total: {formatAttachmentSize(attachmentsTotalBytes)}
                       </p>
                     </ul>
@@ -864,9 +864,9 @@ export function EmailComposeModal({
               </div>
 
               {originalBody && (
-                <details className="text-xs text-white/45">
+                <details className="text-xs text-fg-faint">
                   <summary className="cursor-pointer">Mensaje original</summary>
-                  <div className="mt-2 pl-3 border-l border-white/[0.08] whitespace-pre-wrap">
+                  <div className="mt-2 pl-3 border-l border-line whitespace-pre-wrap">
                     {originalBody.slice(0, 1500)}
                   </div>
                 </details>
@@ -876,47 +876,47 @@ export function EmailComposeModal({
             </>
           ) : (
             <div className="space-y-3">
-              <div className="text-xs text-white/45 space-y-1 border-b border-white/[0.06] pb-3">
-                <p><span className="text-white/30">Para:</span> {to || "—"}</p>
+              <div className="text-xs text-fg-faint space-y-1 border-b border-line pb-3">
+                <p><span className="text-fg-trace">Para:</span> {to || "—"}</p>
                 {cc.trim() ? (
-                  <p><span className="text-white/30">CC:</span> {cc}</p>
+                  <p><span className="text-fg-trace">CC:</span> {cc}</p>
                 ) : null}
-                {cc && <p><span className="text-white/30">CC:</span> {cc}</p>}
-                <p><span className="text-white/30">Asunto:</span> {subject || "—"}</p>
+                {cc && <p><span className="text-fg-trace">CC:</span> {cc}</p>}
+                <p><span className="text-fg-trace">Asunto:</span> {subject || "—"}</p>
                 {attachments.length > 0 && (
                   <p>
-                    <span className="text-white/30">Adjuntos:</span>{" "}
+                    <span className="text-fg-trace">Adjuntos:</span>{" "}
                     {attachments.map((att) => att.file.name).join(", ")}
                   </p>
                 )}
               </div>
               {previewBodyHtml ? (
                 <div
-                  className="w-full min-h-[200px] sm:min-h-[420px] rounded-lg border border-white/[0.08] bg-white p-3 sm:p-4 overflow-auto"
+                  className="w-full min-h-[200px] sm:min-h-[420px] rounded-lg border border-line bg-white p-3 sm:p-4 overflow-auto"
                   dangerouslySetInnerHTML={{ __html: previewBodyHtml }}
                 />
               ) : (
-                <p className="text-white/40 text-sm text-center py-12">
+                <p className="text-fg-ghost text-sm text-center py-12">
                   Selecciona una cuenta con SMTP para ver la vista previa.
                 </p>
               )}
             </div>
           )}
 
-          {error && <p className="text-red-400 text-xs">{error}</p>}
-          {sent && sentNotice && <p className="text-green-400 text-xs">{sentNotice}</p>}
+          {error && <p className="text-danger text-xs">{error}</p>}
+          {sent && sentNotice && <p className="text-ok text-xs">{sentNotice}</p>}
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end gap-2 sm:gap-3 px-4 sm:px-5 py-3 sm:py-4 border-t border-white/[0.06] shrink-0 bg-[#0d0d18] pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <button type="button" onClick={onClose} className="px-3 sm:px-4 py-2 text-white/60 text-sm">
+        <div className="flex justify-end gap-2 sm:gap-3 px-4 sm:px-5 py-3 sm:py-4 border-t border-line shrink-0 bg-pop pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <button type="button" onClick={onClose} className="px-3 sm:px-4 py-2 text-fg-dim text-sm">
             Cancelar
           </button>
           <button
             type="button"
             onClick={handleSend}
             disabled={sending || sent || !to.trim() || !subject.trim() || !mailBodyHasContent(body)}
-            className="px-4 sm:px-5 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-50 text-white text-sm font-semibold rounded-lg"
+            className="px-4 sm:px-5 py-2 bg-brand hover:bg-brand-hi disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg"
           >
             {sending ? "Enviando..." : "Enviar"}
           </button>

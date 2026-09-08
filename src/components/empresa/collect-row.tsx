@@ -62,7 +62,7 @@ export function CollectRow({
   if (done) {
     return (
       <div className="w-full mt-2 rounded-lg border border-green-500/25 bg-green-500/[0.07] px-3 py-2">
-        <p className="text-green-400 text-xs">
+        <p className="text-ok text-xs">
           ✓ Cobro registrado
           {done.number && (
             <>
@@ -92,22 +92,22 @@ export function CollectRow({
         aria-expanded={open}
         className={`shrink-0 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
           open
-            ? "bg-white/[0.06] border-white/20 text-white/70"
-            : "bg-green-500/10 border-green-500/25 text-green-400 hover:bg-green-500/20"
+            ? "bg-fill-2 border-line-loud text-fg-mute"
+            : "bg-green-500/10 border-green-500/25 text-ok hover:bg-green-500/20"
         }`}
       >
         {open ? "Cerrar" : "Cobrar"}
       </button>
 
       {open && (
-    <div className="w-full mt-1 rounded-lg border border-[#1AA7F0]/25 bg-[#1AA7F0]/[0.04] p-3">
+    <div className="w-full mt-1 rounded-lg border border-brand/25 bg-brand/[0.04] p-3">
       <div className="flex items-end gap-3 flex-wrap">
         <div className="min-w-[140px]">
-          <label className="block text-white/50 text-[10px] uppercase tracking-widest font-medium mb-1">
+          <label className="block text-fg-faint text-[10px] uppercase tracking-widest font-medium mb-1">
             Monto recibido
           </label>
           <div className="flex items-center gap-1.5">
-            <span className="text-white/40 text-xs font-mono">{currency}</span>
+            <span className="text-fg-ghost text-xs font-mono">{currency}</span>
             <input
               type="number"
               min="0"
@@ -115,7 +115,7 @@ export function CollectRow({
               value={amount}
               autoFocus
               onChange={(e) => setAmount(e.target.value)}
-              className="w-28 bg-white/[0.04] border border-white/[0.1] rounded-lg px-2.5 py-1.5 text-sm text-white/90 font-mono outline-none focus:border-[#1AA7F0]/50"
+              className="w-28 bg-fill border border-line-mid rounded-lg px-2.5 py-1.5 text-sm text-fg font-mono outline-none focus:border-brand/50"
             />
           </div>
         </div>
@@ -126,7 +126,7 @@ export function CollectRow({
               key={f}
               type="button"
               onClick={() => setAmount((outstanding * f).toFixed(2))}
-              className="px-2 py-1 text-[10px] rounded border border-white/[0.1] text-white/50 hover:text-white/90 hover:border-white/25 transition-colors"
+              className="px-2 py-1 text-[10px] rounded border border-line-mid text-fg-faint hover:text-fg hover:border-line-loud transition-colors"
             >
               {f === 1 ? "Todo" : "50%"}
             </button>
@@ -137,7 +137,7 @@ export function CollectRow({
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="text-white/40 hover:text-white/80 text-xs px-2 py-1.5"
+            className="text-fg-ghost hover:text-fg-soft text-xs px-2 py-1.5"
           >
             Cancelar
           </button>
@@ -145,7 +145,7 @@ export function CollectRow({
             type="button"
             onClick={submit}
             disabled={pending}
-            className="px-3 py-1.5 bg-green-500/90 hover:bg-green-500 disabled:opacity-40 text-[#04140a] text-xs font-semibold rounded-lg transition-all"
+            className="px-3 py-1.5 bg-green-500/90 hover:bg-green-500 disabled:opacity-40 text-on-accent text-xs font-semibold rounded-lg transition-all"
           >
             {pending ? "Registrando…" : "Registrar cobro"}
           </button>
@@ -154,16 +154,16 @@ export function CollectRow({
 
       <div className="mt-2 space-y-1">
         {willCreateInvoice && (
-          <p className="text-[#1AA7F0] text-[11px]">
+          <p className="text-brand-fg text-[11px]">
             Se emitirá una factura por {currency} {fmt(value || outstanding)} al registrar el cobro.
           </p>
         )}
         {isPartial && (
-          <p className="text-amber-400 text-[11px]">
+          <p className="text-warn text-[11px]">
             Pago parcial — quedan {currency} {fmt(remaining)} por cobrar.
           </p>
         )}
-        {error && <p className="text-red-400 text-[11px]">{error}</p>}
+        {error && <p className="text-danger text-[11px]">{error}</p>}
       </div>
     </div>
       )}

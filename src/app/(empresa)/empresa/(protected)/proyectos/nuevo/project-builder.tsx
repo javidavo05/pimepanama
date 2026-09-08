@@ -33,10 +33,10 @@ interface ProjectBuilderProps {
 }
 
 const STATUS_OPTS = [
-  { value: "ACTIVE", label: "Activo", color: "border-green-500/30 text-green-400" },
-  { value: "PAUSED", label: "Pausado", color: "border-amber-500/30 text-amber-400" },
-  { value: "COMPLETED", label: "Completado", color: "border-blue-500/30 text-blue-400" },
-  { value: "CANCELLED", label: "Cancelado", color: "border-white/[0.1] text-white/55" },
+  { value: "ACTIVE", label: "Activo", color: "border-green-500/30 text-ok" },
+  { value: "PAUSED", label: "Pausado", color: "border-amber-500/30 text-warn" },
+  { value: "COMPLETED", label: "Completado", color: "border-blue-500/30 text-info" },
+  { value: "CANCELLED", label: "Cancelado", color: "border-line-mid text-fg-dim" },
 ];
 
 export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBuilderProps) {
@@ -276,14 +276,14 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-white text-2xl font-semibold tracking-tight">Nuevo proyecto</h1>
-          <p className="text-white/50 text-sm mt-0.5">Con su contrato, en una sola pantalla.</p>
+          <h1 className="text-fg text-2xl font-semibold tracking-tight">Nuevo proyecto</h1>
+          <p className="text-fg-faint text-sm mt-0.5">Con su contrato, en una sola pantalla.</p>
         </div>
-        <div className="inline-flex rounded-lg border border-white/[0.08] overflow-hidden">
+        <div className="inline-flex rounded-lg border border-line overflow-hidden">
           {(["es", "en"] as const).map((l) => (
             <button key={l} type="button"
               onClick={() => setValue("language", l)}
-              className={`px-4 py-1.5 text-xs font-medium uppercase tracking-widest transition-all ${language === l ? "bg-[#C8A96E]/10 text-[#C8A96E] border-r border-[#C8A96E]/20" : "text-white/60 hover:text-white/60"}`}>
+              className={`px-4 py-1.5 text-xs font-medium uppercase tracking-widest transition-all ${language === l ? "bg-sand/10 text-sand-fg border-r border-sand/20" : "text-fg-dim hover:text-fg-dim"}`}>
               {l}
             </button>
           ))}
@@ -293,13 +293,13 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
       <ContractAnalyzer onAnalyzed={applyAnalysis} />
 
       {/* Estado */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
-        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">Estado</h3>
+      <div className="bg-panel border border-line rounded-xl p-5">
+        <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">Estado</h3>
         <div className="flex flex-wrap gap-2">
           {STATUS_OPTS.map((opt) => (
             <button key={opt.value} type="button"
               onClick={() => setValue("status", opt.value as ProjectFormValues["status"])}
-              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${status === opt.value ? opt.color + " bg-white/[0.04]" : "border-white/[0.05] text-white/55 hover:text-white/60"}`}>
+              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${status === opt.value ? opt.color + " bg-fill" : "border-line text-fg-dim hover:text-fg-dim"}`}>
               {opt.label}
             </button>
           ))}
@@ -307,22 +307,22 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
       </div>
 
       {/* Info básica */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
-        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">Información del proyecto</h3>
+      <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
+        <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Información del proyecto</h3>
         <div>
-          <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
-            {isEs ? "Nombre del proyecto" : "Project name"} <span className="text-red-400">*</span>
+          <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
+            {isEs ? "Nombre del proyecto" : "Project name"} <span className="text-danger">*</span>
           </label>
           <input {...register("name", { required: true })}
             placeholder={isEs ? "Ej. Desarrollo plataforma web" : "E.g. Web platform development"}
-            className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/40 transition-all" />
+            className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 transition-all" />
         </div>
 
         <div>
-          <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
-            {isEs ? "Clientes" : "Clients"} <span className="text-red-400">*</span>
+          <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
+            {isEs ? "Clientes" : "Clients"} <span className="text-danger">*</span>
           </label>
-          <p className="text-white/45 text-xs mb-2">
+          <p className="text-fg-faint text-xs mb-2">
             {isEs
               ? "El proyecto pertenece a estos clientes; solo a ellos les aparecerá al facturar."
               : "The project belongs to these clients; it only shows up when invoicing them."}
@@ -333,14 +333,14 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
               {selectedClients.map((c, i) => (
                 <span
                   key={c.id}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#1AA7F0]/10 border border-[#1AA7F0]/25 text-[#1AA7F0] text-xs"
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand/10 border border-brand/25 text-brand-fg text-xs"
                 >
                   {c.name}
-                  {i === 0 && <span className="text-[9px] text-white/45 uppercase tracking-widest">principal</span>}
+                  {i === 0 && <span className="text-[9px] text-fg-faint uppercase tracking-widest">principal</span>}
                   <button
                     type="button"
                     onClick={() => setSelectedClients((list) => list.filter((x) => x.id !== c.id))}
-                    className="text-white/40 hover:text-red-400 ml-0.5"
+                    className="text-fg-ghost hover:text-danger ml-0.5"
                   >
                     ×
                   </button>
@@ -365,72 +365,72 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
+            <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
               {isEs ? "Fecha inicio" : "Start date"}
             </label>
             <input {...register("startDate")} type="date"
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all" />
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-brand/40 transition-all" />
           </div>
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
+            <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
               {isEs ? "Fecha fin estimada" : "Estimated end date"}
             </label>
             <input {...register("endDate")} type="date"
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all" />
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-brand/40 transition-all" />
           </div>
         </div>
 
         <div>
-          <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
+          <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
             {isEs ? "Presupuesto estimado (USD)" : "Estimated budget (USD)"}
           </label>
           <input {...register("totalBudget")} type="number" min="0" step="0.01"
             placeholder="0.00"
-            className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/40 transition-all" />
+            className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 transition-all" />
         </div>
       </div>
 
       {/* Dictado por voz + IA */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
+      <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">
+          <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">
             {isEs ? "Notas / Dictado" : "Notes / Dictation"}
           </h3>
           <div className="flex items-center gap-2">
             {recording ? (
               <button type="button" onClick={stopRecording}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/15 border border-red-500/30 text-red-400 text-xs font-medium hover:bg-red-500/20 transition-all">
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/15 border border-red-500/30 text-danger text-xs font-medium hover:bg-red-500/20 transition-all">
                 <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                 {isEs ? "Detener" : "Stop"}
               </button>
             ) : (
               <button type="button" onClick={startRecording} disabled={transcribing}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/60 text-xs font-medium hover:text-white hover:border-white/20 disabled:opacity-40 transition-all">
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fill border border-line text-fg-dim text-xs font-medium hover:text-fg hover:border-line-loud disabled:opacity-40 transition-all">
                 🎤 {transcribing ? (isEs ? "Transcribiendo..." : "Transcribing...") : (isEs ? "Grabar voz" : "Record voice")}
               </button>
             )}
             <button type="button" onClick={expandWithAI} disabled={expanding || !String(rawNotes ?? "").trim()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#6344E8]/10 border border-[#6344E8]/25 text-[#6344E8] text-xs font-medium hover:bg-[#6344E8]/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
-              {expanding ? <><span className="w-1.5 h-1.5 rounded-full bg-[#6344E8] animate-pulse" /> {isEs ? "Generando..." : "Generating..."}</> : "✦ " + (isEs ? "Generar proyecto con IA" : "Generate project with AI")}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-iris/10 border border-iris/25 text-iris text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+              {expanding ? <><span className="w-1.5 h-1.5 rounded-full bg-iris animate-pulse" /> {isEs ? "Generando..." : "Generating..."}</> : "✦ " + (isEs ? "Generar proyecto con IA" : "Generate project with AI")}
             </button>
           </div>
         </div>
         {expandCost != null && (
-          <p className="text-white/50 text-[10px] font-mono">costo IA: ${expandCost.toFixed(4)}</p>
+          <p className="text-fg-faint text-[10px] font-mono">costo IA: ${expandCost.toFixed(4)}</p>
         )}
         <textarea {...register("rawNotes")} rows={5}
           placeholder={isEs ? "Describe el proyecto libremente o dicta por voz. La IA llenará los campos automáticamente." : "Describe the project freely or dictate by voice. AI will fill in the fields automatically."}
-          className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 resize-none transition-all" />
+          className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg-soft text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 resize-none transition-all" />
       </div>
 
       {/* Descripción y Alcance */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
-        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">
+      <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
+        <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">
           {isEs ? "Descripción y alcance" : "Description and scope"}
         </h3>
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-white/50 text-xs uppercase tracking-widest font-medium">{isEs ? "Descripción" : "Description"}</label>
+            <label className="text-fg-faint text-xs uppercase tracking-widest font-medium">{isEs ? "Descripción" : "Description"}</label>
             <AiEnhanceButton
               text={String(watch("description") ?? "")}
               onEnhanced={(v) => setValue("description", v, { shouldDirty: true })}
@@ -440,11 +440,11 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
           </div>
           <textarea {...register("description")} rows={3}
             placeholder={isEs ? "¿En qué consiste el proyecto?" : "What does the project consist of?"}
-            className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 resize-none transition-all" />
+            className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg-soft text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 resize-none transition-all" />
         </div>
         <div>
           <div className="flex items-center justify-between mb-2">
-            <label className="text-white/50 text-xs uppercase tracking-widest font-medium">{isEs ? "Alcance del proyecto" : "Project scope"}</label>
+            <label className="text-fg-faint text-xs uppercase tracking-widest font-medium">{isEs ? "Alcance del proyecto" : "Project scope"}</label>
             <AiEnhanceButton
               text={String(watch("scope") ?? "")}
               onEnhanced={(v) => setValue("scope", v, { shouldDirty: true })}
@@ -454,18 +454,18 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
           </div>
           <textarea {...register("scope")} rows={4}
             placeholder={isEs ? "Entregables, fases, exclusiones..." : "Deliverables, phases, exclusions..."}
-            className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 resize-none transition-all" />
+            className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg-soft text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 resize-none transition-all" />
         </div>
       </div>
 
       {/* Contrato — parte del mismo formulario, no otra pantalla */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
+      <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">
+            <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">
               {isEs ? "Contrato" : "Contract"}
             </h3>
-            <p className="text-white/45 text-xs mt-1">
+            <p className="text-fg-faint text-xs mt-1">
               {isEs
                 ? "Se crea junto con el proyecto y queda vinculado. Al facturar, elegirlo llena el detalle y el monto."
                 : "Created together with the project and linked to it. Picking it on an invoice fills in the amount."}
@@ -476,28 +476,28 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
               type="checkbox"
               checked={withContract}
               onChange={(e) => setWithContract(e.target.checked)}
-              className="w-4 h-4 rounded border border-white/20 bg-white/[0.04] accent-[#1AA7F0]"
+              className="w-4 h-4 rounded border border-line-loud bg-fill accent-brand"
             />
-            <span className="text-white/60 text-xs">{isEs ? "Incluir contrato" : "Include contract"}</span>
+            <span className="text-fg-dim text-xs">{isEs ? "Incluir contrato" : "Include contract"}</span>
           </label>
         </div>
 
         {withContract && (
-          <div className="space-y-4 border-t border-white/[0.05] pt-4">
+          <div className="space-y-4 border-t border-line pt-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="sm:col-span-2">
-                <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
-                  {isEs ? "Título del contrato" : "Contract title"} <span className="text-red-400">*</span>
+                <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
+                  {isEs ? "Título del contrato" : "Contract title"} <span className="text-danger">*</span>
                 </label>
                 <input
                   value={contract.title}
                   onChange={(e) => setContract((c) => ({ ...c, title: e.target.value }))}
                   placeholder={watch("name") ? `${isEs ? "Contrato" : "Contract"} — ${watch("name")}` : ""}
-                  className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 transition-all"
+                  className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 transition-all"
                 />
               </div>
               <div>
-                <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
+                <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
                   {isEs ? "Valor" : "Value"}
                 </label>
                 <input
@@ -506,9 +506,9 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
                   value={contract.value}
                   onChange={(e) => setContract((c) => ({ ...c, value: e.target.value }))}
                   placeholder={watch("totalBudget") || "0.00"}
-                  className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm font-mono placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 transition-all"
+                  className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm font-mono placeholder-fg-trace focus:outline-none focus:border-brand/40 transition-all"
                 />
-                <p className="text-white/35 text-[10px] mt-1">
+                <p className="text-fg-ghost text-[10px] mt-1">
                   {isEs ? "Vacío = presupuesto del proyecto" : "Empty = project budget"}
                 </p>
               </div>
@@ -516,31 +516,31 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
+                <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
                   {isEs ? "Vigente desde" : "Starts"}
                 </label>
                 <input
                   type="date"
                   value={contract.startsAt}
                   onChange={(e) => setContract((c) => ({ ...c, startsAt: e.target.value }))}
-                  className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all [color-scheme:dark]"
+                  className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-brand/40 transition-all [color-scheme:dark]"
                 />
               </div>
               <div>
-                <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
+                <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
                   {isEs ? "Vigente hasta" : "Ends"}
                 </label>
                 <input
                   type="date"
                   value={contract.endsAt}
                   onChange={(e) => setContract((c) => ({ ...c, endsAt: e.target.value }))}
-                  className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all [color-scheme:dark]"
+                  className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-brand/40 transition-all [color-scheme:dark]"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
+              <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
                 {isEs ? "Responsabilidades" : "Responsibilities"}
               </label>
               <textarea
@@ -548,12 +548,12 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
                 value={contract.responsibilities}
                 onChange={(e) => setContract((c) => ({ ...c, responsibilities: e.target.value }))}
                 placeholder={isEs ? "Qué entrega cada parte..." : "What each party delivers..."}
-                className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 resize-none transition-all"
+                className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg-soft text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 resize-none transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
+              <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
                 {isEs ? "Términos" : "Terms"}
               </label>
               <textarea
@@ -561,7 +561,7 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
                 value={contract.terms}
                 onChange={(e) => setContract((c) => ({ ...c, terms: e.target.value }))}
                 placeholder={isEs ? "Condiciones de pago, plazos, penalidades..." : "Payment terms, deadlines, penalties..."}
-                className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 resize-none transition-all"
+                className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg-soft text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 resize-none transition-all"
               />
             </div>
           </div>
@@ -588,17 +588,17 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
 
       {error && (
         <div className="bg-red-500/[0.07] border border-red-500/25 rounded-xl px-4 py-3">
-          <p className="text-red-400 text-sm">{error}</p>
+          <p className="text-danger text-sm">{error}</p>
         </div>
       )}
 
       {/* Actions */}
       <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-white/50 hover:text-white/80 text-sm transition-colors">
+        <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-fg-faint hover:text-fg-soft text-sm transition-colors">
           {isEs ? "Cancelar" : "Cancel"}
         </button>
         <button type="submit" disabled={saving}
-          className="px-6 py-2.5 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-all">
+          className="px-6 py-2.5 bg-brand hover:bg-brand-hi disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg transition-all">
           {saving
             ? (isEs ? "Guardando..." : "Saving...")
             : withContract

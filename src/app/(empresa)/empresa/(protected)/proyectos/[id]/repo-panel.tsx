@@ -126,10 +126,10 @@ export function RepoPanel({ projectId }: { projectId: string }) {
   const connected = Boolean(state?.owner && state?.repo);
 
   return (
-    <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-5 space-y-4">
+    <div className="bg-panel border border-line rounded-2xl p-5 space-y-4">
       <div>
-        <h2 className="text-white font-medium">Código del proyecto</h2>
-        <p className="text-white/50 text-xs mt-0.5">
+        <h2 className="text-fg font-medium">Código del proyecto</h2>
+        <p className="text-fg-faint text-xs mt-0.5">
           {connected
             ? "Lo que la IA lee para analizar cada reunión sobre el sistema real."
             : "Conecta el repositorio y las reuniones dejarán de opinar a ciegas sobre el código."}
@@ -138,7 +138,7 @@ export function RepoPanel({ projectId }: { projectId: string }) {
 
       {state && !state.hasToken && (
         <div className="border border-amber-500/20 bg-amber-500/[0.04] rounded-xl p-3.5 space-y-2">
-          <p className="text-amber-400/90 text-xs leading-relaxed">
+          <p className="text-warn/90 text-xs leading-relaxed">
             No hay token de GitHub guardado. Sin él solo se pueden leer repositorios públicos.
           </p>
           {showToken ? (
@@ -148,12 +148,12 @@ export function RepoPanel({ projectId }: { projectId: string }) {
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 placeholder="ghp_… (token con lectura de repositorios)"
-                className="flex-1 min-w-[220px] bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/30 focus:border-[#1AA7F0]/50 focus:outline-none"
+                className="flex-1 min-w-[220px] bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
               />
               <button
                 onClick={() => void saveToken()}
                 disabled={busy !== null || !token.trim()}
-                className="px-4 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-all"
+                className="px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
               >
                 {busy === "token" ? "Comprobando…" : "Guardar token"}
               </button>
@@ -161,7 +161,7 @@ export function RepoPanel({ projectId }: { projectId: string }) {
           ) : (
             <button
               onClick={() => setShowToken(true)}
-              className="text-[#1AA7F0] hover:text-[#0E87C8] text-xs transition-colors"
+              className="text-brand-fg hover:text-brand-hi text-xs transition-colors"
             >
               + Añadir token de GitHub
             </button>
@@ -172,12 +172,12 @@ export function RepoPanel({ projectId }: { projectId: string }) {
       {connected && state?.stats ? (
         <div className="space-y-3">
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="text-white text-sm font-mono">
+            <span className="text-fg text-sm font-mono">
               {state.owner}/{state.repo}
             </span>
-            <span className="text-white/40 text-xs">rama {state.branch}</span>
+            <span className="text-fg-ghost text-xs">rama {state.branch}</span>
             {state.syncedAt && (
-              <span className="text-white/35 text-xs">
+              <span className="text-fg-ghost text-xs">
                 · leído {new Date(state.syncedAt).toLocaleDateString("es-PA")}
               </span>
             )}
@@ -190,26 +190,26 @@ export function RepoPanel({ projectId }: { projectId: string }) {
               { label: "endpoints", value: state.stats.apiRoutes },
               { label: "modelos", value: state.stats.dataModels },
             ].map((s) => (
-              <div key={s.label} className="border border-white/[0.06] rounded-lg px-3 py-2">
-                <p className="text-white text-sm font-medium">{s.value}</p>
-                <p className="text-white/40 text-[10px]">{s.label}</p>
+              <div key={s.label} className="border border-line rounded-lg px-3 py-2">
+                <p className="text-fg text-sm font-medium">{s.value}</p>
+                <p className="text-fg-ghost text-[10px]">{s.label}</p>
               </div>
             ))}
           </div>
 
           {state.stats.docs.length > 0 && (
-            <p className="text-white/45 text-xs">
+            <p className="text-fg-faint text-xs">
               Reglas del proyecto leídas de {state.stats.docs.join(", ")} — mandan sobre cualquier
               recomendación genérica.
             </p>
           )}
           {state.stats.lastCommit && (
-            <p className="text-white/40 text-xs truncate">
+            <p className="text-fg-ghost text-xs truncate">
               Último commit: {state.stats.lastCommit.message}
             </p>
           )}
           {state.stats.truncated && (
-            <p className="text-amber-400/70 text-xs">
+            <p className="text-warn/70 text-xs">
               El repo es grande y el mapa quedó recortado; se priorizó el código sobre la
               configuración.
             </p>
@@ -219,14 +219,14 @@ export function RepoPanel({ projectId }: { projectId: string }) {
             <button
               onClick={() => void connect()}
               disabled={busy !== null}
-              className="px-3 py-1.5 bg-white/[0.04] hover:bg-white/[0.08] disabled:opacity-40 border border-white/[0.08] text-white/70 text-xs rounded-lg transition-all"
+              className="px-3 py-1.5 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all"
             >
               {busy === "connect" ? "Leyendo…" : "↻ Volver a leer el código"}
             </button>
             <button
               onClick={() => void disconnect()}
               disabled={busy !== null}
-              className="px-3 py-1.5 bg-white/[0.02] hover:bg-red-500/10 disabled:opacity-40 border border-white/[0.06] hover:border-red-500/25 text-white/40 hover:text-red-400 text-xs rounded-lg transition-all"
+              className="px-3 py-1.5 bg-fill hover:bg-red-500/10 disabled:opacity-40 border border-line hover:border-red-500/25 text-fg-ghost hover:text-danger text-xs rounded-lg transition-all"
             >
               Desconectar
             </button>
@@ -238,26 +238,26 @@ export function RepoPanel({ projectId }: { projectId: string }) {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="javidavo05/pimepanama o la URL de GitHub"
-            className="flex-1 min-w-[220px] bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/30 focus:border-[#1AA7F0]/50 focus:outline-none"
+            className="flex-1 min-w-[220px] bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
           />
           <input
             value={branch}
             onChange={(e) => setBranch(e.target.value)}
             placeholder="rama (opcional)"
-            className="w-32 bg-[#050508] border border-white/[0.08] rounded-lg px-3 py-2 text-white text-sm placeholder:text-white/30 focus:border-[#1AA7F0]/50 focus:outline-none"
+            className="w-32 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
           />
           <button
             onClick={() => void connect()}
             disabled={busy !== null || !input.trim()}
-            className="px-4 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-all"
+            className="px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
           >
             {busy === "connect" ? "Leyendo…" : "Conectar"}
           </button>
         </div>
       )}
 
-      {message && <p className="text-green-400 text-xs">{message}</p>}
-      {error && <p className="text-red-400 text-xs">{error}</p>}
+      {message && <p className="text-ok text-xs">{message}</p>}
+      {error && <p className="text-danger text-xs">{error}</p>}
     </div>
   );
 }

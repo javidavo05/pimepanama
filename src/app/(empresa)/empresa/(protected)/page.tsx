@@ -83,17 +83,17 @@ export default async function EmpresaDashboardPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-white text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="text-white/60 text-sm mt-1">
+          <h1 className="text-fg text-2xl font-semibold tracking-tight">Dashboard</h1>
+          <p className="text-fg-dim text-sm mt-1">
             Bienvenido, {user.fullName ?? user.email.split("@")[0]}
           </p>
         </div>
         <div className="text-right">
-          <p className="text-white/55 text-xs uppercase tracking-widest">Tokens IA — {monthName}</p>
-          <p className="text-[#C8A96E] font-mono text-xl font-semibold mt-1">
+          <p className="text-fg-dim text-xs uppercase tracking-widest">Tokens IA — {monthName}</p>
+          <p className="text-sand-fg font-mono text-xl font-semibold mt-1">
             {totalTokens.toLocaleString()}
           </p>
-          <p className="text-white/50 text-xs font-mono mt-0.5" title={`$${aiCostUSD.toFixed(6)} (entrada: ${inputTokens.toLocaleString()} × $0.0000025 + salida: ${outputTokens.toLocaleString()} × $0.000010)`}>
+          <p className="text-fg-faint text-xs font-mono mt-0.5" title={`$${aiCostUSD.toFixed(6)} (entrada: ${inputTokens.toLocaleString()} × $0.0000025 + salida: ${outputTokens.toLocaleString()} × $0.000010)`}>
             costo est. {fmtCost(aiCostUSD)}
           </p>
         </div>
@@ -110,22 +110,22 @@ export default async function EmpresaDashboardPage() {
       {/* Proyectos + AR KPIs */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <Link href="/empresa/cuentas-por-cobrar"
-          className="bg-[#0a0a10] border border-white/[0.06] hover:border-[#1AA7F0]/20 rounded-2xl p-5 transition-all group">
-          <p className="text-white/60 text-xs uppercase tracking-widest font-medium mb-3">Cuentas por cobrar</p>
-          <p className="font-mono text-2xl font-semibold text-[#1AA7F0]">${fmtUSD(totalPorCobrar)}</p>
-          <p className="text-white/50 text-xs mt-1.5 group-hover:text-white/60 transition-colors">facturas + cotizaciones enviadas →</p>
+          className="bg-panel border border-line hover:border-brand/20 rounded-2xl p-5 transition-all group">
+          <p className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-3">Cuentas por cobrar</p>
+          <p className="font-mono text-2xl font-semibold text-brand-fg">${fmtUSD(totalPorCobrar)}</p>
+          <p className="text-fg-faint text-xs mt-1.5 group-hover:text-fg-dim transition-colors">facturas + cotizaciones enviadas →</p>
         </Link>
         <Link href="/empresa/proyectos"
-          className="bg-[#0a0a10] border border-white/[0.06] hover:border-green-500/20 rounded-2xl p-5 transition-all group">
-          <p className="text-white/60 text-xs uppercase tracking-widest font-medium mb-3">Proyectos activos</p>
-          <p className="font-mono text-2xl font-semibold text-green-400">{activeProjects}</p>
-          <p className="text-white/50 text-xs mt-1.5 group-hover:text-white/60 transition-colors">en curso →</p>
+          className="bg-panel border border-line hover:border-green-500/20 rounded-2xl p-5 transition-all group">
+          <p className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-3">Proyectos activos</p>
+          <p className="font-mono text-2xl font-semibold text-ok">{activeProjects}</p>
+          <p className="text-fg-faint text-xs mt-1.5 group-hover:text-fg-dim transition-colors">en curso →</p>
         </Link>
         <Link href="/empresa/cuentas-por-cobrar"
-          className={`bg-[#0a0a10] border rounded-2xl p-5 transition-all group ${overdueSchedules > 0 ? "border-red-500/20 hover:border-red-500/40" : "border-white/[0.06] hover:border-white/[0.12]"}`}>
-          <p className="text-white/60 text-xs uppercase tracking-widest font-medium mb-3">Pagos vencidos</p>
-          <p className={`font-mono text-2xl font-semibold ${overdueSchedules > 0 ? "text-red-400" : "text-white/55"}`}>{overdueSchedules}</p>
-          <p className={`text-xs mt-1.5 ${overdueSchedules > 0 ? "text-red-400/50" : "text-white/50"} group-hover:opacity-80 transition-opacity`}>
+          className={`bg-panel border rounded-2xl p-5 transition-all group ${overdueSchedules > 0 ? "border-red-500/20 hover:border-red-500/40" : "border-line hover:border-line-mid"}`}>
+          <p className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-3">Pagos vencidos</p>
+          <p className={`font-mono text-2xl font-semibold ${overdueSchedules > 0 ? "text-danger" : "text-fg-dim"}`}>{overdueSchedules}</p>
+          <p className={`text-xs mt-1.5 ${overdueSchedules > 0 ? "text-danger/50" : "text-fg-faint"} group-hover:opacity-80 transition-opacity`}>
             {overdueSchedules > 0 ? "requieren atención →" : "al día"}
           </p>
         </Link>
@@ -134,28 +134,28 @@ export default async function EmpresaDashboardPage() {
       {/* Economic KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
-          { label: "Ingresos brutos", value: `$${fmtUSD(totalBruto)}`, color: "text-[#1AA7F0]", sub: "facturas pagadas" },
-          { label: "Neto recibido", value: `$${fmtUSD(totalNeto)}`, color: "text-green-400", sub: "facturas pagadas" },
-          { label: "Comisiones", value: `$${fmtUSD(totalComisiones)}`, color: "text-amber-400", sub: "pagadas a pasarelas" },
-          { label: "Tasa de cierre", value: `${tasaCierre}%`, color: "text-[#6344E8]", sub: `${acceptedCotizaciones} de ${totalCotizaciones} cot.` },
+          { label: "Ingresos brutos", value: `$${fmtUSD(totalBruto)}`, color: "text-brand-fg", sub: "facturas pagadas" },
+          { label: "Neto recibido", value: `$${fmtUSD(totalNeto)}`, color: "text-ok", sub: "facturas pagadas" },
+          { label: "Comisiones", value: `$${fmtUSD(totalComisiones)}`, color: "text-warn", sub: "pagadas a pasarelas" },
+          { label: "Tasa de cierre", value: `${tasaCierre}%`, color: "text-iris", sub: `${acceptedCotizaciones} de ${totalCotizaciones} cot.` },
         ].map(({ label, value, color, sub }) => (
-          <div key={label} className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-5">
-            <p className="text-white/60 text-xs uppercase tracking-widest font-medium mb-3">{label}</p>
+          <div key={label} className="bg-panel border border-line rounded-2xl p-5">
+            <p className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-3">{label}</p>
             <p className={`font-mono text-2xl font-semibold ${color}`}>{value}</p>
-            <p className="text-white/50 text-xs mt-1.5">{sub}</p>
+            <p className="text-fg-faint text-xs mt-1.5">{sub}</p>
           </div>
         ))}
       </div>
 
       {/* Revenue timeline chart */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
+      <div className="bg-panel border border-line rounded-2xl p-6">
         <DashboardRevenueChart monthlyData={monthlyData} yearlyData={yearlyData} />
       </div>
 
       {/* Recent documents */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl p-6">
+      <div className="bg-panel border border-line rounded-2xl p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-white font-semibold">Documentos recientes</h2>
+          <h2 className="text-fg font-semibold">Documentos recientes</h2>
           <div className="flex gap-4">
             {(
               [

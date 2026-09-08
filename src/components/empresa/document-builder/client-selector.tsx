@@ -52,14 +52,14 @@ function Field({
 }) {
   return (
     <div>
-      <label className="block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5">
+      <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
         {label}
       </label>
       <input
         {...register(name)}
         type={type}
         placeholder={placeholder}
-        className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/40 transition-all"
+        className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 transition-all"
       />
     </div>
   );
@@ -80,8 +80,8 @@ export function ClientSelector({ clients, register, setValue, watch, lang = "es"
   }
 
   return (
-    <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5">
-      <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium mb-4">
+    <div className="bg-panel border border-line rounded-xl p-5">
+      <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">
         {t.title}
       </h3>
       <div className="grid grid-cols-2 gap-4">
@@ -101,8 +101,8 @@ export function ClientSelector({ clients, register, setValue, watch, lang = "es"
             selectedClientId={watch("clientId") || undefined}
           />
           {watch("saveAsNewClient") && (
-            <p className="mt-1.5 text-[10px] text-[#1AA7F0]/70 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#1AA7F0]/60 inline-block" />
+            <p className="mt-1.5 text-[10px] text-brand-fg/70 flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-brand/60 inline-block" />
               {t.newClientHint}
             </p>
           )}

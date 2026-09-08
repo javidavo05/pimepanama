@@ -39,8 +39,8 @@ const PROVIDER_LABEL: Record<SlotProvider, string> = {
 };
 
 const PROVIDER_ACCENT: Record<SlotProvider, string> = {
-  supabase: "text-[#3ECF8E]",
-  vercel: "text-white",
+  supabase: "text-mint",
+  vercel: "text-fg",
 };
 
 function copyText(text: string) {
@@ -143,7 +143,7 @@ function HighlightMatch({ text, query }: { text: string; query: string }) {
   return (
     <>
       {text.slice(0, i)}
-      <span className="text-white font-semibold">{text.slice(i, i + q.length)}</span>
+      <span className="text-fg font-semibold">{text.slice(i, i + q.length)}</span>
       {text.slice(i + q.length)}
     </>
   );
@@ -235,7 +235,7 @@ function PlatformSearchInput({
             className="absolute inset-0 px-3 py-2.5 text-sm pointer-events-none flex items-center overflow-hidden rounded-lg"
           >
             <span className="invisible whitespace-pre">{value}</span>
-            <span className="text-white/45">{ghostSuffix}</span>
+            <span className="text-fg-faint">{ghostSuffix}</span>
           </div>
         )}
         <input
@@ -251,9 +251,9 @@ function PlatformSearchInput({
           onKeyDown={handleKeyDown}
           placeholder="Buscar proyecto…"
           autoComplete="off"
-          className="w-full bg-[#0a0a10] border border-white/[0.1] rounded-lg pl-9 pr-20 py-2.5 text-sm text-white placeholder:text-white/35 focus:outline-none focus:border-[#1AA7F0]/40 transition-colors"
+          className="w-full bg-panel border border-line-mid rounded-lg pl-9 pr-20 py-2.5 text-sm text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40 transition-colors"
         />
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/35 text-sm pointer-events-none">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-ghost text-sm pointer-events-none">
           ⌕
         </span>
         {value && (
@@ -264,20 +264,20 @@ function PlatformSearchInput({
               setOpen(false);
               inputRef.current?.focus();
             }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-white/45 hover:text-white/70 px-2 py-1 rounded"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-fg-faint hover:text-fg-mute px-2 py-1 rounded"
           >
             Limpiar
           </button>
         )}
         {ghostSuffix && open && (
-          <span className="absolute right-16 top-1/2 -translate-y-1/2 text-[9px] text-white/40 font-mono bg-white/[0.04] px-1 py-0.5 rounded pointer-events-none">
+          <span className="absolute right-16 top-1/2 -translate-y-1/2 text-[9px] text-fg-ghost font-mono bg-fill px-1 py-0.5 rounded pointer-events-none">
             Tab ↹
           </span>
         )}
       </div>
 
       {showDropdown && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-[#0d0d18] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden z-50 max-h-64 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-pop border border-line rounded-xl shadow-2xl overflow-hidden z-50 max-h-64 overflow-y-auto">
           {suggestions.map((p, i) => (
             <button
               key={p.id}
@@ -288,18 +288,18 @@ function PlatformSearchInput({
               }}
               onMouseEnter={() => setCursor(i)}
               className={`w-full text-left px-4 py-2.5 transition-colors flex items-center justify-between gap-3 ${
-                cursor === i ? "bg-white/[0.07]" : "hover:bg-white/[0.04]"
+                cursor === i ? "bg-fill-2" : "hover:bg-fill"
               }`}
             >
               <div className="min-w-0">
-                <p className="text-white/85 text-sm truncate">
+                <p className="text-fg text-sm truncate">
                   <HighlightMatch text={p.name} query={value} />
                 </p>
                 {p.accessUrl && (
-                  <p className="text-white/40 text-[11px] truncate mt-0.5">{p.accessUrl}</p>
+                  <p className="text-fg-ghost text-[11px] truncate mt-0.5">{p.accessUrl}</p>
                 )}
               </div>
-              <span className="text-[10px] text-white/35 shrink-0 font-mono">
+              <span className="text-[10px] text-fg-ghost shrink-0 font-mono">
                 {p.supabaseSlot != null ? `SB ${p.supabaseSlot}` : ""}
                 {p.supabaseSlot != null && p.vercelSlot != null ? " · " : ""}
                 {p.vercelSlot != null ? `V ${p.vercelSlot}` : ""}
@@ -324,24 +324,24 @@ function FieldRow({
   if (!value) return null;
   return (
     <div className="flex items-start justify-between gap-2 text-xs">
-      <span className="text-white/45 shrink-0">{label}</span>
+      <span className="text-fg-faint shrink-0">{label}</span>
       <div className="flex items-center gap-1 min-w-0">
         {href ? (
           <a
             href={href}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#1AA7F0] hover:underline truncate"
+            className="text-brand-fg hover:underline truncate"
           >
             {value}
           </a>
         ) : (
-          <span className="text-white/75 truncate">{value}</span>
+          <span className="text-fg-soft truncate">{value}</span>
         )}
         <button
           type="button"
           onClick={() => copyText(value)}
-          className="text-white/35 hover:text-white/60 shrink-0"
+          className="text-fg-ghost hover:text-fg-dim shrink-0"
           title="Copiar"
         >
           ⧉
@@ -362,7 +362,7 @@ function SlotBadge({
 }) {
   if (slot == null) {
     return (
-      <span className="text-[10px] px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-amber-400 font-medium">
+      <span className="text-[10px] px-2 py-0.5 rounded-full border border-amber-500/30 bg-amber-500/10 text-warn font-medium">
         Sin cupo
       </span>
     );
@@ -372,8 +372,8 @@ function SlotBadge({
     <span
       className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold font-mono ${
         conflict || over
-          ? "border-red-500/40 bg-red-500/15 text-red-400"
-          : "border-[#1AA7F0]/35 bg-[#1AA7F0]/15 text-[#1AA7F0]"
+          ? "border-red-500/40 bg-red-500/15 text-danger"
+          : "border-brand/35 bg-brand/15 text-brand-fg"
       }`}
     >
       Cupo {slot}/{capacity}
@@ -409,13 +409,13 @@ function AccountSlotRow({
           : "free";
 
   return (
-    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-2.5 space-y-2">
+    <div className="rounded-lg border border-line bg-fill p-2.5 space-y-2">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className={`text-[10px] uppercase tracking-widest font-medium ${PROVIDER_ACCENT[provider]}`}>
             {PROVIDER_LABEL[provider]}
           </p>
-          <p className="text-white/80 text-xs truncate mt-0.5">{email}</p>
+          <p className="text-fg-soft text-xs truncate mt-0.5">{email}</p>
         </div>
         <SlotBadge slot={displaySlot} capacity={capacity} conflict={conflict} />
       </div>
@@ -437,8 +437,8 @@ function AccountSlotRow({
                   className={`flex-1 h-2 rounded-full transition-colors ${
                     taken
                       ? isThis
-                        ? "bg-[#1AA7F0] ring-1 ring-[#1AA7F0]/50"
-                        : "bg-white/25"
+                        ? "bg-brand ring-1 ring-brand/50"
+                        : "bg-fg-ghost"
                       : "bg-green-500/40"
                   }`}
                 />
@@ -448,10 +448,10 @@ function AccountSlotRow({
           <span
             className={`text-[10px] font-mono shrink-0 ${
               status === "full"
-                ? "text-red-400"
+                ? "text-danger"
                 : status === "partial"
-                  ? "text-amber-400"
-                  : "text-green-400"
+                  ? "text-warn"
+                  : "text-ok"
             }`}
           >
             {inventory.available} libre
@@ -490,8 +490,8 @@ function InventoryCard({ item }: { item: EmailSlotInventory }) {
               key={n}
               className={`rounded-lg px-2 py-1.5 text-[11px] border ${
                 occupant
-                  ? "border-white/10 bg-black/20 text-white/75"
-                  : "border-green-500/25 bg-green-500/10 text-green-400"
+                  ? "border-line-mid bg-black/20 text-fg-soft"
+                  : "border-green-500/25 bg-green-500/10 text-ok"
               }`}
             >
               <span className="font-mono font-semibold">#{n}</span>
@@ -508,7 +508,7 @@ function InventoryCard({ item }: { item: EmailSlotInventory }) {
         </p>
       )}
       {item.conflicts.length > 0 && (
-        <p className="text-[10px] text-red-300">
+        <p className="text-[10px] text-danger-soft">
           Conflicto: cupo duplicado en{" "}
           {item.conflicts.map((c) => `#${c.slot} (${c.platforms.join(", ")})`).join("; ")}
         </p>
@@ -660,11 +660,11 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3 text-sm">
-          <p className="text-white/55">{platforms.length} plataformas</p>
-          <span className="text-green-400/90 text-xs font-mono">
+          <p className="text-fg-dim">{platforms.length} plataformas</p>
+          <span className="text-ok/90 text-xs font-mono">
             SB {totalFreeSupabase} cupos libres
           </span>
-          <span className="text-green-400/90 text-xs font-mono">
+          <span className="text-ok/90 text-xs font-mono">
             Vercel {totalFreeVercel} cupos libres
           </span>
         </div>
@@ -673,14 +673,14 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
             type="button"
             disabled={busy}
             onClick={() => void syncCupos()}
-            className="px-3 py-2 border border-white/[0.1] text-white/60 hover:text-white text-sm rounded-lg transition-colors disabled:opacity-50"
+            className="px-3 py-2 border border-line-mid text-fg-dim hover:text-fg text-sm rounded-lg transition-colors disabled:opacity-50"
           >
             {busy ? "Sincronizando..." : "Sincronizar cupos"}
           </button>
           <button
             type="button"
             onClick={() => setShowAdd((v) => !v)}
-            className="px-4 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] text-white text-sm font-medium rounded-lg transition-colors"
+            className="px-4 py-2 bg-brand hover:bg-brand-hi text-on-brand text-sm font-medium rounded-lg transition-colors"
           >
             + Plataforma
           </button>
@@ -698,7 +698,7 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
       />
 
       {searchQuery.trim() && (
-        <p className="text-xs text-white/45 -mt-2">
+        <p className="text-xs text-fg-faint -mt-2">
           {visiblePlatforms.length === 0
             ? "Sin coincidencias"
             : `${visiblePlatforms.length} resultado${visiblePlatforms.length === 1 ? "" : "s"}`}
@@ -706,31 +706,31 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
       )}
 
       {/* Panel de cupos */}
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl overflow-hidden">
+      <div className="bg-panel border border-line rounded-xl overflow-hidden">
         <button
           type="button"
           onClick={() => setShowInventory((v) => !v)}
-          className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/[0.02] transition-colors"
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-fill transition-colors"
         >
           <div className="text-left">
-            <p className="text-white text-sm font-medium">Disponibilidad de cupos</p>
-            <p className="text-white/45 text-xs mt-0.5">
+            <p className="text-fg text-sm font-medium">Disponibilidad de cupos</p>
+            <p className="text-fg-faint text-xs mt-0.5">
               Máx. {DEFAULT_SLOT_CAPACITY} proyectos por correo en Supabase y Vercel
             </p>
           </div>
-          <span className="text-white/40 text-sm">{showInventory ? "▾" : "▸"}</span>
+          <span className="text-fg-ghost text-sm">{showInventory ? "▾" : "▸"}</span>
         </button>
 
         {showInventory && (
-          <div className="px-4 pb-4 space-y-4 border-t border-white/[0.06]">
+          <div className="px-4 pb-4 space-y-4 border-t border-line">
             <div className="flex flex-wrap gap-2 pt-3">
               <button
                 type="button"
                 onClick={() => setFilterAvailable(false)}
                 className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                   !filterAvailable
-                    ? "bg-white/10 border-white/20 text-white"
-                    : "border-white/[0.08] text-white/45"
+                    ? "bg-fill-3 border-line-loud text-fg"
+                    : "border-line text-fg-faint"
                 }`}
               >
                 Todas las plataformas
@@ -740,8 +740,8 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
                 onClick={() => setFilterAvailable(true)}
                 className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
                   filterAvailable
-                    ? "bg-green-500/15 border-green-500/30 text-green-400"
-                    : "border-white/[0.08] text-white/45"
+                    ? "bg-green-500/15 border-green-500/30 text-ok"
+                    : "border-line text-fg-faint"
                 }`}
               >
                 Solo con cupo disponible
@@ -750,7 +750,7 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
 
             {inventories.supabase.length > 0 && (
               <div>
-                <p className="text-[#3ECF8E] text-xs uppercase tracking-widest font-medium mb-2">
+                <p className="text-mint text-xs uppercase tracking-widest font-medium mb-2">
                   Supabase
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
@@ -763,7 +763,7 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
 
             {inventories.vercel.length > 0 && (
               <div>
-                <p className="text-white/70 text-xs uppercase tracking-widest font-medium mb-2">
+                <p className="text-fg-mute text-xs uppercase tracking-widest font-medium mb-2">
                   Vercel
                 </p>
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
@@ -778,18 +778,18 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
       </div>
 
       {showAdd && (
-        <div className="bg-white/[0.03] border border-white/[0.08] rounded-xl p-4 flex flex-col sm:flex-row gap-2">
+        <div className="bg-fill border border-line rounded-xl p-4 flex flex-col sm:flex-row gap-2">
           <input
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Nombre de la plataforma"
-            className="flex-1 bg-[#0a0a10] border border-white/[0.1] rounded-lg px-3 py-2 text-sm text-white placeholder:text-white/35"
+            className="flex-1 bg-panel border border-line-mid rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg-ghost"
           />
           <button
             type="button"
             disabled={busy || !newName.trim()}
             onClick={addPlatform}
-            className="px-4 py-2 bg-green-600/80 hover:bg-green-600 text-white text-sm rounded-lg disabled:opacity-50"
+            className="px-4 py-2 bg-green-600/80 hover:bg-green-600 text-on-brand text-sm rounded-lg disabled:opacity-50"
           >
             Guardar
           </button>
@@ -805,10 +805,10 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
             <div
               key={p.id}
               id={`platform-card-${p.id}`}
-              className={`bg-[#0a0a10] border rounded-xl p-4 space-y-3 hover:border-white/[0.12] transition-colors ${
+              className={`bg-panel border rounded-xl p-4 space-y-3 hover:border-line-mid transition-colors ${
                 focusedPlatformId === p.id
-                  ? "border-[#1AA7F0]/60 ring-2 ring-[#1AA7F0]/25"
-                  : "border-white/[0.06]"
+                  ? "border-brand/60 ring-2 ring-brand/25"
+                  : "border-line"
               }`}
             >
               <div className="flex items-start justify-between gap-2">
@@ -816,13 +816,13 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
                   <input
                     value={d.name ?? ""}
                     onChange={(e) => setDraft((prev) => ({ ...prev, name: e.target.value }))}
-                    className="flex-1 bg-[#07070e] border border-white/[0.1] rounded px-2 py-1 text-sm text-white font-medium"
+                    className="flex-1 bg-panel-2 border border-line-mid rounded px-2 py-1 text-sm text-fg font-medium"
                   />
                 ) : (
-                  <h3 className="text-white font-medium text-sm flex items-center gap-1.5">
+                  <h3 className="text-fg font-medium text-sm flex items-center gap-1.5">
                     {p.name}
                     {p.hasConfidential && (
-                      <span className="text-[9px] text-amber-400/80" title="Tiene información confidencial">
+                      <span className="text-[9px] text-warn/80" title="Tiene información confidencial">
                         🔒
                       </span>
                     )}
@@ -835,14 +835,14 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
                         type="button"
                         disabled={busy}
                         onClick={() => saveEdit(p.id)}
-                        className="text-xs text-green-400 hover:text-green-300 px-2 py-1"
+                        className="text-xs text-ok hover:text-ok-soft px-2 py-1"
                       >
                         ✓
                       </button>
                       <button
                         type="button"
                         onClick={() => setEditingId(null)}
-                        className="text-xs text-white/45 hover:text-white/70 px-2 py-1"
+                        className="text-xs text-fg-faint hover:text-fg-mute px-2 py-1"
                       >
                         ✕
                       </button>
@@ -852,14 +852,14 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
                       <button
                         type="button"
                         onClick={() => startEdit(p)}
-                        className="text-xs text-white/45 hover:text-[#1AA7F0] px-2 py-1"
+                        className="text-xs text-fg-faint hover:text-brand-fg px-2 py-1"
                       >
                         Editar
                       </button>
                       <button
                         type="button"
                         onClick={() => removePlatform(p.id)}
-                        className="text-xs text-white/35 hover:text-red-400 px-2 py-1"
+                        className="text-xs text-fg-ghost hover:text-danger px-2 py-1"
                       >
                         ×
                       </button>
@@ -882,7 +882,7 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
                     ] as const
                   ).map(([key, label]) => (
                     <div key={key}>
-                      <label className="text-[10px] text-white/40 uppercase tracking-wider">
+                      <label className="text-[10px] text-fg-ghost uppercase tracking-wider">
                         {label}
                       </label>
                       <input
@@ -893,13 +893,13 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
                             [key]: e.target.value || null,
                           }))
                         }
-                        className="w-full mt-0.5 bg-[#07070e] border border-white/[0.08] rounded px-2 py-1.5 text-xs text-white"
+                        className="w-full mt-0.5 bg-panel-2 border border-line rounded px-2 py-1.5 text-xs text-fg"
                       />
                     </div>
                   ))}
                   <div className="grid grid-cols-2 gap-2">
                     <div>
-                      <label className="text-[10px] text-white/40 uppercase">
+                      <label className="text-[10px] text-fg-ghost uppercase">
                         Cupo Supabase (1–{DEFAULT_SLOT_CAPACITY})
                       </label>
                       <input
@@ -914,11 +914,11 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
                             supabaseSlot: parseSlotInput(e.target.value),
                           }))
                         }
-                        className="w-full mt-0.5 bg-[#07070e] border border-white/[0.08] rounded px-2 py-1.5 text-xs text-white"
+                        className="w-full mt-0.5 bg-panel-2 border border-line rounded px-2 py-1.5 text-xs text-fg"
                       />
                     </div>
                     <div>
-                      <label className="text-[10px] text-white/40 uppercase">
+                      <label className="text-[10px] text-fg-ghost uppercase">
                         Cupo Vercel (1–{DEFAULT_SLOT_CAPACITY})
                       </label>
                       <input
@@ -933,7 +933,7 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
                             vercelSlot: parseSlotInput(e.target.value),
                           }))
                         }
-                        className="w-full mt-0.5 bg-[#07070e] border border-white/[0.08] rounded px-2 py-1.5 text-xs text-white"
+                        className="w-full mt-0.5 bg-panel-2 border border-line rounded px-2 py-1.5 text-xs text-fg"
                       />
                     </div>
                   </div>
@@ -965,7 +965,7 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
                   <FieldRow label="Github" value={p.githubEmail} />
                   <FieldRow label="BREVO" value={p.brevoEmail} />
                   {p.notes && (
-                    <p className="text-[11px] text-amber-400/80 border-t border-white/[0.06] pt-2 mt-2">
+                    <p className="text-[11px] text-warn/80 border-t border-line pt-2 mt-2">
                       {p.notes}
                     </p>
                   )}

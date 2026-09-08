@@ -23,7 +23,7 @@ export default async function EmpresaProtectedLayout({
   const user = await getEmpresaUser();
 
   return (
-    <div className="min-h-screen bg-[#050508]">
+    <div className="min-h-screen bg-canvas">
       <SidebarNav
         userEmail={user.email}
         companyName={user.config?.name ?? "Pime Panamá"}

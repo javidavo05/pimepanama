@@ -17,8 +17,8 @@ interface Notification {
 
 /** Los avisos llegan con prefijo de prioridad en el título; lo mostramos como chip. */
 const PRIORITY_PREFIXES = [
-  { label: "Urgente", match: /^urgente:\s*/i, className: "bg-red-500/15 text-red-300 border-red-500/25" },
-  { label: "Atención", match: /^atenci[oó]n:\s*/i, className: "bg-amber-500/15 text-amber-200 border-amber-500/25" },
+  { label: "Urgente", match: /^urgente:\s*/i, className: "bg-red-500/15 text-danger-soft border-red-500/25" },
+  { label: "Atención", match: /^atenci[oó]n:\s*/i, className: "bg-amber-500/15 text-warn-soft border-amber-500/25" },
 ];
 
 function splitPriority(title: string) {
@@ -74,12 +74,12 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
 
   return (
     <div ref={ref} className="relative">
-      <button onClick={handleOpen} className="relative p-1.5 text-white/55 hover:text-white/70 transition-colors">
+      <button onClick={handleOpen} className="relative p-1.5 text-fg-dim hover:text-fg-mute transition-colors">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
         </svg>
         {unread > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full text-[9px] text-white font-bold flex items-center justify-center leading-none">
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 rounded-full text-[9px] text-on-brand font-bold flex items-center justify-center leading-none">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
@@ -88,16 +88,16 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
       {open && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className={`absolute ${align === "left" ? "left-0" : "right-0"} mt-2 w-[22rem] max-w-[calc(100vw-24px)] flex flex-col max-h-[min(32rem,calc(100vh-6rem))] bg-[#0d0d18] border border-white/[0.08] rounded-xl shadow-2xl z-50 overflow-hidden`}
+          className={`absolute ${align === "left" ? "left-0" : "right-0"} mt-2 w-[22rem] max-w-[calc(100vw-24px)] flex flex-col max-h-[min(32rem,calc(100vh-6rem))] bg-pop border border-line rounded-xl shadow-2xl z-50 overflow-hidden`}
         >
-          <div className="shrink-0 px-4 py-3 border-b border-white/[0.06] flex items-center justify-between gap-3">
-            <p className="text-white/70 text-sm font-medium">Notificaciones</p>
-            <Link href="/empresa/correos/hub" className="text-[#1AA7F0] text-xs hover:underline" onClick={() => setOpen(false)}>
+          <div className="shrink-0 px-4 py-3 border-b border-line flex items-center justify-between gap-3">
+            <p className="text-fg-mute text-sm font-medium">Notificaciones</p>
+            <Link href="/empresa/correos/hub" className="text-brand-fg text-xs hover:underline" onClick={() => setOpen(false)}>
               Ver bandeja
             </Link>
           </div>
           {notifications.length === 0 ? (
-            <div className="px-4 py-6 text-center text-white/50 text-sm">Sin notificaciones</div>
+            <div className="px-4 py-6 text-center text-fg-faint text-sm">Sin notificaciones</div>
           ) : (
             <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
               {notifications.map((n) => (
@@ -105,7 +105,7 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
                   key={n.id}
                   href={n.link ?? (n.emailId ? `/empresa/correos/hub/${n.emailId}` : "/empresa/correos/hub")}
                   onClick={() => setOpen(false)}
-                  className={`block px-4 py-3 border-b border-white/[0.04] hover:bg-white/[0.04] transition-colors ${!n.read ? "bg-[#1AA7F0]/[0.06]" : ""}`}
+                  className={`block px-4 py-3 border-b border-line hover:bg-fill transition-colors ${!n.read ? "bg-brand/[0.06]" : ""}`}
                 >
                   {(() => {
                     const { tag, text } = splitPriority(n.title);
@@ -118,18 +118,18 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
                             {tag.label}
                           </span>
                         )}
-                        <p className="text-white text-sm font-medium leading-snug line-clamp-2 break-words">{text}</p>
+                        <p className="text-fg text-sm font-medium leading-snug line-clamp-2 break-words">{text}</p>
                       </>
                     );
                   })()}
-                  <p className="text-white/65 text-xs leading-relaxed mt-1 line-clamp-2 break-words">{n.body}</p>
-                  <p className="text-white/45 text-[11px] mt-1">{formatDateTimeEsPa(n.createdAt)}</p>
+                  <p className="text-fg-mute text-xs leading-relaxed mt-1 line-clamp-2 break-words">{n.body}</p>
+                  <p className="text-fg-faint text-[11px] mt-1">{formatDateTimeEsPa(n.createdAt)}</p>
                 </Link>
               ))}
             </div>
           )}
 
-          <div className="shrink-0 border-t border-white/[0.06]">
+          <div className="shrink-0 border-t border-line">
             <PushToggle />
           </div>
         </div>

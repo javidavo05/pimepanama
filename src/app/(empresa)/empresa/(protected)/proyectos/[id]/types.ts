@@ -96,10 +96,10 @@ export const PROJECT_STATUS_LABEL: Record<string, string> = {
 };
 
 export const PROJECT_STATUS_COLOR: Record<string, string> = {
-  ACTIVE: "bg-green-500/15 text-green-400 border-green-500/20",
-  PAUSED: "bg-amber-500/15 text-amber-400 border-amber-500/20",
-  COMPLETED: "bg-blue-500/15 text-blue-400 border-blue-500/20",
-  CANCELLED: "bg-white/[0.05] text-white/55 border-white/[0.08]",
+  ACTIVE: "bg-green-500/15 text-ok border-green-500/20",
+  PAUSED: "bg-amber-500/15 text-warn border-amber-500/20",
+  COMPLETED: "bg-blue-500/15 text-info border-blue-500/20",
+  CANCELLED: "bg-fill-2 text-fg-dim border-line",
 };
 
 export const CONTRACT_STATUS_LABEL: Record<string, string> = {
@@ -107,10 +107,10 @@ export const CONTRACT_STATUS_LABEL: Record<string, string> = {
 };
 
 export const CONTRACT_STATUS_COLOR: Record<string, string> = {
-  DRAFT: "bg-white/[0.05] text-white/55 border-white/[0.08]",
-  ACTIVE: "bg-green-500/15 text-green-400 border-green-500/20",
-  EXPIRED: "bg-white/[0.05] text-white/60 border-white/[0.10]",
-  TERMINATED: "bg-red-500/15 text-red-400 border-red-500/20",
+  DRAFT: "bg-fill-2 text-fg-dim border-line",
+  ACTIVE: "bg-green-500/15 text-ok border-green-500/20",
+  EXPIRED: "bg-fill-2 text-fg-dim border-line-mid",
+  TERMINATED: "bg-red-500/15 text-danger border-red-500/20",
 };
 
 /**
@@ -119,7 +119,7 @@ export const CONTRACT_STATUS_COLOR: Record<string, string> = {
  * (gana el orden del CSS, no el del string) y el campo sale deformado.
  */
 const FIELD_BASE =
-  "bg-white/[0.03] border border-white/[0.07] rounded-lg text-white placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 transition-all [color-scheme:dark]";
+  "bg-fill border border-line rounded-lg text-fg placeholder-fg-trace focus:outline-none focus:border-brand/40 transition-all [color-scheme:dark]";
 
 export const INPUT_CLASS = `w-full px-3 py-2.5 text-sm ${FIELD_BASE}`;
 
@@ -129,4 +129,4 @@ export const INPUT_COMPACT = `w-full px-3 py-2 text-xs ${FIELD_BASE}`;
 export const TEXTAREA_CLASS = `${INPUT_CLASS} resize-none`;
 
 export const LABEL_CLASS =
-  "block text-white/50 text-xs uppercase tracking-widest font-medium mb-1.5";
+  "block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5";

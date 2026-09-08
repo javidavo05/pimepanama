@@ -111,16 +111,16 @@ export function EmailThreadPanel({
   }, [summary?.pending, loadThread]);
 
   return (
-    <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
+    <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">
+        <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">
           Conversación
         </h3>
         <button
           type="button"
           onClick={loadThread}
           disabled={loading}
-          className="text-[10px] text-white/45 hover:text-white/70 disabled:opacity-40"
+          className="text-[10px] text-fg-faint hover:text-fg-mute disabled:opacity-40"
         >
           Actualizar
         </button>
@@ -128,42 +128,42 @@ export function EmailThreadPanel({
 
       {summary && (
         <div className="flex flex-wrap gap-2 text-[10px]">
-          <span className="px-2 py-1 rounded bg-emerald-500/10 text-emerald-300 border border-emerald-500/20">
+          <span className="px-2 py-1 rounded bg-emerald-500/10 text-ok-soft border border-emerald-500/20">
             {summary.received} recibido{summary.received !== 1 ? "s" : ""}
           </span>
-          <span className="px-2 py-1 rounded bg-[#1AA7F0]/10 text-[#1AA7F0] border border-[#1AA7F0]/20">
+          <span className="px-2 py-1 rounded bg-brand/10 text-brand-fg border border-brand/20">
             {summary.sent} enviado{summary.sent !== 1 ? "s" : ""}
           </span>
           {summary.delivered > 0 && (
-            <span className="px-2 py-1 rounded bg-white/[0.04] text-white/55 border border-white/[0.08]">
+            <span className="px-2 py-1 rounded bg-fill text-fg-dim border border-line">
               {summary.delivered} entregado{summary.delivered !== 1 ? "s" : ""}
             </span>
           )}
           {summary.opened > 0 && (
-            <span className="px-2 py-1 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20">
+            <span className="px-2 py-1 rounded bg-violet-500/10 text-grape-soft border border-violet-500/20">
               {summary.opened} abierto{summary.opened !== 1 ? "s" : ""}
             </span>
           )}
           {summary.pending > 0 && (
-            <span className="px-2 py-1 rounded bg-amber-500/10 text-amber-200/80 border border-amber-500/20">
+            <span className="px-2 py-1 rounded bg-amber-500/10 text-warn-soft/80 border border-amber-500/20">
               {summary.pending} pendiente{summary.pending !== 1 ? "s" : ""}
             </span>
           )}
           {summary.bounced > 0 && (
-            <span className="px-2 py-1 rounded bg-red-500/10 text-red-300 border border-red-500/20">
+            <span className="px-2 py-1 rounded bg-red-500/10 text-danger-soft border border-red-500/20">
               {summary.bounced} rebote{summary.bounced !== 1 ? "s" : ""}
             </span>
           )}
         </div>
       )}
 
-      {loading && <p className="text-white/45 text-sm">Cargando hilo…</p>}
-      {error && <p className="text-red-400/80 text-sm">{error}</p>}
+      {loading && <p className="text-fg-faint text-sm">Cargando hilo…</p>}
+      {error && <p className="text-danger/80 text-sm">{error}</p>}
 
       {!loading && !error && messages.length <= 1 && (
-        <p className="text-white/45 text-sm">
+        <p className="text-fg-faint text-sm">
           Solo hay un mensaje en este hilo. Si acabas de responder, pulsa{" "}
-          <strong className="text-white/60">Actualizar</strong>.
+          <strong className="text-fg-dim">Actualizar</strong>.
         </p>
       )}
 
@@ -174,11 +174,11 @@ export function EmailThreadPanel({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Buscar en esta conversación…"
-            className="w-full rounded-lg border border-white/[0.08] bg-white/[0.03] px-3 py-2 pl-8 text-xs text-white/80 placeholder:text-white/35 focus:border-[#1AA7F0]/40 focus:outline-none focus:ring-1 focus:ring-[#1AA7F0]/30"
+            className="w-full rounded-lg border border-line bg-fill px-3 py-2 pl-8 text-xs text-fg-soft placeholder:text-fg-ghost focus:border-brand/40 focus:outline-none focus:ring-1 focus:ring-brand/30"
             aria-label="Buscar en esta conversación"
           />
           <svg
-            className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/35"
+            className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-fg-ghost"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -195,7 +195,7 @@ export function EmailThreadPanel({
       )}
 
       {searchQuery.trim() && filteredMessages.length === 0 && !loading && (
-        <p className="text-white/45 text-sm">Ningún mensaje coincide con «{searchQuery.trim()}».</p>
+        <p className="text-fg-faint text-sm">Ningún mensaje coincide con «{searchQuery.trim()}».</p>
       )}
 
       <div className="space-y-2">
@@ -204,9 +204,9 @@ export function EmailThreadPanel({
           const border = isSent ? "border-l-[#1AA7F0]" : "border-l-emerald-400";
           const bg = msg.isCurrent
             ? isSent
-              ? "bg-[#1AA7F0]/[0.06]"
+              ? "bg-brand/[0.06]"
               : "bg-emerald-500/[0.06]"
-            : "bg-white/[0.02]";
+            : "bg-fill";
 
           return (
             <div
@@ -215,22 +215,22 @@ export function EmailThreadPanel({
             >
               <div className="flex items-start justify-between gap-2 mb-1">
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-white/80">
+                  <p className="text-xs font-medium text-fg-soft">
                     {isSent ? "Tú enviaste" : "Recibiste"} · {msg.accountLabel}
                   </p>
-                  <p className="text-[11px] text-white/50 truncate">
+                  <p className="text-[11px] text-fg-faint truncate">
                     {isSent
                       ? `Para ${msg.toAddresses.join(", ")}`
                       : `De ${msg.fromName ? `${msg.fromName} <${msg.fromEmail}>` : msg.fromEmail}`}
                   </p>
                 </div>
-                <span className="text-[10px] text-white/40 shrink-0">
+                <span className="text-[10px] text-fg-ghost shrink-0">
                   {formatEmailReceivedAt(msg.receivedAt)}
                 </span>
               </div>
-              <p className="text-xs text-white/65 truncate mb-1">{msg.subject ?? "(Sin asunto)"}</p>
+              <p className="text-xs text-fg-mute truncate mb-1">{msg.subject ?? "(Sin asunto)"}</p>
               {msg.bodyPreview && (
-                <p className="text-[11px] text-white/45 line-clamp-2 mb-1.5 leading-relaxed">
+                <p className="text-[11px] text-fg-faint line-clamp-2 mb-1.5 leading-relaxed">
                   {msg.bodyPreview}
                 </p>
               )}
@@ -239,13 +239,13 @@ export function EmailThreadPanel({
                 {!msg.isCurrent && (
                   <Link
                     href={`/empresa/correos/hub/${msg.id}`}
-                    className="text-[10px] text-[#1AA7F0] hover:underline"
+                    className="text-[10px] text-brand-fg hover:underline"
                   >
                     Ver mensaje
                   </Link>
                 )}
                 {msg.isCurrent && (
-                  <span className="text-[10px] text-white/40">Viendo ahora</span>
+                  <span className="text-[10px] text-fg-ghost">Viendo ahora</span>
                 )}
               </div>
             </div>
@@ -253,7 +253,7 @@ export function EmailThreadPanel({
         })}
       </div>
 
-      <p className="text-[10px] text-white/35 leading-relaxed border-t border-white/[0.06] pt-3">
+      <p className="text-[10px] text-fg-ghost leading-relaxed border-t border-line pt-3">
         Tracking vía Resend: enviado → entregado → abierto. Configura el webhook en Resend Dashboard
         apuntando a /api/webhooks/resend.
       </p>

@@ -31,13 +31,13 @@ export function ReceivablesInvoicePanel({
   if (items.length === 0) return null;
 
   return (
-    <div className="bg-[#0a0a10] border border-[#1AA7F0]/20 rounded-xl p-5 space-y-3">
+    <div className="bg-panel border border-brand/20 rounded-xl p-5 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h3 className="text-[#1AA7F0] text-xs uppercase tracking-widest font-medium">
+          <h3 className="text-brand-fg text-xs uppercase tracking-widest font-medium">
             {isEs ? "Cuentas por cobrar" : "Accounts receivable"}
           </h3>
-          <p className="text-white/55 text-xs mt-1">
+          <p className="text-fg-dim text-xs mt-1">
             {isEs
               ? "Selecciona un saldo pendiente para prellenar esta factura."
               : "Select a pending balance to prefill this invoice."}
@@ -47,7 +47,7 @@ export function ReceivablesInvoicePanel({
           <button
             type="button"
             onClick={onClear}
-            className="text-xs text-white/50 hover:text-white/70 px-2 py-1 shrink-0"
+            className="text-xs text-fg-faint hover:text-fg-mute px-2 py-1 shrink-0"
           >
             {isEs ? "Limpiar" : "Clear"}
           </button>
@@ -63,14 +63,14 @@ export function ReceivablesInvoicePanel({
               key={item.id}
               className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors ${
                 selected
-                  ? "border-[#1AA7F0]/40 bg-[#1AA7F0]/[0.06]"
-                  : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.1]"
+                  ? "border-brand/40 bg-brand/[0.06]"
+                  : "border-line bg-fill hover:border-line-mid"
               }`}
             >
               <div className="flex-1 min-w-0">
-                <p className="text-white/75 text-xs font-mono truncate">{item.label}</p>
-                <p className="text-white/45 text-[11px] truncate mt-0.5">{client || "—"}</p>
-                <p className="text-white/40 text-[10px] mt-0.5">
+                <p className="text-fg-soft text-xs font-mono truncate">{item.label}</p>
+                <p className="text-fg-faint text-[11px] truncate mt-0.5">{client || "—"}</p>
+                <p className="text-fg-ghost text-[10px] mt-0.5">
                   {item.kind === "schedule"
                     ? isEs
                       ? "Cuota"
@@ -85,14 +85,14 @@ export function ReceivablesInvoicePanel({
                   {item.dueDate ? ` · ${isEs ? "vence" : "due"} ${fmtDate(item.dueDate)}` : ""}
                 </p>
               </div>
-              <p className="text-white/70 font-mono text-sm shrink-0">${fmt(item.amount)}</p>
+              <p className="text-fg-mute font-mono text-sm shrink-0">${fmt(item.amount)}</p>
               <button
                 type="button"
                 onClick={() => onSelect(item)}
                 className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                   selected
-                    ? "bg-[#1AA7F0] text-white"
-                    : "bg-[#C8A96E]/15 border border-[#C8A96E]/30 text-[#C8A96E] hover:bg-[#C8A96E]/25"
+                    ? "bg-brand text-on-brand"
+                    : "bg-sand/15 border border-sand/30 text-sand-fg hover:bg-sand/25"
                 }`}
               >
                 {selected

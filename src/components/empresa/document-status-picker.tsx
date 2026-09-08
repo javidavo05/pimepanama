@@ -42,7 +42,7 @@ export function DocumentStatusPicker({
 
   if (locked) {
     return (
-      <p className="text-white/55 text-xs">
+      <p className="text-fg-dim text-xs">
         Factura pagada: el estado y los montos están bloqueados. Puede asociar
         un cliente en la sección de abajo.
       </p>
@@ -72,8 +72,8 @@ export function DocumentStatusPicker({
           onClick={() => void handleChange(s)}
           className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all disabled:opacity-50 ${
             currentStatus === s
-              ? "bg-[#C8A96E]/10 border-[#C8A96E]/30 text-[#C8A96E]"
-              : "border-white/[0.07] text-white/60 hover:text-white/70 hover:border-white/20"
+              ? "bg-sand/10 border-sand/30 text-sand-fg"
+              : "border-line text-fg-dim hover:text-fg-mute hover:border-line-loud"
           }`}
         >
           {saving === s ? "..." : LABELS[s]}

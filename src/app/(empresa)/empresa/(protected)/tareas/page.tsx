@@ -32,8 +32,8 @@ export default async function TareasPage() {
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-white text-2xl font-semibold tracking-tight">Tareas</h1>
-          <p className="text-white/60 text-sm mt-0.5">
+          <h1 className="text-fg text-2xl font-semibold tracking-tight">Tareas</h1>
+          <p className="text-fg-dim text-sm mt-0.5">
             {pending} tarea{pending !== 1 ? "s" : ""} pendiente{pending !== 1 ? "s" : ""}
           </p>
         </div>

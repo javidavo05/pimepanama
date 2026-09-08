@@ -149,16 +149,16 @@ export function PushToggle() {
   }
 
   if (state.kind === "loading") {
-    return <p className="px-4 py-3 text-white/40 text-[11px]">Revisando avisos de este dispositivo…</p>;
+    return <p className="px-4 py-3 text-fg-ghost text-[11px]">Revisando avisos de este dispositivo…</p>;
   }
 
   if (state.kind === "unsupported") {
-    return <p className="px-4 py-3 text-white/50 text-[11px] leading-snug">{state.reason}</p>;
+    return <p className="px-4 py-3 text-fg-faint text-[11px] leading-snug">{state.reason}</p>;
   }
 
   if (state.kind === "not-configured") {
     return (
-      <p className="px-4 py-3 text-white/50 text-[11px] leading-snug">
+      <p className="px-4 py-3 text-fg-faint text-[11px] leading-snug">
         Falta configurar las llaves VAPID en el servidor para activar los avisos push.
       </p>
     );
@@ -166,7 +166,7 @@ export function PushToggle() {
 
   if (state.kind === "blocked") {
     return (
-      <p className="px-4 py-3 text-amber-300/80 text-[11px] leading-snug">
+      <p className="px-4 py-3 text-warn-soft/80 text-[11px] leading-snug">
         Este navegador tiene los avisos bloqueados. Habilítalos en los ajustes del sitio y vuelve a intentar.
       </p>
     );
@@ -176,8 +176,8 @@ export function PushToggle() {
     <div className="px-4 py-3 space-y-2">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-white/70 text-[11px] font-medium">Avisos en este dispositivo</p>
-          <p className="text-white/45 text-[10px] leading-snug">
+          <p className="text-fg-mute text-[11px] font-medium">Avisos en este dispositivo</p>
+          <p className="text-fg-faint text-[10px] leading-snug">
             {state.kind === "on"
               ? "Recibes un aviso al llegar un lead nuevo, aunque el panel esté cerrado."
               : "Te avisamos aquí cuando entre un lead nuevo, aunque el panel esté cerrado."}
@@ -189,8 +189,8 @@ export function PushToggle() {
           disabled={busy}
           className={`shrink-0 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
             state.kind === "on"
-              ? "bg-white/[0.06] text-white/60 hover:bg-white/[0.1] hover:text-white/80"
-              : "bg-[#1AA7F0] text-white hover:bg-[#0E87C8]"
+              ? "bg-fill-2 text-fg-dim hover:bg-fill-3 hover:text-fg-soft"
+              : "bg-brand text-on-brand hover:bg-brand-hi"
           }`}
         >
           {busy ? "…" : state.kind === "on" ? "Desactivar" : "Activar avisos"}
@@ -198,7 +198,7 @@ export function PushToggle() {
       </div>
 
       {state.kind === "error" && (
-        <p className="text-red-300/80 text-[10px] leading-snug">{state.message}</p>
+        <p className="text-danger-soft/80 text-[10px] leading-snug">{state.message}</p>
       )}
     </div>
   );

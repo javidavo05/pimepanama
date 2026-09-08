@@ -8,7 +8,7 @@ import { addDays, allDayISO, mondayOf, sameDay, startOfDay, taskLocalDate, taskL
 const PRIORITY_DOT: Record<TaskPriority, string> = {
   HIGH: "bg-red-400",
   MEDIUM: "bg-amber-400",
-  LOW: "bg-white/20",
+  LOW: "bg-fill-3",
 };
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
@@ -162,13 +162,13 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
           }}
           className={`w-full h-full text-left flex flex-col gap-0.5 px-1.5 py-1 rounded border overflow-hidden transition-colors ${
             task.completed
-              ? "border-white/[0.06] text-white/50 line-through"
-              : "border-[#1AA7F0]/20 bg-[#1AA7F0]/[0.08] text-white/70 hover:border-[#1AA7F0]/40"
+              ? "border-line text-fg-faint line-through"
+              : "border-brand/20 bg-brand/[0.08] text-fg-mute hover:border-brand/40"
           } text-[10px]`}
         >
           <span className="flex items-center gap-1 shrink-0">
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${PRIORITY_DOT[task.priority]}`} />
-            {timeLabel && <span className="font-mono text-white/55 shrink-0">{timeLabel}</span>}
+            {timeLabel && <span className="font-mono text-fg-dim shrink-0">{timeLabel}</span>}
           </span>
           <span className="truncate leading-tight">{task.title}</span>
         </button>
@@ -186,12 +186,12 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
         }}
         className={`w-full text-left flex items-center gap-1 px-1.5 py-0.5 rounded border transition-colors ${
           task.completed
-            ? "border-white/[0.06] text-white/50 line-through"
-            : "border-[#1AA7F0]/20 bg-[#1AA7F0]/[0.06] text-white/70 hover:border-[#1AA7F0]/40"
+            ? "border-line text-fg-faint line-through"
+            : "border-brand/20 bg-brand/[0.06] text-fg-mute hover:border-brand/40"
         } ${compact ? "text-[10px]" : "text-xs"}`}
       >
         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${PRIORITY_DOT[task.priority]}`} />
-        {timeLabel && <span className="font-mono text-white/55 shrink-0">{timeLabel}</span>}
+        {timeLabel && <span className="font-mono text-fg-dim shrink-0">{timeLabel}</span>}
         <span className="truncate">{task.title}</span>
       </button>
     );
@@ -262,12 +262,12 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setPopover(null)}>
         <div
-          className="w-full max-w-sm bg-[#0d0d18] border border-white/[0.1] rounded-xl shadow-2xl p-4 space-y-3"
+          className="w-full max-w-sm bg-pop border border-line-mid rounded-xl shadow-2xl p-4 space-y-3"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between">
-            <p className="text-white/70 text-sm font-medium">{isEdit ? "Editar tarea" : "Nueva tarea"}</p>
-            <span className="text-white/50 text-xs">
+            <p className="text-fg-mute text-sm font-medium">{isEdit ? "Editar tarea" : "Nueva tarea"}</p>
+            <span className="text-fg-faint text-xs">
               {initialDate.toLocaleDateString("es-PA", { weekday: "short", day: "numeric", month: "short" })}
             </span>
           </div>
@@ -280,12 +280,12 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
                 setPopover(null);
               }}
               className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg border text-xs transition-colors ${
-                task!.completed ? "border-[#1AA7F0]/30 text-[#1AA7F0] bg-[#1AA7F0]/10" : "border-white/[0.08] text-white/50 hover:border-white/20"
+                task!.completed ? "border-brand/30 text-brand-fg bg-brand/10" : "border-line text-fg-faint hover:border-line-loud"
               }`}
             >
-              <span className={`w-4 h-4 rounded-full border flex items-center justify-center ${task!.completed ? "bg-[#1AA7F0] border-[#1AA7F0]" : "border-white/20"}`}>
+              <span className={`w-4 h-4 rounded-full border flex items-center justify-center ${task!.completed ? "bg-brand border-brand" : "border-line-loud"}`}>
                 {task!.completed && (
-                  <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
+                  <svg className="w-2.5 h-2.5 text-fg" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 )}
@@ -299,7 +299,7 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Título de la tarea"
             autoFocus
-            className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white/85 placeholder:text-white/25 outline-none focus:border-[#1AA7F0]/40"
+            className="w-full bg-fill border border-line rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg-trace outline-none focus:border-brand/40"
           />
 
           <div className="flex items-center gap-2">
@@ -308,13 +308,13 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
               onChange={(e) => setAssignee(e.target.value)}
               list="task-assignees"
               placeholder="Responsable"
-              className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-xs text-white/70 placeholder:text-white/25 outline-none focus:border-[#1AA7F0]/40"
+              className="flex-1 bg-fill border border-line rounded-lg px-3 py-2 text-xs text-fg-mute placeholder:text-fg-trace outline-none focus:border-brand/40"
             />
             <select
               value={priority}
               onChange={(e) => setPriority(e.target.value as TaskPriority)}
               aria-label="Prioridad"
-              className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-2 text-xs text-white/70 outline-none focus:border-[#1AA7F0]/40"
+              className="bg-fill border border-line rounded-lg px-2 py-2 text-xs text-fg-mute outline-none focus:border-brand/40"
             >
               <option value="LOW">Baja</option>
               <option value="MEDIUM">Media</option>
@@ -322,28 +322,28 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
             </select>
           </div>
 
-          <label className="flex items-center gap-1.5 text-xs text-white/50">
-            <input type="checkbox" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} className="accent-[#1AA7F0]" />
+          <label className="flex items-center gap-1.5 text-xs text-fg-faint">
+            <input type="checkbox" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} className="accent-brand" />
             Todo el día
           </label>
           {!allDay && (
             <div className="flex items-center gap-2">
-              <label className="flex items-center gap-1.5 text-xs text-white/60">
+              <label className="flex items-center gap-1.5 text-xs text-fg-dim">
                 Desde
                 <input
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/70 outline-none focus:border-[#1AA7F0]/40 [color-scheme:dark]"
+                  className="bg-fill border border-line rounded-lg px-2 py-1.5 text-xs text-fg-mute outline-none focus:border-brand/40 [color-scheme:dark]"
                 />
               </label>
-              <label className="flex items-center gap-1.5 text-xs text-white/60">
+              <label className="flex items-center gap-1.5 text-xs text-fg-dim">
                 Hasta
                 <input
                   type="time"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/70 outline-none focus:border-[#1AA7F0]/40 [color-scheme:dark]"
+                  className="bg-fill border border-line rounded-lg px-2 py-1.5 text-xs text-fg-mute outline-none focus:border-brand/40 [color-scheme:dark]"
                 />
               </label>
             </div>
@@ -357,7 +357,7 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
                   onDelete(task!.id);
                   setPopover(null);
                 }}
-                className="text-red-400/70 hover:text-red-400 text-xs px-2 py-1"
+                className="text-danger/70 hover:text-danger text-xs px-2 py-1"
               >
                 Eliminar
               </button>
@@ -365,14 +365,14 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
               <span />
             )}
             <div className="flex gap-2">
-              <button type="button" onClick={() => setPopover(null)} className="text-xs text-white/60 hover:text-white/70 px-2 py-1">
+              <button type="button" onClick={() => setPopover(null)} className="text-xs text-fg-dim hover:text-fg-mute px-2 py-1">
                 Cancelar
               </button>
               <button
                 type="button"
                 onClick={handleSave}
                 disabled={!title.trim() || saving}
-                className="px-3 py-1.5 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-all"
+                className="px-3 py-1.5 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
               >
                 {isEdit ? "Guardar" : "Crear"}
               </button>
@@ -387,24 +387,24 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
     <div>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <button type="button" onClick={goPrev} className="w-7 h-7 flex items-center justify-center rounded-lg border border-white/[0.08] text-white/50 hover:text-white/80 hover:border-white/20">
+          <button type="button" onClick={goPrev} className="w-7 h-7 flex items-center justify-center rounded-lg border border-line text-fg-faint hover:text-fg-soft hover:border-line-loud">
             ‹
           </button>
-          <button type="button" onClick={goToday} className="px-3 py-1 rounded-lg border border-white/[0.08] text-white/50 hover:text-white/80 hover:border-white/20 text-xs">
+          <button type="button" onClick={goToday} className="px-3 py-1 rounded-lg border border-line text-fg-faint hover:text-fg-soft hover:border-line-loud text-xs">
             Hoy
           </button>
-          <button type="button" onClick={goNext} className="w-7 h-7 flex items-center justify-center rounded-lg border border-white/[0.08] text-white/50 hover:text-white/80 hover:border-white/20">
+          <button type="button" onClick={goNext} className="w-7 h-7 flex items-center justify-center rounded-lg border border-line text-fg-faint hover:text-fg-soft hover:border-line-loud">
             ›
           </button>
         </div>
-        <p className="text-white/70 text-sm font-medium capitalize">{headerLabel}</p>
+        <p className="text-fg-mute text-sm font-medium capitalize">{headerLabel}</p>
       </div>
 
       {mode === "month" && (
-        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl overflow-hidden">
-          <div className="grid grid-cols-7 border-b border-white/[0.05]">
+        <div className="bg-panel border border-line rounded-2xl overflow-hidden">
+          <div className="grid grid-cols-7 border-b border-line">
             {WEEKDAY_LABELS.map((d) => (
-              <div key={d} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest text-white/50 font-medium">
+              <div key={d} className="px-2 py-2 text-center text-[10px] uppercase tracking-widest text-fg-faint font-medium">
                 {d}
               </div>
             ))}
@@ -422,18 +422,18 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => handleDropOnDay(e, day)}
                   onClick={() => setPopover({ kind: "create", date: day, hour: null })}
-                  className={`min-h-[104px] border-b border-r border-white/[0.04] p-1.5 cursor-pointer hover:bg-white/[0.02] transition-colors ${
+                  className={`min-h-[104px] border-b border-r border-line p-1.5 cursor-pointer hover:bg-fill transition-colors ${
                     isCurrentMonth ? "" : "opacity-30"
                   }`}
                 >
-                  <p className={`text-xs mb-1 ${isToday ? "w-5 h-5 flex items-center justify-center rounded-full bg-[#1AA7F0] text-white font-semibold" : "text-white/60"}`}>
+                  <p className={`text-xs mb-1 ${isToday ? "w-5 h-5 flex items-center justify-center rounded-full bg-brand text-on-brand font-semibold" : "text-fg-dim"}`}>
                     {day.getDate()}
                   </p>
                   <div className="space-y-0.5">
                     {visible.map((t) => (
                       <TaskChip key={t.id} task={t} compact />
                     ))}
-                    {overflow > 0 && <p className="text-[10px] text-white/50 px-1.5">+{overflow} más</p>}
+                    {overflow > 0 && <p className="text-[10px] text-fg-faint px-1.5">+{overflow} más</p>}
                   </div>
                 </div>
               );
@@ -443,26 +443,26 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
       )}
 
       {(mode === "week" || mode === "day") && (
-        <div className="bg-[#0a0a10] border border-white/[0.06] rounded-2xl overflow-hidden">
-          <div className={`grid border-b border-white/[0.05]`} style={{ gridTemplateColumns: `56px repeat(${weekDays.length}, 1fr)` }}>
+        <div className="bg-panel border border-line rounded-2xl overflow-hidden">
+          <div className={`grid border-b border-line`} style={{ gridTemplateColumns: `56px repeat(${weekDays.length}, 1fr)` }}>
             <div />
             {weekDays.map((day) => (
-              <div key={day.toISOString()} className={`px-2 py-2 text-center border-l border-white/[0.04] ${sameDay(day, new Date()) ? "bg-[#1AA7F0]/[0.06]" : ""}`}>
-                <p className="text-[10px] uppercase tracking-widest text-white/50">{day.toLocaleDateString("es-PA", { weekday: "short" })}</p>
-                <p className={`text-sm mt-0.5 ${sameDay(day, new Date()) ? "text-[#1AA7F0] font-semibold" : "text-white/60"}`}>{day.getDate()}</p>
+              <div key={day.toISOString()} className={`px-2 py-2 text-center border-l border-line ${sameDay(day, new Date()) ? "bg-brand/[0.06]" : ""}`}>
+                <p className="text-[10px] uppercase tracking-widest text-fg-faint">{day.toLocaleDateString("es-PA", { weekday: "short" })}</p>
+                <p className={`text-sm mt-0.5 ${sameDay(day, new Date()) ? "text-brand-fg font-semibold" : "text-fg-dim"}`}>{day.getDate()}</p>
               </div>
             ))}
           </div>
 
-          <div className={`grid border-b border-white/[0.05]`} style={{ gridTemplateColumns: `56px repeat(${weekDays.length}, 1fr)` }}>
-            <div className="px-2 py-1.5 text-[9px] text-white/50 text-right">todo el día</div>
+          <div className={`grid border-b border-line`} style={{ gridTemplateColumns: `56px repeat(${weekDays.length}, 1fr)` }}>
+            <div className="px-2 py-1.5 text-[9px] text-fg-faint text-right">todo el día</div>
             {weekDays.map((day) => (
               <div
                 key={day.toISOString()}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => handleDropOnAllDayRow(e, day)}
                 onClick={() => setPopover({ kind: "create", date: day, hour: null })}
-                className="min-h-[32px] border-l border-white/[0.04] p-1 space-y-0.5 cursor-pointer hover:bg-white/[0.02]"
+                className="min-h-[32px] border-l border-line p-1 space-y-0.5 cursor-pointer hover:bg-fill"
               >
                 {tasksOnDay(day)
                   .filter((t) => t.allDay)
@@ -477,13 +477,13 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
             <div className="grid" style={{ gridTemplateColumns: `56px repeat(${weekDays.length}, 1fr)` }}>
               <div>
                 {HOURS.map((h) => (
-                  <div key={h} style={{ height: ROW_HEIGHT }} className="text-[10px] text-white/50 text-right pr-2 -translate-y-2">
+                  <div key={h} style={{ height: ROW_HEIGHT }} className="text-[10px] text-fg-faint text-right pr-2 -translate-y-2">
                     {String(h).padStart(2, "0")}:00
                   </div>
                 ))}
               </div>
               {weekDays.map((day) => (
-                <div key={day.toISOString()} className="relative border-l border-white/[0.04]">
+                <div key={day.toISOString()} className="relative border-l border-line">
                   {HOURS.map((h) => (
                     <div
                       key={h}
@@ -491,7 +491,7 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
                       onDrop={(e) => handleDropOnHour(e, day, h)}
                       onClick={() => setPopover({ kind: "create", date: day, hour: h })}
                       style={{ height: ROW_HEIGHT }}
-                      className="border-b border-white/[0.03] hover:bg-white/[0.02] cursor-pointer"
+                      className="border-b border-line hover:bg-fill cursor-pointer"
                     />
                   ))}
                   {tasksOnDay(day)

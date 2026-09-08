@@ -110,42 +110,42 @@ export function ArTaskActions({ documentId, paymentScheduleId, defaultTitle, ini
   const popover = open ? (
     <div
       ref={popoverRef}
-      className="fixed z-[100] w-64 bg-[#0d0d18] border border-white/[0.1] rounded-xl shadow-2xl p-3 space-y-2"
+      className="fixed z-[100] w-64 bg-pop border border-line-mid rounded-xl shadow-2xl p-3 space-y-2"
       style={{ top: popoverStyle.top, left: popoverStyle.left }}
     >
       <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Título de la tarea"
-        className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-2.5 py-1.5 text-xs text-white/85 placeholder:text-white/25 outline-none focus:border-[#1AA7F0]/40"
+        className="w-full bg-fill border border-line rounded-lg px-2.5 py-1.5 text-xs text-fg placeholder:text-fg-trace outline-none focus:border-brand/40"
       />
       <div className="flex gap-2">
         <input
           type="date"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
-          className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/70 outline-none focus:border-[#1AA7F0]/40 [color-scheme:dark]"
+          className="flex-1 bg-fill border border-line rounded-lg px-2 py-1.5 text-xs text-fg-mute outline-none focus:border-brand/40 [color-scheme:dark]"
         />
         <input
           value={assignee}
           onChange={(e) => setAssignee(e.target.value)}
           placeholder="Responsable"
-          className="w-24 bg-white/[0.04] border border-white/[0.08] rounded-lg px-2 py-1.5 text-xs text-white/70 placeholder:text-white/25 outline-none focus:border-[#1AA7F0]/40"
+          className="w-24 bg-fill border border-line rounded-lg px-2 py-1.5 text-xs text-fg-mute placeholder:text-fg-trace outline-none focus:border-brand/40"
         />
       </div>
       <div className="flex items-center justify-between pt-1">
-        <Link href="/empresa/tareas" className="text-[10px] text-white/50 hover:text-white/70">
+        <Link href="/empresa/tareas" className="text-[10px] text-fg-faint hover:text-fg-mute">
           Ver todas →
         </Link>
         <div className="flex gap-2">
-          <button type="button" onClick={() => setOpen(false)} className="text-xs text-white/60 hover:text-white/70 px-2 py-1">
+          <button type="button" onClick={() => setOpen(false)} className="text-xs text-fg-dim hover:text-fg-mute px-2 py-1">
             Cancelar
           </button>
           <button
             type="button"
             onClick={createTask}
             disabled={!title.trim() || saving}
-            className="px-3 py-1 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-40 text-white text-xs font-semibold rounded-lg transition-all"
+            className="px-3 py-1 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
           >
             Crear
           </button>
@@ -162,7 +162,7 @@ export function ArTaskActions({ documentId, paymentScheduleId, defaultTitle, ini
           type="button"
           onClick={() => completeTask(t.id)}
           title={`Marcar "${t.title}" como completada`}
-          className="text-[10px] px-1.5 py-0.5 rounded border border-[#6344E8]/30 text-[#8B6FFF] hover:bg-[#6344E8]/10 transition-colors"
+          className="text-[10px] px-1.5 py-0.5 rounded border border-iris/30 text-iris-fg hover:bg-iris/10 transition-colors"
         >
           ✓ {t.title.length > 18 ? `${t.title.slice(0, 18)}…` : t.title}
         </button>
@@ -173,7 +173,7 @@ export function ArTaskActions({ documentId, paymentScheduleId, defaultTitle, ini
         type="button"
         onClick={() => setOpen((v) => !v)}
         title="Agregar tarea de seguimiento"
-        className="w-5 h-5 flex items-center justify-center rounded border border-white/[0.1] text-white/55 hover:text-[#1AA7F0] hover:border-[#1AA7F0]/40 text-xs transition-colors"
+        className="w-5 h-5 flex items-center justify-center rounded border border-line-mid text-fg-dim hover:text-brand-fg hover:border-brand/40 text-xs transition-colors"
       >
         +
       </button>

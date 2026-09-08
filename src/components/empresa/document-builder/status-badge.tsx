@@ -1,13 +1,13 @@
 import type { DocumentStatus } from "@prisma/client";
 
 const CONFIG: Record<DocumentStatus, { label: string; className: string }> = {
-  DRAFT: { label: "Borrador", className: "text-white/50 bg-white/[0.05] border-white/10" },
-  SENT: { label: "Enviado", className: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
-  ACCEPTED: { label: "Aceptado", className: "text-green-400 bg-green-500/10 border-green-500/20" },
-  REJECTED: { label: "Rechazado", className: "text-red-400 bg-red-500/10 border-red-500/20" },
-  PAID: { label: "Pagado", className: "text-[#C8A96E] bg-[#C8A96E]/10 border-[#C8A96E]/20" },
-  PARTIALLY_PAID: { label: "Pago parcial", className: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
-  CANCELLED: { label: "Cancelado", className: "text-white/55 bg-white/[0.03] border-white/[0.05]" },
+  DRAFT: { label: "Borrador", className: "text-fg-faint bg-fill-2 border-line-mid" },
+  SENT: { label: "Enviado", className: "text-info bg-blue-500/10 border-blue-500/20" },
+  ACCEPTED: { label: "Aceptado", className: "text-ok bg-green-500/10 border-green-500/20" },
+  REJECTED: { label: "Rechazado", className: "text-danger bg-red-500/10 border-red-500/20" },
+  PAID: { label: "Pagado", className: "text-sand-fg bg-sand/10 border-sand/20" },
+  PARTIALLY_PAID: { label: "Pago parcial", className: "text-warn bg-amber-500/10 border-amber-500/20" },
+  CANCELLED: { label: "Cancelado", className: "text-fg-dim bg-fill border-line" },
 };
 
 export function StatusBadge({ status }: { status: DocumentStatus }) {

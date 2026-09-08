@@ -54,3 +54,161 @@
     appearance: textfield;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Sistema de color — /empresa
+   ──────────────────────────────────────────────────────────────────────────
+   La suite interna soporta tema claro, oscuro y "sistema". Los tokens se
+   declaran como canales RGB (`R G B`, sin coma) para que Tailwind pueda
+   aplicarles opacidad: `bg-brand/10` compila a `rgb(var(--c-brand) / 0.1)`.
+
+   El tema oscuro reproduce el look original; el claro no es una inversión
+   mecánica: cada acento baja de luminosidad para mantener contraste AA sobre
+   blanco. Los tokens de línea y relleno son sólidos a propósito (el resultado
+   ya compuesto), no translúcidos, para que se vean igual sobre cualquier capa.
+
+   La landing pública no usa estos tokens: sigue con su paleta oscura fija.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+:root,
+html[data-theme="dark"],
+.theme-dark {
+  --c-canvas: 5 5 8;
+  --c-panel: 10 10 16;
+  --c-panel-2: 7 7 14;
+  --c-panel-3: 18 18 26;
+  --c-pop: 13 13 24;
+
+  --c-fg: 255 255 255;
+  --c-fg-soft: 224 228 236;
+  --c-fg-mute: 196 202 214;
+  --c-fg-dim: 160 168 184;
+  --c-fg-faint: 132 141 158;
+  --c-fg-ghost: 108 117 134;
+  --c-fg-trace: 84 92 108;
+
+  --c-line: 26 26 33;
+  --c-line-mid: 39 39 46;
+  --c-line-loud: 59 59 66;
+
+  --c-fill: 17 17 23;
+  --c-fill-2: 25 25 32;
+  --c-fill-3: 39 39 46;
+
+  --c-brand: 26 167 240;
+  --c-brand-hi: 14 135 200;
+  --c-brand-fg: 26 167 240;
+  --c-on-brand: 255 255 255;
+  --c-on-accent: 3 6 17;
+
+  --c-sand: 200 169 110;
+  --c-sand-lt: 212 184 122;
+  --c-sand-fg: 200 169 110;
+  --c-iris: 99 68 232;
+  --c-iris-fg: 139 111 255;
+  --c-azure: 5 134 254;
+  --c-sky: 79 192 255;
+
+  --c-ok: 74 222 128;
+  --c-ok-soft: 134 239 172;
+  --c-warn: 251 191 36;
+  --c-warn-soft: 252 211 77;
+  --c-danger: 248 113 113;
+  --c-danger-soft: 252 165 165;
+  --c-info: 96 165 250;
+  --c-info-soft: 147 197 253;
+  --c-grape: 192 132 252;
+  --c-grape-soft: 216 180 254;
+  --c-emerald2: 6 214 160;
+  --c-mint: 62 207 142;
+  --c-amber2: 255 183 3;
+  --c-flame: 251 86 7;
+  --c-tangerine: 255 122 43;
+
+  --panel-shadow: none;
+  --app-scheme: dark;
+}
+
+html[data-theme="light"] {
+  --c-canvas: 244 246 249;
+  --c-panel: 255 255 255;
+  --c-panel-2: 255 255 255;
+  --c-panel-3: 237 240 245;
+  --c-pop: 255 255 255;
+
+  --c-fg: 11 18 32;
+  --c-fg-soft: 23 32 46;
+  --c-fg-mute: 44 54 70;
+  --c-fg-dim: 74 85 103;
+  --c-fg-faint: 100 112 130;
+  --c-fg-ghost: 124 135 152;
+  --c-fg-trace: 154 163 178;
+
+  --c-line: 226 230 236;
+  --c-line-mid: 213 218 226;
+  --c-line-loud: 195 201 212;
+
+  --c-fill: 246 247 250;
+  --c-fill-2: 239 241 245;
+  --c-fill-3: 229 232 238;
+
+  --c-brand: 17 129 196;
+  --c-brand-hi: 12 99 150;
+  --c-brand-fg: 10 111 168;
+  --c-on-brand: 255 255 255;
+  --c-on-accent: 3 6 17;
+
+  --c-sand: 169 128 58;
+  --c-sand-lt: 185 143 69;
+  --c-sand-fg: 138 101 32;
+  --c-iris: 91 63 214;
+  --c-iris-fg: 84 51 201;
+  --c-azure: 10 106 203;
+  --c-sky: 10 111 168;
+
+  --c-ok: 21 128 61;
+  --c-ok-soft: 22 163 74;
+  --c-warn: 180 83 9;
+  --c-warn-soft: 217 119 6;
+  --c-danger: 220 38 38;
+  --c-danger-soft: 239 68 68;
+  --c-info: 29 78 216;
+  --c-info-soft: 37 99 235;
+  --c-grape: 126 34 206;
+  --c-grape-soft: 147 51 234;
+  --c-emerald2: 4 120 87;
+  --c-mint: 14 122 82;
+  --c-amber2: 161 98 7;
+  --c-flame: 194 65 12;
+  --c-tangerine: 194 65 12;
+
+  --panel-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --app-scheme: light;
+}
+
+@layer base {
+  /* El scope vive en el contenedor, no en <html>: la landing pública comparte
+     documento y debe seguir oscura pase lo que pase con la preferencia. */
+  .empresa-app {
+    color-scheme: var(--app-scheme);
+    background-color: rgb(var(--c-canvas));
+    color: rgb(var(--c-fg-soft));
+  }
+
+  /* globals.css pinta un borde blanco por defecto en `*`; dentro de la suite
+     ese default tiene que seguir al tema o desaparece sobre fondo claro. */
+  .empresa-app :where(*) {
+    border-color: rgb(var(--c-line));
+  }
+
+  /* Las tarjetas necesitan sombra en claro para despegarse del canvas; en
+     oscuro el token es `none`. `:where()` deja especificidad 0, así que
+     cualquier `shadow-*` explícito en el marcado sigue ganando. */
+  .empresa-app :where(.bg-panel) {
+    box-shadow: var(--panel-shadow);
+  }
+
+  .empresa-app ::placeholder {
+    color: rgb(var(--c-fg-trace));
+  }
+}

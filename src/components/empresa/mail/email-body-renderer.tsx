@@ -78,7 +78,7 @@ export function EmailBodyRenderer({ body, emailId, onBodyUpdated }: EmailBodyRen
   }
 
   if (!body) {
-    return <p className="text-white/50 text-sm italic">(Sin contenido)</p>;
+    return <p className="text-fg-faint text-sm italic">(Sin contenido)</p>;
   }
 
   if (!html || viewMode === "text") {
@@ -87,20 +87,20 @@ export function EmailBodyRenderer({ body, emailId, onBodyUpdated }: EmailBodyRen
     return (
       <div>
         {showResync && (
-          <div className="mb-3 text-xs text-amber-400/80 border border-amber-500/20 bg-amber-500/10 rounded-lg px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="mb-3 text-xs text-warn/80 border border-amber-500/20 bg-amber-500/10 rounded-lg px-3 py-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <span>Este correo se guardó sin HTML. Recupéralo desde el buzón IMAP.</span>
             <button
               type="button"
               onClick={handleResyncBody}
               disabled={resyncing}
-              className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 disabled:opacity-50 transition-all"
+              className="shrink-0 px-3 py-1.5 rounded-lg bg-amber-500/15 border border-amber-500/30 text-warn-soft hover:bg-amber-500/25 disabled:opacity-50 transition-all"
             >
               {resyncing ? "Recuperando…" : "Recuperar formato"}
             </button>
           </div>
         )}
         {resyncError && (
-          <p className="mb-3 text-xs text-red-400/80 border border-red-500/20 bg-red-500/10 rounded-lg px-3 py-2">
+          <p className="mb-3 text-xs text-danger/80 border border-red-500/20 bg-red-500/10 rounded-lg px-3 py-2">
             {resyncError}
           </p>
         )}
@@ -108,13 +108,13 @@ export function EmailBodyRenderer({ body, emailId, onBodyUpdated }: EmailBodyRen
           <div className="flex justify-end mb-3">
             <button
               onClick={() => setViewMode("html")}
-              className="text-[10px] text-[#1AA7F0]/60 hover:text-[#1AA7F0] transition-colors"
+              className="text-[10px] text-brand-fg/60 hover:text-brand-fg transition-colors"
             >
               Ver con formato →
             </button>
           </div>
         )}
-        <div className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap font-sans">
+        <div className="text-fg-mute text-sm leading-relaxed whitespace-pre-wrap font-sans">
           {plainText || "(Sin contenido de texto)"}
         </div>
       </div>
@@ -125,16 +125,16 @@ export function EmailBodyRenderer({ body, emailId, onBodyUpdated }: EmailBodyRen
     <div>
       {showModeToggle && (
         <div className="flex items-center justify-between mb-3">
-          <span className="text-white/50 text-xs">Correo HTML</span>
+          <span className="text-fg-faint text-xs">Correo HTML</span>
           <button
             onClick={() => setViewMode("text")}
-            className="text-[10px] text-white/55 hover:text-white/60 transition-colors"
+            className="text-[10px] text-fg-dim hover:text-fg-dim transition-colors"
           >
             Ver texto plano
           </button>
         </div>
       )}
-      <div className="rounded-xl overflow-hidden border border-white/[0.06] bg-white w-full min-w-0">
+      <div className="rounded-xl overflow-hidden border border-line bg-white w-full min-w-0">
         <iframe
           ref={iframeRef}
           src={iframeSrc ?? undefined}

@@ -13,7 +13,7 @@ import { LeadsKanban } from "./leads-kanban";
 type Vista = "tabla" | "tablero";
 
 const SELECT =
-  "rounded-lg border border-white/[0.08] bg-[#0a0a10] px-3 py-2 text-sm text-white/70 outline-none transition-colors hover:border-white/[0.15] focus:border-[#1AA7F0]/50";
+  "rounded-lg border border-line bg-panel px-3 py-2 text-sm text-fg-mute outline-none transition-colors hover:border-line-mid focus:border-brand/50";
 
 export function LeadsView({ leads: initialLeads }: { leads: SerializedLead[] }) {
   const [leads, setLeads] = useState(initialLeads);
@@ -71,15 +71,15 @@ export function LeadsView({ leads: initialLeads }: { leads: SerializedLead[] }) 
   // Sin ningún lead todavía: explicar qué va a aparecer y ofrecer la acción.
   if (leads.length === 0) {
     return (
-      <div className="rounded-xl border border-white/[0.06] bg-[#0a0a10] px-6 py-12 text-center">
-        <p className="text-sm font-medium text-white/70">Todavía no hay prospectos</p>
-        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-white/50">
+      <div className="rounded-xl border border-line bg-panel px-6 py-12 text-center">
+        <p className="text-sm font-medium text-fg-mute">Todavía no hay prospectos</p>
+        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fg-faint">
           Cada solicitud del formulario de pimepanama.com entra acá sola, ya clasificada por
           prioridad. También podés cargar uno a mano.
         </p>
         <Link
           href="/empresa/leads/nuevo"
-          className="mt-6 inline-flex rounded-lg bg-[#1AA7F0] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#0E87C8]"
+          className="mt-6 inline-flex rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-on-brand transition-all hover:bg-brand-hi"
         >
           Cargar el primer lead
         </Link>
@@ -90,9 +90,9 @@ export function LeadsView({ leads: initialLeads }: { leads: SerializedLead[] }) 
   return (
     <div className="space-y-4">
       {notice && (
-        <div className="flex items-center justify-between rounded-lg border border-green-500/20 bg-green-500/[0.08] px-4 py-3 text-sm text-green-400">
+        <div className="flex items-center justify-between rounded-lg border border-green-500/20 bg-green-500/[0.08] px-4 py-3 text-sm text-ok">
           <span>{notice}</span>
-          <button onClick={() => setNotice(null)} className="text-green-400/50 hover:text-green-400">
+          <button onClick={() => setNotice(null)} className="text-ok/50 hover:text-ok">
             ×
           </button>
         </div>
@@ -106,7 +106,7 @@ export function LeadsView({ leads: initialLeads }: { leads: SerializedLead[] }) 
           onChange={(e) => setQ(e.target.value)}
           placeholder="Buscar por nombre, empresa, correo o teléfono"
           aria-label="Buscar prospectos"
-          className="min-w-[220px] flex-1 rounded-lg border border-white/[0.08] bg-[#0a0a10] px-4 py-2 text-sm text-white placeholder-white/35 outline-none transition-colors focus:border-[#1AA7F0]/50"
+          className="min-w-[220px] flex-1 rounded-lg border border-line bg-panel px-4 py-2 text-sm text-fg placeholder-fg-trace outline-none transition-colors focus:border-brand/50"
         />
 
         <select
@@ -137,14 +137,14 @@ export function LeadsView({ leads: initialLeads }: { leads: SerializedLead[] }) 
           ))}
         </select>
 
-        <div className="flex rounded-lg border border-white/[0.08] p-1">
+        <div className="flex rounded-lg border border-line p-1">
           {(["tabla", "tablero"] as Vista[]).map((v) => (
             <button
               key={v}
               type="button"
               onClick={() => setVista(v)}
               className={`rounded px-3 py-1 text-xs font-medium capitalize transition-colors ${
-                vista === v ? "bg-white/[0.08] text-white/80" : "text-white/45 hover:text-white/65"
+                vista === v ? "bg-fill-2 text-fg-soft" : "text-fg-faint hover:text-fg-mute"
               }`}
             >
               {v}
@@ -153,15 +153,15 @@ export function LeadsView({ leads: initialLeads }: { leads: SerializedLead[] }) 
         </div>
       </div>
 
-      <p className="text-xs text-white/45">
+      <p className="text-xs text-fg-faint">
         {filtrados.length === leads.length
           ? `${leads.length} prospecto${leads.length === 1 ? "" : "s"}`
           : `${filtrados.length} de ${leads.length}`}
       </p>
 
       {filtrados.length === 0 ? (
-        <div className="rounded-xl border border-white/[0.06] bg-[#0a0a10] px-6 py-12 text-center">
-          <p className="text-sm text-white/60">Ningún prospecto coincide con el filtro.</p>
+        <div className="rounded-xl border border-line bg-panel px-6 py-12 text-center">
+          <p className="text-sm text-fg-dim">Ningún prospecto coincide con el filtro.</p>
           <button
             type="button"
             onClick={() => {
@@ -169,7 +169,7 @@ export function LeadsView({ leads: initialLeads }: { leads: SerializedLead[] }) 
               setEstado("TODOS");
               setPrioridad("TODAS");
             }}
-            className="mt-4 text-sm text-[#1AA7F0] hover:underline"
+            className="mt-4 text-sm text-brand-fg hover:underline"
           >
             Limpiar filtros
           </button>
@@ -188,7 +188,7 @@ export function LeadsView({ leads: initialLeads }: { leads: SerializedLead[] }) 
       )}
 
       {filtrando && vista === "tablero" && (
-        <p className="text-xs text-white/40">
+        <p className="text-xs text-fg-ghost">
           El tablero muestra solo los {filtrados.length} prospectos filtrados.
         </p>
       )}

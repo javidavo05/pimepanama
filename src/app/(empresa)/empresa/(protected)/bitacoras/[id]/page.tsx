@@ -35,12 +35,12 @@ export default async function EditarBitacoraPage({
         <div className="flex items-center gap-3">
           <Link
             href="/empresa/bitacoras"
-            className="text-white/55 hover:text-white/60 text-sm transition-colors"
+            className="text-fg-dim hover:text-fg-dim text-sm transition-colors"
           >
             ← Bitácoras
           </Link>
-          <span className="text-white/50">/</span>
-          <span className="text-white/60 font-mono text-sm">
+          <span className="text-fg-faint">/</span>
+          <span className="text-fg-dim font-mono text-sm">
             {doc.number ?? id}
           </span>
           <StatusBadge status={doc.status} />

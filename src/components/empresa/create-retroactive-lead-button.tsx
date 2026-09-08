@@ -25,7 +25,7 @@ export function CreateRetroactiveLeadButton({ documentId }: CreateRetroactiveLea
   }
 
   if (done) {
-    return <span className="text-green-400 text-xs">✓ Lead creado y vinculado</span>;
+    return <span className="text-ok text-xs">✓ Lead creado y vinculado</span>;
   }
 
   return (
@@ -33,11 +33,11 @@ export function CreateRetroactiveLeadButton({ documentId }: CreateRetroactiveLea
       <button
         onClick={handleClick}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-white/60 text-xs hover:text-white hover:border-white/20 disabled:opacity-50 transition-all"
+        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-fill border border-line text-fg-dim text-xs hover:text-fg hover:border-line-loud disabled:opacity-50 transition-all"
       >
         {pending ? "Creando..." : "+ Crear lead retroactivo"}
       </button>
-      {error && <span className="text-red-400 text-xs">{error}</span>}
+      {error && <span className="text-danger text-xs">{error}</span>}
     </div>
   );
 }

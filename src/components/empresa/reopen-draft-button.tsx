@@ -24,7 +24,7 @@ export function ReopenDraftButton({ documentId }: ReopenDraftButtonProps) {
       onClick={handleClick}
       disabled={pending}
       title="Reabrir como borrador para editar"
-      className="inline-flex items-center gap-2 px-4 py-2.5 bg-white/[0.04] hover:bg-white/[0.08] disabled:opacity-50 text-white/50 hover:text-white/80 text-sm font-medium rounded-lg border border-white/[0.07] hover:border-white/[0.15] transition-all"
+      className="inline-flex items-center gap-2 px-4 py-2.5 bg-fill hover:bg-fill-2 disabled:opacity-50 text-fg-faint hover:text-fg-soft text-sm font-medium rounded-lg border border-line hover:border-line-mid transition-all"
     >
       {pending ? "..." : "✎ Reabrir borrador"}
     </button>

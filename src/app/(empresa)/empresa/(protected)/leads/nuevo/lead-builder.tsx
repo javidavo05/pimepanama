@@ -62,82 +62,82 @@ export function LeadBuilder() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <h1 className="text-white text-2xl font-semibold tracking-tight">Nuevo lead</h1>
+      <h1 className="text-fg text-2xl font-semibold tracking-tight">Nuevo lead</h1>
 
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
-        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">Datos del prospecto</h3>
+      <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
+        <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Datos del prospecto</h3>
 
         <div>
-          <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">
-            Nombre <span className="text-red-400">*</span>
+          <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">
+            Nombre <span className="text-danger">*</span>
           </label>
           <input {...register("name", { required: true })}
             placeholder="Juan Pérez"
-            className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 transition-all" />
+            className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 transition-all" />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">Empresa</label>
+            <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">Empresa</label>
             <input {...register("company")} placeholder="Empresa S.A."
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 transition-all" />
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 transition-all" />
           </div>
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">Fuente</label>
+            <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">Fuente</label>
             <select {...register("source")} aria-label="Fuente"
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all">
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-brand/40 transition-all">
               {SOURCE_OPTS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
           </div>
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">Correo electrónico</label>
+            <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">Correo electrónico</label>
             <input {...register("email")} type="email" placeholder="cliente@empresa.com"
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 transition-all" />
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 transition-all" />
           </div>
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">Teléfono</label>
+            <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">Teléfono</label>
             <input {...register("phone")} placeholder="+507 6000-0000"
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 transition-all" />
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 transition-all" />
           </div>
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">Ciudad</label>
+            <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">Ciudad</label>
             <input {...register("city")} placeholder="Ciudad de Panamá"
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 transition-all" />
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 transition-all" />
           </div>
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">Dirección</label>
+            <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">Dirección</label>
             <input {...register("address")} placeholder="Calle 50"
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 transition-all" />
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 transition-all" />
           </div>
         </div>
       </div>
 
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
-        <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">Seguimiento</h3>
+      <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
+        <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Seguimiento</h3>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">Valor estimado (USD)</label>
+            <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">Valor estimado (USD)</label>
             <input {...register("estimatedValue")} type="number" min="0" step="0.01" placeholder="0.00"
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/40 transition-all" />
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 transition-all" />
           </div>
           <div>
-            <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">Próximo seguimiento</label>
+            <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">Próximo seguimiento</label>
             <input {...register("nextFollowUpAt")} type="date"
-              className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-[#1AA7F0]/40 transition-all" />
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-brand/40 transition-all" />
           </div>
         </div>
         <div>
-          <label className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">Notas</label>
+          <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">Notas</label>
           <textarea {...register("notes")} rows={3} placeholder="Contexto, necesidades, próximos pasos..."
-            className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white/80 text-sm placeholder-white/20 focus:outline-none focus:border-[#1AA7F0]/40 resize-none transition-all" />
+            className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg-soft text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 resize-none transition-all" />
         </div>
       </div>
 
       <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-white/50 hover:text-white/80 text-sm transition-colors">
+        <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-fg-faint hover:text-fg-soft text-sm transition-colors">
           Cancelar
         </button>
-        <button type="submit" disabled={saving} className="px-6 py-2.5 bg-[#1AA7F0] hover:bg-[#0E87C8] disabled:opacity-50 text-white text-sm font-semibold rounded-lg transition-all">
+        <button type="submit" disabled={saving} className="px-6 py-2.5 bg-brand hover:bg-brand-hi disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg transition-all">
           {saving ? "Guardando..." : "Crear lead"}
         </button>
       </div>

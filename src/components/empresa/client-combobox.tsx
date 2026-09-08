@@ -68,7 +68,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   return (
     <>
       {text.slice(0, i)}
-      <span className="text-white font-semibold">{text.slice(i, i + query.length)}</span>
+      <span className="text-fg font-semibold">{text.slice(i, i + query.length)}</span>
       {text.slice(i + query.length)}
     </>
   );
@@ -186,7 +186,7 @@ export function ClientCombobox({
   return (
     <div ref={ref} className="flex flex-col gap-0 relative">
       {label && (
-        <label htmlFor={inputId} className="block text-white/50 text-xs uppercase tracking-widest mb-1.5">
+        <label htmlFor={inputId} className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">
           {label}
         </label>
       )}
@@ -200,7 +200,7 @@ export function ClientCombobox({
             className="absolute inset-0 px-3 py-2.5 text-sm pointer-events-none flex items-center overflow-hidden rounded-lg"
           >
             <span className="invisible whitespace-pre">{value}</span>
-            <span className="text-white/50">{ghostSuffix}</span>
+            <span className="text-fg-faint">{ghostSuffix}</span>
           </div>
         )}
 
@@ -217,12 +217,12 @@ export function ClientCombobox({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           autoComplete="off"
-          className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/40 transition-all"
+          className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 transition-all"
         />
 
         {/* Tab hint */}
         {ghostSuffix && open && (
-          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-white/50 font-mono bg-white/[0.04] px-1 py-0.5 rounded pointer-events-none">
+          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-fg-faint font-mono bg-fill px-1 py-0.5 rounded pointer-events-none">
             Tab ↹
           </span>
         )}
@@ -232,7 +232,7 @@ export function ClientCombobox({
       {showDropdown && (
         <div
           ref={listRef}
-          className="absolute top-full left-0 right-0 mt-1 bg-[#0d0d18] border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden max-h-72 overflow-y-auto z-50"
+          className="absolute top-full left-0 right-0 mt-1 bg-pop border border-line rounded-xl shadow-2xl overflow-hidden max-h-72 overflow-y-auto z-50"
         >
           {filtered.map((c, i) => (
             <button
@@ -241,39 +241,39 @@ export function ClientCombobox({
               type="button"
               onMouseDown={(e) => { e.preventDefault(); selectClient(c); }}
               onMouseEnter={() => setCursor(i)}
-              className={`w-full text-left px-4 py-2.5 transition-colors flex items-center justify-between gap-3 ${cursor === i ? "bg-white/[0.07]" : "hover:bg-white/[0.04]"}`}
+              className={`w-full text-left px-4 py-2.5 transition-colors flex items-center justify-between gap-3 ${cursor === i ? "bg-fill-2" : "hover:bg-fill"}`}
             >
               <div className="min-w-0">
-                <p className="text-white/80 text-sm truncate">
+                <p className="text-fg-soft text-sm truncate">
                   <Highlight text={c.name} query={value} />
                 </p>
                 {c.company && (
-                  <p className="text-white/55 text-xs truncate">
+                  <p className="text-fg-dim text-xs truncate">
                     <Highlight text={c.company} query={value} />
                   </p>
                 )}
               </div>
               <div className="text-right shrink-0">
-                {c.ruc && <p className="text-white/50 text-xs font-mono">{c.ruc}</p>}
-                {c.email && <p className="text-white/50 text-[10px] truncate max-w-28">{c.email}</p>}
+                {c.ruc && <p className="text-fg-faint text-xs font-mono">{c.ruc}</p>}
+                {c.email && <p className="text-fg-faint text-[10px] truncate max-w-28">{c.email}</p>}
               </div>
             </button>
           ))}
 
           {canCreate && (
             <>
-              {filtered.length > 0 && <div className="border-t border-white/[0.05]" />}
+              {filtered.length > 0 && <div className="border-t border-line" />}
               <button
                 data-idx={filtered.length}
                 type="button"
                 onMouseDown={(e) => { e.preventDefault(); onNewClient(); setOpen(false); }}
                 onMouseEnter={() => setCursor(filtered.length)}
-                className={`w-full text-left px-4 py-3 transition-colors flex items-center gap-2.5 ${cursor === filtered.length ? "bg-[#1AA7F0]/[0.07]" : "hover:bg-[#1AA7F0]/[0.04]"}`}
+                className={`w-full text-left px-4 py-3 transition-colors flex items-center gap-2.5 ${cursor === filtered.length ? "bg-brand/[0.07]" : "hover:bg-brand/[0.04]"}`}
               >
-                <span className="flex-none w-5 h-5 rounded-full bg-[#1AA7F0]/15 border border-[#1AA7F0]/30 flex items-center justify-center text-[#1AA7F0] text-xs font-bold">+</span>
+                <span className="flex-none w-5 h-5 rounded-full bg-brand/15 border border-brand/30 flex items-center justify-center text-brand-fg text-xs font-bold">+</span>
                 <div>
-                  <p className="text-[#1AA7F0] text-sm font-medium">Crear &ldquo;{value}&rdquo;</p>
-                  <p className="text-white/50 text-xs">Se guardará como nuevo cliente al crear el documento</p>
+                  <p className="text-brand-fg text-sm font-medium">Crear &ldquo;{value}&rdquo;</p>
+                  <p className="text-fg-faint text-xs">Se guardará como nuevo cliente al crear el documento</p>
                 </div>
               </button>
             </>
@@ -283,36 +283,36 @@ export function ClientCombobox({
 
       {/* Client history panel — shown after selecting an existing client */}
       {selectedClientId && !open && (
-        <div className="mt-2 bg-[#0d0d18] border border-white/[0.06] rounded-xl overflow-hidden">
+        <div className="mt-2 bg-pop border border-line rounded-xl overflow-hidden">
           {historyLoading ? (
-            <div className="px-4 py-3 text-white/50 text-xs">Cargando historial...</div>
+            <div className="px-4 py-3 text-fg-faint text-xs">Cargando historial...</div>
           ) : history && history.totalDocs > 0 ? (
             <>
-              <div className="px-4 py-2.5 border-b border-white/[0.05] flex items-center justify-between">
-                <p className="text-white/50 text-xs font-medium">
+              <div className="px-4 py-2.5 border-b border-line flex items-center justify-between">
+                <p className="text-fg-faint text-xs font-medium">
                   Histórico · {history.totalDocs} documento{history.totalDocs !== 1 ? "s" : ""}
                 </p>
                 <Link
                   href={`/empresa/clientes/${selectedClientId}`}
-                  className="text-[#1AA7F0]/60 text-[10px] hover:text-[#1AA7F0] transition-colors"
+                  className="text-brand-fg/60 text-[10px] hover:text-brand-fg transition-colors"
                   onClick={(e) => e.stopPropagation()}
                 >
                   Ver perfil →
                 </Link>
               </div>
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-line">
                 {Object.entries(history.history).map(([type, data]) => (
                   <div key={type} className="px-4 py-2.5">
                     <div className="flex items-center justify-between mb-1.5">
-                      <p className="text-white/60 text-xs flex items-center gap-1.5">
+                      <p className="text-fg-dim text-xs flex items-center gap-1.5">
                         <span>{TYPE_ICON[type] ?? "📄"}</span>
                         <span className="font-medium">{TYPE_LABEL[type] ?? type}</span>
-                        <span className="text-white/55">·</span>
-                        <span className="text-white/55">{data.count}</span>
+                        <span className="text-fg-dim">·</span>
+                        <span className="text-fg-dim">{data.count}</span>
                       </p>
-                      <span className="text-white/50 text-[10px] flex items-center gap-2">
+                      <span className="text-fg-faint text-[10px] flex items-center gap-2">
                         {data.total > 0 && (
-                          <span className="text-white/70 font-mono">
+                          <span className="text-fg-mute font-mono">
                             ${data.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}
                           </span>
                         )}
@@ -324,17 +324,17 @@ export function ClientCombobox({
                         <Link
                           key={doc.id}
                           href={`/empresa/${TYPE_PATH[type] ?? `${type.toLowerCase()}s`}/${doc.id}`}
-                          className="flex items-center justify-between gap-2 text-[10px] hover:text-white/60 transition-colors group"
+                          className="flex items-center justify-between gap-2 text-[10px] hover:text-fg-dim transition-colors group"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <span className="text-white/55 font-mono group-hover:text-[#1AA7F0]/60">{doc.number ?? doc.title.slice(0, 30)}</span>
+                          <span className="text-fg-dim font-mono group-hover:text-brand-fg/60">{doc.number ?? doc.title.slice(0, 30)}</span>
                           <span className="flex items-center gap-1.5 shrink-0">
                             {doc.total != null && Number(doc.total) > 0 && (
-                              <span className="text-white/70 font-mono text-[10px]">
+                              <span className="text-fg-mute font-mono text-[10px]">
                                 ${Number(doc.total).toLocaleString("en-US", { minimumFractionDigits: 2 })}
                               </span>
                             )}
-                            <span className={`px-1.5 py-0.5 rounded text-[9px] border ${doc.status === "ACCEPTED" || doc.status === "PAID" ? "border-green-500/20 text-green-400/60" : doc.status === "SENT" ? "border-blue-500/20 text-blue-400/60" : doc.status === "REJECTED" ? "border-red-500/20 text-red-400/60" : "border-white/10 text-white/50"}`}>
+                            <span className={`px-1.5 py-0.5 rounded text-[9px] border ${doc.status === "ACCEPTED" || doc.status === "PAID" ? "border-green-500/20 text-ok/60" : doc.status === "SENT" ? "border-blue-500/20 text-info/60" : doc.status === "REJECTED" ? "border-red-500/20 text-danger/60" : "border-line-mid text-fg-faint"}`}>
                               {DOC_STATUS_ES[doc.status] ?? doc.status}
                             </span>
                           </span>
@@ -346,9 +346,9 @@ export function ClientCombobox({
               </div>
             </>
           ) : history && history.totalDocs === 0 ? (
-            <div className="px-4 py-3 text-white/50 text-xs flex items-center justify-between">
+            <div className="px-4 py-3 text-fg-faint text-xs flex items-center justify-between">
               <span>Sin documentos previos con este cliente</span>
-              <Link href={`/empresa/clientes/${selectedClientId}`} className="text-[#1AA7F0]/50 hover:text-[#1AA7F0] transition-colors text-[10px]">
+              <Link href={`/empresa/clientes/${selectedClientId}`} className="text-brand-fg/50 hover:text-brand-fg transition-colors text-[10px]">
                 Ver perfil →
               </Link>
             </div>

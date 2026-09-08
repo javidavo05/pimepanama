@@ -63,23 +63,23 @@ export function CitasConfigClient() {
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <Link href="/empresa/citas" className="text-white/50 text-sm hover:text-white/70">← Citas</Link>
-        <h1 className="text-white text-2xl font-semibold mt-2">Configuración de citas</h1>
+        <Link href="/empresa/citas" className="text-fg-faint text-sm hover:text-fg-mute">← Citas</Link>
+        <h1 className="text-fg text-2xl font-semibold mt-2">Configuración de citas</h1>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-white/70">
+      <label className="flex items-center gap-2 text-sm text-fg-mute">
         <input type="checkbox" checked={bookingAutoLead} onChange={(e) => setBookingAutoLead(e.target.checked)} />
         Crear o vincular lead automáticamente desde citas públicas
       </label>
 
       <div className="space-y-2">
-        <label className="block text-white/50 text-xs uppercase tracking-widest">
+        <label className="block text-fg-faint text-xs uppercase tracking-widest">
           Cuenta de correo para firmas y citas
         </label>
         <select
           value={signingMailAccountId}
           onChange={(e) => setSigningMailAccountId(e.target.value)}
-          className="w-full bg-white/[0.03] border border-white/[0.07] rounded-lg px-3 py-2.5 text-white text-sm"
+          className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm"
         >
           <option value="">Predeterminada (primera cuenta SMTP)</option>
           {mailAccounts.map((a) => (
@@ -90,8 +90,8 @@ export function CitasConfigClient() {
         </select>
       </div>
 
-      <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
-        <h2 className="text-white/50 text-xs uppercase tracking-widest">Horario semanal</h2>
+      <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
+        <h2 className="text-fg-faint text-xs uppercase tracking-widest">Horario semanal</h2>
         {[1, 2, 3, 4, 5].map((weekday) => {
           const row = availability.find((a) => a.weekday === weekday) ?? {
             weekday,
@@ -100,19 +100,19 @@ export function CitasConfigClient() {
           };
           return (
             <div key={weekday} className="flex items-center gap-3 text-sm">
-              <span className="w-10 text-white/50">{WEEKDAYS[weekday]}</span>
+              <span className="w-10 text-fg-faint">{WEEKDAYS[weekday]}</span>
               <input
                 type="time"
                 value={row.startTime}
                 onChange={(e) => updateSlot(weekday, "startTime", e.target.value)}
-                className="bg-white/[0.03] border border-white/10 rounded px-2 py-1 text-white"
+                className="bg-fill border border-line-mid rounded px-2 py-1 text-fg"
               />
-              <span className="text-white/30">—</span>
+              <span className="text-fg-trace">—</span>
               <input
                 type="time"
                 value={row.endTime}
                 onChange={(e) => updateSlot(weekday, "endTime", e.target.value)}
-                className="bg-white/[0.03] border border-white/10 rounded px-2 py-1 text-white"
+                className="bg-fill border border-line-mid rounded px-2 py-1 text-fg"
               />
             </div>
           );
@@ -123,11 +123,11 @@ export function CitasConfigClient() {
         type="button"
         disabled={saving}
         onClick={save}
-        className="px-5 py-2.5 bg-[#C8A96E] text-[#030611] font-semibold rounded-lg disabled:opacity-50"
+        className="px-5 py-2.5 bg-sand text-on-accent font-semibold rounded-lg disabled:opacity-50"
       >
         {saving ? "Guardando…" : "Guardar"}
       </button>
-      {msg ? <p className="text-sm text-white/50">{msg}</p> : null}
+      {msg ? <p className="text-sm text-fg-faint">{msg}</p> : null}
     </div>
   );
 }

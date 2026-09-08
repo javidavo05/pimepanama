@@ -17,14 +17,14 @@ export function CollapsibleCard({ title, meta, defaultOpen = false, children }: 
   return (
     <details
       open={defaultOpen}
-      className="group bg-[#0a0a10] border border-white/[0.06] rounded-xl overflow-hidden"
+      className="group bg-panel border border-line rounded-xl overflow-hidden"
     >
-      <summary className="flex items-center gap-3 px-5 py-3.5 cursor-pointer list-none select-none hover:bg-white/[0.02] transition-colors [&::-webkit-details-marker]:hidden">
-        <span className="text-white/45 text-[10px] transition-transform group-open:rotate-90">▶</span>
-        <span className="text-white/60 text-xs uppercase tracking-widest font-medium">{title}</span>
-        {meta && <span className="text-white/40 text-xs ml-auto">{meta}</span>}
+      <summary className="flex items-center gap-3 px-5 py-3.5 cursor-pointer list-none select-none hover:bg-fill transition-colors [&::-webkit-details-marker]:hidden">
+        <span className="text-fg-faint text-[10px] transition-transform group-open:rotate-90">▶</span>
+        <span className="text-fg-dim text-xs uppercase tracking-widest font-medium">{title}</span>
+        {meta && <span className="text-fg-ghost text-xs ml-auto">{meta}</span>}
       </summary>
-      <div className="px-5 pb-5 pt-1 border-t border-white/[0.05]">{children}</div>
+      <div className="px-5 pb-5 pt-1 border-t border-line">{children}</div>
     </details>
   );
 }

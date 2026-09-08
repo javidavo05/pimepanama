@@ -19,11 +19,11 @@ export default async function LeadsPage() {
     <div className="max-w-7xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-white text-2xl font-semibold tracking-tight">Leads</h1>
-          <p className="text-white/60 text-sm mt-1">Seguimiento de posibles clientes</p>
+          <h1 className="text-fg text-2xl font-semibold tracking-tight">Leads</h1>
+          <p className="text-fg-dim text-sm mt-1">Seguimiento de posibles clientes</p>
         </div>
         <Link href="/empresa/leads/nuevo"
-          className="px-4 py-2 bg-[#1AA7F0] hover:bg-[#0E87C8] text-white text-sm font-semibold rounded-lg transition-all">
+          className="px-4 py-2 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-all">
           + Nuevo lead
         </Link>
       </div>

@@ -67,7 +67,7 @@ export function FirmarClient({ token }: { token: string }) {
 
   if (done) {
     return (
-      <main className="min-h-screen bg-[#030611] text-white flex items-center justify-center p-6">
+      <main className="theme-dark min-h-screen bg-[#030611] text-white flex items-center justify-center p-6">
         <div className="max-w-md text-center space-y-4">
           <div className="text-4xl">✓</div>
           <h1 className="text-xl font-semibold">Firma registrada</h1>
@@ -82,7 +82,7 @@ export function FirmarClient({ token }: { token: string }) {
   }
 
   return (
-    <main className="min-h-screen bg-[#030611] text-white">
+    <main className="theme-dark min-h-screen bg-[#030611] text-white">
       <div className="max-w-lg mx-auto px-5 py-10 space-y-6">
         <div>
           <p className="text-[#C8A96E] text-xs uppercase tracking-widest mb-2">PimeSign</p>

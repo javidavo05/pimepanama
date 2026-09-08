@@ -47,8 +47,8 @@ export function FolderSidebar({ activeFolder, counts, layout = "sidebar" }: Fold
             onClick={() => selectFolder(folder)}
             className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs whitespace-nowrap border transition-all shrink-0 ${
               activeFolder === folder
-                ? "bg-[#1AA7F0]/10 border-[#1AA7F0]/25 text-[#1AA7F0]"
-                : "border-white/[0.07] text-white/55 hover:text-white/75 hover:bg-white/[0.03]"
+                ? "bg-brand/10 border-brand/25 text-brand-fg"
+                : "border-line text-fg-dim hover:text-fg-soft hover:bg-fill"
             }`}
           >
             <span>{icon}</span>
@@ -71,14 +71,14 @@ export function FolderSidebar({ activeFolder, counts, layout = "sidebar" }: Fold
           onClick={() => selectFolder(folder)}
           className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-all text-left ${
             activeFolder === folder
-              ? "bg-[#1AA7F0]/10 text-[#1AA7F0] border border-[#1AA7F0]/20"
-              : "text-white/50 hover:text-white/80 hover:bg-white/[0.04] border border-transparent"
+              ? "bg-brand/10 text-brand-fg border border-brand/20"
+              : "text-fg-faint hover:text-fg-soft hover:bg-fill border border-transparent"
           }`}
         >
           <span className="text-base w-5 text-center">{icon}</span>
           <span className="flex-1 truncate">{label}</span>
           {count > 0 && (
-            <span className="text-[10px] font-mono text-white/40">{count}</span>
+            <span className="text-[10px] font-mono text-fg-ghost">{count}</span>
           )}
         </button>
       ))}

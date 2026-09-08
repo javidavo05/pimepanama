@@ -42,24 +42,24 @@ export function ClientsPanel({ projectId, clients, allClients }: ClientsPanelPro
 
   return (
     <div
-      className={`bg-[#0a0a10] border rounded-xl p-5 space-y-3 ${
-        empty ? "border-amber-500/25" : "border-white/[0.06]"
+      className={`bg-panel border rounded-xl p-5 space-y-3 ${
+        empty ? "border-amber-500/25" : "border-line"
       }`}
     >
       <div className="flex items-center justify-between">
-        <p className="text-white/50 text-[10px] uppercase tracking-widest">
+        <p className="text-fg-faint text-[10px] uppercase tracking-widest">
           {empty ? "⚠ Sin cliente asignado" : clients.length > 1 ? "Clientes" : "Cliente"}
         </p>
         <Link
           href="/empresa/clientes"
-          className="text-white/35 text-[10px] hover:text-white/60 transition-colors"
+          className="text-fg-ghost text-[10px] hover:text-fg-dim transition-colors"
         >
           ver clientes →
         </Link>
       </div>
 
       {empty ? (
-        <p className="text-white/55 text-xs">
+        <p className="text-fg-dim text-xs">
           El proyecto tiene que pertenecer a alguien: sin cliente no se puede facturar ni
           precargar el contrato.
         </p>
@@ -70,14 +70,14 @@ export function ClientsPanel({ projectId, clients, allClients }: ClientsPanelPro
               <div className="min-w-0">
                 <Link
                   href={`/empresa/clientes/${c.id}`}
-                  className="text-white/75 text-sm hover:text-[#1AA7F0] transition-colors truncate block"
+                  className="text-fg-soft text-sm hover:text-brand-fg transition-colors truncate block"
                 >
                   {c.name}
                 </Link>
-                <p className="text-white/40 text-[11px] truncate">
+                <p className="text-fg-ghost text-[11px] truncate">
                   {c.company ?? ""}
                   {i === 0 && (
-                    <span className="text-[9px] uppercase tracking-widest text-[#C8A96E]/70 ml-1">
+                    <span className="text-[9px] uppercase tracking-widest text-sand-fg/70 ml-1">
                       principal
                     </span>
                   )}
@@ -89,7 +89,7 @@ export function ClientsPanel({ projectId, clients, allClients }: ClientsPanelPro
                     type="button"
                     onClick={() => save([c.id, ...ids.filter((x) => x !== c.id)])}
                     disabled={pending}
-                    className="text-white/40 hover:text-[#C8A96E] text-[10px] transition-colors disabled:opacity-40"
+                    className="text-fg-ghost hover:text-sand-fg text-[10px] transition-colors disabled:opacity-40"
                   >
                     principal
                   </button>
@@ -100,7 +100,7 @@ export function ClientsPanel({ projectId, clients, allClients }: ClientsPanelPro
                     aria-label={`Quitar ${c.name}`}
                     onClick={() => save(ids.filter((x) => x !== c.id))}
                     disabled={pending}
-                    className="text-white/40 hover:text-red-400 text-xs transition-colors disabled:opacity-40"
+                    className="text-fg-ghost hover:text-danger text-xs transition-colors disabled:opacity-40"
                   >
                     ×
                   </button>
@@ -133,14 +133,14 @@ export function ClientsPanel({ projectId, clients, allClients }: ClientsPanelPro
         allClients.length === 0 && (
           <Link
             href="/empresa/clientes"
-            className="inline-block text-[#1AA7F0]/70 text-xs hover:text-[#1AA7F0] transition-colors"
+            className="inline-block text-brand-fg/70 text-xs hover:text-brand-fg transition-colors"
           >
             + Crear un cliente primero
           </Link>
         )
       )}
 
-      {error && <p className="text-red-400 text-xs">{error}</p>}
+      {error && <p className="text-danger text-xs">{error}</p>}
     </div>
   );
 }

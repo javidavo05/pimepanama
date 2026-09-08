@@ -35,7 +35,7 @@ export function EmpresaLoginForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
-        <label className="block text-white/60 text-xs font-medium uppercase tracking-widest mb-2">
+        <label className="block text-fg-dim text-xs font-medium uppercase tracking-widest mb-2">
           Correo corporativo
         </label>
         <input
@@ -45,12 +45,12 @@ export function EmpresaLoginForm() {
           required
           autoComplete="email"
           placeholder="nombre@pimepanama.com"
-          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/50 focus:ring-1 focus:ring-[#C8A96E]/20 transition-all"
+          className="w-full bg-fill border border-line rounded-lg px-4 py-3 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-sand/50 focus:ring-1 focus:ring-sand/20 transition-all"
         />
       </div>
 
       <div>
-        <label className="block text-white/60 text-xs font-medium uppercase tracking-widest mb-2">
+        <label className="block text-fg-dim text-xs font-medium uppercase tracking-widest mb-2">
           Contraseña
         </label>
         <input
@@ -60,12 +60,12 @@ export function EmpresaLoginForm() {
           required
           autoComplete="current-password"
           placeholder="••••••••"
-          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-4 py-3 text-white text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/50 focus:ring-1 focus:ring-[#C8A96E]/20 transition-all"
+          className="w-full bg-fill border border-line rounded-lg px-4 py-3 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-sand/50 focus:ring-1 focus:ring-sand/20 transition-all"
         />
       </div>
 
       {error && (
-        <p className="text-red-400/80 text-sm bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3">
+        <p className="text-danger/80 text-sm bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3">
           {error}
         </p>
       )}
@@ -73,7 +73,7 @@ export function EmpresaLoginForm() {
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-[#C8A96E] hover:bg-[#d4b87a] disabled:opacity-50 disabled:cursor-not-allowed text-[#030611] font-semibold text-sm py-3 rounded-lg transition-all tracking-wide"
+        className="w-full bg-sand hover:bg-sand-lt disabled:opacity-50 disabled:cursor-not-allowed text-on-accent font-semibold text-sm py-3 rounded-lg transition-all tracking-wide"
       >
         {loading ? "Verificando..." : "Ingresar al sistema"}
       </button>

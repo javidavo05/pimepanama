@@ -22,10 +22,10 @@ import {
 } from "./types";
 
 const SCHEDULE_STATUS_COLOR: Record<string, string> = {
-  PENDING: "bg-blue-500/15 text-blue-400 border-blue-500/20",
-  OVERDUE: "bg-red-500/15 text-red-400 border-red-500/20",
-  PAID: "bg-green-500/15 text-green-400 border-green-500/20",
-  CANCELLED: "bg-white/[0.05] text-white/50 border-white/[0.08]",
+  PENDING: "bg-blue-500/15 text-info border-blue-500/20",
+  OVERDUE: "bg-red-500/15 text-danger border-red-500/20",
+  PAID: "bg-green-500/15 text-ok border-green-500/20",
+  CANCELLED: "bg-fill-2 text-fg-faint border-line",
 };
 
 const DOC_TYPE_PATH: Record<string, string> = {
@@ -92,21 +92,21 @@ export function ProjectDetailClient({
       <div className="flex items-start justify-between gap-4 mb-6">
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-white text-2xl font-semibold tracking-tight truncate">{project.name}</h1>
+            <h1 className="text-fg text-2xl font-semibold tracking-tight truncate">{project.name}</h1>
             <span className={`px-2 py-0.5 text-xs rounded border shrink-0 ${PROJECT_STATUS_COLOR[project.status]}`}>
               {PROJECT_STATUS_LABEL[project.status]}
             </span>
           </div>
           {project.clients.length === 0 ? (
-            <p className="text-amber-400/80 text-sm">Sin cliente asignado</p>
+            <p className="text-warn/80 text-sm">Sin cliente asignado</p>
           ) : (
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
               {project.clients.map((c, i) => (
                 <span key={c.id} className="flex items-center gap-2">
-                  {i > 0 && <span className="text-white/25">·</span>}
+                  {i > 0 && <span className="text-fg-trace">·</span>}
                   <Link
                     href={`/empresa/clientes/${c.id}`}
-                    className="text-white/60 hover:text-[#1AA7F0] transition-colors"
+                    className="text-fg-dim hover:text-brand-fg transition-colors"
                   >
                     {c.name}{c.company ? ` — ${c.company}` : ""}
                   </Link>
@@ -119,7 +119,7 @@ export function ProjectDetailClient({
           <button
             type="button"
             onClick={() => setEditing("form")}
-            className="px-3 py-1.5 bg-white/[0.04] border border-white/[0.08] text-white/60 text-xs font-medium rounded-lg hover:text-white hover:border-white/20 transition-all shrink-0"
+            className="px-3 py-1.5 bg-fill border border-line text-fg-dim text-xs font-medium rounded-lg hover:text-fg hover:border-line-loud transition-all shrink-0"
           >
             Editar proyecto
           </button>
@@ -146,14 +146,14 @@ export function ProjectDetailClient({
         <div className="lg:col-span-2 space-y-5">
 
           {/* Description / Scope */}
-          <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-4">
+          <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
             {!project.description && !project.scope ? (
               <div className="flex items-center justify-between">
-                <p className="text-white/50 text-sm">Sin descripción ni alcance.</p>
+                <p className="text-fg-faint text-sm">Sin descripción ni alcance.</p>
                 <button
                   type="button"
                   onClick={() => setEditing("form")}
-                  className="text-[#1AA7F0]/60 text-[10px] hover:text-[#1AA7F0] transition-colors"
+                  className="text-brand-fg/60 text-[10px] hover:text-brand-fg transition-colors"
                 >
                   + agregar
                 </button>
@@ -162,20 +162,20 @@ export function ProjectDetailClient({
               <>
                 {project.description && (
                   <div>
-                    <p className="text-white/60 text-[10px] uppercase tracking-widest mb-2">Descripción</p>
-                    <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{project.description}</p>
+                    <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-2">Descripción</p>
+                    <p className="text-fg-mute text-sm leading-relaxed whitespace-pre-wrap">{project.description}</p>
                   </div>
                 )}
                 {project.scope && (
                   <div>
-                    <p className="text-white/60 text-[10px] uppercase tracking-widest mb-2">Alcance</p>
-                    <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{project.scope}</p>
+                    <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-2">Alcance</p>
+                    <p className="text-fg-mute text-sm leading-relaxed whitespace-pre-wrap">{project.scope}</p>
                   </div>
                 )}
                 {project.aiSummary && (
-                  <div className="border-t border-white/[0.05] pt-4">
-                    <p className="text-white/60 text-[10px] uppercase tracking-widest mb-2">Resumen IA</p>
-                    <p className="text-white/60 text-sm">{project.aiSummary}</p>
+                  <div className="border-t border-line pt-4">
+                    <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-2">Resumen IA</p>
+                    <p className="text-fg-dim text-sm">{project.aiSummary}</p>
                   </div>
                 )}
               </>
@@ -205,14 +205,14 @@ export function ProjectDetailClient({
           />
 
           {/* Propuesta comercial (PDF, estilo design-system) */}
-          <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl overflow-hidden">
+          <div className="bg-panel border border-line rounded-xl overflow-hidden">
             <div className="px-5 py-4 flex items-center justify-between">
-              <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">Propuesta comercial</h3>
+              <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Propuesta comercial</h3>
               <div className="flex items-center gap-2">
                 <button
                   onClick={handleGenerateProposal}
                   disabled={generatingProposal}
-                  className="text-[#1AA7F0]/70 text-[10px] hover:text-[#1AA7F0] transition-colors disabled:opacity-40"
+                  className="text-brand-fg/70 text-[10px] hover:text-brand-fg transition-colors disabled:opacity-40"
                 >
                   {generatingProposal ? "Generando…" : project.hasProposal ? "↻ Regenerar con IA" : "✦ Generar con IA"}
                 </button>
@@ -226,10 +226,10 @@ export function ProjectDetailClient({
               </div>
             </div>
             {proposalError && (
-              <div className="px-5 pb-4 text-red-400 text-xs">{proposalError}</div>
+              <div className="px-5 pb-4 text-danger text-xs">{proposalError}</div>
             )}
             {!project.hasProposal && (
-              <div className="px-5 pb-5 text-white/50 text-sm">
+              <div className="px-5 pb-5 text-fg-faint text-sm">
                 Genera el contenido de la propuesta con IA (portada, fases, inversión y cierre en el estilo de Pime) para poder descargarla.
               </div>
             )}
@@ -244,42 +244,42 @@ export function ProjectDetailClient({
           )}
 
           {/* Documentos vinculados */}
-          <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-white/[0.05] flex items-center justify-between">
-              <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">Documentos</h3>
+          <div className="bg-panel border border-line rounded-xl overflow-hidden">
+            <div className="px-5 py-4 border-b border-line flex items-center justify-between">
+              <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Documentos</h3>
               <div className="flex items-center gap-3">
                 <Link href={`/empresa/cotizaciones/nueva?projectId=${project.id}${mainClient ? `&clientId=${mainClient.id}` : ""}`}
-                  className="text-[#1AA7F0]/60 text-[10px] hover:text-[#1AA7F0] transition-colors">
+                  className="text-brand-fg/60 text-[10px] hover:text-brand-fg transition-colors">
                   + Cotización
                 </Link>
                 <Link href={`/empresa/facturas/nueva?projectId=${project.id}${mainClient ? `&clientId=${mainClient.id}` : ""}`}
-                  className="text-[#1AA7F0]/60 text-[10px] hover:text-[#1AA7F0] transition-colors">
+                  className="text-brand-fg/60 text-[10px] hover:text-brand-fg transition-colors">
                   + Factura
                 </Link>
               </div>
             </div>
             {project.documents.length === 0 ? (
-              <div className="px-5 py-6 text-white/50 text-sm text-center">Sin documentos vinculados</div>
+              <div className="px-5 py-6 text-fg-faint text-sm text-center">Sin documentos vinculados</div>
             ) : (
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-line">
                 {project.documents.map((doc) => (
                   <Link key={doc.id}
                     href={`/empresa/${DOC_TYPE_PATH[doc.type] ?? "facturas"}/${doc.id}`}
-                    className="flex items-center justify-between px-5 py-3 hover:bg-white/[0.02] transition-colors group">
+                    className="flex items-center justify-between px-5 py-3 hover:bg-fill transition-colors group">
                     <div>
-                      <span className="text-white/70 text-sm font-mono group-hover:text-[#1AA7F0] transition-colors">
+                      <span className="text-fg-mute text-sm font-mono group-hover:text-brand-fg transition-colors">
                         {doc.number ?? doc.type}
                       </span>
-                      <span className="text-white/55 text-xs ml-2">{doc.clientName}</span>
+                      <span className="text-fg-dim text-xs ml-2">{doc.clientName}</span>
                       {doc.type === "COTIZACION" && doc.status === "ACCEPTED" && !doc.linkedDocumentId && (
-                        <span className="ml-2 text-[10px] text-amber-400 border border-amber-500/30 rounded px-1.5 py-0.5">⚠ Sin factura</span>
+                        <span className="ml-2 text-[10px] text-warn border border-amber-500/30 rounded px-1.5 py-0.5">⚠ Sin factura</span>
                       )}
                     </div>
                     <div className="flex items-center gap-3">
                       {doc.total != null && (
-                        <span className="text-white/50 text-sm font-mono">${fmtUSD(doc.total)}</span>
+                        <span className="text-fg-faint text-sm font-mono">${fmtUSD(doc.total)}</span>
                       )}
-                      <span className="text-white/50 text-[10px]">{new Date(doc.issueDate).toLocaleDateString("es-PA")}</span>
+                      <span className="text-fg-faint text-[10px]">{new Date(doc.issueDate).toLocaleDateString("es-PA")}</span>
                     </div>
                   </Link>
                 ))}
@@ -289,15 +289,15 @@ export function ProjectDetailClient({
 
           {/* Plan de pagos */}
           {allSchedules.length > 0 && (
-            <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl overflow-hidden">
-              <div className="px-5 py-4 border-b border-white/[0.05] flex items-center justify-between">
-                <h3 className="text-white/60 text-xs uppercase tracking-widest font-medium">Plan de pagos</h3>
+            <div className="bg-panel border border-line rounded-xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-line flex items-center justify-between">
+                <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Plan de pagos</h3>
                 <div className="text-right">
-                  <span className="text-[#C8A96E] text-xs font-mono">${fmtUSD(totalPaid)}</span>
-                  <span className="text-white/50 text-xs"> / ${fmtUSD(totalScheduled)}</span>
+                  <span className="text-sand-fg text-xs font-mono">${fmtUSD(totalPaid)}</span>
+                  <span className="text-fg-faint text-xs"> / ${fmtUSD(totalScheduled)}</span>
                 </div>
               </div>
-              <div className="divide-y divide-white/[0.04]">
+              <div className="divide-y divide-line">
                 {allSchedules.map((sc) => {
                   const isPaid = sc.status === "PAID" || paidIds.has(sc.id);
                   const isOverdue = sc.status === "OVERDUE" && !isPaid;
@@ -305,13 +305,13 @@ export function ProjectDetailClient({
                   return (
                     <div key={sc.id} className="flex items-center justify-between px-5 py-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-white/70 text-sm truncate">{sc.description}</p>
-                        <p className={`text-xs mt-0.5 ${isOverdue ? "text-red-400" : "text-white/55"}`}>
+                        <p className="text-fg-mute text-sm truncate">{sc.description}</p>
+                        <p className={`text-xs mt-0.5 ${isOverdue ? "text-danger" : "text-fg-dim"}`}>
                           {isOverdue ? "Vencido — " : ""}{dueDate.toLocaleDateString("es-PA")}
                         </p>
                       </div>
                       <div className="flex items-center gap-3 ml-4 shrink-0">
-                        <span className="text-white/60 text-sm font-mono">${fmtUSD(sc.amount)}</span>
+                        <span className="text-fg-dim text-sm font-mono">${fmtUSD(sc.amount)}</span>
                         <span className={`px-2 py-0.5 text-[10px] rounded border ${SCHEDULE_STATUS_COLOR[isPaid ? "PAID" : sc.status]}`}>
                           {isPaid ? "Pagado" : sc.status === "OVERDUE" ? "Vencido" : sc.status === "PENDING" ? "Pendiente" : sc.status}
                         </span>
@@ -319,7 +319,7 @@ export function ProjectDetailClient({
                           <button
                             onClick={() => handleMarkPaid(sc.id)}
                             disabled={payingId === sc.id}
-                            className="text-[10px] text-green-400/60 hover:text-green-400 transition-colors disabled:opacity-40">
+                            className="text-[10px] text-ok/60 hover:text-ok transition-colors disabled:opacity-40">
                             ✓ Pagado
                           </button>
                         )}
@@ -337,74 +337,74 @@ export function ProjectDetailClient({
           {project.clients.length > 0 && clientsPanel}
 
           {/* Fechas y presupuesto */}
-          <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-3">
+          <div className="bg-panel border border-line rounded-xl p-5 space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-white/50 text-[10px] uppercase tracking-widest">Resumen</p>
+              <p className="text-fg-faint text-[10px] uppercase tracking-widest">Resumen</p>
               <button
                 type="button"
                 onClick={() => setEditing("form")}
-                className="text-[#1AA7F0]/60 text-[10px] hover:text-[#1AA7F0] transition-colors"
+                className="text-brand-fg/60 text-[10px] hover:text-brand-fg transition-colors"
               >
                 editar
               </button>
             </div>
             <div>
-              <p className="text-white/55 text-[10px] uppercase tracking-widest mb-1">Presupuesto</p>
+              <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Presupuesto</p>
               {project.totalBudget != null ? (
-                <p className="text-[#C8A96E] font-mono text-lg font-semibold">${fmtUSD(project.totalBudget)}</p>
+                <p className="text-sand-fg font-mono text-lg font-semibold">${fmtUSD(project.totalBudget)}</p>
               ) : (
-                <p className="text-white/35 text-sm">Sin definir</p>
+                <p className="text-fg-ghost text-sm">Sin definir</p>
               )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <p className="text-white/55 text-[10px] uppercase tracking-widest mb-1">Inicio</p>
-                <p className="text-white/60 text-sm">
+                <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Inicio</p>
+                <p className="text-fg-dim text-sm">
                   {project.startDate ? new Date(project.startDate).toLocaleDateString("es-PA") : "—"}
                 </p>
               </div>
               <div>
-                <p className="text-white/55 text-[10px] uppercase tracking-widest mb-1">Fin estimado</p>
-                <p className="text-white/60 text-sm">
+                <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Fin estimado</p>
+                <p className="text-fg-dim text-sm">
                   {project.endDate ? new Date(project.endDate).toLocaleDateString("es-PA") : "—"}
                 </p>
               </div>
             </div>
             {project.aiTags.length > 0 && (
-              <div className="flex flex-wrap gap-1 pt-2 border-t border-white/[0.05]">
+              <div className="flex flex-wrap gap-1 pt-2 border-t border-line">
                 {project.aiTags.map((t) => (
-                  <span key={t} className="px-2 py-0.5 text-[10px] rounded border border-white/[0.08] text-white/55">{t}</span>
+                  <span key={t} className="px-2 py-0.5 text-[10px] rounded border border-line text-fg-dim">{t}</span>
                 ))}
               </div>
             )}
           </div>
 
           {/* Financiación */}
-          <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-5 space-y-2">
+          <div className="bg-panel border border-line rounded-xl p-5 space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-white/50 text-[10px] uppercase tracking-widest">Financiación</p>
+              <p className="text-fg-faint text-[10px] uppercase tracking-widest">Financiación</p>
               <button
                 type="button"
                 onClick={() => setEditing("financing")}
-                className="text-[#1AA7F0]/60 text-[10px] hover:text-[#1AA7F0] transition-colors"
+                className="text-brand-fg/60 text-[10px] hover:text-brand-fg transition-colors"
               >
                 {plan ? "editar" : "+ agregar"}
               </button>
             </div>
             {plan ? (
               <>
-                <p className="text-white/70 text-sm">
-                  Abono <span className="font-mono text-[#C8A96E]">${fmtUSD(plan.downPayment)}</span>
+                <p className="text-fg-mute text-sm">
+                  Abono <span className="font-mono text-sand-fg">${fmtUSD(plan.downPayment)}</span>
                   {" + "}
                   {plan.installments} cuotas {FREQUENCY_ADJECTIVE[plan.frequency]}
                 </p>
-                <p className="text-white/45 text-xs">
+                <p className="text-fg-faint text-xs">
                   Total ${fmtUSD(plan.total)}
                   {plan.firstDueDate && ` · primera cuota ${new Date(plan.firstDueDate).toLocaleDateString("es-PA")}`}
                 </p>
               </>
             ) : (
-              <p className="text-white/35 text-sm">Sin plan de financiación.</p>
+              <p className="text-fg-ghost text-sm">Sin plan de financiación.</p>
             )}
           </div>
         </div>

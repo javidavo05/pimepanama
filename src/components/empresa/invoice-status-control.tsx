@@ -13,14 +13,14 @@ import type { DocumentStatus } from "@prisma/client";
  * uno movía el dinero y el otro no.
  */
 const FLOW: { value: DocumentStatus; label: string; hint: string; dot: string }[] = [
-  { value: "DRAFT", label: "Borrador", hint: "Todavía no se envía al cliente", dot: "bg-white/40" },
+  { value: "DRAFT", label: "Borrador", hint: "Todavía no se envía al cliente", dot: "bg-fg-ghost" },
   { value: "SENT", label: "Enviada", hint: "Entregada, esperando respuesta", dot: "bg-blue-400" },
   { value: "ACCEPTED", label: "Aceptada", hint: "El cliente la aprobó", dot: "bg-green-400" },
 ];
 
 const CLOSING: { value: DocumentStatus; label: string; hint: string; dot: string }[] = [
   { value: "REJECTED", label: "Rechazada", hint: "El cliente no la aceptó", dot: "bg-red-400" },
-  { value: "CANCELLED", label: "Cancelada", hint: "Anulada, sale de Por Cobrar", dot: "bg-white/30" },
+  { value: "CANCELLED", label: "Cancelada", hint: "Anulada, sale de Por Cobrar", dot: "bg-fg-trace" },
 ];
 
 const LABELS: Record<DocumentStatus, string> = {
@@ -34,13 +34,13 @@ const LABELS: Record<DocumentStatus, string> = {
 };
 
 const CHIP: Record<DocumentStatus, string> = {
-  DRAFT: "text-white/60 bg-white/[0.05] border-white/[0.12]",
-  SENT: "text-blue-400 bg-blue-500/10 border-blue-500/25",
-  ACCEPTED: "text-green-400 bg-green-500/10 border-green-500/25",
-  PAID: "text-[#C8A96E] bg-[#C8A96E]/10 border-[#C8A96E]/25",
-  PARTIALLY_PAID: "text-amber-400 bg-amber-500/10 border-amber-500/25",
-  REJECTED: "text-red-400 bg-red-500/10 border-red-500/25",
-  CANCELLED: "text-white/50 bg-white/[0.03] border-white/[0.08]",
+  DRAFT: "text-fg-dim bg-fill-2 border-line-mid",
+  SENT: "text-info bg-blue-500/10 border-blue-500/25",
+  ACCEPTED: "text-ok bg-green-500/10 border-green-500/25",
+  PAID: "text-sand-fg bg-sand/10 border-sand/25",
+  PARTIALLY_PAID: "text-warn bg-amber-500/10 border-amber-500/25",
+  REJECTED: "text-danger bg-red-500/10 border-red-500/25",
+  CANCELLED: "text-fg-faint bg-fill border-line",
 };
 
 interface InvoiceStatusControlProps {
@@ -99,15 +99,15 @@ export function InvoiceStatusControl({ documentId, currentStatus }: InvoiceStatu
         onClick={() => apply(opt.value)}
         disabled={pending}
         className={`w-full flex items-start gap-2.5 px-3 py-2 rounded-lg text-left transition-colors disabled:opacity-50 ${
-          active ? "bg-white/[0.06]" : "hover:bg-white/[0.04]"
+          active ? "bg-fill-2" : "hover:bg-fill"
         }`}
       >
         <span className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${opt.dot}`} />
         <span className="min-w-0">
-          <span className="block text-white/85 text-sm">{opt.label}</span>
-          <span className="block text-white/45 text-[11px] leading-snug">{opt.hint}</span>
+          <span className="block text-fg text-sm">{opt.label}</span>
+          <span className="block text-fg-faint text-[11px] leading-snug">{opt.hint}</span>
         </span>
-        {active && <span className="text-[#1AA7F0] text-xs ml-auto shrink-0">✓</span>}
+        {active && <span className="text-brand-fg text-xs ml-auto shrink-0">✓</span>}
       </button>
     );
   }
@@ -129,19 +129,19 @@ export function InvoiceStatusControl({ documentId, currentStatus }: InvoiceStatu
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full mt-2 w-72 z-40 bg-[#0d0d18] border border-white/[0.1] rounded-xl shadow-2xl p-2 space-y-0.5"
+          className="absolute right-0 top-full mt-2 w-72 z-40 bg-pop border border-line-mid rounded-xl shadow-2xl p-2 space-y-0.5"
         >
-          <p className="px-3 pt-1 pb-1.5 text-white/40 text-[10px] uppercase tracking-widest">
+          <p className="px-3 pt-1 pb-1.5 text-fg-ghost text-[10px] uppercase tracking-widest">
             Flujo de la factura
           </p>
           {FLOW.map(renderOption)}
 
-          <div className="border-t border-white/[0.06] my-1.5" />
-          <p className="px-3 pb-1.5 text-white/40 text-[10px] uppercase tracking-widest">Cerrar</p>
+          <div className="border-t border-line my-1.5" />
+          <p className="px-3 pb-1.5 text-fg-ghost text-[10px] uppercase tracking-widest">Cerrar</p>
           {CLOSING.map(renderOption)}
 
-          <div className="border-t border-white/[0.06] mt-1.5 pt-2 px-3 pb-1">
-            <p className="text-white/45 text-[11px] leading-snug">
+          <div className="border-t border-line mt-1.5 pt-2 px-3 pb-1">
+            <p className="text-fg-faint text-[11px] leading-snug">
               {isPaidState
                 ? `Estado actual: ${LABELS[currentStatus]}. Se fijó al registrar el cobro.`
                 : "«Pagada» y «Pago parcial» se activan solas al registrar un cobro."}

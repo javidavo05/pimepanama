@@ -66,26 +66,26 @@ export function AccountActions({ accountId }: { accountId: string }) {
   return (
     <div className="flex items-center gap-2 flex-shrink-0">
       {testResult && (
-        <span className={`text-xs ${testResult.startsWith("✓") ? "text-green-400" : "text-red-400"}`}>{testResult}</span>
+        <span className={`text-xs ${testResult.startsWith("✓") ? "text-ok" : "text-danger"}`}>{testResult}</span>
       )}
       <button onClick={handleTest} disabled={testing}
-        className="px-3 py-1.5 text-xs bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] disabled:opacity-40 text-white/60 rounded-lg transition-all">
+        className="px-3 py-1.5 text-xs bg-fill border border-line hover:bg-fill-2 disabled:opacity-40 text-fg-dim rounded-lg transition-all">
         {testing ? "..." : "Probar"}
       </button>
       <button onClick={handleSync} disabled={syncing}
-        className="px-3 py-1.5 text-xs bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] disabled:opacity-40 text-white/60 rounded-lg transition-all">
+        className="px-3 py-1.5 text-xs bg-fill border border-line hover:bg-fill-2 disabled:opacity-40 text-fg-dim rounded-lg transition-all">
         {syncing ? "Sync..." : "Sincronizar"}
       </button>
       <button onClick={handleResyncBodies} disabled={syncing}
-        className="px-3 py-1.5 text-xs bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 disabled:opacity-40 text-amber-400/80 rounded-lg transition-all">
+        className="px-3 py-1.5 text-xs bg-amber-500/10 border border-amber-500/20 hover:bg-amber-500/15 disabled:opacity-40 text-warn/80 rounded-lg transition-all">
         Recuperar HTML
       </button>
       <Link href={`/empresa/correos/cuentas/${accountId}`}
-        className="px-3 py-1.5 text-xs bg-white/[0.04] border border-white/[0.08] hover:bg-white/[0.07] text-white/60 rounded-lg transition-all">
+        className="px-3 py-1.5 text-xs bg-fill border border-line hover:bg-fill-2 text-fg-dim rounded-lg transition-all">
         Editar
       </Link>
       <button onClick={handleDelete}
-        className="px-3 py-1.5 text-xs border border-red-500/20 hover:bg-red-500/10 text-red-400/60 hover:text-red-400 rounded-lg transition-all">
+        className="px-3 py-1.5 text-xs border border-red-500/20 hover:bg-red-500/10 text-danger/60 hover:text-danger rounded-lg transition-all">
         Eliminar
       </button>
     </div>

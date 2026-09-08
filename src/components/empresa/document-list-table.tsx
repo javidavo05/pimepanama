@@ -38,24 +38,24 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  DRAFT: "text-white/60 bg-white/[0.04]",
-  SENT: "text-blue-400 bg-blue-500/10",
-  ACCEPTED: "text-green-400 bg-green-500/10",
-  REJECTED: "text-red-400 bg-red-500/10",
-  PAID: "text-[#C8A96E] bg-[#C8A96E]/10",
-  PARTIALLY_PAID: "text-blue-400 bg-blue-500/10",
-  CANCELLED: "text-white/55 bg-white/[0.03]",
+  DRAFT: "text-fg-dim bg-fill",
+  SENT: "text-info bg-blue-500/10",
+  ACCEPTED: "text-ok bg-green-500/10",
+  REJECTED: "text-danger bg-red-500/10",
+  PAID: "text-sand-fg bg-sand/10",
+  PARTIALLY_PAID: "text-info bg-blue-500/10",
+  CANCELLED: "text-fg-dim bg-fill",
 };
 
 /** Nombre del cliente, enlazado a su perfil cuando el documento lo tiene asociado. */
 function ClientCell({ doc, truncate = "max-w-[200px]" }: { doc: Document; truncate?: string }) {
   const body = (
     <>
-      <p className={`text-white/80 font-medium truncate ${truncate}`}>
+      <p className={`text-fg-soft font-medium truncate ${truncate}`}>
         {doc.clientName ?? doc.title}
       </p>
       {doc.clientCompany && (
-        <p className={`text-white/55 text-xs truncate ${truncate}`}>{doc.clientCompany}</p>
+        <p className={`text-fg-dim text-xs truncate ${truncate}`}>{doc.clientCompany}</p>
       )}
     </>
   );
@@ -85,15 +85,15 @@ function AmountCell({ doc, align = "right" }: { doc: Document; align?: "right" |
   const collected = collectedOf(doc);
   const partial = collected > 0 && collected < total - 0.01;
 
-  if (!doc.total) return <span className="text-white/50">—</span>;
+  if (!doc.total) return <span className="text-fg-faint">—</span>;
 
   return (
     <div className={align === "right" ? "text-right" : ""}>
-      <span className="text-white/70 font-mono text-xs">
+      <span className="text-fg-mute font-mono text-xs">
         {doc.currency} {total.toLocaleString("en-US", { minimumFractionDigits: 2 })}
       </span>
       {partial && (
-        <p className="text-green-400/80 font-mono text-[10px] mt-0.5">
+        <p className="text-ok/80 font-mono text-[10px] mt-0.5">
           cobrado {collected.toLocaleString("en-US", { minimumFractionDigits: 2 })}
         </p>
       )}
@@ -125,7 +125,7 @@ export function DocumentListTable({
 }: DocumentListTableProps) {
   if (documents.length === 0) {
     return (
-      <div className="text-center py-16 text-white/55 text-sm">
+      <div className="text-center py-16 text-fg-dim text-sm">
         {emptyMessage}
       </div>
     );
@@ -138,9 +138,9 @@ export function DocumentListTable({
         {documents.map((doc) => {
           const basePath = editBasePath ?? `/empresa/${TYPE_PATHS[doc.type]}`;
           return (
-            <div key={doc.id} className="bg-[#0a0a10] border border-white/[0.06] rounded-xl p-4 space-y-2.5">
+            <div key={doc.id} className="bg-panel border border-line rounded-xl p-4 space-y-2.5">
               <div className="flex items-center justify-between gap-2">
-                <span className="text-white/70 font-mono text-xs">{doc.number ?? "—"}</span>
+                <span className="text-fg-mute font-mono text-xs">{doc.number ?? "—"}</span>
                 <span className={`inline-flex px-2 py-0.5 rounded-md text-xs font-medium shrink-0 ${STATUS_COLORS[doc.status]}`}>
                   {STATUS_LABELS[doc.status]}
                 </span>
@@ -155,7 +155,7 @@ export function DocumentListTable({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between gap-2 pt-1 border-t border-white/[0.04]">
+              <div className="flex items-center justify-between gap-2 pt-1 border-t border-line">
                 <div className="flex items-center gap-2">
                   {showType && (
                     <span
@@ -165,7 +165,7 @@ export function DocumentListTable({
                       {TYPE_LABELS[doc.type]}
                     </span>
                   )}
-                  <span className="text-white/60 text-[11px]">
+                  <span className="text-fg-dim text-[11px]">
                     {new Date(doc.issueDate).toLocaleDateString("es-PA", { day: "2-digit", month: "short", year: "numeric" })}
                   </span>
                 </div>
@@ -197,38 +197,38 @@ export function DocumentListTable({
       <div className="hidden md:block overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-white/[0.06]">
-            <th className="text-left text-white/60 text-xs uppercase tracking-widest font-medium pb-3 pr-4">
+          <tr className="border-b border-line">
+            <th className="text-left text-fg-dim text-xs uppercase tracking-widest font-medium pb-3 pr-4">
               Número
             </th>
             {showType && (
-              <th className="text-left text-white/60 text-xs uppercase tracking-widest font-medium pb-3 pr-4">
+              <th className="text-left text-fg-dim text-xs uppercase tracking-widest font-medium pb-3 pr-4">
                 Tipo
               </th>
             )}
-            <th className="text-left text-white/60 text-xs uppercase tracking-widest font-medium pb-3 pr-4">
+            <th className="text-left text-fg-dim text-xs uppercase tracking-widest font-medium pb-3 pr-4">
               Cliente
             </th>
-            <th className="text-right text-white/60 text-xs uppercase tracking-widest font-medium pb-3 pr-4">
+            <th className="text-right text-fg-dim text-xs uppercase tracking-widest font-medium pb-3 pr-4">
               Total
             </th>
-            <th className="text-left text-white/60 text-xs uppercase tracking-widest font-medium pb-3 pr-4">
+            <th className="text-left text-fg-dim text-xs uppercase tracking-widest font-medium pb-3 pr-4">
               Estado
             </th>
-            <th className="text-left text-white/60 text-xs uppercase tracking-widest font-medium pb-3">
+            <th className="text-left text-fg-dim text-xs uppercase tracking-widest font-medium pb-3">
               Fecha
             </th>
             <th className="pb-3" />
           </tr>
         </thead>
-        <tbody className="divide-y divide-white/[0.04]">
+        <tbody className="divide-y divide-line">
           {documents.map((doc) => {
             const basePath =
               editBasePath ?? `/empresa/${TYPE_PATHS[doc.type]}`;
             return (
-              <tr key={doc.id} className="group hover:bg-white/[0.02] transition-colors">
+              <tr key={doc.id} className="group hover:bg-fill transition-colors">
                 <td className="py-3 pr-4">
-                  <span className="text-white/70 font-mono text-xs">
+                  <span className="text-fg-mute font-mono text-xs">
                     {doc.number ?? "—"}
                   </span>
                 </td>
@@ -259,7 +259,7 @@ export function DocumentListTable({
                   </span>
                 </td>
                 <td className="py-3 pr-4">
-                  <span className="text-white/60 text-xs">
+                  <span className="text-fg-dim text-xs">
                     {new Date(doc.issueDate).toLocaleDateString("es-PA", {
                       day: "2-digit",
                       month: "short",

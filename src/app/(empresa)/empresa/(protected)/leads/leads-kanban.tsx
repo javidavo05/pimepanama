@@ -40,7 +40,7 @@ export function LeadsKanban({ leads, onStatusChange }: LeadsKanbanProps) {
               setDraggingId(null);
               if (id) onStatusChange(id, col.value);
             }}
-            className="min-h-[200px] rounded-xl border border-white/[0.06] bg-[#0a0a10] p-3"
+            className="min-h-[200px] rounded-xl border border-line bg-panel p-3"
           >
             <div className="mb-3 flex items-center justify-between px-1">
               <span
@@ -48,7 +48,7 @@ export function LeadsKanban({ leads, onStatusChange }: LeadsKanbanProps) {
               >
                 {col.label}
               </span>
-              <span className="font-mono text-xs text-white/50">{items.length}</span>
+              <span className="font-mono text-xs text-fg-faint">{items.length}</span>
             </div>
 
             <div className="space-y-2">
@@ -61,17 +61,17 @@ export function LeadsKanban({ leads, onStatusChange }: LeadsKanbanProps) {
                     setDraggingId(lead.id);
                   }}
                   onDragEnd={() => setDraggingId(null)}
-                  className={`cursor-grab rounded-lg border border-white/[0.07] bg-white/[0.03] p-3 transition-all hover:border-white/[0.15] active:cursor-grabbing ${
+                  className={`cursor-grab rounded-lg border border-line bg-fill p-3 transition-all hover:border-line-mid active:cursor-grabbing ${
                     draggingId === lead.id ? "opacity-40" : ""
                   }`}
                 >
                   <Link href={`/empresa/leads/${lead.id}`} className="block">
-                    <p className="truncate text-sm font-medium text-white/85">{lead.name}</p>
-                    {lead.company && <p className="truncate text-xs text-white/55">{lead.company}</p>}
+                    <p className="truncate text-sm font-medium text-fg">{lead.name}</p>
+                    {lead.company && <p className="truncate text-xs text-fg-dim">{lead.company}</p>}
                     <div className="mt-2 flex items-center justify-between gap-2">
                       <LeadPriorityBadge priority={lead.priority} />
                       {lead.estimatedValue != null && (
-                        <span className="truncate font-mono text-xs text-[#C8A96E]/70">
+                        <span className="truncate font-mono text-xs text-sand-fg/70">
                           ${lead.estimatedValue.toLocaleString("en-US", { maximumFractionDigits: 0 })}
                         </span>
                       )}
@@ -80,7 +80,7 @@ export function LeadsKanban({ leads, onStatusChange }: LeadsKanbanProps) {
                 </div>
               ))}
               {items.length === 0 && (
-                <p className="py-4 text-center text-xs text-white/40">Sin leads</p>
+                <p className="py-4 text-center text-xs text-fg-ghost">Sin leads</p>
               )}
             </div>
           </div>

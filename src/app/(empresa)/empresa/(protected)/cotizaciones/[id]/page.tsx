@@ -79,12 +79,12 @@ export default async function EditarCotizacionPage({
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {doc.status === "ACCEPTED" && (
-        <div className="flex items-center justify-between gap-4 bg-[#C8A96E]/[0.06] border border-[#C8A96E]/20 rounded-xl px-5 py-4">
+        <div className="flex items-center justify-between gap-4 bg-sand/[0.06] border border-sand/20 rounded-xl px-5 py-4">
           <div>
-            <p className="text-[#C8A96E] text-sm font-medium">
+            <p className="text-sand-fg text-sm font-medium">
               {linkedInvoiceId ? "Factura vinculada" : "Cotización aceptada"}
             </p>
-            <p className="text-white/60 text-xs mt-0.5">
+            <p className="text-fg-dim text-xs mt-0.5">
               {linkedInvoiceId
                 ? "Esta cotización ya tiene una factura asociada."
                 : "Al aceptar se crea una factura en borrador. También puede crearla manualmente."}
@@ -156,18 +156,18 @@ export default async function EditarCotizacionPage({
       {/* Quick summary bar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href="/empresa/cotizaciones" className="text-white/55 hover:text-white/60 text-sm transition-colors">
+          <Link href="/empresa/cotizaciones" className="text-fg-dim hover:text-fg-dim text-sm transition-colors">
             ← Cotizaciones
           </Link>
-          <span className="text-white/50">/</span>
-          <span className="text-white/60 font-mono text-sm">{doc.number ?? id}</span>
+          <span className="text-fg-faint">/</span>
+          <span className="text-fg-dim font-mono text-sm">{doc.number ?? id}</span>
           <StatusBadge status={doc.status} />
         </div>
         <div className="flex items-center gap-3">
           {netAmount !== null && netAmount !== gross && (
             <div className="text-right">
-              <p className="text-white/55 text-xs">Neto recibido</p>
-              <p className="text-green-400 font-mono text-sm font-semibold">
+              <p className="text-fg-dim text-xs">Neto recibido</p>
+              <p className="text-ok font-mono text-sm font-semibold">
                 ${netAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
               </p>
             </div>

@@ -140,7 +140,7 @@ export function LineItemsEditor({
     });
 
   const numInputCls =
-    "no-number-spinner bg-transparent border-b border-white/[0.07] pb-1 text-white/70 text-sm text-right focus:outline-none focus:border-[#C8A96E]/40 w-full transition-all";
+    "no-number-spinner bg-transparent border-b border-line pb-1 text-fg-mute text-sm text-right focus:outline-none focus:border-sand/40 w-full transition-all";
 
   function blockArrowIncrement(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "ArrowUp" || e.key === "ArrowDown") {
@@ -149,14 +149,14 @@ export function LineItemsEditor({
   }
 
   return (
-    <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl overflow-hidden">
+    <div className="bg-panel border border-line rounded-xl overflow-hidden">
       {/* Table header (desktop only — mobile rows show inline labels instead) */}
-      <div className="hidden sm:grid grid-cols-[1fr_80px_120px_80px_80px_100px_32px] gap-2 px-4 py-3 border-b border-white/[0.06] bg-[#C8A96E]/5">
+      <div className="hidden sm:grid grid-cols-[1fr_80px_120px_80px_80px_100px_32px] gap-2 px-4 py-3 border-b border-line bg-sand/5">
         {[t.description, t.qty, t.price, t.tax, t.discount, t.amount, ""].map(
           (h, i) => (
             <span
               key={i}
-              className="text-[#a8895a] text-[10px] uppercase tracking-widest font-medium"
+              className="text-sand-fg text-[10px] uppercase tracking-widest font-medium"
             >
               {h}
             </span>
@@ -165,7 +165,7 @@ export function LineItemsEditor({
       </div>
 
       {/* Rows */}
-      <div className="divide-y divide-white/[0.04]">
+      <div className="divide-y divide-line">
         {fields.map((field, index) => (
           <div
             key={field.id}
@@ -173,11 +173,11 @@ export function LineItemsEditor({
           >
             {/* Description + AI */}
             <div className="col-span-2 sm:col-span-1 flex flex-col gap-1">
-              <span className="sm:hidden text-white/55 text-[10px] uppercase tracking-widest">{t.description}</span>
+              <span className="sm:hidden text-fg-dim text-[10px] uppercase tracking-widest">{t.description}</span>
               <input
                 {...register(`lineItems.${index}.description`)}
                 placeholder={language === "es" ? "Descripción del servicio" : "Service description"}
-                className="w-full bg-transparent border-b border-white/[0.07] pb-1 text-white/80 text-sm placeholder-white/20 focus:outline-none focus:border-[#C8A96E]/40 transition-all"
+                className="w-full bg-transparent border-b border-line pb-1 text-fg-soft text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 transition-all"
               />
               <AiEnhanceButton
                 text={lineItems[index]?.description ?? ""}
@@ -193,7 +193,7 @@ export function LineItemsEditor({
 
             {/* Quantity */}
             <div className="flex flex-col gap-1">
-              <span className="sm:hidden text-white/55 text-[10px] uppercase tracking-widest">{t.qty}</span>
+              <span className="sm:hidden text-fg-dim text-[10px] uppercase tracking-widest">{t.qty}</span>
               <input
                 {...register(`lineItems.${index}.quantity`, { valueAsNumber: true })}
                 type="number"
@@ -207,7 +207,7 @@ export function LineItemsEditor({
 
             {/* Unit price */}
             <div className="flex flex-col gap-1">
-              <span className="sm:hidden text-white/55 text-[10px] uppercase tracking-widest">{t.price}</span>
+              <span className="sm:hidden text-fg-dim text-[10px] uppercase tracking-widest">{t.price}</span>
               <input
                 {...register(`lineItems.${index}.unitPrice`, { valueAsNumber: true })}
                 type="number"
@@ -221,7 +221,7 @@ export function LineItemsEditor({
 
             {/* Tax */}
             <div className="flex flex-col gap-1">
-              <span className="sm:hidden text-white/55 text-[10px] uppercase tracking-widest">{t.tax}</span>
+              <span className="sm:hidden text-fg-dim text-[10px] uppercase tracking-widest">{t.tax}</span>
               <input
                 {...register(`lineItems.${index}.taxPercent`, { valueAsNumber: true })}
                 type="number"
@@ -235,7 +235,7 @@ export function LineItemsEditor({
 
             {/* Discount */}
             <div className="flex flex-col gap-1">
-              <span className="sm:hidden text-white/55 text-[10px] uppercase tracking-widest">{t.discount}</span>
+              <span className="sm:hidden text-fg-dim text-[10px] uppercase tracking-widest">{t.discount}</span>
               <input
                 {...register(`lineItems.${index}.discount`, { valueAsNumber: true })}
                 type="number"
@@ -250,8 +250,8 @@ export function LineItemsEditor({
 
             {/* Line total */}
             <div className="flex flex-col gap-1">
-              <span className="sm:hidden text-white/55 text-[10px] uppercase tracking-widest">{t.amount}</span>
-              <span className="text-white/70 text-sm font-mono text-right sm:pt-1">
+              <span className="sm:hidden text-fg-dim text-[10px] uppercase tracking-widest">{t.amount}</span>
+              <span className="text-fg-mute text-sm font-mono text-right sm:pt-1">
                 {fmt(calcLineTotal(lineItems[index] ?? {}))}
               </span>
             </div>
@@ -261,7 +261,7 @@ export function LineItemsEditor({
               <button
                 type="button"
                 onClick={() => remove(index)}
-                className="text-white/50 hover:text-red-400 transition-colors text-sm sm:mt-1"
+                className="text-fg-faint hover:text-danger transition-colors text-sm sm:mt-1"
               >
                 ×
               </button>
@@ -271,7 +271,7 @@ export function LineItemsEditor({
       </div>
 
       {/* Add row */}
-      <div className="px-4 py-3 border-t border-white/[0.04]">
+      <div className="px-4 py-3 border-t border-line">
         <button
           type="button"
           onClick={() =>
@@ -283,29 +283,29 @@ export function LineItemsEditor({
               discount: 0,
             })
           }
-          className="text-[#C8A96E]/70 hover:text-[#C8A96E] text-xs font-medium transition-colors"
+          className="text-sand-fg/70 hover:text-sand-fg text-xs font-medium transition-colors"
         >
           {t.add}
         </button>
       </div>
 
       {/* Totals */}
-      <div className="border-t border-white/[0.06] px-4 py-4 space-y-2">
+      <div className="border-t border-line px-4 py-4 space-y-2">
         <div className="flex justify-end gap-8">
-          <span className="text-white/60 text-sm">{t.subtotal}</span>
-          <span className="text-white/70 font-mono text-sm w-28 text-right">
+          <span className="text-fg-dim text-sm">{t.subtotal}</span>
+          <span className="text-fg-mute font-mono text-sm w-28 text-right">
             {fmt(subtotal)}
           </span>
         </div>
         <div className="flex justify-end gap-8">
-          <span className="text-white/60 text-sm">{t.totalTax}</span>
-          <span className="text-white/70 font-mono text-sm w-28 text-right">
+          <span className="text-fg-dim text-sm">{t.totalTax}</span>
+          <span className="text-fg-mute font-mono text-sm w-28 text-right">
             {fmt(taxTotal)}
           </span>
         </div>
-        <div className="flex justify-end gap-8 pt-2 border-t border-white/[0.06]">
-          <span className="text-[#C8A96E] text-sm font-semibold">{t.total}</span>
-          <span className="text-[#C8A96E] font-mono text-lg font-semibold w-28 text-right">
+        <div className="flex justify-end gap-8 pt-2 border-t border-line">
+          <span className="text-sand-fg text-sm font-semibold">{t.total}</span>
+          <span className="text-sand-fg font-mono text-lg font-semibold w-28 text-right">
             {fmt(grandTotal)}
           </span>
         </div>

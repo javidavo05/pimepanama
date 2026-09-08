@@ -101,17 +101,17 @@ export function DesignSystemHtmlEditor({
   }
 
   return (
-    <div className="bg-[#0a0a10] border border-white/[0.06] rounded-xl overflow-hidden">
-      <div className="px-4 py-3 border-b border-white/[0.05] flex flex-wrap items-center justify-between gap-3">
-        <span className="text-white/60 text-xs uppercase tracking-widest font-medium">{title}</span>
+    <div className="bg-panel border border-line rounded-xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-line flex flex-wrap items-center justify-between gap-3">
+        <span className="text-fg-dim text-xs uppercase tracking-widest font-medium">{title}</span>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setEditing((e) => !e)}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
               editing
-                ? "border-[#0586FE]/40 text-[#7ec4ff] bg-[#0586FE]/10"
-                : "border-white/[0.08] text-white/50 hover:text-white/70"
+                ? "border-azure/40 text-sky bg-azure/10"
+                : "border-line text-fg-faint hover:text-fg-mute"
             }`}
           >
             {editing ? "Edición activa" : "Solo lectura"}
@@ -126,7 +126,7 @@ export function DesignSystemHtmlEditor({
                 setShowSource(true);
               }
             }}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-white/[0.08] text-white/50 hover:text-white/70 transition-colors"
+            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-faint hover:text-fg-mute transition-colors"
           >
             {showSource ? "Aplicar HTML" : "Ver HTML"}
           </button>
@@ -140,10 +140,10 @@ export function DesignSystemHtmlEditor({
             onChange={(e) => setSource(e.target.value)}
             rows={24}
             spellCheck={false}
-            className="w-full font-mono text-xs bg-[#050508] border border-white/[0.08] rounded-lg p-4 text-white/80 focus:outline-none focus:border-[#0586FE]/40 resize-y"
+            className="w-full font-mono text-xs bg-canvas border border-line rounded-lg p-4 text-fg-soft focus:outline-none focus:border-azure/40 resize-y"
           />
-          <p className="text-white/40 text-[11px] mt-2">
-            Edita el HTML de las páginas (<code className="text-white/50">div.page</code>). Pulsa &quot;Aplicar HTML&quot; para actualizar la vista previa.
+          <p className="text-fg-ghost text-[11px] mt-2">
+            Edita el HTML de las páginas (<code className="text-fg-faint">div.page</code>). Pulsa &quot;Aplicar HTML&quot; para actualizar la vista previa.
           </p>
         </div>
       ) : (
@@ -175,7 +175,7 @@ export function DesignSystemHtmlEditor({
         </div>
       )}
 
-      <div className="px-4 py-2 border-t border-white/[0.05] text-[11px] text-white/40">
+      <div className="px-4 py-2 border-t border-line text-[11px] text-fg-ghost">
         Vista previa con plantilla Pime (Inter + Manrope, A4). Haz clic en el texto para editar visualmente.
       </div>
     </div>
