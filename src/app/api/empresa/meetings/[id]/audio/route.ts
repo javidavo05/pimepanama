@@ -9,6 +9,8 @@ import { withoutEchoes } from "@/lib/meetings/echo";
 import { appendSegments, flatten, loadSegments } from "@/lib/meetings/segments";
 import {
   parseAudioChunks,
+  parseSpokenLanguages,
+  whisperLanguage,
   type MeetingAudioChunk,
   type MeetingChannel,
   type MeetingSegment,
@@ -69,7 +71,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const meeting = await prisma.meeting.findFirst({
       where: { id, userId: user.id },
-      select: { id: true, language: true, audioKeys: true, audioChunks: true, durationMs: true },
+      select: {
+        id: true,
+        language: true,
+        spokenLanguages: true,
+        audioKeys: true,
+        audioChunks: true,
+        durationMs: true,
+      },
     });
     if (!meeting) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -106,10 +115,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const openai = getOpenAI();
     const start = Date.now();
+    // Con un solo idioma se le dice cuál, que acierta más. En una reunión
+    // bilingüe se omite: Whisper detecta el idioma de cada tramo por su cuenta,
+    // y es lo único que funciona cuando la gente cambia de idioma a media
+    // conversación. Forzarlo hace que oiga español donde hay inglés y devuelva
+    // palabras inventadas que suenan parecido.
+    const spoken = parseSpokenLanguages(meeting.spokenLanguages, meeting.language);
+    const language = whisperLanguage(spoken);
+
     const transcription = await openai.audio.transcriptions.create({
       file: await toFile(buffer, `tramo-${index}.${extensionFor(mime)}`, { type: mime }),
       model: "whisper-1",
-      language: meeting.language === "en" ? "en" : "es",
+      ...(language ? { language } : {}),
       response_format: "verbose_json",
     });
     const durationMs = Date.now() - start;

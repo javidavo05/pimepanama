@@ -980,6 +980,10 @@ model Meeting {
   bitacora             Document?           @relation("MeetingBitacora", fields: [bitacoraId], references: [id])
   title                String
   language             String              @default("es")
+  /// Idiomas que se hablan en la reunión: ["es"], ["en"] o ambos. Con más de uno
+  /// la transcripción deja que Whisper detecte el idioma tramo por tramo.
+  /// `language` es distinto: es el idioma en el que sale la minuta.
+  spokenLanguages      String[]
   status               MeetingStatus       @default(DRAFT)
   meetingDate          DateTime            @default(now())
   durationMs           Int                 @default(0)

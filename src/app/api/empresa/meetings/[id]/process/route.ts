@@ -19,6 +19,7 @@ import { flatten, loadSegments, replaceSegments } from "@/lib/meetings/segments"
 import { buildDiarizedText } from "@/lib/meetings/transcript";
 import {
   parseAttendees,
+  parseSpokenLanguages,
   parseTechnicalDeliverable,
   type ExecutiveMinutes,
   type MeetingSegment,
@@ -65,6 +66,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     const attendees = parseAttendees(meeting.attendees);
+    const spoken = parseSpokenLanguages(meeting.spokenLanguages, meeting.language);
     const { block, repoBlock, hasRepo } = await buildProjectContext(
       user.id,
       meeting.projectId,
@@ -100,7 +102,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const echoes = findEchoes(segments);
       const clean = segments.filter((_, i) => !echoes[i]);
 
-      const result = await runDiarization(openai, clean, attendees, projectContext, meeting.audioSource);
+      const result = await runDiarization(openai, clean, attendees, projectContext, meeting.audioSource, spoken, meeting.language);
       const diarizedText = buildDiarizedText(result.data);
 
       // El eco no se borra, solo se excluye del análisis: sigue en la
@@ -142,7 +144,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     // ── Etapa 2: minuta ejecutiva + minuta técnica ───────────────────────────
     if (stage === "minutes") {
-      const result = await runMinutes(openai, diarizedText, attendees, codeContext, meeting.audioSource);
+      const result = await runMinutes(openai, diarizedText, attendees, codeContext, meeting.audioSource, spoken, meeting.language);
 
       await prisma.meeting.update({
         where: { id },

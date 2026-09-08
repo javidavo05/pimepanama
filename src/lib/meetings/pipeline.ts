@@ -22,6 +22,7 @@ import type {
   ExecutiveMinutes,
   MeetingAttendee,
   MeetingChapter,
+  MeetingLanguage,
   MeetingSegment,
   TechnicalDeliverable,
   TechnicalMinutes,
@@ -125,7 +126,9 @@ export async function runDiarization(
   segments: MeetingSegment[],
   attendees: MeetingAttendee[],
   projectContext: string,
-  audioSource?: string | null
+  audioSource?: string | null,
+  spoken: MeetingLanguage[] = ["es"],
+  output = "es"
 ): Promise<AiCallResult<MeetingSegment[]>> {
   const assigned: MeetingSegment[] = segments.map((s) => ({ ...s }));
   const knownSpeakers = new Set<string>(
@@ -143,7 +146,7 @@ export async function runDiarization(
     // Un lote entero ya atribuido por canal no se le manda al modelo.
     if (pending.length === 0) continue;
 
-    const system = diarizationPrompt(attendees, [...knownSpeakers], projectContext, audioSource);
+    const system = diarizationPrompt(attendees, [...knownSpeakers], projectContext, audioSource, spoken, output);
     const user = `Transcripción (índice global, timestamp, texto). Las líneas que ya traen «Nombre» delante están confirmadas: úsalas como referencia, no las reasignes.\n\n${numberedSegments(batch, offset)}\n\nDevuelve la asignación de hablante SOLO para estos índices: ${pending.join(", ")}.`;
 
     const result = await jsonCall<{ assignments?: Assignment[] }>(
@@ -225,7 +228,9 @@ export async function runMinutes(
   diarizedText: string,
   attendees: MeetingAttendee[],
   projectContext: string,
-  audioSource?: string | null
+  audioSource?: string | null,
+  spoken: MeetingLanguage[] = ["es"],
+  output = "es"
 ): Promise<AiCallResult<MinutesResult>> {
   const chunks = chunkTranscript(diarizedText, CHUNK_CHARS);
   const tally = new CostTally();
@@ -234,7 +239,7 @@ export async function runMinutes(
     const data = tally.add(
       await jsonCall<Partial<MinutesResult>>(
         openai,
-        minutesPrompt(attendees, projectContext, audioSource),
+        minutesPrompt(attendees, projectContext, audioSource, spoken, output),
         `Transcripción atribuida por hablante:\n\n${clampTranscript(diarizedText, MAX_TRANSCRIPT_CHARS)}`,
         3000
       )
@@ -251,7 +256,7 @@ export async function runMinutes(
       tally.add(
         await jsonCall<Partial<MinutesResult>>(
           openai,
-          minutesPrompt(attendees, projectContext, audioSource) + partialPass(i, chunks.length),
+          minutesPrompt(attendees, projectContext, audioSource, spoken, output) + partialPass(i, chunks.length),
           `Transcripción atribuida por hablante — tramo ${i + 1} de ${chunks.length}:\n\n${chunks[i]}`,
           3000
         )
@@ -262,7 +267,7 @@ export async function runMinutes(
   const merged = tally.add(
     await jsonCall<Partial<MinutesResult>>(
       openai,
-      mergeMinutesPrompt(attendees, projectContext),
+      mergeMinutesPrompt(attendees, projectContext, spoken, output),
       `Minutas parciales de los ${chunks.length} tramos, en orden cronológico:\n\n${partials
         .map((p, i) => `### Tramo ${i + 1}\n${JSON.stringify(p)}`)
         .join("\n\n")}`,

@@ -9,7 +9,7 @@ import {
   serializeMeetingSpeaker,
 } from "@/lib/meetings/serialize";
 import { countSegments, loadSegments } from "@/lib/meetings/segments";
-import { parseAttendees, parseAudioSource } from "@/lib/meetings/types";
+import { parseAttendees, parseAudioSource, parseSpokenLanguages } from "@/lib/meetings/types";
 
 export const runtime = "nodejs";
 
@@ -55,6 +55,9 @@ export const PATCH = withEmpresaIdRoute(async (req, { params }) => {
   if (typeof body.title === "string" && body.title.trim()) data.title = body.title.trim();
   if (body.language === "es" || body.language === "en") data.language = body.language;
   if (body.audioSource !== undefined) data.audioSource = parseAudioSource(body.audioSource);
+  if (body.spokenLanguages !== undefined) {
+    data.spokenLanguages = parseSpokenLanguages(body.spokenLanguages, body.language);
+  }
   if (body.meetingDate) data.meetingDate = new Date(body.meetingDate);
   if (body.attendees !== undefined) data.attendees = parseAttendees(body.attendees);
   if (typeof body.transcript === "string") data.transcript = body.transcript;

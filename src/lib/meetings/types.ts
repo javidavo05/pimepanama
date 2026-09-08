@@ -331,3 +331,51 @@ export function describeAudioSource(source: string | null | undefined): string {
       return "No se declaró de dónde salió el audio.";
   }
 }
+
+/** Idiomas que el sistema sabe transcribir y redactar. */
+export const MEETING_LANGUAGES = ["es", "en"] as const;
+export type MeetingLanguage = (typeof MEETING_LANGUAGES)[number];
+
+export const LANGUAGE_LABEL: Record<MeetingLanguage, string> = {
+  es: "Español",
+  en: "Inglés",
+};
+
+/** Normaliza la lista de idiomas hablados; nunca devuelve vacío. */
+export function parseSpokenLanguages(
+  value: unknown,
+  fallback: string = "es"
+): MeetingLanguage[] {
+  const list = Array.isArray(value) ? value : [];
+  const clean = MEETING_LANGUAGES.filter((l) => list.includes(l));
+  if (clean.length > 0) return [...clean];
+  return [MEETING_LANGUAGES.includes(fallback as MeetingLanguage) ? (fallback as MeetingLanguage) : "es"];
+}
+
+/**
+ * Lo que Whisper debe recibir como idioma.
+ *
+ * Con un solo idioma se le dice cuál: acierta más. Con dos, `undefined` — que
+ * es lo que activa la detección automática tramo por tramo. Forzar uno en una
+ * reunión bilingüe hace que Whisper intente oír español donde hay inglés y
+ * devuelva palabras inventadas que suenan parecido.
+ */
+export function whisperLanguage(spoken: MeetingLanguage[]): MeetingLanguage | undefined {
+  return spoken.length === 1 ? spoken[0] : undefined;
+}
+
+/** Instrucción para el modelo cuando la reunión mezcla idiomas. */
+export function describeLanguages(
+  spoken: MeetingLanguage[],
+  output: string
+): string {
+  const outputLabel = output === "en" ? "inglés" : "español";
+  if (spoken.length <= 1) {
+    return `La reunión es en ${LANGUAGE_LABEL[spoken[0] ?? "es"].toLowerCase()} y todo lo que escribas va en ${outputLabel}.`;
+  }
+  return `La reunión es bilingüe: se habla en ${spoken.map((l) => LANGUAGE_LABEL[l].toLowerCase()).join(" y en ")}, y la gente cambia de idioma a media conversación. Reglas:
+- Todo lo que TÚ redactes va en ${outputLabel}, sin excepción, aunque el tramo que estés resumiendo esté en el otro idioma.
+- Las citas textuales se conservan en el idioma en que se dijeron. No traduzcas una frase del cliente: pierde el matiz que la hace útil como constancia.
+- Un término técnico que se dijo en inglés se deja en inglés. No lo traduzcas al español solo por coherencia.
+- Que alguien cambie de idioma NO significa que sea otra persona. Es la misma, hablando en el otro idioma.`;
+}

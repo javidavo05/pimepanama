@@ -1,7 +1,7 @@
 import { brandSystemPrompt } from "@/lib/ai/pime-brand-voice";
 import type { MeetingAttendee } from "./types";
 import { describeAttendees } from "./transcript";
-import { describeAudioSource } from "./types";
+import { describeAudioSource, describeLanguages, type MeetingLanguage } from "./types";
 
 /**
  * Persona técnica. Deliberadamente NO usa `brandSystemPrompt`: esa voz es la del
@@ -26,7 +26,9 @@ export function diarizationPrompt(
   attendees: MeetingAttendee[],
   knownSpeakers: string[],
   projectContext: string,
-  audioSource?: string | null
+  audioSource?: string | null,
+  spoken: MeetingLanguage[] = ["es"],
+  output = "es"
 ): string {
   const roster =
     knownSpeakers.length > 0
@@ -40,6 +42,8 @@ Tu tarea ahora es atribuir cada intervención de una transcripción a quién la 
 La transcripción viene como líneas numeradas con timestamp. No tienes el audio: te guías por el contenido — quién pregunta y quién responde, quién habla como proveedor y quién como cliente, cambios de tema, menciones por nombre ("como decía Javier..."), y el hecho de que una misma persona suele encadenar varias líneas seguidas.
 
 Cómo se grabó: ${describeAudioSource(audioSource)}
+
+Idiomas: ${describeLanguages(spoken, output)}
 
 Asistentes declarados de la reunión:
 ${describeAttendees(attendees)}${roster}
@@ -59,7 +63,9 @@ Responde SOLO con JSON válido:
 export function minutesPrompt(
   attendees: MeetingAttendee[],
   projectContext: string,
-  audioSource?: string | null
+  audioSource?: string | null,
+  spoken: MeetingLanguage[] = ["es"],
+  output = "es"
 ): string {
   const commercial = brandSystemPrompt(
     `Vas a redactar la parte ejecutiva de la minuta de una reunión: el registro que el cliente puede leer y reenviar como constancia de lo acordado.`,
@@ -73,6 +79,8 @@ Además de la parte ejecutiva, redactas una segunda minuta —la técnica— y p
 ${TECH_PERSONA}
 
 Cómo se grabó: ${describeAudioSource(audioSource)}
+
+Idiomas: ${describeLanguages(spoken, output)}
 
 Asistentes:
 ${describeAttendees(attendees)}
@@ -187,8 +195,13 @@ export function partialPass(index: number, total: number): string {
 }
 
 /** Fusión de las minutas parciales de una reunión larga en una sola minuta. */
-export function mergeMinutesPrompt(attendees: MeetingAttendee[], projectContext: string): string {
-  return `${minutesPrompt(attendees, projectContext)}
+export function mergeMinutesPrompt(
+  attendees: MeetingAttendee[],
+  projectContext: string,
+  spoken: MeetingLanguage[] = ["es"],
+  output = "es"
+): string {
+  return `${minutesPrompt(attendees, projectContext, null, spoken, output)}
 
 AHORA NO RECIBES LA TRANSCRIPCIÓN: recibes las minutas parciales de cada tramo de la reunión, en orden cronológico. Tu tarea es fusionarlas en UNA sola minuta con la misma estructura JSON.
 
