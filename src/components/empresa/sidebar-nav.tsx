@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { signOutAction } from "@/app/(empresa)/empresa/actions";
 import { NotificationBell } from "@/components/empresa/mail/notification-bell";
-import { ThemeToggle } from "@/components/empresa/theme/theme-toggle";
+import { BrandMenu } from "@/components/empresa/brand-menu";
 
 const NAV_ITEMS = [
   { href: "/empresa", label: "Dashboard", icon: "⬛", exact: true },
@@ -89,26 +89,13 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
         } md:translate-x-0`}
       >
         {/* Brand */}
-        <div className="px-5 py-6 border-b border-line">
-          <div className="flex items-center gap-3">
-            <div className="relative w-8 h-8 rounded-md bg-brand/10 border border-brand/25 flex items-center justify-center shrink-0 overflow-hidden">
-              <Image
-                src={logoSrc}
-                alt={companyName}
-                fill
-                sizes="32px"
-                className="object-contain p-0.5"
-                onError={() => setLogoFailed(true)}
-              />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-fg text-xs font-semibold tracking-widest uppercase truncate">
-                {companyName}
-              </p>
-              <p className="text-brand-fg text-[10px] tracking-[0.25em] uppercase mt-0.5">
-                Suite
-              </p>
-            </div>
+        <div className="px-4 py-6 border-b border-line">
+          <div className="flex items-center gap-2">
+            <BrandMenu
+              companyName={companyName}
+              logoSrc={logoSrc}
+              onLogoError={() => setLogoFailed(true)}
+            />
             <NotificationBell align="left" />
           </div>
         </div>
@@ -147,15 +134,6 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
               {item.label}
             </Link>
           ))}
-
-          {/* Tema — visible siempre, no escondido en Configuración: es un ajuste
-              que se cambia según la luz del ambiente, no una vez y nunca más. */}
-          <div className="mt-2 px-3 py-3 rounded-lg bg-fill border border-line">
-            <p className="text-fg-faint text-[10px] font-medium uppercase tracking-wider mb-2">
-              Tema
-            </p>
-            <ThemeToggle />
-          </div>
 
           {/* User + sign out */}
           <div className="mt-2 px-3 py-3 rounded-lg bg-fill border border-line">
