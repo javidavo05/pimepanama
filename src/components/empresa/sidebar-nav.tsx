@@ -108,7 +108,7 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
                 Suite
               </p>
             </div>
-            <NotificationBell />
+            <NotificationBell align="left" />
           </div>
         </div>
 

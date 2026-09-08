@@ -15,7 +15,22 @@ interface Notification {
   link?: string | null;
 }
 
-export function NotificationBell() {
+/** Los avisos llegan con prefijo de prioridad en el título; lo mostramos como chip. */
+const PRIORITY_PREFIXES = [
+  { label: "Urgente", match: /^urgente:\s*/i, className: "bg-red-500/15 text-red-300 border-red-500/25" },
+  { label: "Atención", match: /^atenci[oó]n:\s*/i, className: "bg-amber-500/15 text-amber-200 border-amber-500/25" },
+];
+
+function splitPriority(title: string) {
+  for (const p of PRIORITY_PREFIXES) {
+    if (p.match.test(title)) {
+      return { tag: p, text: title.replace(p.match, "") };
+    }
+  }
+  return { tag: null, text: title };
+}
+
+export function NotificationBell({ align = "right" }: { align?: "left" | "right" }) {
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -73,9 +88,9 @@ export function NotificationBell() {
       {open && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-32px)] bg-[#0d0d18] border border-white/[0.08] rounded-xl shadow-2xl z-50 overflow-hidden"
+          className={`absolute ${align === "left" ? "left-0" : "right-0"} mt-2 w-[22rem] max-w-[calc(100vw-24px)] flex flex-col max-h-[min(32rem,calc(100vh-6rem))] bg-[#0d0d18] border border-white/[0.08] rounded-xl shadow-2xl z-50 overflow-hidden`}
         >
-          <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
+          <div className="shrink-0 px-4 py-3 border-b border-white/[0.06] flex items-center justify-between gap-3">
             <p className="text-white/70 text-sm font-medium">Notificaciones</p>
             <Link href="/empresa/correos/hub" className="text-[#1AA7F0] text-xs hover:underline" onClick={() => setOpen(false)}>
               Ver bandeja
@@ -84,23 +99,37 @@ export function NotificationBell() {
           {notifications.length === 0 ? (
             <div className="px-4 py-6 text-center text-white/50 text-sm">Sin notificaciones</div>
           ) : (
-            <div className="max-h-80 overflow-y-auto">
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain">
               {notifications.map((n) => (
                 <Link
                   key={n.id}
                   href={n.link ?? (n.emailId ? `/empresa/correos/hub/${n.emailId}` : "/empresa/correos/hub")}
                   onClick={() => setOpen(false)}
-                  className={`block px-4 py-3 border-b border-white/[0.04] hover:bg-white/[0.03] transition-colors ${!n.read ? "bg-[#1AA7F0]/[0.04]" : ""}`}
+                  className={`block px-4 py-3 border-b border-white/[0.04] hover:bg-white/[0.04] transition-colors ${!n.read ? "bg-[#1AA7F0]/[0.06]" : ""}`}
                 >
-                  <p className="text-white/80 text-xs font-medium leading-snug">{n.title}</p>
-                  <p className="text-white/55 text-xs mt-0.5 line-clamp-2">{n.body}</p>
-                  <p className="text-white/50 text-[10px] mt-1">{formatDateTimeEsPa(n.createdAt)}</p>
+                  {(() => {
+                    const { tag, text } = splitPriority(n.title);
+                    return (
+                      <>
+                        {tag && (
+                          <span
+                            className={`inline-block mb-1 px-1.5 py-0.5 rounded border text-[10px] font-semibold uppercase tracking-wide ${tag.className}`}
+                          >
+                            {tag.label}
+                          </span>
+                        )}
+                        <p className="text-white text-sm font-medium leading-snug line-clamp-2 break-words">{text}</p>
+                      </>
+                    );
+                  })()}
+                  <p className="text-white/65 text-xs leading-relaxed mt-1 line-clamp-2 break-words">{n.body}</p>
+                  <p className="text-white/45 text-[11px] mt-1">{formatDateTimeEsPa(n.createdAt)}</p>
                 </Link>
               ))}
             </div>
           )}
 
-          <div className="border-t border-white/[0.06]">
+          <div className="shrink-0 border-t border-white/[0.06]">
             <PushToggle />
           </div>
         </div>
