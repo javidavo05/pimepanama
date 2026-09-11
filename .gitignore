@@ -60,3 +60,13 @@ tools/pime-audio/pime-audio
 
 # impeccable: la config de excepciones se comparte; la caché del hook no.
 .impeccable/hook.cache.json
+
+# Restos de trabajo local que no van al repo (es público): pruebas de PDF con
+# datos de clientes, logs de recuperación de disco, capturas de las pruebas del
+# navegador y el ledger de verificación.
+scratch-*
+photorec.*
+.playwright-mcp/
+GATES.md
+*.code-workspace
+login-light.png
