@@ -12,9 +12,42 @@ import {
 } from "@/lib/meetings/types";
 import { withoutEchoes } from "@/lib/meetings/echo";
 import { importAudioFile, type ImportProgress } from "./audio-import";
-import { MeetingCapture, looksLikeLoopback, type CaptureChannel, type CaptureMode } from "./live-capture";
+import {
+  MeetingCapture,
+  looksLikeLoopback,
+  type CaptureChannel,
+  type CaptureMode,
+  type CaptureSegment,
+} from "./live-capture";
 import { CHANNEL_ACCENT, LiveTranscript } from "./live-transcript";
 import { isInstantSpeechSupported, useInstantSpeech } from "./use-instant-speech";
+import {
+  addSegment,
+  bumpAttempts,
+  deleteMeeting,
+  deleteSegment,
+  getMeeting,
+  isOfflineStoreAvailable,
+  listSegments,
+  patchMeeting,
+  requestPersistentStorage,
+  saveMeeting,
+  type OfflineMeetingDraft,
+} from "@/lib/meetings/offline-store";
+import {
+  AuthError,
+  createServerMeeting,
+  holdMeetingLock,
+  isTransient,
+  NetworkError,
+  ProcessingError,
+  syncOfflineMeeting,
+  uploadSegment,
+  type SyncProgress,
+} from "@/lib/meetings/offline-sync";
+import { PROCESS_STAGES } from "@/lib/meetings/process-stages";
+import { PendingOfflineMeetings } from "../pending-offline-meetings";
+import { useConnectivity } from "../use-connectivity";
 
 /**
  * Duración de cada tramo. Corto a propósito: es lo que hace que la transcripción
@@ -23,6 +56,9 @@ import { isInstantSpeechSupported, useInstantSpeech } from "./use-instant-speech
  * `timeslice`: los trozos de un mismo recorder no se pueden transcribir sueltos.
  */
 const SEGMENT_MS = 8_000;
+
+/** Intentos antes de dar por perdido un tramo que el servidor no puede transcribir. */
+const MAX_UPLOAD_ATTEMPTS = 3;
 
 interface ProjectOption {
   id: string;
@@ -44,18 +80,10 @@ interface MeetingRecorderProps {
   initialProjectId?: string;
 }
 
-type Phase = "setup" | "recording" | "processing" | "done";
+/** `saved`: terminó sin conexión y la reunión quedó guardada en el equipo. */
+type Phase = "setup" | "recording" | "processing" | "saved" | "done";
 
-const STAGES = [
-  { key: "diarize", label: "Separando quién habla" },
-  { key: "minutes", label: "Redactando minuta ejecutiva y técnica" },
-  { key: "items", label: "Extrayendo pendientes técnicos" },
-  { key: "deliverable", label: "Determinando el entregable técnico" },
-  { key: "prompt", label: "Armando el master prompt" },
-  // Va al final y sobre la transcripción, no sobre las minutas: si falla, la
-  // reunión ya está completa y solo se queda sin índice de temas.
-  { key: "chapters", label: "Armando el índice de temas" },
-] as const;
+const STAGES = PROCESS_STAGES;
 
 interface ModeOption {
   key: CaptureMode;
@@ -204,13 +232,31 @@ export function MeetingRecorder({
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [online, setOnline] = useConnectivity();
+  /** Tramos guardados en este equipo que todavía no llegan al servidor */
+  const [pendingCount, setPendingCount] = useState(0);
+  const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
 
   const captureRef = useRef<MeetingCapture | null>(null);
   const startedAtRef = useRef(0);
-  // Las subidas se encadenan: el backend hace read-modify-write sobre el JSON de
-  // segmentos, así que dos tramos en paralelo se pisarían.
-  const uploadQueueRef = useRef<Promise<void>>(Promise.resolve());
   const meetingIdRef = useRef<string | null>(null);
+  // La reunión existe primero en el equipo; el id del servidor llega después, o
+  // cuando vuelve la red si se empezó a grabar sin ella.
+  const localIdRef = useRef<string | null>(null);
+  const draftRef = useRef<OfflineMeetingDraft | null>(null);
+  const creatingRef = useRef<Promise<string> | null>(null);
+  // Cada tramo se escribe en el equipo antes de subirse. Esta cadena permite
+  // esperar a que el último quede guardado antes de cerrar la reunión.
+  const writeChainRef = useRef<Promise<void>>(Promise.resolve());
+  const drainRef = useRef<Promise<void> | null>(null);
+  const drainAgainRef = useRef(false);
+  const releaseLockRef = useRef<(() => Promise<void>) | null>(null);
+  // Desde que se pulsa "Finalizar", la subida en vivo se detiene: la hace la
+  // subida final, y dos a la vez duplicarían tramos.
+  const stoppingRef = useRef(false);
+  // Solo se reintenta sola la subida que falló por falta de red, no la que el
+  // servidor rechazó: esa se reintentaría en bucle.
+  const autoRetryRef = useRef(false);
   // El mapeo canal→persona lo lee la subida, que corre fuera del render.
   const speakerRef = useRef<Record<CaptureChannel, string>>({ LOCAL: "", REMOTE: "" });
   const lockSpeakersRef = useRef(false);
@@ -228,7 +274,8 @@ export function MeetingRecorder({
 
   // El reconocimiento del navegador solo escucha un idioma a la vez; se usa el
   // primero declarado. La transcripción buena, la de Whisper, sí es bilingüe.
-  const interim = useInstantSpeech(phase === "recording" && instantPreview, spoken[0] ?? "es");
+  // El reconocimiento de Chrome necesita red: sin ella solo generaría errores.
+  const interim = useInstantSpeech(phase === "recording" && instantPreview && online, spoken[0] ?? "es");
   const interimSpeaker =
     mode === "ambient" ? "Vista previa" : channelSpeaker.LOCAL || "Tu micrófono";
 
@@ -274,58 +321,166 @@ export function MeetingRecorder({
   }, [loadDevices]);
 
   // Si el usuario abandona la página con la grabación viva, soltamos el micrófono.
-  useEffect(() => () => captureRef.current?.release(), []);
+  useEffect(
+    () => () => {
+      captureRef.current?.release();
+      void releaseLockRef.current?.();
+    },
+    []
+  );
 
   function updateAttendee(index: number, patch: Partial<MeetingAttendee>) {
     setAttendees((prev) => prev.map((a, i) => (i === index ? { ...a, ...patch } : a)));
   }
 
-  const uploadSegment = useCallback(
-    async (blob: Blob, channel: CaptureChannel, index: number, offsetMs: number) => {
-      const id = meetingIdRef.current;
-      if (!id || blob.size === 0) return;
+  /** Nombre de la voz de un canal, si las voces van separadas por canal. */
+  function currentSpeaker(channel: CaptureChannel): string | undefined {
+    return lockSpeakersRef.current ? speakerRef.current[channel] || undefined : undefined;
+  }
 
-      const formData = new FormData();
-      formData.append("audio", blob, `${channel.toLowerCase()}-${index}.webm`);
-      formData.append("index", String(index));
-      formData.append("offsetMs", String(offsetMs));
-      formData.append("channel", channel);
-      const speaker = speakerRef.current[channel];
-      if (lockSpeakersRef.current && speaker) formData.append("speaker", speaker);
+  /**
+   * Id de la reunión en el servidor. Si todavía no existe, la crea: pasa al
+   * empezar con conexión, o al volver la red en una grabación que arrancó sin
+   * ella. Una sola creación a la vez, o un tramo que llega mientras se crea
+   * duplicaría la reunión.
+   */
+  const ensureServerMeeting = useCallback(async (): Promise<string | null> => {
+    if (meetingIdRef.current) return meetingIdRef.current;
+    const localId = localIdRef.current;
+    const draft = draftRef.current;
+    if (!localId || !draft) return null;
+    if (!creatingRef.current) {
+      creatingRef.current = createServerMeeting(draft).finally(() => {
+        creatingRef.current = null;
+      });
+    }
+    const id = await creatingRef.current;
+    if (!meetingIdRef.current) {
+      meetingIdRef.current = id;
+      setMeetingId(id);
+      await patchMeeting(localId, { serverId: id });
+    }
+    return meetingIdRef.current;
+  }, []);
 
-      setUploading((n) => n + 1);
-      try {
-        const res = await fetch(`/api/empresa/meetings/${id}/audio`, {
-          method: "POST",
-          body: formData,
+  /**
+   * Sube, en orden, todo lo que esté guardado en el equipo, y lo borra de aquí a
+   * medida que el servidor lo confirma. Una sola corrida a la vez: si llega un
+   * tramo mientras sube, se anota y se vuelve a pasar. Sin red no insiste; la
+   * próxima vuelta (tramo nuevo, reconexión o el reintento periódico) retoma.
+   */
+  const drain = useCallback((): Promise<void> => {
+    if (drainRef.current) {
+      drainAgainRef.current = true;
+      return drainRef.current;
+    }
+
+    const run = async () => {
+      do {
+        drainAgainRef.current = false;
+        const localId = localIdRef.current;
+        if (!localId || stoppingRef.current) return;
+
+        let id: string | null;
+        try {
+          id = await ensureServerMeeting();
+        } catch (err) {
+          if (isTransient(err)) {
+            setOnline(false);
+            if (err instanceof AuthError) setError(err.message);
+          } else {
+            setError(err instanceof Error ? err.message : "No se pudo crear la reunión");
+          }
+          return;
+        }
+        if (!id) return;
+
+        for (const segment of await listSegments(localId)) {
+          if (stoppingRef.current) return;
+          setUploading((n) => n + 1);
+          try {
+            const transcribed = await uploadSegment(id, { ...segment, speaker: currentSpeaker(segment.channel) });
+            await deleteSegment(segment.id as number);
+            setPendingCount((n) => Math.max(0, n - 1));
+            setOnline(true);
+            if (transcribed.length > 0) {
+              setSegments((prev) => [...prev, ...transcribed].sort((a, b) => a.start - b.start));
+            }
+          } catch (err) {
+            if (isTransient(err)) {
+              setOnline(false);
+              if (err instanceof AuthError) setError(err.message);
+              return;
+            }
+            const attempts = await bumpAttempts(segment.id as number);
+            if (attempts < MAX_UPLOAD_ATTEMPTS) return;
+            await deleteSegment(segment.id as number);
+            setPendingCount((n) => Math.max(0, n - 1));
+            setError(
+              `Un tramo no se pudo transcribir (${err instanceof Error ? err.message : "error del servidor"}). La grabación sigue.`
+            );
+          } finally {
+            setUploading((n) => n - 1);
+          }
+        }
+      } while (drainAgainRef.current);
+    };
+
+    drainRef.current = run().finally(() => {
+      drainRef.current = null;
+    });
+    return drainRef.current;
+    // `setOnline` es estable; `currentSpeaker` lee refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ensureServerMeeting]);
+
+  /**
+   * Destino de cada tramo que corta la captura: primero al equipo, después al
+   * servidor. Si el equipo no lo puede guardar (sin espacio), se intenta subir
+   * directo como último recurso.
+   */
+  const persistSegment = useCallback(
+    (segment: CaptureSegment) => {
+      const localId = localIdRef.current;
+      if (!localId || segment.blob.size === 0) return;
+
+      writeChainRef.current = writeChainRef.current
+        .then(async () => {
+          await addSegment({
+            localId,
+            channel: segment.channel,
+            index: segment.index,
+            offsetMs: segment.offsetMs,
+            blob: segment.blob,
+            attempts: 0,
+          });
+          await patchMeeting(localId, { updatedAt: Date.now() });
+          setPendingCount((n) => n + 1);
+          void drain();
+        })
+        .catch(async () => {
+          const id = meetingIdRef.current;
+          try {
+            if (!id) throw new Error("sin reunión en el servidor");
+            const transcribed = await uploadSegment(id, { ...segment, speaker: currentSpeaker(segment.channel) });
+            setSegments((prev) => [...prev, ...transcribed].sort((a, b) => a.start - b.start));
+            setError("Este equipo no pudo guardar un tramo (¿sin espacio?); se subió directo.");
+          } catch {
+            setError("Se perdió un tramo: este equipo no lo pudo guardar y no había conexión para subirlo.");
+          }
         });
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error ?? "No se pudo transcribir el tramo");
-        }
-        const data = await res.json();
-        if (Array.isArray(data.segments) && data.segments.length > 0) {
-          setSegments((prev) =>
-            [...prev, ...(data.segments as MeetingSegment[])].sort((a, b) => a.start - b.start)
-          );
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Error subiendo audio");
-      } finally {
-        setUploading((n) => n - 1);
-      }
     },
-    []
+    [drain]
   );
 
-  const enqueueUpload = useCallback(
-    (blob: Blob, channel: CaptureChannel, index: number, offsetMs: number) => {
-      uploadQueueRef.current = uploadQueueRef.current.then(() =>
-        uploadSegment(blob, channel, index, offsetMs)
-      );
-    },
-    [uploadSegment]
-  );
+  // Reintentos mientras se graba: al volver la red y, por si el evento no llega
+  // (wifi sin salida), cada 15 s. Con conexión y nada pendiente no hace nada.
+  useEffect(() => {
+    if (phase !== "recording") return;
+    if (online) void drain();
+    const timer = setInterval(() => void drain(), 15_000);
+    return () => clearInterval(timer);
+  }, [phase, online, drain]);
 
   /**
    * Asigna una persona a un canal de audio. Reetiqueta también lo ya transcrito:
@@ -335,6 +490,9 @@ export function MeetingRecorder({
     const speaker = name.trim();
     setChannelSpeaker((prev) => ({ ...prev, [channel]: speaker }));
     speakerRef.current = { ...speakerRef.current, [channel]: speaker };
+    if (localIdRef.current) {
+      void patchMeeting(localIdRef.current, { channelSpeakers: speakerRef.current }).catch(() => undefined);
+    }
 
     setSegments((prev) =>
       prev.map((seg) =>
@@ -348,33 +506,32 @@ export function MeetingRecorder({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ channels: [{ channel, speaker }] }),
-    }).catch(() => setError("No se pudo guardar el nombre de esa voz. Se reintenta al finalizar."));
+    }).catch(() => {
+      // Sin conexión no es un error: el nombre se aplica a todo al subir.
+      if (navigator.onLine) setError("No se pudo guardar el nombre de esa voz. Se reintenta al finalizar.");
+    });
   }
 
-  /** Crea la fila de la reunión. La comparten grabar en vivo e importar audio. */
+  /** Los datos de la reunión tal como están en el formulario. */
+  function buildDraft(): OfflineMeetingDraft {
+    return {
+      title: title.trim(),
+      projectId: projectId || undefined,
+      clientId: clientId || undefined,
+      language,
+      spokenLanguages: spoken,
+      meetingDate,
+      audioSource,
+      attendees: attendees.filter((a) => a.name.trim()),
+    };
+  }
+
+  /** Crea la reunión en el servidor para importar un audio, que sí necesita red. */
   async function createMeeting(): Promise<string> {
-    const res = await fetch("/api/empresa/meetings", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        title: title.trim(),
-        projectId: projectId || undefined,
-        clientId: clientId || undefined,
-        language,
-        spokenLanguages: spoken,
-        meetingDate,
-        audioSource,
-        attendees: attendees.filter((a) => a.name.trim()),
-      }),
-    });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.error ?? "No se pudo crear la reunión");
-    }
-    const meeting = await res.json();
-    setMeetingId(meeting.id);
-    meetingIdRef.current = meeting.id;
-    return meeting.id as string;
+    const id = await createServerMeeting(buildDraft());
+    setMeetingId(id);
+    meetingIdRef.current = id;
+    return id;
   }
 
   /** Corre el análisis completo y lleva al detalle. Lo comparten ambos caminos. */
@@ -425,7 +582,13 @@ export function MeetingRecorder({
     try {
       id = await createMeeting();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo crear la reunión");
+      setError(
+        err instanceof NetworkError
+          ? "Subir un audio necesita conexión. Sin internet puedes grabar en vivo: se guarda en este equipo."
+          : err instanceof Error
+            ? err.message
+            : "No se pudo crear la reunión"
+      );
       setBusy(false);
       return;
     }
@@ -485,29 +648,66 @@ export function MeetingRecorder({
       setError("Este navegador no permite grabar audio. Usa Chrome o Edge en escritorio.");
       return;
     }
+    if (!isOfflineStoreAvailable()) {
+      setError("Este navegador no permite guardar la grabación en el equipo. Usa Chrome o Edge en escritorio.");
+      return;
+    }
     if (mode === "device" && !systemDeviceId) {
       setError("Elige el dispositivo por el que entra el audio de la llamada.");
       return;
     }
 
     setBusy(true);
+    stoppingRef.current = false;
+    const localId = crypto.randomUUID();
+    const draft = buildDraft();
+    localIdRef.current = localId;
+    draftRef.current = draft;
+    meetingIdRef.current = null;
+    setMeetingId(null);
+    setPendingCount(0);
+
     const capture = new MeetingCapture({
       mode,
       micDeviceId: micDeviceId || undefined,
       systemDeviceId: systemDeviceId || undefined,
       segmentMs: SEGMENT_MS,
-      onSegment: ({ blob, channel, index, offsetMs }) =>
-        enqueueUpload(blob, channel, index, offsetMs),
+      onSegment: persistSegment,
       onLevels: setLevels,
       onNotice: setNotice,
     });
 
     try {
+      // La reunión existe primero en el equipo: desde el primer tramo el audio
+      // tiene dónde guardarse, haya red o no.
+      const now = Date.now();
+      await saveMeeting({
+        localId,
+        serverId: null,
+        draft,
+        createdAt: now,
+        updatedAt: now,
+        durationMs: 0,
+        channelSpeakers: {},
+        lockSpeakers,
+        state: "recording",
+      });
+      releaseLockRef.current = await holdMeetingLock(localId);
+      void requestPersistentStorage();
+
       await capture.start();
       captureRef.current = capture;
       setActiveChannels(capture.activeChannels);
 
-      await createMeeting();
+      // En el servidor se crea si hay red, pero la grabación no lo espera: sin
+      // conexión se graba igual y la reunión se crea cuando vuelve.
+      try {
+        await ensureServerMeeting();
+      } catch (err) {
+        if (!isTransient(err)) throw err;
+        setOnline(false);
+        if (err instanceof AuthError) setError(err.message);
+      }
 
       // Arranque del mapeo de voces: tu micrófono eres tú, y si hay un solo
       // asistente del lado del cliente, ese es el otro canal. Lo demás lo ajusta
@@ -524,6 +724,7 @@ export function MeetingRecorder({
         : { LOCAL: "", REMOTE: "" };
       speakerRef.current = initialMap;
       setChannelSpeaker(initialMap);
+      await patchMeeting(localId, { channelSpeakers: initialMap });
 
       startedAtRef.current = Date.now();
       setElapsed(0);
@@ -532,6 +733,10 @@ export function MeetingRecorder({
     } catch (err) {
       capture.release();
       captureRef.current = null;
+      await releaseLockRef.current?.();
+      releaseLockRef.current = null;
+      localIdRef.current = null;
+      await deleteMeeting(localId).catch(() => undefined);
       setError(err instanceof Error ? err.message : "No se pudo iniciar la grabación");
     } finally {
       setBusy(false);
@@ -539,24 +744,97 @@ export function MeetingRecorder({
   }
 
   async function stopAndProcess() {
-    const id = meetingIdRef.current;
-    if (!id) return;
+    const localId = localIdRef.current;
+    if (!localId || busy) return;
 
+    setBusy(true);
+    stoppingRef.current = true;
+    try {
+      await captureRef.current?.stop();
+      // El último tramo tiene que quedar guardado en el equipo antes de cerrar.
+      await writeChainRef.current;
+      captureRef.current?.release();
+      captureRef.current = null;
+      // Y la subida en curso tiene que terminar antes de soltar el candado: si no,
+      // la subida final repetiría un tramo que ya iba en camino.
+      await drainRef.current;
+      await patchMeeting(localId, {
+        durationMs: Date.now() - startedAtRef.current,
+        state: "pending",
+        channelSpeakers: speakerRef.current,
+        lockSpeakers: lockSpeakersRef.current,
+        updatedAt: Date.now(),
+      });
+      // La subida final pide este mismo candado: tiene que estar libre de verdad.
+      await releaseLockRef.current?.();
+      releaseLockRef.current = null;
+    } finally {
+      setBusy(false);
+    }
+
+    await uploadAndProcess(localId);
+  }
+
+  /**
+   * Sube lo que quedó guardado en el equipo y analiza la reunión. Sin conexión no
+   * es un error: la reunión queda guardada aquí y se sube sola cuando vuelve.
+   */
+  async function uploadAndProcess(localId: string) {
+    autoRetryRef.current = false;
+    setError(null);
+    setNotice(null);
+    setSyncProgress(null);
+    setStageIndex(-1);
     setPhase("processing");
 
-    await captureRef.current?.stop();
-    await uploadQueueRef.current;
-    captureRef.current?.release();
-    captureRef.current = null;
-
-    await fetch(`/api/empresa/meetings/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ durationMs: Date.now() - startedAtRef.current }),
-    }).catch(() => undefined);
-
-    await processMeeting(id);
+    try {
+      const result = await syncOfflineMeeting(localId, {
+        onProgress: (p) => {
+          setSyncProgress(p);
+          setStageIndex(p.stageIndex);
+        },
+      });
+      if (!result) {
+        setPhase("saved");
+        // `null` quiere decir que otra pestaña la tiene tomada, o que ya la subió.
+        if (!(await getMeeting(localId))) {
+          setNotice("Esta grabación ya se subió desde otra pestaña. La encuentras en Reuniones.");
+          return;
+        }
+        setNotice("Otra pestaña está subiendo esta grabación. Si la cierras, se retoma desde aquí.");
+        autoRetryRef.current = true;
+        setTimeout(() => {
+          if (autoRetryRef.current && localIdRef.current === localId) void uploadAndProcess(localId);
+        }, 10_000);
+        return;
+      }
+      setPhase("done");
+      router.push(`/empresa/reuniones/${result.serverId}`);
+      router.refresh();
+    } catch (err) {
+      if (err instanceof ProcessingError) {
+        setError(`${err.message} — la grabación ya está en el servidor; reintenta el análisis desde el detalle.`);
+        router.push(`/empresa/reuniones/${err.serverId}`);
+        return;
+      }
+      setPhase("saved");
+      if (err instanceof NetworkError) {
+        setOnline(false);
+        autoRetryRef.current = true;
+        return;
+      }
+      setError(err instanceof Error ? err.message : "No se pudo subir la grabación");
+    }
   }
+
+  // Guardada sin conexión: en cuanto vuelve la red, se sube sola.
+  useEffect(() => {
+    if (phase !== "saved" || !online || !autoRetryRef.current) return;
+    const localId = localIdRef.current;
+    if (localId) void uploadAndProcess(localId);
+    // `uploadAndProcess` solo lee refs y setters estables.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, online]);
 
   function labelFor(seg: MeetingSegment): string {
     if (seg.speaker) return seg.speaker;
@@ -576,7 +854,7 @@ export function MeetingRecorder({
         </p>
         {importProgress && (
           <div className="mb-6">
-            <div className="flex items-center justify-between gap-3 mb-1.5">
+            <div className="flex items-center justify-between gap-3 mb-2">
               <span className="text-fg-soft text-sm">Transcribiendo el archivo</span>
               <span className="text-fg-faint text-xs font-mono">
                 {importProgress.done} / {importProgress.total}
@@ -588,6 +866,22 @@ export function MeetingRecorder({
                 style={{
                   width: `${Math.round((importProgress.done / Math.max(1, importProgress.total)) * 100)}%`,
                 }}
+              />
+            </div>
+          </div>
+        )}
+        {syncProgress && syncProgress.step === "upload" && syncProgress.total > 0 && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between gap-3 mb-2">
+              <span className="text-fg-soft text-sm">Subiendo lo grabado</span>
+              <span className="text-fg-faint text-xs font-mono">
+                {syncProgress.uploaded} / {syncProgress.total}
+              </span>
+            </div>
+            <div className="h-1.5 w-full bg-fill-2 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-brand rounded-full transition-[width] duration-300"
+                style={{ width: `${Math.round((syncProgress.uploaded / syncProgress.total) * 100)}%` }}
               />
             </div>
           </div>
@@ -620,6 +914,36 @@ export function MeetingRecorder({
     );
   }
 
+  if (phase === "saved") {
+    return (
+      <div className="bg-panel border border-line rounded-2xl p-6 sm:p-8">
+        <h2 className="text-fg text-lg font-semibold">Reunión guardada en este equipo</h2>
+        <p className="text-fg-dim text-sm mt-2 leading-relaxed">
+          «{title}» · {formatClock(elapsed)} grabados. El audio está a salvo aquí y se sube y se
+          analiza solo en cuanto vuelva la conexión. Puedes cerrar esta pestaña: la grabación queda
+          en Reuniones, lista para subir.
+        </p>
+        {notice && <p className="text-warn text-sm mt-4">{notice}</p>}
+        {error && <p className="text-danger text-sm mt-4">{error}</p>}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mt-6">
+          <button
+            onClick={() => localIdRef.current && void uploadAndProcess(localIdRef.current)}
+            disabled={!online}
+            className="px-6 min-h-[44px] bg-brand hover:bg-brand-hi disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg transition-all"
+          >
+            {online ? "Subir y analizar ahora" : "Esperando conexión…"}
+          </button>
+          <button
+            onClick={() => router.push("/empresa/reuniones")}
+            className="px-4 min-h-[44px] text-fg-dim hover:text-fg text-sm transition-colors"
+          >
+            Ir a Reuniones
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (phase === "recording") {
     return (
       <div className="space-y-4">
@@ -639,18 +963,30 @@ export function MeetingRecorder({
               <span className="text-fg text-2xl font-mono tabular-nums">{formatClock(elapsed)}</span>
               <button
                 onClick={stopAndProcess}
-                className="px-5 py-2 bg-danger-solid hover:bg-danger-solid/85 text-on-solid text-sm font-semibold rounded-lg transition-all"
+                disabled={busy}
+                className="px-6 min-h-[44px] bg-danger-solid hover:bg-danger-solid/85 disabled:opacity-60 text-on-solid text-sm font-semibold rounded-lg transition-all"
               >
-                Finalizar y procesar
+                {busy
+                  ? "Guardando los últimos tramos…"
+                  : online
+                    ? "Finalizar y procesar"
+                    : "Finalizar y guardar en el equipo"}
               </button>
             </div>
           </div>
+          {(!online || pendingCount > 0) && (
+            <p className={`text-xs mt-3 leading-relaxed ${online ? "text-fg-dim" : "text-warn"}`} role="status">
+              {online
+                ? `Subiendo ${pendingCount === 1 ? "1 tramo que quedó guardado" : `${pendingCount} tramos que quedaron guardados`} en este equipo…`
+                : `Sin conexión. La grabación sigue: ${pendingCount === 1 ? "1 tramo guardado" : `${pendingCount} tramos guardados`} en este equipo, se suben solos cuando vuelva la red.`}
+            </p>
+          )}
           {notice && <p className="text-warn text-xs mt-3">{notice}</p>}
           {error && <p className="text-danger text-xs mt-2">{error}</p>}
         </div>
 
         {/* Quién es cada voz */}
-        <div className="bg-panel border border-line rounded-2xl p-5">
+        <div className="bg-panel border border-line rounded-2xl p-6">
           <div className="flex items-baseline justify-between gap-3 flex-wrap mb-3">
             <h3 className="text-fg-mute text-xs uppercase tracking-wider">Voces</h3>
             <p className="text-fg-ghost text-[11px]">
@@ -668,7 +1004,7 @@ export function MeetingRecorder({
               return (
                 <div
                   key={channel}
-                  className={`border rounded-xl p-3.5 transition-colors ${
+                  className={`border rounded-xl p-4 transition-colors ${
                     talking ? "border-line-mid bg-fill" : "border-line"
                   }`}
                 >
@@ -706,7 +1042,7 @@ export function MeetingRecorder({
                           void assignSpeaker(channel, customDraft[channel]);
                         }}
                         placeholder="Nombre de esta voz"
-                        className="w-full mt-3 bg-canvas border border-line rounded-lg px-2.5 py-1.5 text-fg text-xs placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
+                        className="w-full mt-3 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-xs placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
                       />
                     ) : (
                       <select
@@ -728,7 +1064,7 @@ export function MeetingRecorder({
                           }
                           void assignSpeaker(channel, e.target.value);
                         }}
-                        className="w-full mt-3 bg-canvas border border-line rounded-lg px-2.5 py-1.5 text-fg text-xs focus:border-brand/50 focus:outline-none"
+                        className="w-full mt-3 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-xs focus:border-brand/50 focus:outline-none"
                       >
                         <option value="">Sin asignar</option>
                         {namedAttendees.map((name) => (
@@ -752,7 +1088,11 @@ export function MeetingRecorder({
             <p className="text-fg-ghost text-[11px]">
               {uploading > 0
                 ? `transcribiendo ${uploading} tramo${uploading !== 1 ? "s" : ""}…`
-                : `al día · tramos de ${SEGMENT_MS / 1000} s`}
+                : !online
+                  ? "sin conexión · el audio se guarda aquí"
+                  : pendingCount > 0
+                    ? `${pendingCount} por subir`
+                    : `al día · tramos de ${SEGMENT_MS / 1000} s`}
             </p>
           </div>
           <LiveTranscript
@@ -760,7 +1100,11 @@ export function MeetingRecorder({
             labelFor={labelFor}
             interim={instantPreview ? interim : ""}
             interimSpeaker={interimSpeaker}
-            emptyHint={`El texto empieza a aparecer a los ${SEGMENT_MS / 1000} segundos de haber empezado a hablar.`}
+            emptyHint={
+              online
+                ? `El texto empieza a aparecer a los ${SEGMENT_MS / 1000} segundos de haber empezado a hablar.`
+                : "Sin conexión: la transcripción aparece cuando vuelva la red. El audio se está guardando en este equipo."
+            }
           />
         </div>
       </div>
@@ -771,11 +1115,22 @@ export function MeetingRecorder({
     <div className="space-y-4">
       <div>
         <h1 className="text-fg text-2xl font-semibold tracking-tight">Nueva reunión</h1>
-        <p className="text-fg-dim text-sm mt-0.5">
+        <p className="text-fg-dim text-sm mt-1">
           Grábala en vivo o sube un audio que ya tengas. En los dos casos obtienes minuta ejecutiva,
           minuta técnica, pendientes, el entregable técnico y el prompt para construirlo.
         </p>
       </div>
+
+      <PendingOfflineMeetings />
+
+      {!online && (
+        <div className="bg-warn/10 border border-warn/20 rounded-xl p-4" role="status">
+          <p className="text-warn text-sm leading-relaxed">
+            Sin conexión. Puedes grabar igual: el audio se guarda en este equipo y se sube y se analiza
+            cuando vuelva la red.
+          </p>
+        </div>
+      )}
 
       {/* Cómo entra la reunión — es la primera decisión, no la última */}
       <div className="grid sm:grid-cols-2 gap-3">
@@ -819,7 +1174,7 @@ export function MeetingRecorder({
 
       <div className="bg-panel border border-line rounded-2xl p-6 space-y-4">
         <div>
-          <label className="block text-fg-mute text-xs uppercase tracking-wider mb-1.5">Título</label>
+          <label className="block text-fg-mute text-xs uppercase tracking-wider mb-2">Título</label>
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -830,7 +1185,7 @@ export function MeetingRecorder({
 
         <div className="grid sm:grid-cols-2 gap-4">
           <div>
-            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-1.5">Proyecto</label>
+            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-2">Proyecto</label>
             <select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
@@ -851,7 +1206,7 @@ export function MeetingRecorder({
           </div>
 
           <div>
-            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-1.5">Cliente</label>
+            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-2">Cliente</label>
             <select
               value={clientId}
               onChange={(e) => setClientId(e.target.value)}
@@ -868,7 +1223,7 @@ export function MeetingRecorder({
           </div>
 
           <div>
-            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-1.5">Fecha</label>
+            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-2">Fecha</label>
             <input
               type="date"
               value={meetingDate}
@@ -878,7 +1233,7 @@ export function MeetingRecorder({
           </div>
 
           <div>
-            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-1.5">
+            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-2">
               Origen del audio
             </label>
             <select
@@ -899,7 +1254,7 @@ export function MeetingRecorder({
           </div>
 
           <div>
-            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-1.5">
+            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-2">
               Idiomas que se hablan
             </label>
             <div className="flex gap-2">
@@ -936,7 +1291,7 @@ export function MeetingRecorder({
           </div>
 
           <div>
-            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-1.5">
+            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-2">
               Idioma de la minuta
             </label>
             <select
@@ -1021,7 +1376,7 @@ export function MeetingRecorder({
           {CAPTURE_MODES.map((option) => (
             <label
               key={option.key}
-              className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+              className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
                 mode === option.key
                   ? "border-brand/35 bg-brand/[0.05]"
                   : "border-line hover:border-line-mid"
@@ -1037,7 +1392,7 @@ export function MeetingRecorder({
               <span className="min-w-0">
                 <span className="flex items-center gap-2 flex-wrap">
                   <span className="text-fg text-sm font-medium">{option.title}</span>
-                  <span className={`px-1.5 py-0.5 text-[10px] rounded border ${option.tagClass}`}>
+                  <span className={`px-2 py-1 text-[10px] rounded border ${option.tagClass}`}>
                     {option.tag}
                   </span>
                 </span>
@@ -1050,7 +1405,7 @@ export function MeetingRecorder({
         </div>
 
         {mode === "device" && (
-          <div className="border border-line rounded-xl p-3.5 space-y-2">
+          <div className="border border-line rounded-xl p-4 space-y-2">
             <div className="flex items-center justify-between gap-3 flex-wrap">
               <label className="text-fg-mute text-xs uppercase tracking-wider">
                 Entrada con el audio de la llamada
@@ -1092,7 +1447,7 @@ export function MeetingRecorder({
 
         {devices.length > 0 && (
           <div>
-            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-1.5">
+            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-2">
               Micrófono
             </label>
             <select
@@ -1194,15 +1549,17 @@ export function MeetingRecorder({
 
       <button
         onClick={entry === "upload" ? startImport : startRecording}
-        disabled={busy || (entry === "upload" && !importFile)}
-        className="w-full px-5 py-3 bg-brand hover:bg-brand-hi disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg transition-all"
+        disabled={busy || (entry === "upload" && (!importFile || !online))}
+        className="w-full px-6 py-3 bg-brand hover:bg-brand-hi disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg transition-all"
       >
         {busy
           ? "Preparando…"
           : entry === "upload"
-            ? importFile
-              ? "⬆️ Transcribir y analizar el audio"
-              : "Elige un archivo para continuar"
+            ? !online
+              ? "Subir un audio necesita conexión"
+              : importFile
+                ? "⬆️ Transcribir y analizar el audio"
+                : "Elige un archivo para continuar"
             : "🎙️ Iniciar grabación"}
       </button>
       {meetingId && phase === "setup" && (

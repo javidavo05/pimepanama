@@ -20,6 +20,12 @@
   img { width: 56px; height: 56px; margin-bottom: 16px; opacity: 0.9; }
   h1 { font-size: 18px; margin: 0 0 8px; }
   p { font-size: 14px; color: rgba(255,255,255,0.5); margin: 0 0 20px; line-height: 1.5; }
+  .secondary {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 44px; margin-top: 12px; padding: 0 12px;
+    color: rgba(255,255,255,0.75); font-size: 14px; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .hint { font-size: 12px; margin: 4px 0 0; color: rgba(255,255,255,0.45); }
   button {
     background: #1AA7F0; color: #fff; border: none; border-radius: 10px;
     padding: 10px 20px; font-size: 14px; font-weight: 600; cursor: pointer;
@@ -32,6 +38,8 @@
     <h1>Sin conexión</h1>
     <p>No se pudo cargar Pime Suite. Verifica tu conexión a internet e intenta de nuevo.</p>
     <button onclick="location.reload()">Reintentar</button>
+    <a class="secondary" href="/empresa/reuniones/nueva">Grabar una reunión sin conexión</a>
+    <p class="hint">El audio se guarda en este equipo y se sube cuando vuelva la conexión.</p>
   </div>
 </body>
 </html>

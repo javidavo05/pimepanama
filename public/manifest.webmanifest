@@ -33,5 +33,20 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Grabar reunión",
+      "short_name": "Grabar",
+      "description": "Graba una reunión; sin conexión se guarda en el equipo",
+      "url": "/empresa/reuniones/nueva",
+      "icons": [
+        {
+          "src": "/icons/empresa-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
   ]
 }

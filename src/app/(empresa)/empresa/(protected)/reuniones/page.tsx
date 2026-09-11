@@ -6,6 +6,7 @@ import { meetingSearchFilter } from "@/lib/meetings/search";
 import { MEETING_STATUS_COLOR, MEETING_STATUS_LABEL } from "./status";
 import { MeetingsFilters } from "./meetings-filters";
 import { DeleteMeetingButton } from "./delete-meeting-button";
+import { PendingOfflineMeetings } from "./pending-offline-meetings";
 
 export const metadata = { title: "Reuniones — Pime Suite" };
 export const dynamic = "force-dynamic";
@@ -49,7 +50,7 @@ export default async function ReunionesPage({
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-fg text-2xl font-semibold tracking-tight">Reuniones</h1>
-          <p className="text-fg-dim text-sm mt-0.5">
+          <p className="text-fg-dim text-sm mt-1">
             {meetings.length} reunión{meetings.length !== 1 ? "es" : ""}
             {pendingSync > 0 && (
               <span className="text-warn"> · {pendingSync} pendiente{pendingSync !== 1 ? "s" : ""} técnico{pendingSync !== 1 ? "s" : ""} sin pasar a tareas</span>
@@ -64,10 +65,12 @@ export default async function ReunionesPage({
         </Link>
       </div>
 
+      <PendingOfflineMeetings />
+
       <MeetingsFilters projects={projects} clients={clients} />
 
       {meetings.length === 0 && filtering ? (
-        <div className="bg-panel border border-line rounded-2xl p-10 text-center">
+        <div className="bg-panel border border-line rounded-2xl p-12 text-center">
           <p className="text-fg-dim font-medium">Ninguna reunión coincide con esa búsqueda</p>
           <p className="text-fg-faint text-sm mt-1">
             La búsqueda mira el título, la transcripción, las notas de contexto y los pendientes.
@@ -83,7 +86,7 @@ export default async function ReunionesPage({
           </p>
           <Link
             href="/empresa/reuniones/nueva"
-            className="inline-block px-5 py-2 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-all"
+            className="inline-block px-6 py-2 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-all"
           >
             Grabar la primera
           </Link>
@@ -93,10 +96,10 @@ export default async function ReunionesPage({
           {meetings.map((m) => (
             // La fila es un enlace, así que el botón de borrar va por encima y
             // no dentro: un botón anidado en un <a> navega al pulsarlo.
-            <div key={m.id} className="relative">
+            <div key={m.id} className="relative min-w-0">
             <Link
               href={`/empresa/reuniones/${m.id}`}
-              className="bg-panel border border-line hover:border-line-mid rounded-xl p-5 flex items-start gap-4 transition-all group"
+              className="bg-panel border border-line hover:border-line-mid rounded-xl p-6 flex items-start gap-4 transition-all group"
             >
               <div className="w-10 h-10 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center text-lg shrink-0">
                 🎙️
@@ -106,7 +109,7 @@ export default async function ReunionesPage({
                   <h2 className="text-fg font-medium truncate group-hover:text-brand-fg transition-colors">
                     {m.title}
                   </h2>
-                  <span className={`px-2 py-0.5 text-[10px] rounded border ${MEETING_STATUS_COLOR[m.status]}`}>
+                  <span className={`px-2 py-1 text-[10px] rounded border ${MEETING_STATUS_COLOR[m.status]}`}>
                     {MEETING_STATUS_LABEL[m.status]}
                   </span>
                 </div>
