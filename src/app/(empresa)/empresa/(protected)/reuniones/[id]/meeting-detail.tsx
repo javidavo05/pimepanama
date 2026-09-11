@@ -11,7 +11,9 @@ import type {
   SerializedMeetingActionItem,
   SerializedMeetingSpeaker,
   TechnicalMinutes,
+  TechnicalTopic,
 } from "@/lib/meetings/types";
+import { isLegacyTechnical } from "@/lib/meetings/technical";
 import { MEETING_STATUS_COLOR, MEETING_STATUS_LABEL } from "../status";
 import { ActionItemsPanel } from "./action-items-panel";
 import { DeliverablePanel } from "./deliverable-panel";
@@ -78,7 +80,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Bullets({ items, empty }: { items: string[]; empty: string }) {
   if (items.length === 0) return <p className="text-fg-ghost text-sm">{empty}</p>;
   return (
-    <ul className="space-y-1.5">
+    <ul className="space-y-2">
       {items.map((item, i) => (
         <li key={i} className="text-fg-soft text-sm leading-relaxed flex gap-2">
           <span className="text-brand-fg shrink-0">·</span>
@@ -86,6 +88,50 @@ function Bullets({ items, empty }: { items: string[]; empty: string }) {
         </li>
       ))}
     </ul>
+  );
+}
+
+/** Una lista dentro de un tema. Sin elementos no se pinta: un rótulo vacío es ruido. */
+function TopicList({ label, items }: { label: string; items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-3">
+      <p className="text-fg-faint text-xs font-medium mb-1">{label}</p>
+      <Bullets items={items} empty="" />
+    </div>
+  );
+}
+
+/**
+ * Un tema de la minuta técnica. El minuto salta al audio: es lo que permite
+ * comprobar un dato escuchándolo en vez de creerle a la minuta.
+ */
+function TopicBlock({ topic, onSeek }: { topic: TechnicalTopic; onSeek?: (ms: number) => void }) {
+  const at = topic.startMs !== null ? formatTimestamp(topic.startMs) : null;
+  return (
+    <article className="py-4 first:pt-0 last:pb-0">
+      <div className="flex items-start justify-between gap-3">
+        <h4 className="text-fg text-sm font-semibold leading-snug min-w-0 break-words">{topic.title}</h4>
+        {at !== null &&
+          (onSeek ? (
+            <button
+              onClick={() => onSeek(topic.startMs as number)}
+              aria-label={`Escuchar desde ${at}`}
+              className="shrink-0 -my-3 px-2 min-h-[44px] text-brand-fg hover:underline underline-offset-2 text-xs font-mono tabular-nums"
+            >
+              ▶ {at}
+            </button>
+          ) : (
+            <span className="shrink-0 text-fg-faint text-xs font-mono tabular-nums">{at}</span>
+          ))}
+      </div>
+      {topic.discussion && (
+        <p className="text-fg-soft text-sm leading-relaxed whitespace-pre-wrap mt-2">{topic.discussion}</p>
+      )}
+      <TopicList label="Datos concretos" items={topic.details} />
+      <TopicList label="Se decidió" items={topic.decisions} />
+      <TopicList label="Quedó abierto" items={topic.pending} />
+    </article>
   );
 }
 
@@ -288,7 +334,7 @@ export function MeetingDetail({
               <>
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <h1 className="text-fg text-xl font-semibold tracking-tight">{meeting.title}</h1>
-                  <span className={`px-2 py-0.5 text-[10px] rounded border ${MEETING_STATUS_COLOR[meeting.status]}`}>
+                  <span className={`px-2 py-1 text-[10px] rounded border ${MEETING_STATUS_COLOR[meeting.status]}`}>
                     {MEETING_STATUS_LABEL[meeting.status]}
                   </span>
                   <button
@@ -330,7 +376,7 @@ export function MeetingDetail({
               return (
                 <span
                   key={s.id}
-                  className="px-2.5 py-1 rounded-lg border border-line bg-fill text-xs text-fg-mute flex items-center gap-1.5"
+                  className="px-3 py-1 rounded-lg border border-line bg-fill text-xs text-fg-mute flex items-center gap-2"
                 >
                   {editing ? (
                     <>
@@ -350,7 +396,7 @@ export function MeetingDetail({
                             });
                         }}
                         placeholder="Nombre real"
-                        className="bg-canvas border border-line rounded px-1.5 py-0.5 text-fg text-xs w-32 focus:border-brand/50 focus:outline-none"
+                        className="bg-canvas border border-line rounded px-2 py-1 text-fg text-xs w-32 focus:border-brand/50 focus:outline-none"
                       />
                       <button
                         onClick={() => void renameSpeaker(s.label)}
@@ -386,13 +432,13 @@ export function MeetingDetail({
           <p className="text-danger text-xs mt-4">Último error: {meeting.errorMessage}</p>
         )}
 
-        <div className="flex flex-wrap gap-2 mt-5">
+        <div className="flex flex-wrap gap-2 mt-6">
           {STAGES.map((stage) => (
             <button
               key={stage.key}
               onClick={() => runStage(stage.key, stage.label)}
               disabled={busy !== null || meeting.segmentCount === 0}
-              className="px-3 py-1.5 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all"
+              className="px-3 py-2 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all"
             >
               {busy === stage.key ? "Procesando…" : `↻ ${stage.label}`}
             </button>
@@ -401,7 +447,7 @@ export function MeetingDetail({
             <button
               onClick={emitBitacora}
               disabled={busy !== null}
-              className="px-3 py-1.5 bg-sand/15 hover:bg-sand/25 disabled:opacity-40 border border-sand/25 text-sand-fg text-xs rounded-lg transition-all"
+              className="px-3 py-2 bg-sand/15 hover:bg-sand/25 disabled:opacity-40 border border-sand/25 text-sand-fg text-xs rounded-lg transition-all"
             >
               {busy === "bitacora" ? "Emitiendo…" : "📝 Emitir bitácora"}
             </button>
@@ -409,7 +455,7 @@ export function MeetingDetail({
           {meeting.bitacoraId && (
             <Link
               href={`/empresa/bitacoras/${meeting.bitacoraId}`}
-              className="px-3 py-1.5 bg-fill hover:bg-fill-2 border border-line text-fg-mute text-xs rounded-lg transition-all"
+              className="px-3 py-2 bg-fill hover:bg-fill-2 border border-line text-fg-mute text-xs rounded-lg transition-all"
             >
               📝 Ver bitácora emitida
             </Link>
@@ -417,7 +463,7 @@ export function MeetingDetail({
           <button
             onClick={() => void deleteMeeting()}
             disabled={busy !== null}
-            className="px-3 py-1.5 bg-fill hover:bg-danger/10 disabled:opacity-40 border border-line hover:border-danger/25 text-fg-ghost hover:text-danger text-xs rounded-lg transition-all ml-auto"
+            className="px-3 py-2 bg-fill hover:bg-danger/10 disabled:opacity-40 border border-line hover:border-danger/25 text-fg-ghost hover:text-danger text-xs rounded-lg transition-all ml-auto"
           >
             {busy === "delete" ? "Borrando…" : "Borrar reunión"}
           </button>
@@ -457,7 +503,7 @@ export function MeetingDetail({
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-3 py-1.5 rounded-lg text-xs whitespace-nowrap transition-all border ${
+            className={`px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all border ${
               tab === t.key
                 ? "bg-brand/15 border-brand/30 text-brand-fg"
                 : "bg-fill border-line text-fg-dim hover:text-fg-soft"
@@ -519,14 +565,36 @@ export function MeetingDetail({
         {tab === "tecnica" &&
           (technical ? (
             <>
+              {isLegacyTechnical(technical) && (
+                <div className="border border-warn/25 bg-warn/10 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                  <p className="text-fg-soft text-sm leading-relaxed flex-1">
+                    Esta minuta salió con el formato anterior, que resumía de más. Regenérala para
+                    tenerla por temas, con los datos concretos y el minuto de cada tema. Se rehace
+                    también la minuta ejecutiva; los pendientes y el entregable no cambian.
+                  </p>
+                  <button
+                    onClick={() => runStage("minutes", "Minutas")}
+                    disabled={busy !== null || meeting.segmentCount === 0}
+                    className="shrink-0 px-4 min-h-[44px] bg-brand hover:bg-brand-hi disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg transition-all"
+                  >
+                    {busy === "minutes" ? "Regenerando…" : "Regenerar la minuta"}
+                  </button>
+                </div>
+              )}
               <Section title="Resumen técnico">
                 <p className="text-fg-soft text-sm leading-relaxed whitespace-pre-wrap">
                   {technical.summary || "—"}
                 </p>
               </Section>
-              <Section title="Decisiones de arquitectura">
-                <Bullets items={technical.architecture} empty="No se tomó ninguna." />
-              </Section>
+              {technical.topics.length > 0 && (
+                <Section title={`Temas tratados (${technical.topics.length})`}>
+                  <div className="divide-y divide-line">
+                    {technical.topics.map((topic, i) => (
+                      <TopicBlock key={i} topic={topic} onSeek={hasAudio ? seekTo : undefined} />
+                    ))}
+                  </div>
+                </Section>
+              )}
               <Section title="Cambios identificados">
                 {technical.changes.length === 0 ? (
                   <p className="text-fg-ghost text-sm">Ninguno.</p>
@@ -535,12 +603,21 @@ export function MeetingDetail({
                     {technical.changes.map((c, i) => (
                       <div key={i} className="border border-line rounded-lg p-3">
                         <p className="text-brand-fg text-xs uppercase tracking-wider mb-1">{c.area}</p>
-                        <p className="text-fg-soft text-sm">{c.what}</p>
+                        <p className="text-fg-soft text-sm leading-relaxed">{c.what}</p>
                         {c.why && <p className="text-fg-faint text-xs mt-1">Por qué: {c.why}</p>}
                       </div>
                     ))}
                   </div>
                 )}
+              </Section>
+              {/* El formato anterior no registraba reglas: decir "ninguna" ahí sería falso. */}
+              {!isLegacyTechnical(technical) && (
+                <Section title="Reglas de negocio">
+                  <Bullets items={technical.businessRules} empty="No se enunció ninguna." />
+                </Section>
+              )}
+              <Section title="Decisiones de arquitectura">
+                <Bullets items={technical.architecture} empty="No se tomó ninguna." />
               </Section>
               <Section title="Dependencias pendientes">
                 <Bullets items={technical.dependencies} empty="Ninguna." />
@@ -574,9 +651,9 @@ export function MeetingDetail({
                 <button
                   key={i}
                   onClick={() => seekTo(c.startMs)}
-                  className="w-full text-left border border-line hover:border-brand/25 rounded-xl p-3.5 transition-all group"
+                  className="w-full text-left border border-line hover:border-brand/25 rounded-xl p-4 transition-all group"
                 >
-                  <div className="flex items-baseline gap-2.5">
+                  <div className="flex items-baseline gap-3">
                     <span className="text-brand-fg text-xs font-mono shrink-0">
                       {formatTimestamp(c.startMs)}
                     </span>
@@ -606,7 +683,7 @@ export function MeetingDetail({
                 </p>
                 <button
                   onClick={copyPrompt}
-                  className="px-3 py-1.5 bg-brand hover:bg-brand-hi text-on-brand text-xs font-semibold rounded-lg transition-all shrink-0"
+                  className="px-3 py-2 bg-brand hover:bg-brand-hi text-on-brand text-xs font-semibold rounded-lg transition-all shrink-0"
                 >
                   {copied ? "✓ Copiado" : "Copiar prompt"}
                 </button>

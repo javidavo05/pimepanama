@@ -7,7 +7,8 @@ import {
   serializeMeetingSpeaker,
 } from "@/lib/meetings/serialize";
 import { loadSegments } from "@/lib/meetings/segments";
-import type { ExecutiveMinutes, TechnicalMinutes } from "@/lib/meetings/types";
+import type { ExecutiveMinutes } from "@/lib/meetings/types";
+import { parseTechnicalMinutes } from "@/lib/meetings/technical";
 import { MeetingDetail } from "./meeting-detail";
 
 export const dynamic = "force-dynamic";
@@ -62,7 +63,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
         speakers={meeting.speakers.map(serializeMeetingSpeaker)}
         actionItems={meeting.actionItems.map(serializeMeetingActionItem)}
         executive={meeting.executiveMinutes as unknown as ExecutiveMinutes | null}
-        technical={meeting.technicalMinutes as unknown as TechnicalMinutes | null}
+        technical={parseTechnicalMinutes(meeting.technicalMinutes)}
         hasRepo={meeting.project?.repoSnapshot != null}
       />
     </div>

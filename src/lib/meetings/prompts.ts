@@ -59,7 +59,13 @@ Responde SOLO con JSON válido:
 {"assignments": [{"i": 0, "speaker": "Javier Vallejo"}, {"i": 1, "speaker": "Hablante 2"}]}${contextPreamble(projectContext)}`;
 }
 
-/** Paso 2 — minuta ejecutiva (cliente) + minuta técnica (equipo), en una sola pasada. */
+/**
+ * Paso 2a — minuta ejecutiva: el registro que el cliente lee y reenvía.
+ *
+ * Antes compartía llamada con la técnica y un tope de salida de 3000 tokens para
+ * las dos, así que la técnica salía siempre recortada. Ahora cada una tiene su
+ * llamada y su presupuesto.
+ */
 export function minutesPrompt(
   attendees: MeetingAttendee[],
   projectContext: string,
@@ -68,15 +74,11 @@ export function minutesPrompt(
   output = "es"
 ): string {
   const commercial = brandSystemPrompt(
-    `Vas a redactar la parte ejecutiva de la minuta de una reunión: el registro que el cliente puede leer y reenviar como constancia de lo acordado.`,
+    `Vas a redactar la minuta ejecutiva de una reunión: el registro que el cliente puede leer y reenviar como constancia de lo acordado.`,
     "es"
   );
 
   return `${commercial}
-
-Además de la parte ejecutiva, redactas una segunda minuta —la técnica— y para esa cambias de sombrero:
-
-${TECH_PERSONA}
 
 Cómo se grabó: ${describeAudioSource(audioSource)}
 
@@ -95,17 +97,163 @@ Recibes la transcripción atribuida por hablante. Devuelve SOLO JSON válido con
     "risks": ["Riesgos, bloqueos o dependencias que salieron en la reunión. Vacío si no salió ninguno."],
     "nextSteps": "Párrafo corto con lo que sigue inmediatamente después de esta reunión.",
     "nextMeeting": "Fecha o criterio de la próxima reunión si se mencionó; si no, 'Por agendar'."
-  },
-  "technical": {
-    "summary": "Prosa técnica para alguien del equipo que no estuvo: qué se pidió, qué se decidió construir y qué cambia respecto a lo que ya existe.",
-    "architecture": ["Decisiones de arquitectura o de enfoque técnico que se tomaron. Vacío si no se tomó ninguna."],
-    "changes": [{"area": "Módulo o pantalla afectada", "what": "Qué hay que cambiar o construir", "why": "La necesidad del cliente que lo origina"}],
-    "dependencies": ["Accesos, credenciales, contenido, aprobaciones o servicios de terceros que el equipo necesita y todavía no tiene."],
-    "openQuestions": ["Lo que quedó ambiguo y hay que preguntar ANTES de construir. Sé específico: no 'falta definir el diseño', sino 'no se definió si el listado de X se pagina o hace scroll infinito'."]
   }
 }
 
 No inventes decisiones, compromisos, fechas ni responsables que no estén en la transcripción. Si la reunión fue corta o poco concluyente, devuelve arrays vacíos en vez de rellenar.${contextPreamble(projectContext)}`;
+}
+
+/**
+ * Referencia de profundidad para la minuta técnica. Sin ella el modelo tiende a
+ * la misma media página sea la reunión de diez minutos o de una hora. Se da como
+ * rango y como referencia, no como meta: una reunión corta sigue saliendo corta.
+ */
+function depthReference(durationMs: number): string {
+  const minutes = Math.round(durationMs / 60_000);
+  if (minutes < 5) return "";
+  const low = Math.max(2, Math.round(minutes / 10));
+  const high = Math.min(20, Math.max(low + 1, Math.round(minutes / 4)));
+  return `\n\nEsta reunión duró unos ${minutes} minutos. Como referencia de profundidad y no como meta a rellenar: una reunión de ese largo en la que se habló de trabajo técnico suele dejar entre ${low} y ${high} temas, y un tema bien documentado ocupa entre 150 y 400 palabras sumando su discusión y sus datos.`;
+}
+
+/**
+ * Paso 2b — minuta técnica: lo que el equipo necesita para construir sin volver a
+ * escuchar la grabación. Se documenta por temas porque es la forma de que la
+ * extensión la decida la reunión y no el modelo.
+ */
+export function technicalMinutesPrompt(
+  attendees: MeetingAttendee[],
+  projectContext: string,
+  audioSource?: string | null,
+  spoken: MeetingLanguage[] = ["es"],
+  output = "es",
+  durationMs = 0
+): string {
+  return `${TECH_PERSONA}
+
+Tu tarea: redactar la MINUTA TÉCNICA de esta reunión.
+
+Para quién es: alguien del equipo que no estuvo y tiene que construir lo que se habló. Esta minuta reemplaza escuchar la grabación: lo que no quede escrito aquí, para el equipo no se dijo. Por eso el error que más cuesta no es escribir de más, es resumir. Una minuta que dice "se habló del módulo de pagos" sin decir qué se dijo obliga a volver al audio, que es justo lo que esta minuta existe para evitar.
+
+Cómo se grabó: ${describeAudioSource(audioSource)}
+
+Idiomas: ${describeLanguages(spoken, output)}
+
+Asistentes:
+${describeAttendees(attendees)}
+
+La extensión la decide la reunión, no tú.${depthReference(durationMs)}
+
+Cómo se arma:
+
+1. "topics" es el cuerpo de la minuta. Un tema es cada asunto del que se habló con sustancia: el ida y vuelta sobre lo mismo es un solo tema, un cambio de asunto es otro. Van en el orden en que salieron. Por cada tema:
+   - "discussion": de 1 a 4 párrafos. Qué necesita el cliente y por qué, cómo lo resuelven hoy, qué se propuso, qué alternativas salieron y por qué se descartaron, y qué restricciones pusieron (plazos, presupuesto, sistemas que ya usan, quiénes lo van a usar). Cuando alguien define un requisito con sus palabras, cítalo textual entre comillas y di quién lo dijo.
+   - "details": cada dato concreto que se dijo, uno por elemento: cifras y volúmenes, montos, fechas y plazos, nombres de pantallas, campos, reportes, roles y sistemas, formatos, los ejemplos que dio el cliente, reglas del tipo "si pasa X entonces Y", excepciones e integraciones. Es lo que más se pierde al resumir: si se dijo, va.
+   - "decisions": lo que quedó decidido sobre este tema. Solo lo decidido, no lo propuesto.
+   - "pending": lo que de este tema quedó sin cerrar.
+   - "start": el timestamp EXACTO del turno donde arranca el tema, copiado tal cual de la transcripción. No lo inventes ni lo redondees.
+2. "summary": 2 o 3 párrafos que orienten: de qué fue la reunión, qué se decidió construir y qué cambia respecto a lo que ya existe. El detalle vive en los temas; el resumen no lo repite.
+3. Las listas recogen lo que atraviesa varios temas:
+   - "changes": cada cosa que hay que construir o cambiar, con el área, qué hay que hacer con detalle suficiente para estimarlo, y la necesidad que lo origina.
+   - "businessRules": las reglas de negocio que se enunciaron (validaciones, cálculos, estados, permisos, flujos de aprobación), redactadas como regla verificable.
+
+Responde SOLO con JSON válido con esta forma:
+
+{
+  "technical": {
+    "summary": "Prosa, 2 o 3 párrafos.",
+    "topics": [
+      {
+        "title": "El asunto, no la actividad: 'Pagos parciales en facturas', no 'Se habló de pagos'.",
+        "start": "12:30",
+        "discussion": "Prosa con la necesidad, la situación actual, lo propuesto y lo descartado.",
+        "details": ["Un dato concreto por elemento."],
+        "decisions": ["Lo que se decidió sobre este tema."],
+        "pending": ["Lo que de este tema quedó sin cerrar."]
+      }
+    ],
+    "architecture": ["Decisiones de arquitectura o de enfoque técnico. Vacío si no se tomó ninguna."],
+    "changes": [{"area": "Módulo o pantalla afectada", "what": "Qué hay que construir o cambiar", "why": "La necesidad del cliente que lo origina"}],
+    "businessRules": ["Regla verificable."],
+    "dependencies": ["Accesos, credenciales, contenido, aprobaciones o servicios de terceros que el equipo necesita y todavía no tiene."],
+    "openQuestions": ["Lo que hay que preguntar ANTES de construir. Específico: no 'falta definir el diseño', sino 'no se definió si el listado de X se pagina o hace scroll infinito'."]
+  }
+}
+
+Límites:
+- No inventes requisitos, datos, fechas ni responsables. Si no está en la transcripción, no va; lo ambiguo va a "openQuestions".
+- Largo no es relleno: no repitas lo mismo con otras palabras en el resumen, el tema y las listas, ni agregues contexto general que no salió en la reunión.
+- Si la reunión fue de verdad corta o no técnica, la minuta es corta. Si se habló de trabajo técnico con detalle, la minuta tiene ese detalle.${contextPreamble(projectContext)}`;
+}
+
+/**
+ * Paso 2c — profundizar un tema. La pasada que recorre toda la reunión detecta
+ * bien los temas pero reparte la atención y deja cada uno en dos oraciones. Aquí
+ * el modelo ve un solo tema y solo su tramo de la transcripción: no tiene otra
+ * cosa en la que gastar la respuesta.
+ */
+export function topicExpansionPrompt(
+  attendees: MeetingAttendee[],
+  projectContext: string,
+  spoken: MeetingLanguage[] = ["es"],
+  output = "es"
+): string {
+  return `${TECH_PERSONA}
+
+Tu tarea: documentar a fondo UN tema de una reunión, para alguien del equipo que tiene que construirlo sin haber estado y sin escuchar la grabación.
+
+Recibes el título del tema, lo que ya se anotó de él en una primera pasada y el tramo de la transcripción donde se habló de él, con un poco de margen antes y después: lo que sea de otro tema, ignóralo.
+
+La primera pasada se quedó corta. Tu trabajo es completarla, no resumirla: todo lo que ya estaba anotado se conserva, y se agrega lo que falta.
+
+Idiomas: ${describeLanguages(spoken, output)}
+
+Asistentes:
+${describeAttendees(attendees)}
+
+Responde SOLO con JSON válido:
+
+{
+  "discussion": "De 2 a 5 párrafos. Qué necesita el cliente y por qué, cómo lo resuelven hoy, qué se propuso y quién lo propuso, qué alternativas salieron y por qué se descartaron, qué restricciones pusieron y cómo quedó. Las frases que definen un requisito van textuales entre comillas, diciendo quién las dijo.",
+  "details": ["Cada dato concreto del tramo, uno por elemento: cifras, montos, cantidades, fechas y plazos, nombres de pantallas, campos, niveles, roles, reportes y sistemas, los ejemplos que dieron, reglas del tipo 'si pasa X entonces Y', excepciones e integraciones. Si en el tramo se enumeró una lista (los nombres de unos niveles, los campos de un formulario), va completa."],
+  "decisions": ["Lo que quedó decidido sobre este tema. Solo lo decidido, no lo propuesto."],
+  "pending": ["Lo que de este tema quedó sin cerrar, como pregunta concreta que alguien tiene que responder."]
+}
+
+Límites:
+- Solo lo que está en el tramo. No inventes datos, nombres ni decisiones.
+- Nada de relleno ni de contexto general: si en el tramo se dijo poco, la sección es corta.${contextPreamble(projectContext)}`;
+}
+
+/**
+ * Fusión de la minuta técnica de una reunión larga. El modelo no reescribe los
+ * temas —se ensamblan en código, ver `assembleTechnical`—: solo decide cuáles son
+ * el mismo asunto partido entre tramos y depura las listas. Así la fusión no
+ * puede volver a condensar lo que cada tramo documentó.
+ */
+export function technicalMergePlanPrompt(projectContext: string): string {
+  return `${TECH_PERSONA}
+
+Una reunión larga se documentó por tramos, y cada tramo ya tiene su minuta técnica con sus temas. Tu tarea NO es reescribir esos temas: se ensamblan tal cual. Tu tarea es decidir cómo se juntan y depurar lo que atraviesa la reunión.
+
+Recibes, por tramo, su resumen, sus temas (cada uno con un id como [2.0], su minuto y el arranque de la discusión) y sus listas.
+
+Responde SOLO con JSON válido:
+
+{
+  "summary": "2 o 3 párrafos nuevos que cubran la reunión completa: de qué fue, qué se decidió construir y qué cambia respecto a lo que existe.",
+  "topicGroups": [["1.0"], ["1.1", "2.0"], ["2.1"]],
+  "architecture": ["..."],
+  "changes": [{"area": "...", "what": "...", "why": "..."}],
+  "businessRules": ["..."],
+  "dependencies": ["..."],
+  "openQuestions": ["..."]
+}
+
+Reglas:
+- "topicGroups": cada grupo es un tema de la minuta final, en orden cronológico. Van en el mismo grupo los temas de tramos distintos que son el mismo asunto; pasa casi siempre en el corte entre dos tramos, donde un tema queda partido. Cada id aparece exactamente una vez y no se descarta ninguno.
+- En las listas une lo repetido. Si un tramo posterior contradice a uno anterior, manda el posterior. Una pregunta que un tramo dejó abierta y otro cerró ya no es pregunta abierta.
+- No inventes nada que no esté en los tramos.${contextPreamble(projectContext)}`;
 }
 
 /** Paso 3 — pendientes accionables, con criterios de aceptación. */
@@ -203,14 +351,14 @@ export function mergeMinutesPrompt(
 ): string {
   return `${minutesPrompt(attendees, projectContext, null, spoken, output)}
 
-AHORA NO RECIBES LA TRANSCRIPCIÓN: recibes las minutas parciales de cada tramo de la reunión, en orden cronológico. Tu tarea es fusionarlas en UNA sola minuta con la misma estructura JSON.
+AHORA NO RECIBES LA TRANSCRIPCIÓN: recibes las minutas ejecutivas parciales de cada tramo de la reunión, en orden cronológico. Tu tarea es fusionarlas en UNA sola minuta ejecutiva con la misma estructura JSON.
 
 Reglas de la fusión:
 - Una decisión que aparece en varios tramos es UNA decisión, no varias. Únelas.
 - Si un tramo posterior contradice a uno anterior, manda el posterior: es lo que se acordó al final.
-- Un tema que en un tramo quedó abierto y en otro se cerró ya no es una pregunta abierta.
+- Un riesgo que en un tramo quedó abierto y en otro se resolvió ya no es un riesgo.
 - No inventes nada que no esté en alguna de las minutas parciales.
-- "agenda" y "summary" se redactan de nuevo cubriendo la reunión completa, no se concatenan.`;
+- "agenda" se redacta de nuevo cubriendo la reunión completa, no se concatena.`;
 }
 
 /** Fusión de los pendientes extraídos por tramos. */

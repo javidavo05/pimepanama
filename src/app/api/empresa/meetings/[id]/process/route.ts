@@ -23,8 +23,8 @@ import {
   parseTechnicalDeliverable,
   type ExecutiveMinutes,
   type MeetingSegment,
-  type TechnicalMinutes,
 } from "@/lib/meetings/types";
+import { parseTechnicalMinutes } from "@/lib/meetings/technical";
 import { serializeMeetingActionItem } from "@/lib/meetings/serialize";
 
 export const runtime = "nodejs";
@@ -144,7 +144,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     // ── Etapa 2: minuta ejecutiva + minuta técnica ───────────────────────────
     if (stage === "minutes") {
-      const result = await runMinutes(openai, diarizedText, attendees, codeContext, meeting.audioSource, spoken, meeting.language);
+      const result = await runMinutes(
+        openai,
+        diarizedText,
+        attendees,
+        codeContext,
+        meeting.audioSource,
+        spoken,
+        meeting.language,
+        meeting.durationMs
+      );
 
       await prisma.meeting.update({
         where: { id },
@@ -193,7 +202,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ stage, chapters: result.data, costUSD: result.costUSD });
     }
 
-    const technical = meeting.technicalMinutes as unknown as TechnicalMinutes | null;
+    const technical = parseTechnicalMinutes(meeting.technicalMinutes);
     if (!technical) {
       await prisma.meeting.update({ where: { id }, data: { status: settled() } });
       return NextResponse.json(

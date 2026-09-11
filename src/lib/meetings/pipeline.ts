@@ -13,9 +13,22 @@ import {
   minutesPrompt,
   partialPass,
   technicalDeliverablePrompt,
+  technicalMergePlanPrompt,
+  technicalMinutesPrompt,
+  topicExpansionPrompt,
   technicalPromptPrompt,
 } from "./prompts";
 import { chunkTranscript, clampTranscript, numberedSegments, parseTimestamp } from "./transcript";
+import {
+  assembleTechnical,
+  describePartialsForMerge,
+  mergeExpansion,
+  normalizeTechnical,
+  parseMergePlan,
+  technicalDigest,
+  topicWindows,
+  transcriptWindow,
+} from "./technical";
 import { parseTechnicalDeliverable } from "./types";
 import type {
   DraftActionItem,
@@ -39,6 +52,47 @@ const MAX_TRANSCRIPT_CHARS = 60_000;
  * cada tramo.
  */
 const CHUNK_CHARS = 40_000;
+
+/**
+ * Presupuestos de salida de las minutas. La técnica compartía antes 3000 tokens
+ * con la ejecutiva en una sola llamada y salía siempre recortada. `gpt-4o` admite
+ * hasta 16k de salida; son topes, no metas: una reunión corta sigue saliendo
+ * corta, pero una larga ya no se trunca.
+ *
+ * La fusión de una reunión larga no redacta temas —solo devuelve el plan de cómo
+ * juntarlos—, así que no necesita un presupuesto grande ni cabe el riesgo de que
+ * vuelva a condensar. Eso también mantiene la etapa bajo el tope de 300 s de la
+ * función: los tramos corren en paralelo y la fusión es corta.
+ */
+const EXEC_TOKENS = 3000;
+const TECH_SINGLE_TOKENS = 12_000;
+const TECH_PARTIAL_TOKENS = 8_000;
+const TECH_MERGE_PLAN_TOKENS = 4_000;
+
+/**
+ * Profundización por tema: una llamada por tema, en paralelo con un tope para no
+ * chocar con el límite de pedidos por minuto de OpenAI. Cada una ve solo el tramo
+ * de su tema y un contexto de proyecto recortado: el mapa del repositorio completo
+ * multiplicado por cada tema encarecería la etapa sin cambiar la respuesta.
+ */
+const TOPIC_EXPANSION_TOKENS = 3_000;
+const TOPIC_EXPANSION_CONCURRENCY = 6;
+const TOPIC_WINDOW_CHARS = 30_000;
+const EXPANSION_CONTEXT_CHARS = 8_000;
+
+/** Como `Promise.all`, pero con a lo sumo `limit` tareas corriendo a la vez. */
+async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T, index: number) => Promise<R>): Promise<R[]> {
+  const results = new Array<R>(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await fn(items[i], i);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
 
 export interface AiCallResult<T> {
   data: T;
@@ -82,6 +136,17 @@ async function jsonCall<T>(
   try {
     data = JSON.parse(resp.choices[0]?.message?.content ?? "{}") as T;
   } catch {
+    // Un JSON cortado por el tope de salida no es una respuesta vacía: tragarlo
+    // guardaba una minuta en blanco sin avisar. Se falla la etapa, que se puede
+    // reintentar desde el detalle.
+    if (resp.choices[0]?.finish_reason === "length") {
+      throw new Response(
+        JSON.stringify({
+          error: "La respuesta de la IA se cortó por largo. Reintenta la etapa; si se repite, avísale al equipo.",
+        }),
+        { status: 502, headers: { "Content-Type": "application/json" } }
+      );
+    }
     data = {} as T;
   }
 
@@ -218,10 +283,12 @@ class CostTally {
 /**
  * Minuta ejecutiva + minuta técnica.
  *
- * Una reunión que cabe en una llamada se analiza de una. Una que no cabe —a
- * partir de un par de horas— se analiza por tramos y luego se fusiona, en vez de
- * recortarla: antes se truncaba a 60k caracteres y el final de la reunión, que
- * es justo donde se cierran los acuerdos, no llegaba nunca al modelo.
+ * Son dos llamadas independientes y corren en paralelo: antes iban juntas en una
+ * sola respuesta de 3000 tokens y la técnica, que es la larga, salía recortada.
+ *
+ * Una reunión que no cabe en una llamada —a partir de una hora y pico— se analiza
+ * por tramos en vez de recortarla: el final de la reunión, que es donde se
+ * cierran los acuerdos, no puede quedarse fuera.
  */
 export async function runMinutes(
   openai: OpenAI,
@@ -230,55 +297,210 @@ export async function runMinutes(
   projectContext: string,
   audioSource?: string | null,
   spoken: MeetingLanguage[] = ["es"],
-  output = "es"
+  output = "es",
+  durationMs = 0
 ): Promise<AiCallResult<MinutesResult>> {
-  const chunks = chunkTranscript(diarizedText, CHUNK_CHARS);
   const tally = new CostTally();
+  const chunks = chunkTranscript(diarizedText, CHUNK_CHARS);
+  const [executive, technical] = await Promise.all([
+    runExecutive(openai, tally, diarizedText, chunks, attendees, projectContext, audioSource, spoken, output),
+    runTechnicalMinutes(openai, tally, diarizedText, chunks, attendees, projectContext, audioSource, spoken, output, durationMs),
+  ]);
+  return tally.wrap({ executive, technical });
+}
+
+async function runExecutive(
+  openai: OpenAI,
+  tally: CostTally,
+  diarizedText: string,
+  chunks: string[],
+  attendees: MeetingAttendee[],
+  projectContext: string,
+  audioSource: string | null | undefined,
+  spoken: MeetingLanguage[],
+  output: string
+): Promise<ExecutiveMinutes> {
+  const prompt = minutesPrompt(attendees, projectContext, audioSource, spoken, output);
 
   if (chunks.length <= 1) {
     const data = tally.add(
-      await jsonCall<Partial<MinutesResult>>(
+      await jsonCall<{ executive?: unknown }>(
         openai,
-        minutesPrompt(attendees, projectContext, audioSource, spoken, output),
+        prompt,
         `Transcripción atribuida por hablante:\n\n${clampTranscript(diarizedText, MAX_TRANSCRIPT_CHARS)}`,
-        3000
+        EXEC_TOKENS
       )
     );
-    return tally.wrap({
-      executive: normalizeExecutive(data.executive),
-      technical: normalizeTechnical(data.technical),
-    });
+    return normalizeExecutive(data.executive);
   }
 
-  const partials: Partial<MinutesResult>[] = [];
-  for (let i = 0; i < chunks.length; i++) {
-    partials.push(
-      tally.add(
-        await jsonCall<Partial<MinutesResult>>(
-          openai,
-          minutesPrompt(attendees, projectContext, audioSource, spoken, output) + partialPass(i, chunks.length),
-          `Transcripción atribuida por hablante — tramo ${i + 1} de ${chunks.length}:\n\n${chunks[i]}`,
-          3000
-        )
+  const partials = await Promise.all(
+    chunks.map((chunk, i) =>
+      jsonCall<{ executive?: unknown }>(
+        openai,
+        prompt + partialPass(i, chunks.length),
+        `Transcripción atribuida por hablante — tramo ${i + 1} de ${chunks.length}:\n\n${chunk}`,
+        EXEC_TOKENS
       )
-    );
-  }
-
-  const merged = tally.add(
-    await jsonCall<Partial<MinutesResult>>(
-      openai,
-      mergeMinutesPrompt(attendees, projectContext, spoken, output),
-      `Minutas parciales de los ${chunks.length} tramos, en orden cronológico:\n\n${partials
-        .map((p, i) => `### Tramo ${i + 1}\n${JSON.stringify(p)}`)
-        .join("\n\n")}`,
-      3000
     )
   );
+  const executives = partials.map((p) => tally.add(p).executive ?? {});
 
-  return tally.wrap({
-    executive: normalizeExecutive(merged.executive),
-    technical: normalizeTechnical(merged.technical),
+  const merged = tally.add(
+    await jsonCall<{ executive?: unknown }>(
+      openai,
+      mergeMinutesPrompt(attendees, projectContext, spoken, output),
+      `Minutas ejecutivas parciales de los ${chunks.length} tramos, en orden cronológico:\n\n${executives
+        .map((e, i) => `### Tramo ${i + 1}\n${JSON.stringify(e)}`)
+        .join("\n\n")}`,
+      EXEC_TOKENS
+    )
+  );
+  return normalizeExecutive(merged.executive);
+}
+
+async function runTechnicalMinutes(
+  openai: OpenAI,
+  tally: CostTally,
+  diarizedText: string,
+  chunks: string[],
+  attendees: MeetingAttendee[],
+  projectContext: string,
+  audioSource: string | null | undefined,
+  spoken: MeetingLanguage[],
+  output: string,
+  durationMs: number
+): Promise<TechnicalMinutes> {
+  if (chunks.length <= 1) {
+    const data = tally.add(
+      await jsonCall<{ technical?: unknown }>(
+        openai,
+        technicalMinutesPrompt(attendees, projectContext, audioSource, spoken, output, durationMs),
+        `Transcripción atribuida por hablante, con timestamps:\n\n${clampTranscript(diarizedText, MAX_TRANSCRIPT_CHARS)}`,
+        TECH_SINGLE_TOKENS
+      )
+    );
+    return expandTopics(
+      openai,
+      tally,
+      normalizeTechnical(data.technical, durationMs),
+      diarizedText,
+      attendees,
+      projectContext,
+      spoken,
+      output,
+      durationMs
+    );
+  }
+
+  // Cada tramo recibe su propia referencia de profundidad, proporcional a lo que
+  // ocupa de la reunión: el total pediría a cada tramo los temas de todos.
+  const totalChars = chunks.reduce((n, c) => n + c.length, 0) || 1;
+  const results = await Promise.all(
+    chunks.map((chunk, i) =>
+      jsonCall<{ technical?: unknown }>(
+        openai,
+        technicalMinutesPrompt(
+          attendees,
+          projectContext,
+          audioSource,
+          spoken,
+          output,
+          Math.round((durationMs * chunk.length) / totalChars)
+        ) + partialPass(i, chunks.length),
+        `Transcripción atribuida por hablante, con timestamps — tramo ${i + 1} de ${chunks.length}:\n\n${chunk}`,
+        TECH_PARTIAL_TOKENS
+      )
+    )
+  );
+  const partials = results.map((r) => normalizeTechnical(tally.add(r).technical, durationMs));
+
+  const plan = parseMergePlan(
+    tally.add(
+      await jsonCall<unknown>(
+        openai,
+        technicalMergePlanPrompt(projectContext),
+        `Minutas técnicas de los ${chunks.length} tramos, en orden cronológico:\n\n${describePartialsForMerge(partials)}`,
+        TECH_MERGE_PLAN_TOKENS
+      )
+    )
+  );
+  return expandTopics(
+    openai,
+    tally,
+    assembleTechnical(partials, plan),
+    diarizedText,
+    attendees,
+    projectContext,
+    spoken,
+    output,
+    durationMs
+  );
+}
+
+/**
+ * Segunda pasada de la minuta técnica: cada tema se documenta a fondo en su
+ * propia llamada, viendo solo el tramo donde se habló de él.
+ *
+ * Existe porque la pasada que recorre la reunión entera, aun con presupuesto de
+ * sobra, deja cada tema en dos oraciones: medido en una reunión de 24 minutos,
+ * usó 1.100 tokens de los 12.000 disponibles. Profundizar es una mejora, no un
+ * requisito: si un tema falla, se queda con lo de la primera pasada.
+ */
+async function expandTopics(
+  openai: OpenAI,
+  tally: CostTally,
+  technical: TechnicalMinutes,
+  diarizedText: string,
+  attendees: MeetingAttendee[],
+  projectContext: string,
+  spoken: MeetingLanguage[],
+  output: string,
+  durationMs: number
+): Promise<TechnicalMinutes> {
+  if (technical.topics.length === 0) return technical;
+  const windows = topicWindows(technical.topics, durationMs);
+  const prompt = topicExpansionPrompt(
+    attendees,
+    projectContext.slice(0, EXPANSION_CONTEXT_CHARS),
+    spoken,
+    output
+  );
+
+  const topics = await mapLimit(technical.topics, TOPIC_EXPANSION_CONCURRENCY, async (topic, i) => {
+    const window = windows[i];
+    if (!window) return topic;
+    const slice = clampTranscript(transcriptWindow(diarizedText, window.from, window.to), TOPIC_WINDOW_CHARS);
+    if (!slice) return topic;
+    try {
+      const data = tally.add(
+        await jsonCall<unknown>(
+          openai,
+          prompt,
+          `Tema: ${topic.title}
+
+Lo que ya se anotó de este tema:
+${JSON.stringify({
+  discussion: topic.discussion,
+  details: topic.details,
+  decisions: topic.decisions,
+  pending: topic.pending,
+})}
+
+Tramo de la transcripción donde se habló de él:
+
+${slice}`,
+          TOPIC_EXPANSION_TOKENS
+        )
+      );
+      return mergeExpansion(topic, data);
+    } catch (err) {
+      console.warn(`No se pudo profundizar el tema «${topic.title}»:`, err instanceof Response ? err.status : err);
+      return topic;
+    }
   });
+
+  return { ...technical, topics };
 }
 
 function str(value: unknown, fallback = ""): string {
@@ -302,27 +524,6 @@ function normalizeExecutive(raw: unknown): ExecutiveMinutes {
   };
 }
 
-function normalizeTechnical(raw: unknown): TechnicalMinutes {
-  const rec = (raw ?? {}) as Record<string, unknown>;
-  const changes = Array.isArray(rec.changes)
-    ? rec.changes.flatMap((c) => {
-        if (!c || typeof c !== "object") return [];
-        const cr = c as Record<string, unknown>;
-        const what = str(cr.what);
-        if (!what) return [];
-        return [{ area: str(cr.area, "General"), what, why: str(cr.why) }];
-      })
-    : [];
-
-  return {
-    summary: str(rec.summary),
-    architecture: strArray(rec.architecture),
-    changes,
-    dependencies: strArray(rec.dependencies),
-    openQuestions: strArray(rec.openQuestions),
-  };
-}
-
 // ─── Paso 3: pendientes ──────────────────────────────────────────────────────
 
 const KINDS = ["TECNICO", "COMERCIAL", "ADMINISTRATIVO", "DECISION", "RIESGO"] as const;
@@ -335,13 +536,7 @@ export async function runActionItems(
   attendees: MeetingAttendee[],
   projectContext: string
 ): Promise<AiCallResult<DraftActionItem[]>> {
-  const technicalDigest = [
-    technical.summary,
-    technical.changes.map((c) => `- [${c.area}] ${c.what} (motivo: ${c.why})`).join("\n"),
-    technical.dependencies.length > 0 ? `Dependencias: ${technical.dependencies.join("; ")}` : "",
-  ]
-    .filter(Boolean)
-    .join("\n\n");
+  const digest = technicalDigest(technical);
 
   const chunks = chunkTranscript(diarizedText, CHUNK_CHARS);
   const tally = new CostTally();
@@ -353,7 +548,7 @@ export async function runActionItems(
         await jsonCall<{ items?: unknown[] }>(
           openai,
           actionItemsPrompt(attendees, projectContext),
-          `Minuta técnica de la reunión:\n${technicalDigest}\n\n---\n\nTranscripción atribuida:\n\n${clampTranscript(diarizedText, MAX_TRANSCRIPT_CHARS)}`,
+          `Minuta técnica de la reunión:\n${digest}\n\n---\n\nTranscripción atribuida:\n\n${clampTranscript(diarizedText, MAX_TRANSCRIPT_CHARS)}`,
           3000
         )
       ).items ?? [];
@@ -366,7 +561,7 @@ export async function runActionItems(
         await jsonCall<{ items?: unknown[] }>(
           openai,
           actionItemsPrompt(attendees, projectContext) + partialPass(i, chunks.length),
-          `Minuta técnica de la reunión completa:\n${technicalDigest}\n\n---\n\nTranscripción atribuida — tramo ${i + 1} de ${chunks.length}:\n\n${chunks[i]}`,
+          `Minuta técnica de la reunión completa:\n${digest}\n\n---\n\nTranscripción atribuida — tramo ${i + 1} de ${chunks.length}:\n\n${chunks[i]}`,
           2500
         )
       );
@@ -451,19 +646,7 @@ Decisiones tomadas:
 ${executiveDecisions.map((d) => `- ${d}`).join("\n") || "(ninguna registrada)"}
 
 Minuta técnica:
-${technical.summary}
-
-Decisiones de arquitectura:
-${technical.architecture.map((a) => `- ${a}`).join("\n") || "(ninguna)"}
-
-Cambios identificados:
-${technical.changes.map((c) => `- [${c.area}] ${c.what} — porque: ${c.why}`).join("\n") || "(ninguno)"}
-
-Dependencias pendientes:
-${technical.dependencies.map((d) => `- ${d}`).join("\n") || "(ninguna)"}
-
-Preguntas abiertas:
-${technical.openQuestions.map((q) => `- ${q}`).join("\n") || "(ninguna)"}
+${technicalDigest(technical)}
 
 Pendientes técnicos derivados:
 ${itemsDigest || "(ninguno)"}
@@ -476,7 +659,7 @@ ${deliverable ? describeDeliverable(deliverable) : "Entregable técnico: no se d
     // se escribe en términos de "localizar el módulo que…".
     hasRepo ? masterPromptPrompt(projectContext, true) : technicalPromptPrompt(projectContext),
     user,
-    4000
+    8000
   );
 
   return {
@@ -641,19 +824,7 @@ export async function runTechnicalDeliverable(
   const user = `Reunión: ${meetingTitle}
 
 Minuta técnica:
-${technical.summary || "(sin resumen)"}
-
-Decisiones de arquitectura:
-${technical.architecture.map((a) => `- ${a}`).join("\n") || "(ninguna)"}
-
-Cambios identificados:
-${technical.changes.map((c) => `- [${c.area}] ${c.what} — porque: ${c.why}`).join("\n") || "(ninguno)"}
-
-Dependencias pendientes:
-${technical.dependencies.map((d) => `- ${d}`).join("\n") || "(ninguna)"}
-
-Preguntas abiertas:
-${technical.openQuestions.map((q) => `- ${q}`).join("\n") || "(ninguna)"}
+${technicalDigest(technical)}
 
 Pendientes extraídos:
 ${itemsDigest || "(ninguno)"}
@@ -668,7 +839,7 @@ ${clampTranscript(diarizedText, MAX_TRANSCRIPT_CHARS)}`;
     openai,
     technicalDeliverablePrompt(projectContext, hasRepo),
     user,
-    2500
+    4000
   );
 
   return { ...result, data: parseTechnicalDeliverable(result.data) };

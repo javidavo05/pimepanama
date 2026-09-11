@@ -72,12 +72,34 @@ export interface TechnicalChange {
   why: string;
 }
 
+/**
+ * Un tema de la reunión, documentado con el detalle suficiente para construir sin
+ * volver a escuchar el audio. Es la unidad que hace larga a la minuta técnica: el
+ * resumen la orienta, los temas la sostienen.
+ */
+export interface TechnicalTopic {
+  title: string;
+  /** Desde dónde se habló del tema, en ms desde el inicio; null si no se pudo ubicar */
+  startMs: number | null;
+  /** Lo que se habló, en prosa: la necesidad, cómo funciona hoy, lo propuesto y lo descartado */
+  discussion: string;
+  /** Datos concretos: cifras, nombres, ejemplos, reglas, formatos, integraciones */
+  details: string[];
+  decisions: string[];
+  /** Lo que de este tema quedó sin cerrar */
+  pending: string[];
+}
+
 export interface TechnicalMinutes {
   /** Resumen técnico en prosa para quien no estuvo en la reunión */
   summary: string;
+  /** El cuerpo de la minuta: un bloque por tema tratado. Vacío en minutas del formato anterior */
+  topics: TechnicalTopic[];
   /** Decisiones de arquitectura o enfoque técnico tomadas */
   architecture: string[];
   changes: TechnicalChange[];
+  /** Reglas de negocio que se enunciaron: validaciones, cálculos, flujos, permisos */
+  businessRules: string[];
   /** Dependencias externas, accesos o insumos que hacen falta */
   dependencies: string[];
   /** Lo que quedó ambiguo y hay que preguntar antes de construir */
