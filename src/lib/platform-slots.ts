@@ -147,7 +147,7 @@ export function buildSlotInventories(
 }
 
 export function slotStatusColor(available: number, capacity: number): string {
-  if (available <= 0) return "text-red-400 border-red-500/30 bg-red-500/10";
-  if (available < capacity) return "text-amber-400 border-amber-500/30 bg-amber-500/10";
-  return "text-green-400 border-green-500/30 bg-green-500/10";
+  if (available <= 0) return "text-danger border-danger/30 bg-danger/10";
+  if (available < capacity) return "text-warn border-warn/30 bg-warn/10";
+  return "text-ok border-ok/30 bg-ok/10";
 }
