@@ -16,9 +16,10 @@ const TIERS: ComplexityTier[] = [1, 2, 3, 4, 5];
  */
 export function ComplexityLadder({ projects, ui, locale }: { projects: LocalizedProject[]; ui: EngineUi; locale: Locale }) {
   const reduce = useReducedMotion();
-  const [active, setActive] = useState<ComplexityTier>(4);
-  const byTier = TIERS.map((t) => ({ tier: t, items: projects.filter((p) => p.complexity === t) }));
-  const current = byTier[active - 1];
+  // Solo los niveles que tienen al menos un sistema; un peldaño vacío no dice nada.
+  const byTier = TIERS.map((t) => ({ tier: t, items: projects.filter((p) => p.complexity === t) })).filter((t) => t.items.length > 0);
+  const [active, setActive] = useState<ComplexityTier>(byTier[byTier.length - 1]?.tier ?? 5);
+  const current = byTier.find((t) => t.tier === active) ?? byTier[0];
 
   return (
     <section className="mx-auto max-w-7xl px-6 py-24 sm:px-8 sm:py-32" aria-labelledby="pf-range-title">
@@ -31,7 +32,7 @@ export function ComplexityLadder({ projects, ui, locale }: { projects: Localized
         </Reveal>
 
         <div className="lg:col-span-7">
-          <div className="grid grid-cols-5 items-end gap-2 sm:gap-3" role="tablist" aria-label={ui.range.kicker}>
+          <div className="grid items-end gap-2 sm:gap-3" style={{ gridTemplateColumns: `repeat(${byTier.length}, minmax(0, 1fr))` }} role="tablist" aria-label={ui.range.kicker}>
             {byTier.map(({ tier, items }, i) => {
               const on = tier === active;
               return (
@@ -70,7 +71,7 @@ export function ComplexityLadder({ projects, ui, locale }: { projects: Localized
           <div className="mt-6 rounded-xl p-5 sm:p-6" style={{ background: "rgba(242,243,245,0.03)", border: "1px solid var(--pf-line)" }}>
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
-                key={active}
+                key={current.tier}
                 initial={reduce ? false : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={reduce ? undefined : { opacity: 0, y: -8 }}
@@ -78,12 +79,12 @@ export function ComplexityLadder({ projects, ui, locale }: { projects: Localized
               >
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h3 className="text-lg font-semibold tracking-tight">
-                    <span className="pf-mono mr-3" style={{ color: "var(--pf-accent)" }}>0{active}</span>
-                    {complexityLabel(active, locale)}
+                    <span className="pf-mono mr-3" style={{ color: "var(--pf-accent)" }}>0{current.tier}</span>
+                    {complexityLabel(current.tier, locale)}
                   </h3>
                   <span className="text-xs" style={{ color: "var(--pf-ink-3)" }}>{ui.range.projects(current.items.length)}</span>
                 </div>
-                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--pf-ink-2)" }}>{complexityHint(active, locale)}</p>
+                <p className="mt-2 text-sm leading-relaxed" style={{ color: "var(--pf-ink-2)" }}>{complexityHint(current.tier, locale)}</p>
                 <ul className="mt-4 flex flex-wrap gap-2">
                   {current.items.map((p, i) => (
                     <motion.li key={p.slug} initial={reduce ? false : { opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.03, duration: 0.3 }}>

@@ -19,7 +19,7 @@ const CATEGORIES: ProjectCategory[] = ["saas", "plataforma", "ecommerce", "sitio
 const STATUSES: ProjectStatus[] = ["produccion", "beta", "construccion", "prototipo", "interno", "legacy", "propuesta"];
 const TIERS: ComplexityTier[] = [1, 2, 3, 4, 5];
 const RECENT_KEY = "pf-recent-searches";
-const SUGGESTIONS = ["Supabase", "Yappy", "Next.js", "Apps Script", "multi-tenant", "PWA", "/dashboard", "Electron"];
+const SUGGESTIONS = ["Supabase", "Yappy", "Next.js", "Cloudflare R2", "WhatsApp", "PWA", "/dashboard", "Capacitor"];
 
 function normalize(s: string): string {
   return s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -147,7 +147,7 @@ export function ArchiveGrid({ projects, ui, locale }: { projects: LocalizedProje
         <div className="flex flex-wrap items-center gap-2">
           <span className="pf-kicker mr-1 w-14" style={{ letterSpacing: "0.14em" }}>{ui.archive.category}</span>
           <Chip active={cat === "all"} onClick={() => setCat("all")}>{ui.archive.all} <span className="opacity-60">{projects.length}</span></Chip>
-          {CATEGORIES.map((c) => (
+          {CATEGORIES.filter((c) => (counts[c] ?? 0) > 0).map((c) => (
             <Chip key={c} active={cat === c} onClick={() => setCat(cat === c ? "all" : c)}>
               {categoryLabel(c, locale)} <span className="opacity-60">{counts[c] ?? 0}</span>
             </Chip>
@@ -155,13 +155,13 @@ export function ArchiveGrid({ projects, ui, locale }: { projects: LocalizedProje
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="pf-kicker mr-1 w-14" style={{ letterSpacing: "0.14em" }}>{ui.archive.status}</span>
-          {STATUSES.map((s) => (
+          {STATUSES.filter((s) => projects.some((p) => p.status === s)).map((s) => (
             <Chip key={s} active={status === s} onClick={() => setStatus(status === s ? "all" : s)}>{statusLabel(s, locale)}</Chip>
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="pf-kicker mr-1 w-14" style={{ letterSpacing: "0.14em" }}>{ui.archive.complexity}</span>
-          {TIERS.map((t) => (
+          {TIERS.filter((t) => projects.some((p) => p.complexity === t)).map((t) => (
             <Chip key={t} active={tier === t} onClick={() => setTier(tier === t ? "all" : t)} title={complexityLabel(t, locale)}>
               <LevelMeter level={t} size={9} /> 0{t}
             </Chip>

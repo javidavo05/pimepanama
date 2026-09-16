@@ -31,13 +31,7 @@ import { CATEGORY_LABEL, ROUTE_GROUP_LABEL, STATUS_LABEL } from "./types";
 export type ComplexityTier = 1 | 2 | 3 | 4 | 5;
 
 export const COMPLEXITY: Record<string, ComplexityTier> = {
-  academyx: 5, geogenius: 4, "uapa-suite": 5, visita7: 4, "smart-church": 3, sembradores: 4,
-  "church-translate": 4, "wedding-os": 4, "wedding-site": 3, godmode: 4, cifrapp: 4, tdp: 5,
-  tickets: 5, medsuite: 3, "house-booking": 3, "pime-backup": 5, "pime-social": 3,
-  misaza: 4, "bright-tale-store": 3, "bnb-real-estate": 3, "holo-realty": 3, "john-henry": 3,
-  "chivas-parranderas": 2, "mision-cristiana": 1, "muro-anatolia": 2, "country-card-game": 2,
-  "roblox-sandbox": 2, "futbol-control": 3, "academia-suarez": 2, "sd-autosales": 2,
-  "git-pime": 2, "cajon-revelado": 1, "integraciones-panama": 1,
+  academyx: 5, "uapa-suite": 5, visita7: 4, "wedding-site": 3, godmode: 4, cifrapp: 4, misaza: 4, "bnb-real-estate": 3, "john-henry": 3,
 };
 
 const COMPLEXITY_LABEL: Record<ComplexityTier, { es: string; en: string }> = {

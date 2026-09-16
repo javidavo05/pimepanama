@@ -27,7 +27,7 @@ const ui = {
       kicker: "Rango de complejidad",
       title: "No todo es un SaaS",
       body:
-        "El catálogo cubre cinco niveles. En el primero hay una página o un componente sin base de datos. En el último hay hardware, agentes locales y pagos en la calle. Elegir el nivel correcto es la mitad del trabajo.",
+        "Cada sistema publicado cae en un nivel. En el más bajo hay un sitio con backend y pagos. En el más alto hay varios sistemas hablando entre sí, con hardware y agentes locales. Elegir el nivel correcto es la mitad del trabajo.",
       projects: (n: number) => (n === 1 ? "1 sistema" : `${n} sistemas`),
       hover: "Toca un nivel para resaltar sus sistemas",
     },
@@ -122,7 +122,7 @@ const ui = {
       kicker: "Complexity range",
       title: "Not everything is a SaaS",
       body:
-        "The catalog spans five levels. The first is a page or a component with no database. The last has hardware, local agents and payments in the field. Picking the right level is half the job.",
+        "Every published system falls into a level. The lowest is a site with a backend and payments. The highest is several systems talking to each other, with hardware and local agents. Picking the right level is half the job.",
       projects: (n: number) => (n === 1 ? "1 system" : `${n} systems`),
       hover: "Tap a level to highlight its systems",
     },

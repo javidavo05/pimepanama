@@ -1,12 +1,11 @@
 import { productProjects } from "./catalog-products";
 import { siteProjects } from "./catalog-sites";
-import { toolProjects } from "./catalog-tools";
 import type { Project, ProjectCategory, ProjectStatus } from "./types";
 
 export * from "./types";
 
 /** Catálogo completo, en el orden en que se muestra. */
-export const projects: Project[] = [...productProjects, ...siteProjects, ...toolProjects];
+export const projects: Project[] = [...productProjects, ...siteProjects];
 
 export function getProject(slug: string): Project | undefined {
   return projects.find((p) => p.slug === slug);
