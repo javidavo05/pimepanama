@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { ComplexityTier, LocalizedProject } from "@/lib/portfolio/localize";
 import { complexityHint, complexityLabel } from "@/lib/portfolio/localize";
 import type { Locale } from "@/lib/i18n";
 import type { EngineUi } from "./i18n";
-import { Kicker, Reveal } from "./ui";
+import { Kicker, PressLink, Reveal } from "./ui";
 
 const TIERS: ComplexityTier[] = [1, 2, 3, 4, 5];
 
@@ -46,6 +45,7 @@ export function ComplexityLadder({ projects, ui, locale }: { projects: Localized
                   data-cursor="grow"
                   initial={reduce ? false : { opacity: 0, scaleY: 0 }}
                   whileInView={{ opacity: 1, scaleY: 1 }}
+                  whileTap={reduce ? undefined : { scale: 0.96 }}
                   viewport={{ once: true, margin: "-80px" }}
                   transition={{ duration: 0.7, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
                   className="group relative flex flex-col justify-between overflow-hidden rounded-md p-3 text-left transition-colors duration-300"
@@ -87,15 +87,14 @@ export function ComplexityLadder({ projects, ui, locale }: { projects: Localized
                 <ul className="mt-4 flex flex-wrap gap-2">
                   {current.items.map((p, i) => (
                     <motion.li key={p.slug} initial={reduce ? false : { opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.03, duration: 0.3 }}>
-                      <Link
+                      <PressLink
                         href={p.href}
-                        data-cursor="grow"
                         className="inline-flex min-h-[36px] items-center gap-2 rounded-full pl-2 pr-3 text-xs font-medium transition hover:bg-white/10"
                         style={{ background: "rgba(242,243,245,0.05)", border: "1px solid var(--pf-line)" }}
                       >
                         <span className="h-4 w-4 rounded-[3px]" style={{ background: `linear-gradient(135deg, ${p.brand.primary}, ${p.brand.secondary})` }} />
                         {p.name}
-                      </Link>
+                      </PressLink>
                     </motion.li>
                   ))}
                 </ul>

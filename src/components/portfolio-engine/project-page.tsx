@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Icon } from "@iconify/react";
 import { NavigationBar } from "@/components/landing/navigation-bar";
 import { LandingFooter } from "@/components/landing/footer";
@@ -13,7 +12,7 @@ import { EngineCursor } from "./cursor";
 import { engineUi } from "./i18n";
 import { navItemsFor } from "./portfolio-page";
 import { ProjectDossier } from "./project-dossier";
-import { Kicker, LevelMeter, Reveal, RingButton, StatusDot, projectYears } from "./ui";
+import { Kicker, LevelMeter, PressLink, Reveal, RingButton, StatusDot, projectYears } from "./ui";
 
 export function ProjectEnginePage({ slug, locale }: { slug: string; locale: Locale }) {
   const ui = engineUi(locale);
@@ -36,10 +35,10 @@ export function ProjectEnginePage({ slug, locale }: { slug: string; locale: Loca
           <div className="pf-ghost absolute -right-[6vw] top-[4vw] text-[24vw]" aria-hidden>{ghost}</div>
 
           <header className="relative mx-auto max-w-7xl px-6 pb-12 pt-10 sm:px-8">
-            <Link href={localizedPath("/portfolio", locale)} data-cursor="grow" className="inline-flex min-h-[44px] items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] transition hover:text-white" style={{ color: "var(--pf-ink-2)" }}>
+            <PressLink href={localizedPath("/portfolio", locale)} className="inline-flex min-h-[44px] items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] transition-colors hover:text-white" style={{ color: "var(--pf-ink-2)" }}>
               <Icon icon="ph:arrow-left" className="h-4 w-4" />
               {ui.project.back}
-            </Link>
+            </PressLink>
             <Reveal className="mt-10 flex flex-col gap-5">
               <div className="flex flex-wrap items-center gap-4">
                 <span className="pf-mono tabular-nums" style={{ color: "var(--pf-ink-3)" }}>{String(idx + 1).padStart(2, "0")} / {String(projects.length).padStart(2, "0")}</span>
@@ -66,10 +65,10 @@ export function ProjectEnginePage({ slug, locale }: { slug: string; locale: Loca
               <ul className="mt-4 flex flex-wrap gap-2">
                 {siblings.map((s) => (
                   <li key={s.slug}>
-                    <Link href={s.href} data-cursor="grow" className="inline-flex min-h-[40px] items-center gap-2 rounded-full pl-2 pr-4 text-sm transition hover:bg-white/10" style={{ background: "rgba(242,243,245,0.05)", border: "1px solid var(--pf-line)" }}>
+                    <PressLink href={s.href} className="inline-flex min-h-[40px] items-center gap-2 rounded-full pl-2 pr-4 text-sm transition-colors hover:bg-white/10" style={{ background: "rgba(242,243,245,0.05)", border: "1px solid var(--pf-line)" }}>
                       <span className="h-5 w-5 rounded-[4px]" style={{ background: `linear-gradient(135deg, ${s.brand.primary}, ${s.brand.secondary})` }} />
                       {s.name}
-                    </Link>
+                    </PressLink>
                   </li>
                 ))}
               </ul>
@@ -77,19 +76,19 @@ export function ProjectEnginePage({ slug, locale }: { slug: string; locale: Loca
           ) : null}
 
           <nav className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-6 pb-24 sm:px-8" style={{ borderTop: "1px solid var(--pf-line)" }} aria-label={`${ui.project.prev} / ${ui.project.next}`}>
-            <Link href={prev.href} data-cursor="grow" className="group flex min-h-[44px] flex-col gap-1 pt-8">
+            <PressLink href={prev.href} className="group flex min-h-[44px] flex-col gap-1 pt-8">
               <span className="pf-kicker">{ui.project.prev}</span>
               <span className="pf-display text-2xl transition-transform duration-500 group-hover:-translate-x-1 sm:text-4xl" style={{ letterSpacing: "-0.02em" }}>{prev.name}</span>
-            </Link>
+            </PressLink>
             <div className="hidden pt-8 sm:block">
               <RingButton text={ui.hero.next} href={next.href} ariaLabel={ui.project.next}>
                 <Icon icon="ph:skip-forward-fill" className="h-5 w-5" />
               </RingButton>
             </div>
-            <Link href={next.href} data-cursor="grow" className="group flex min-h-[44px] flex-col items-end gap-1 pt-8 text-right">
+            <PressLink href={next.href} className="group flex min-h-[44px] flex-col items-end gap-1 pt-8 text-right">
               <span className="pf-kicker">{ui.project.next}</span>
               <span className="pf-display text-2xl transition-transform duration-500 group-hover:translate-x-1 sm:text-4xl" style={{ letterSpacing: "-0.02em" }}>{next.name}</span>
-            </Link>
+            </PressLink>
           </nav>
         </main>
       </div>

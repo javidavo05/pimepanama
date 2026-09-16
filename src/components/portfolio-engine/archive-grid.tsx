@@ -13,7 +13,7 @@ import { MiniChart } from "./mini-chart";
 import { ProjectDossier } from "./project-dossier";
 import { heroRoute } from "./showreel";
 import { SiteWindow } from "./site-window";
-import { Chip, Kicker, LevelMeter, Reveal, StatusDot, hostOf, projectYears } from "./ui";
+import { Chip, Kicker, LevelMeter, PressButton, Reveal, StatusDot, hostOf, projectYears } from "./ui";
 
 const CATEGORIES: ProjectCategory[] = ["saas", "plataforma", "ecommerce", "sitio", "herramienta", "juego", "legacy", "propuesta"];
 const STATUSES: ProjectStatus[] = ["produccion", "beta", "construccion", "prototipo", "interno", "legacy", "propuesta"];
@@ -116,9 +116,9 @@ export function ArchiveGrid({ projects, ui, locale }: { projects: LocalizedProje
               className="w-full bg-transparent text-sm outline-none placeholder:text-[rgba(242,243,245,0.4)]"
             />
             {q ? (
-              <button type="button" onClick={() => setQ("")} aria-label={ui.archive.clear} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/10">
+              <PressButton onClick={() => setQ("")} aria-label={ui.archive.clear} strength="firm" className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-white/10">
                 <Icon icon="ph:x" className="h-3.5 w-3.5" />
-              </button>
+              </PressButton>
             ) : null}
           </div>
           <AnimatePresence>
@@ -167,10 +167,10 @@ export function ArchiveGrid({ projects, ui, locale }: { projects: LocalizedProje
             </Chip>
           ))}
           {dirty ? (
-            <button type="button" onClick={clear} className="ml-auto inline-flex min-h-[32px] items-center gap-1 text-xs underline-offset-4 hover:underline" style={{ color: "var(--pf-accent)" }}>
+            <PressButton onClick={clear} className="ml-auto inline-flex min-h-[32px] items-center gap-1 text-xs underline-offset-4 hover:underline" style={{ color: "var(--pf-accent)" }}>
               <Icon icon="ph:arrow-counter-clockwise" className="h-3.5 w-3.5" />
               {ui.archive.clear}
-            </button>
+            </PressButton>
           ) : null}
         </div>
       </div>
@@ -190,9 +190,9 @@ export function ArchiveGrid({ projects, ui, locale }: { projects: LocalizedProje
         <div className="mt-10 rounded-xl p-10 text-center" style={{ border: "1px dashed var(--pf-line-2)" }}>
           <p className="text-lg font-semibold">{ui.archive.empty}</p>
           <p className="mt-2 text-sm" style={{ color: "var(--pf-ink-2)" }}>{ui.archive.emptyHint}</p>
-          <button type="button" onClick={clear} className="mt-6 inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-xs font-semibold uppercase tracking-[0.18em]" style={{ background: "var(--pf-accent)", color: "var(--pf-accent-ink)" }}>
+          <PressButton onClick={clear} strength="firm" className="mt-6 inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-xs font-semibold uppercase tracking-[0.18em]" style={{ background: "var(--pf-accent)", color: "var(--pf-accent-ink)" }}>
             {ui.archive.clear}
-          </button>
+          </PressButton>
         </div>
       ) : null}
     </section>
@@ -219,7 +219,7 @@ function Tile({ project: p, index, ui, locale, open, onToggle }: { project: Loca
       onMouseLeave={() => setHover(false)}
     >
       <motion.div layout="position" className="flex flex-col">
-        <button type="button" onClick={onToggle} aria-expanded={open} className="text-left" data-cursor="grow">
+        <motion.button type="button" onClick={onToggle} aria-expanded={open} className="text-left" data-cursor="grow" whileTap={reduce ? undefined : { scale: 0.985 }} transition={{ type: "spring", stiffness: 520, damping: 28 }}>
           <div className={`relative overflow-hidden p-3 pb-0 ${open ? "hidden" : "aspect-[16/10]"}`}>
             <motion.div animate={{ scale: live ? 1.015 : 1 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} className="h-full">
               <SiteWindow brand={p.brand} screen={route.screen} path={route.path} host={hostOf(p)} live={live} showCursor={!open} className="h-full w-full" radius={10} image={p.shots[route.path]} />
@@ -239,15 +239,15 @@ function Tile({ project: p, index, ui, locale, open, onToggle }: { project: Loca
               <span className="tabular-nums">{projectYears(p)}</span>
             </div>
           </div>
-        </button>
+        </motion.button>
 
         {!open ? (
           <div className="flex flex-col gap-3 px-5 pb-5">
             <div className="flex flex-wrap gap-1.5" onMouseLeave={() => setRoute(heroRoute(p))}>
               {[...p.routes].sort((a, b) => Number(Boolean(p.shots[b.path])) - Number(Boolean(p.shots[a.path]))).slice(0, 4).map((r) => (
-                <button key={r.path} type="button" onMouseEnter={() => setRoute(r)} onFocus={() => setRoute(r)} onClick={() => setRoute(r)} className="pf-mono rounded-md px-2 py-1 transition-colors" style={{ background: route.path === r.path ? `${p.brand.primary}22` : "rgba(242,243,245,0.04)", border: `1px solid ${route.path === r.path ? p.brand.primary : "var(--pf-line)"}`, color: "var(--pf-ink-2)" }} data-cursor="grow">
+                <PressButton key={r.path} onMouseEnter={() => setRoute(r)} onFocus={() => setRoute(r)} onClick={() => setRoute(r)} aria-pressed={route.path === r.path} className="pf-mono rounded-md px-2 py-1 transition-colors" style={{ background: route.path === r.path ? `${p.brand.primary}22` : "rgba(242,243,245,0.04)", border: `1px solid ${route.path === r.path ? p.brand.primary : "var(--pf-line)"}`, color: "var(--pf-ink-2)" }}>
                   {r.path}
-                </button>
+                </PressButton>
               ))}
               {p.routes.length > 4 ? <span className="pf-mono self-center" style={{ color: "var(--pf-ink-3)" }}>+{p.routes.length - 4}</span> : null}
             </div>
@@ -256,10 +256,10 @@ function Tile({ project: p, index, ui, locale, open, onToggle }: { project: Loca
                 <p className="pf-kicker truncate" style={{ letterSpacing: "0.12em" }}>{spark.spec.label}</p>
                 <div className="mt-1 h-9"><MiniChart series={spark} index={0} height={36} compact /></div>
               </div>
-              <button type="button" onClick={onToggle} data-cursor="grow" className="inline-flex min-h-[40px] shrink-0 items-center gap-2 rounded-full px-4 text-[0.7rem] font-semibold uppercase tracking-[0.18em] transition hover:bg-white/10" style={{ border: "1px solid var(--pf-line-2)" }}>
+              <PressButton onClick={onToggle} strength="firm" aria-expanded={open} className="inline-flex min-h-[40px] shrink-0 items-center gap-2 rounded-full px-4 text-[0.7rem] font-semibold uppercase tracking-[0.18em] transition-colors hover:bg-white/10" style={{ border: "1px solid var(--pf-line-2)" }}>
                 {ui.archive.expand}
                 <Icon icon="ph:arrows-out-simple" className="h-3.5 w-3.5" />
-              </button>
+              </PressButton>
             </div>
           </div>
         ) : null}
@@ -278,10 +278,10 @@ function Tile({ project: p, index, ui, locale, open, onToggle }: { project: Loca
             <div className="px-5 pb-6 pt-2 sm:px-6">
               <ProjectDossier project={p} ui={ui} locale={locale} compact />
               <div className="mt-8 flex justify-end">
-                <button type="button" onClick={onToggle} data-cursor="grow" className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-xs font-semibold uppercase tracking-[0.18em] transition hover:bg-white/10" style={{ border: "1px solid var(--pf-line-2)" }}>
+                <PressButton onClick={onToggle} strength="firm" aria-expanded={open} className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-xs font-semibold uppercase tracking-[0.18em] transition-colors hover:bg-white/10" style={{ border: "1px solid var(--pf-line-2)" }}>
                   {ui.archive.collapse}
                   <Icon icon="ph:arrows-in-simple" className="h-3.5 w-3.5" />
-                </button>
+                </PressButton>
               </div>
             </div>
           </motion.div>

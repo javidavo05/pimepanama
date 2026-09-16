@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
+import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import type { LocalizedProject } from "@/lib/portfolio/localize";
 import { routeGroupLabel } from "@/lib/portfolio/localize";
@@ -12,7 +12,7 @@ import type { EngineUi } from "./i18n";
 import { MiniChart } from "./mini-chart";
 import { heroRoute } from "./showreel";
 import { SiteWindow } from "./site-window";
-import { LevelMeter, StatusDot, hostOf, projectYears } from "./ui";
+import { LevelMeter, PressButton, PressLink, StatusDot, hostOf, projectYears, usePress } from "./ui";
 
 const GROUP_ORDER: RouteGroup[] = ["publico", "panel", "operacion", "movil", "api"];
 
@@ -22,6 +22,7 @@ const GROUP_ORDER: RouteGroup[] = ["publico", "panel", "operacion", "movil", "ap
  * de la ficha completa.
  */
 export function ProjectDossier({ project, ui, locale, compact = false }: { project: LocalizedProject; ui: EngineUi; locale: Locale; compact?: boolean }) {
+  const pressFirm = usePress("firm");
   const [route, setRoute] = useState(heroRoute(project));
   const series = useMemo(() => buildAllSeries(project.slug, project.metrics), [project.slug, project.metrics]);
   const groups = GROUP_ORDER.map((g) => ({ g, routes: project.routes.filter((r) => r.group === g) })).filter((x) => x.routes.length);
@@ -46,15 +47,13 @@ export function ProjectDossier({ project, ui, locale, compact = false }: { proje
                 {routes.map((r) => {
                   const on = r.path === route.path;
                   return (
-                    <button
+                    <PressButton
                       key={r.path}
-                      type="button"
                       onMouseEnter={() => setRoute(r)}
                       onFocus={() => setRoute(r)}
                       onClick={() => setRoute(r)}
                       aria-pressed={on}
-                      data-cursor="grow"
-                      className="inline-flex min-h-[34px] items-center gap-2 rounded-md px-2.5 transition-all duration-300"
+                      className="inline-flex min-h-[34px] items-center gap-2 rounded-md px-2.5 transition-colors duration-300"
                       style={{
                         background: on ? `${project.brand.primary}22` : "rgba(242,243,245,0.04)",
                         border: `1px solid ${on ? project.brand.primary : "var(--pf-line)"}`,
@@ -64,7 +63,7 @@ export function ProjectDossier({ project, ui, locale, compact = false }: { proje
                       {project.shots[r.path] ? <span className="h-1.5 w-1.5 rounded-full" style={{ background: project.shots[r.path].kind === "live" ? "#6cc4a3" : "#dcaa4a" }} aria-hidden /> : null}
                       <code className="pf-mono" style={{ color: on ? project.brand.primary : "var(--pf-ink-3)" }}>{r.path}</code>
                       <span className="text-xs">{r.label}</span>
-                    </button>
+                    </PressButton>
                   );
                 })}
               </div>
@@ -115,22 +114,22 @@ export function ProjectDossier({ project, ui, locale, compact = false }: { proje
 
         <div className="flex flex-wrap gap-3">
           {project.liveUrl ? (
-            <a href={project.liveUrl} target="_blank" rel="noopener noreferrer" data-cursor="grow" className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-xs font-semibold uppercase tracking-[0.18em] transition hover:brightness-110" style={{ background: "var(--pf-accent)", color: "var(--pf-accent-ink)" }}>
+            <motion.a href={project.liveUrl} target="_blank" rel="noopener noreferrer" data-cursor="grow" {...pressFirm} className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-xs font-semibold uppercase tracking-[0.18em] transition hover:brightness-110" style={{ background: "var(--pf-accent)", color: "var(--pf-accent-ink)" }}>
               {ui.dossier.live}
               <Icon icon="ph:arrow-up-right" className="h-3.5 w-3.5" />
-            </a>
+            </motion.a>
           ) : null}
           {project.demoUrl ? (
-            <Link href={project.demoUrl} data-cursor="grow" className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-xs font-semibold uppercase tracking-[0.18em] transition hover:bg-white/10" style={{ border: "1px solid var(--pf-line-2)" }}>
+            <PressLink href={project.demoUrl} strength="firm" className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-xs font-semibold uppercase tracking-[0.18em] transition-colors hover:bg-white/10" style={{ border: "1px solid var(--pf-line-2)" }}>
               <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#6cc4a3" }} />
               {ui.dossier.demo}
-            </Link>
+            </PressLink>
           ) : null}
           {compact ? (
-            <Link href={project.href} data-cursor="grow" className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-xs font-semibold uppercase tracking-[0.18em] transition hover:bg-white/10" style={{ border: "1px solid var(--pf-line-2)" }}>
+            <PressLink href={project.href} strength="firm" className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-xs font-semibold uppercase tracking-[0.18em] transition-colors hover:bg-white/10" style={{ border: "1px solid var(--pf-line-2)" }}>
               {ui.dossier.detail}
               <Icon icon="ph:arrow-right" className="h-3.5 w-3.5" />
-            </Link>
+            </PressLink>
           ) : null}
         </div>
       </div>

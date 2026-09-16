@@ -1,13 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { AnimatePresence, motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
 import { Icon } from "@iconify/react";
 import type { LocalizedProject } from "@/lib/portfolio/localize";
 import type { EngineUi } from "./i18n";
 import { SiteWindow } from "./site-window";
-import { Kicker, LevelMeter, RingButton, StatusDot, hostOf, projectYears } from "./ui";
+import { Kicker, LevelMeter, PressButton, PressLink, RingButton, StatusDot, hostOf, projectYears } from "./ui";
 
 const AUTOPLAY_MS = 8000;
 
@@ -35,6 +34,8 @@ export function Showreel({
   const [dir, setDir] = useState(1);
   const [paused, setPaused] = useState(false);
   const [progress, setProgress] = useState(0);
+  // Cada salto deja una onda en el botón que lo disparó y un pulso en el arco.
+  const [burst, setBurst] = useState<{ id: number; dir: number } | null>(null);
   const startRef = useRef<number>(0);
   const elapsedRef = useRef<number>(0);
   const total = projects.length;
@@ -46,6 +47,7 @@ export function Showreel({
       setI((v) => (v + delta + total) % total);
       elapsedRef.current = 0;
       setProgress(0);
+      setBurst({ id: Date.now(), dir: delta });
     },
     [total],
   );
@@ -194,38 +196,64 @@ export function Showreel({
       </div>
 
       {/* Transporte inferior */}
-      <div className="relative mx-auto w-full max-w-7xl px-6 pb-6 sm:px-8">
-        <div className="relative mx-auto flex max-w-lg items-center justify-center">
-          <svg viewBox="0 0 600 90" className="absolute -bottom-6 left-1/2 w-[min(100vw,600px)] -translate-x-1/2" aria-hidden>
-            <path d="M0 90 A 300 300 0 0 1 600 90" fill="none" stroke="var(--pf-line-2)" strokeWidth="1" />
-            <path d="M240 12 A 300 300 0 0 1 360 12" fill="none" stroke="var(--pf-accent)" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          <div className="relative flex items-center gap-8 pb-2 pt-8">
-            <button type="button" onClick={() => go(-1)} aria-label={ui.hero.prev} data-cursor="grow" className="flex h-11 w-11 items-center justify-center rounded-full transition hover:bg-white/5">
-              <Icon icon="ph:skip-back-fill" className="h-5 w-5" />
-            </button>
-            <button type="button" onClick={onOpenIndex} data-cursor="grow" className="min-h-[44px] px-4 text-xs font-semibold uppercase tracking-[0.3em] transition hover:text-white" style={{ color: "var(--pf-ink-2)" }}>
-              {ui.hero.menu}
-            </button>
-            <button type="button" onClick={() => go(1)} aria-label={ui.hero.next} data-cursor="grow" className="flex h-11 w-11 items-center justify-center rounded-full transition hover:bg-white/5">
-              <Icon icon="ph:skip-forward-fill" className="h-5 w-5" />
-            </button>
+      <div className="relative mx-auto w-full max-w-7xl px-6 pb-12 sm:px-8">
+        <div className="relative mx-auto flex max-w-lg flex-col items-center">
+          <div className="relative flex items-center justify-center">
+            <svg viewBox="0 0 600 90" className="pointer-events-none absolute -bottom-6 left-1/2 w-[min(100vw,600px)] -translate-x-1/2" aria-hidden>
+              <path d="M0 90 A 300 300 0 0 1 600 90" fill="none" stroke="var(--pf-line-2)" strokeWidth="1" />
+              <motion.path
+                key={burst?.id ?? "idle"}
+                d="M240 12 A 300 300 0 0 1 360 12"
+                fill="none"
+                stroke="var(--pf-accent)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                initial={reduce || !burst ? false : { pathLength: 0, opacity: 0.4 }}
+                animate={{ pathLength: 1, opacity: 1 }}
+                transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              />
+            </svg>
+            <div className="relative flex items-center gap-8 pb-2 pt-8">
+              <TransportButton onClick={() => go(-1)} label={ui.hero.prev} icon="ph:skip-back-fill" burst={burst?.dir === -1 ? burst.id : null} />
+              <PressButton onClick={onOpenIndex} className="min-h-[44px] px-4 text-xs font-semibold uppercase tracking-[0.3em] transition-colors hover:text-white" style={{ color: "var(--pf-ink-2)" }}>
+                {ui.hero.menu}
+              </PressButton>
+              <TransportButton onClick={() => go(1)} label={ui.hero.next} icon="ph:skip-forward-fill" burst={burst?.dir === 1 ? burst.id : null} />
+            </div>
           </div>
-        </div>
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-4 lg:hidden">
-          <StatusDot status={project.status} label={project.statusLabel} />
-          <Link href={project.href} className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-xs font-semibold uppercase tracking-[0.2em]" style={{ background: "var(--pf-accent)", color: "var(--pf-accent-ink)" }}>
-            {ui.hero.open}
-            <Icon icon="ph:arrow-right" className="h-3.5 w-3.5" />
-          </Link>
-        </div>
-        <div className="absolute bottom-8 left-1/2 hidden -translate-x-1/2 translate-y-full lg:block">
-          <Link href={project.href} data-cursor="grow" className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-xs font-semibold uppercase tracking-[0.2em] transition hover:brightness-110" style={{ background: "var(--pf-accent)", color: "var(--pf-accent-ink)" }}>
-            {ui.hero.open}
-            <Icon icon="ph:arrow-right" className="h-3.5 w-3.5" />
-          </Link>
+          <div className="relative mt-4 flex flex-wrap items-center justify-center gap-4">
+            <span className="lg:hidden"><StatusDot status={project.status} label={project.statusLabel} /></span>
+            <PressLink href={project.href} strength="firm" className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-xs font-semibold uppercase tracking-[0.2em] transition hover:brightness-110" style={{ background: "var(--pf-accent)", color: "var(--pf-accent-ink)" }}>
+              {ui.hero.open}
+              <Icon icon="ph:arrow-right" className="h-3.5 w-3.5" />
+            </PressLink>
+          </div>
         </div>
       </div>
     </section>
+  );
+}
+
+/** Botón de transporte: al presionarlo emite una onda con el color de acento. */
+function TransportButton({ onClick, label, icon, burst }: { onClick: () => void; label: string; icon: string; burst: number | null }) {
+  const reduce = useReducedMotion();
+  return (
+    <PressButton onClick={onClick} strength="firm" aria-label={label} className="relative flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-white/5">
+      <AnimatePresence>
+        {burst && !reduce ? (
+          <motion.span
+            key={burst}
+            aria-hidden
+            className="pointer-events-none absolute inset-0 rounded-full"
+            style={{ border: "1.5px solid var(--pf-accent)" }}
+            initial={{ scale: 0.6, opacity: 0.9 }}
+            animate={{ scale: 1.9, opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          />
+        ) : null}
+      </AnimatePresence>
+      <Icon icon={icon} className="h-5 w-5" />
+    </PressButton>
   );
 }

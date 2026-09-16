@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { AnimatePresence, motion, useMotionValue, useReducedMotion, useSpring } from "framer-motion";
 import { Icon } from "@iconify/react";
 import type { LocalizedProject } from "@/lib/portfolio/localize";
 import type { EngineUi } from "./i18n";
 import { heroRoute } from "./showreel";
 import { SiteWindow } from "./site-window";
-import { LevelMeter, StatusDot, hostOf } from "./ui";
+import { LevelMeter, MotionLink, PressButton, StatusDot, hostOf } from "./ui";
 
 /**
  * Índice completo: se revela con un recorte circular desde el transporte y
@@ -67,9 +66,9 @@ export function IndexOverlay({
                 <p className="pf-kicker" style={{ color: "var(--pf-accent)" }}>{ui.index.title}</p>
                 <p className="mt-1 text-sm" style={{ color: "var(--pf-ink-3)" }}>{ui.index.count(projects.length)} · {ui.index.hint}</p>
               </div>
-              <button type="button" onClick={onClose} aria-label={ui.index.close} data-cursor="grow" className="flex h-12 w-12 items-center justify-center rounded-full transition hover:bg-white/5" style={{ border: "1px solid var(--pf-line-2)" }}>
+              <PressButton onClick={onClose} aria-label={ui.index.close} strength="firm" className="flex h-12 w-12 items-center justify-center rounded-full transition-colors hover:bg-white/5" style={{ border: "1px solid var(--pf-line-2)" }}>
                 <Icon icon="ph:x" className="h-5 w-5" />
-              </button>
+              </PressButton>
             </div>
 
             <ol className="mt-10 divide-y" style={{ borderColor: "var(--pf-line)" }}>
@@ -81,8 +80,11 @@ export function IndexOverlay({
                   transition={{ delay: 0.15 + i * 0.025, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                   style={{ borderColor: "var(--pf-line)" }}
                 >
-                  <Link
+                  <MotionLink
                     href={p.href}
+                    data-cursor="grow"
+                    whileTap={reduce ? undefined : { scale: 0.99, x: 4 }}
+                    transition={{ type: "spring", stiffness: 520, damping: 28 }}
                     onMouseEnter={() => setHover(p)}
                     onMouseLeave={() => setHover(null)}
                     onFocus={() => setHover(p)}
@@ -100,7 +102,7 @@ export function IndexOverlay({
                       <LevelMeter level={p.complexity} label={p.complexityLabel} />
                       <Icon icon="ph:arrow-up-right" className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" style={{ color: "var(--pf-accent)" }} />
                     </span>
-                  </Link>
+                  </MotionLink>
                 </motion.li>
               ))}
             </ol>

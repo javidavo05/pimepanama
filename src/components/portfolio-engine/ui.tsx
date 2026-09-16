@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { motion, useInView, useReducedMotion } from "framer-motion";
+import Link from "next/link";
+import { motion, useInView, useReducedMotion, type HTMLMotionProps, type Transition } from "framer-motion";
 import type { LocalizedProject } from "@/lib/portfolio/localize";
 import type { ProjectStatus } from "@/lib/portfolio/types";
 
@@ -14,6 +15,42 @@ export function hostOf(p: { liveUrl: string | null; slug: string }): string {
     }
   }
   return `${p.slug}.local`;
+}
+
+/* ── Respuesta al accionar ──────────────────────────────────────────────
+   Todo control del portafolio responde igual: crece apenas al posar el
+   cursor, se hunde al presionar y vuelve con resorte. Con reduced-motion
+   no se mueve nada. */
+export const PRESS_SPRING: Transition = { type: "spring", stiffness: 520, damping: 28, mass: 0.6 };
+
+export function usePress(strength: "soft" | "firm" = "soft") {
+  const reduce = useReducedMotion();
+  if (reduce) return {};
+  const hover = strength === "firm" ? 1.05 : 1.03;
+  const tap = strength === "firm" ? 0.92 : 0.96;
+  return { whileHover: { scale: hover }, whileTap: { scale: tap }, transition: PRESS_SPRING } as const;
+}
+
+export const MotionLink = motion.create(Link);
+
+/** Botón con respuesta táctil. Mismo API que `<button>`. */
+export function PressButton({ strength = "soft", children, ...rest }: HTMLMotionProps<"button"> & { strength?: "soft" | "firm" }) {
+  const press = usePress(strength);
+  return (
+    <motion.button type="button" data-cursor="grow" {...press} {...rest}>
+      {children}
+    </motion.button>
+  );
+}
+
+/** Enlace interno con respuesta táctil. Mismo API que `<Link>`. */
+export function PressLink({ strength = "soft", children, ...rest }: React.ComponentProps<typeof MotionLink> & { strength?: "soft" | "firm" }) {
+  const press = usePress(strength);
+  return (
+    <MotionLink data-cursor="grow" {...press} {...rest}>
+      {children}
+    </MotionLink>
+  );
 }
 
 export const STATUS_COLOR: Record<ProjectStatus, string> = {
@@ -112,15 +149,15 @@ export function RingButton({
   const cls = "group relative inline-flex shrink-0 items-center justify-center";
   if (href) {
     return (
-      <a href={href} className={cls} style={{ width: size, height: size }} data-cursor="grow" aria-label={ariaLabel}>
+      <PressLink href={href} strength="firm" className={cls} style={{ width: size, height: size }} aria-label={ariaLabel}>
         {inner}
-      </a>
+      </PressLink>
     );
   }
   return (
-    <button type="button" onClick={onClick} className={cls} style={{ width: size, height: size }} data-cursor="grow" aria-label={ariaLabel}>
+    <PressButton onClick={onClick} strength="firm" className={cls} style={{ width: size, height: size }} aria-label={ariaLabel}>
       {inner}
-    </button>
+    </PressButton>
   );
 }
 
@@ -168,23 +205,23 @@ export function Reveal({ children, delay = 0, className = "", once = true, y = 2
 }
 
 export function Chip({ children, active = false, onClick, title }: { children: React.ReactNode; active?: boolean; onClick?: () => void; title?: string }) {
-  const Comp = onClick ? "button" : "span";
+  const cls = "inline-flex min-h-[32px] items-center gap-1.5 rounded-full px-3 text-[0.72rem] font-medium transition-colors duration-300";
+  const style = {
+    background: active ? "var(--pf-accent)" : "rgba(242,243,245,0.05)",
+    color: active ? "var(--pf-accent-ink)" : "var(--pf-ink-2)",
+    border: `1px solid ${active ? "var(--pf-accent)" : "var(--pf-line)"}`,
+  };
+  if (!onClick) {
+    return (
+      <span title={title} className={cls} style={style}>
+        {children}
+      </span>
+    );
+  }
   return (
-    <Comp
-      type={onClick ? "button" : undefined}
-      onClick={onClick}
-      title={title}
-      aria-pressed={onClick ? active : undefined}
-      data-cursor={onClick ? "grow" : undefined}
-      className="inline-flex min-h-[32px] items-center gap-1.5 rounded-full px-3 text-[0.72rem] font-medium transition-all duration-300"
-      style={{
-        background: active ? "var(--pf-accent)" : "rgba(242,243,245,0.05)",
-        color: active ? "var(--pf-accent-ink)" : "var(--pf-ink-2)",
-        border: `1px solid ${active ? "var(--pf-accent)" : "var(--pf-line)"}`,
-      }}
-    >
+    <PressButton onClick={onClick} title={title} aria-pressed={active} className={cls} style={style}>
       {children}
-    </Comp>
+    </PressButton>
   );
 }
 

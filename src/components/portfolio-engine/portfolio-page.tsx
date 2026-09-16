@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { Icon } from "@iconify/react";
 import { NavigationBar } from "@/components/landing/navigation-bar";
 import { LandingFooter } from "@/components/landing/footer";
@@ -18,7 +17,7 @@ import { engineUi } from "./i18n";
 import { IndexOverlay } from "./index-overlay";
 import { Showreel } from "./showreel";
 import { StackStrip } from "./stack-strip";
-import { Kicker, Reveal } from "./ui";
+import { Kicker, PressLink, Reveal } from "./ui";
 
 export function navItemsFor(locale: Locale) {
   const ui = engineUi(locale);
@@ -61,10 +60,10 @@ export function PortfolioEnginePage({ locale }: { locale: Locale }) {
               <Kicker accent>{ui.cta.kicker}</Kicker>
               <h2 id="pf-cta-title" className="pf-display max-w-4xl text-[clamp(2rem,7vw,6.5rem)]">{ui.cta.title}</h2>
               <p className="max-w-lg text-base leading-relaxed" style={{ color: "var(--pf-ink-2)" }}>{ui.cta.body}</p>
-              <Link href={contact} data-cursor="grow" className="inline-flex min-h-[52px] items-center gap-3 rounded-full px-7 text-sm font-semibold uppercase tracking-[0.18em] transition hover:brightness-110" style={{ background: "var(--pf-accent)", color: "var(--pf-accent-ink)" }}>
+              <PressLink href={contact} strength="firm" className="inline-flex min-h-[52px] items-center gap-3 rounded-full px-7 text-sm font-semibold uppercase tracking-[0.18em] transition hover:brightness-110" style={{ background: "var(--pf-accent)", color: "var(--pf-accent-ink)" }}>
                 {ui.cta.button}
                 <Icon icon="ph:arrow-right" className="h-4 w-4" />
-              </Link>
+              </PressLink>
             </Reveal>
           </section>
         </main>
