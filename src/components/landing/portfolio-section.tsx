@@ -76,7 +76,7 @@ export function PortfolioSection({
             <p className="max-w-2xl text-sm italic text-white/45">{portfolioNote}</p>
           </div>
           <Link
-            href="/portfolio"
+            href={locale === "en" ? "/en/portfolio" : "/portfolio"}
             className="group inline-flex shrink-0 items-center gap-2 rounded-full px-5 py-2.5 text-xs uppercase tracking-[0.3em] text-[#60A5FA] transition"
             style={{ border: "1px solid rgba(37,99,235,0.3)" }}
             onMouseEnter={(e) => {
@@ -180,7 +180,7 @@ export function PortfolioSection({
                       </a>
                     ) : item.caseStudyUrl ? (
                       <Link
-                        href={item.caseStudyUrl}
+                        href={locale === "en" ? `/en${item.caseStudyUrl}` : item.caseStudyUrl}
                         className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.25em] text-white/60 transition hover:text-white"
                       >
                         <Icon icon="ph:arrow-line-up-right" className="h-3.5 w-3.5" />

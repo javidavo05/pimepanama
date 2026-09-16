@@ -1,0 +1,220 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Portfolio engine — mundo visual "sala de máquinas"
+   Canvas carbón con grano, display gigante en Syne, un solo acento azul.
+   Todo lo que se mueve respeta prefers-reduced-motion.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.pf-root {
+  --pf-bg: #0c0f14;
+  --pf-bg-2: #11151c;
+  --pf-ink: #f2f3f5;
+  --pf-ink-2: rgba(242, 243, 245, 0.72);
+  --pf-ink-3: rgba(242, 243, 245, 0.48);
+  --pf-line: rgba(242, 243, 245, 0.1);
+  --pf-line-2: rgba(242, 243, 245, 0.18);
+  --pf-accent: #4f8dff;
+  --pf-accent-ink: #0b1220;
+  --pf-gold: #c8a96e;
+  --pf-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --pf-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  background: var(--pf-bg);
+  color: var(--pf-ink);
+  position: relative;
+  isolation: isolate;
+}
+
+/* Grano fotográfico sobre todo el canvas, como papel impreso. */
+.pf-root::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.09;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.9 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 220px 220px;
+  mix-blend-mode: screen;
+}
+
+/* Rayaduras suaves, como la carcasa de la referencia. */
+.pf-root::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(1200px 600px at 20% -10%, rgba(79, 141, 255, 0.08), transparent 60%),
+    radial-gradient(900px 500px at 90% 110%, rgba(200, 169, 110, 0.06), transparent 60%);
+}
+
+.pf-root > * {
+  position: relative;
+  z-index: 1;
+}
+
+.pf-display {
+  font-family: var(--font-display), var(--font-body), sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 0.88;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.pf-mono {
+  font-family: var(--pf-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+.pf-kicker {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--pf-ink-3);
+}
+
+/* Letras fantasma que se salen del cuadro */
+.pf-ghost {
+  font-family: var(--font-display), sans-serif;
+  font-weight: 800;
+  text-transform: uppercase;
+  line-height: 1;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(242, 243, 245, 0.14);
+  user-select: none;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Texto en anillo que gira */
+@keyframes pf-spin {
+  to { transform: rotate(360deg); }
+}
+.pf-ring {
+  animation: pf-spin 14s linear infinite;
+}
+.pf-ring-fast {
+  animation-duration: 6s;
+}
+
+/* Cinta horizontal */
+@keyframes pf-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.pf-marquee {
+  display: flex;
+  width: max-content;
+  animation: pf-marquee var(--pf-marquee-duration, 40s) linear infinite;
+}
+.pf-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Cursor de la ventana */
+@keyframes pf-cursor {
+  0% { transform: translate(12%, 80%); }
+  30% { transform: translate(64%, 38%); }
+  55% { transform: translate(40%, 56%); }
+  80% { transform: translate(78%, 22%); }
+  100% { transform: translate(12%, 80%); }
+}
+@keyframes pf-click {
+  0%, 100% { transform: scale(1); opacity: 0.9; }
+  30% { transform: scale(0.75); opacity: 1; }
+}
+.pf-window-cursor {
+  animation: pf-cursor 6s var(--pf-ease) infinite;
+}
+.pf-window-cursor > span {
+  animation: pf-click 6s var(--pf-ease) infinite;
+}
+
+/* Al encender la ventana (`pf-live`) todo lo que está dentro vuelve a
+   entrar: el trazo se dibuja, las barras crecen y los bloques caen en
+   cascada. En reposo se ve todo, sin animación. */
+@keyframes pf-drawin {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.pf-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+.pf-live .pf-draw {
+  animation: pf-drawin 1.4s var(--pf-ease) both;
+}
+
+@keyframes pf-growin {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+.pf-grow {
+  transform-origin: bottom;
+}
+.pf-live .pf-grow {
+  animation: pf-growin 0.9s var(--pf-ease) both;
+}
+
+@keyframes pf-cascade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.pf-live .pf-block {
+  animation: pf-cascade 0.55s var(--pf-ease) both;
+}
+
+/* Captura real: paneo lento al encender la ventana */
+@keyframes pf-pan {
+  from { transform: scale(1) translateY(0); }
+  to { transform: scale(1.06) translateY(-3%); }
+}
+.pf-shot img {
+  transform-origin: top center;
+  transition: transform 1.2s var(--pf-ease);
+}
+.pf-live .pf-shot img {
+  animation: pf-pan 9s var(--pf-ease) both alternate infinite;
+}
+
+/* Foco visible siempre */
+.pf-root :where(a, button, [tabindex="0"]):focus-visible {
+  outline: 2px solid var(--pf-accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* Scrollbar oculta para carruseles */
+.pf-scroll-hidden {
+  scrollbar-width: none;
+}
+.pf-scroll-hidden::-webkit-scrollbar {
+  display: none;
+}
+
+/* Cursor propio */
+@media (pointer: fine) {
+  .pf-root.pf-has-cursor,
+  .pf-root.pf-has-cursor a,
+  .pf-root.pf-has-cursor button {
+    cursor: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-ring,
+  .pf-marquee,
+  .pf-window-cursor,
+  .pf-window-cursor > span {
+    animation: none !important;
+  }
+  .pf-live .pf-draw,
+  .pf-live .pf-grow,
+  .pf-live .pf-block,
+  .pf-live .pf-shot img {
+    animation: none !important;
+  }
+}
