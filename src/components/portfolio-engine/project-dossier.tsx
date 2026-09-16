@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import type { LocalizedProject } from "@/lib/portfolio/localize";
-import { routeGroupLabel, shotFor } from "@/lib/portfolio/localize";
+import { routeGroupLabel, shotFor, shotRoutes } from "@/lib/portfolio/localize";
 import { buildAllSeries } from "@/lib/portfolio/mock-metrics";
 import type { Locale } from "@/lib/i18n";
 import type { RouteGroup } from "@/lib/portfolio/types";
@@ -12,7 +13,7 @@ import type { EngineUi } from "./i18n";
 import { MiniChart } from "./mini-chart";
 import { heroRoute } from "./showreel";
 import { SiteWindow } from "./site-window";
-import { LevelMeter, PressButton, PressLink, StatusDot, hostOf, projectYears, usePress } from "./ui";
+import { LevelMeter, PressButton, PressLink, StatusDot, hostOf, projectYears, useCycle, usePress } from "./ui";
 
 const GROUP_ORDER: RouteGroup[] = ["publico", "panel", "operacion", "movil", "api"];
 
@@ -24,6 +25,17 @@ const GROUP_ORDER: RouteGroup[] = ["publico", "panel", "operacion", "movil", "ap
 export function ProjectDossier({ project, ui, locale, compact = false }: { project: LocalizedProject; ui: EngineUi; locale: Locale; compact?: boolean }) {
   const pressFirm = usePress("firm");
   const [route, setRoute] = useState(heroRoute(project));
+  const screens = useMemo(() => shotRoutes(project), [project]);
+  // Recorre sus pantallas sola hasta que la persona elige una; desde ahí manda la persona.
+  const [touched, setTouched] = useState(false);
+  const [auto] = useCycle(screens.length, 3200, !touched);
+  useEffect(() => {
+    if (!touched && screens[auto]) setRoute(screens[auto]);
+  }, [auto, touched, screens]);
+  const pick = (r: (typeof screens)[number]) => {
+    setTouched(true);
+    setRoute(r);
+  };
   const series = useMemo(() => buildAllSeries(project.slug, project.metrics), [project.slug, project.metrics]);
   const groups = GROUP_ORDER.map((g) => ({ g, routes: project.routes.filter((r) => r.group === g) })).filter((x) => x.routes.length);
 
@@ -32,8 +44,35 @@ export function ProjectDossier({ project, ui, locale, compact = false }: { proje
       {/* Ventana + rutas */}
       <div className="lg:col-span-7">
         <div className="aspect-[16/10]">
-          <SiteWindow brand={project.brand} screen={route.screen} path={route.path} host={hostOf(project)} live className="h-full w-full" radius={14} image={shotFor(project, route.path)} />
+          <SiteWindow brand={project.brand} screen={route.screen} path={route.path} host={hostOf(project)} live className="h-full w-full" radius={14} image={shotFor(project, route.path)} sampleLabel={ui.window.sample} sampleNote={ui.window.sampleNote} />
         </div>
+
+        {screens.length > 1 ? (
+          <div className="pf-scroll-hidden mt-4 flex gap-2 overflow-x-auto pb-1" role="group" aria-label={ui.hero.screens(screens.length)}>
+            {screens.map((r, k) => {
+              const on = r.path === route.path;
+              return (
+                <button
+                  key={r.path}
+                  type="button"
+                  onClick={() => pick(r)}
+                  onFocus={() => pick(r)}
+                  aria-label={ui.hero.screen(k + 1, screens.length, r.label)}
+                  aria-pressed={on}
+                  className="relative aspect-[16/10] w-28 shrink-0 overflow-hidden rounded-md transition-opacity duration-300 hover:opacity-100 sm:w-32"
+                  style={{
+                    outline: on ? `2px solid ${project.brand.primary}` : "1px solid var(--pf-line)",
+                    outlineOffset: on ? 2 : 0,
+                    opacity: on ? 1 : 0.72,
+                    background: project.brand.surface,
+                  }}
+                >
+                  <Image src={project.shots[r.path].src} alt="" fill sizes="128px" className="object-cover object-top" />
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
 
         <div className="mt-6">
           <div className="flex items-baseline justify-between gap-4">
@@ -46,12 +85,25 @@ export function ProjectDossier({ project, ui, locale, compact = false }: { proje
                 <span className="pf-kicker w-20 shrink-0" style={{ letterSpacing: "0.14em" }}>{routeGroupLabel(g, locale)}</span>
                 {routes.map((r) => {
                   const on = r.path === route.path;
+                  const shot = project.shots[r.path];
+                  if (!shot) {
+                    return (
+                      <span
+                        key={r.path}
+                        className="inline-flex min-h-[34px] items-center gap-2 rounded-md px-2.5"
+                        style={{ border: "1px dashed var(--pf-line)", color: "var(--pf-ink-3)" }}
+                      >
+                        <code className="pf-mono">{r.path}</code>
+                        <span className="text-xs">{r.label}</span>
+                      </span>
+                    );
+                  }
                   return (
                     <PressButton
                       key={r.path}
-                      onMouseEnter={() => setRoute(r)}
-                      onFocus={() => setRoute(r)}
-                      onClick={() => setRoute(r)}
+                      onMouseEnter={() => pick(r)}
+                      onFocus={() => pick(r)}
+                      onClick={() => pick(r)}
                       aria-pressed={on}
                       className="inline-flex min-h-[34px] items-center gap-2 rounded-md px-2.5 transition-colors duration-300"
                       style={{
@@ -60,7 +112,7 @@ export function ProjectDossier({ project, ui, locale, compact = false }: { proje
                         color: on ? "var(--pf-ink)" : "var(--pf-ink-2)",
                       }}
                     >
-                      {project.shots[r.path] ? <span className="h-1.5 w-1.5 rounded-full" style={{ background: project.shots[r.path].kind === "live" ? "#6cc4a3" : "#dcaa4a" }} aria-hidden /> : null}
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: shot.kind === "live" ? "#6cc4a3" : "#dcaa4a" }} aria-hidden />
                       <code className="pf-mono" style={{ color: on ? project.brand.primary : "var(--pf-ink-3)" }}>{r.path}</code>
                       <span className="text-xs">{r.label}</span>
                     </PressButton>

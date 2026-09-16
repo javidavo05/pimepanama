@@ -4,7 +4,7 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import type { ComplexityTier, LocalizedProject } from "@/lib/portfolio/localize";
-import { categoryLabel, complexityLabel, shotFor, statusLabel } from "@/lib/portfolio/localize";
+import { categoryLabel, complexityLabel, shotFor, shotRoutes, statusLabel } from "@/lib/portfolio/localize";
 import { buildSeries } from "@/lib/portfolio/mock-metrics";
 import type { Locale } from "@/lib/i18n";
 import type { ProjectCategory, ProjectStatus } from "@/lib/portfolio/types";
@@ -13,7 +13,7 @@ import { MiniChart } from "./mini-chart";
 import { ProjectDossier } from "./project-dossier";
 import { heroRoute } from "./showreel";
 import { SiteWindow } from "./site-window";
-import { Chip, Kicker, LevelMeter, PressButton, Reveal, StatusDot, hostOf, projectYears } from "./ui";
+import { Chip, Kicker, LevelMeter, PressButton, Reveal, StatusDot, hostOf, projectYears, useCycle } from "./ui";
 
 const CATEGORIES: ProjectCategory[] = ["saas", "plataforma", "ecommerce", "sitio", "herramienta", "juego", "legacy", "propuesta"];
 const STATUSES: ProjectStatus[] = ["produccion", "beta", "construccion", "prototipo", "interno", "legacy", "propuesta"];
@@ -203,6 +203,12 @@ function Tile({ project: p, index, ui, locale, open, onToggle }: { project: Loca
   const reduce = useReducedMotion();
   const [hover, setHover] = useState(false);
   const [route, setRoute] = useState(heroRoute(p));
+  const screens = useMemo(() => shotRoutes(p), [p]);
+  const [overWindow, setOverWindow] = useState(false);
+  const [tick] = useCycle(screens.length, 1700, overWindow && !open);
+  useEffect(() => {
+    if (overWindow && screens[tick]) setRoute(screens[tick]);
+  }, [tick, overWindow, screens]);
   const spark = useMemo(() => buildSeries(p.slug, p.metrics[0]), [p.slug, p.metrics]);
   const live = hover || open;
 
@@ -220,9 +226,16 @@ function Tile({ project: p, index, ui, locale, open, onToggle }: { project: Loca
     >
       <motion.div layout="position" className="flex flex-col">
         <motion.button type="button" onClick={onToggle} aria-expanded={open} className="text-left" whileTap={reduce ? undefined : { scale: 0.985 }} transition={{ type: "spring", stiffness: 520, damping: 28 }}>
-          <div className={`relative overflow-hidden p-3 pb-0 ${open ? "hidden" : "aspect-[16/10]"}`}>
+          <div
+            className={`relative overflow-hidden p-3 pb-0 ${open ? "hidden" : "aspect-[16/10]"}`}
+            onMouseEnter={() => setOverWindow(true)}
+            onMouseLeave={() => {
+              setOverWindow(false);
+              setRoute(heroRoute(p));
+            }}
+          >
             <motion.div animate={{ scale: live ? 1.015 : 1 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} className="h-full">
-              <SiteWindow brand={p.brand} screen={route.screen} path={route.path} host={hostOf(p)} live={live} showCursor={!open} className="h-full w-full" radius={10} image={shotFor(p, route.path)} />
+              <SiteWindow brand={p.brand} screen={route.screen} path={route.path} host={hostOf(p)} live={live} showCursor={!open} className="h-full w-full" radius={10} image={shotFor(p, route.path)} sampleLabel={ui.window.sample} sampleNote={ui.window.sampleNote} />
             </motion.div>
             <span className="pf-mono absolute right-5 top-5 rounded-md px-1.5 py-0.5 tabular-nums" style={{ background: "rgba(12,15,20,0.7)", color: "var(--pf-ink-2)", backdropFilter: "blur(6px)" }}>{String(index + 1).padStart(2, "0")}</span>
           </div>
@@ -237,6 +250,7 @@ function Tile({ project: p, index, ui, locale, open, onToggle }: { project: Loca
               <span>{p.categoryLabel}</span>
               <span>{p.industry}</span>
               <span className="tabular-nums">{projectYears(p)}</span>
+              {screens.length > 1 ? <span>{ui.hero.screens(screens.length)}</span> : null}
             </div>
           </div>
         </motion.button>
@@ -244,12 +258,12 @@ function Tile({ project: p, index, ui, locale, open, onToggle }: { project: Loca
         {!open ? (
           <div className="flex flex-col gap-3 px-5 pb-5">
             <div className="flex flex-wrap gap-1.5" onMouseLeave={() => setRoute(heroRoute(p))}>
-              {[...p.routes].sort((a, b) => Number(Boolean(p.shots[b.path])) - Number(Boolean(p.shots[a.path]))).slice(0, 4).map((r) => (
+              {p.routes.filter((r) => p.shots[r.path]).slice(0, 4).map((r) => (
                 <PressButton key={r.path} onMouseEnter={() => setRoute(r)} onFocus={() => setRoute(r)} onClick={() => setRoute(r)} aria-pressed={route.path === r.path} className="pf-mono rounded-md px-2 py-1 transition-colors" style={{ background: route.path === r.path ? `${p.brand.primary}22` : "rgba(242,243,245,0.04)", border: `1px solid ${route.path === r.path ? p.brand.primary : "var(--pf-line)"}`, color: "var(--pf-ink-2)" }}>
                   {r.path}
                 </PressButton>
               ))}
-              {p.routes.length > 4 ? <span className="pf-mono self-center" style={{ color: "var(--pf-ink-3)" }}>+{p.routes.length - 4}</span> : null}
+              {p.routes.filter((r) => p.shots[r.path]).length > 4 ? <span className="pf-mono self-center" style={{ color: "var(--pf-ink-3)" }}>+{p.routes.filter((r) => p.shots[r.path]).length - 4}</span> : null}
             </div>
             <div className="flex items-end justify-between gap-4">
               <div className="min-w-0 flex-1">

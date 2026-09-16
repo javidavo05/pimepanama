@@ -7,6 +7,11 @@ import { shots, type Shot } from "./shots";
  * captura real del proyecto: la ventana siempre muestra el sitio, nunca
  * una pantalla dibujada.
  */
+/** Rutas del proyecto que tienen captura, en el orden del catálogo. */
+export function shotRoutes(p: { shots: Record<string, Shot>; routes: ProjectRoute[] }): ProjectRoute[] {
+  return p.routes.filter((r) => p.shots[r.path]);
+}
+
 export function shotFor(p: { shots: Record<string, Shot>; routes: ProjectRoute[] }, path: string): Shot | undefined {
   if (p.shots[path]) return p.shots[path];
   if (p.shots["/"]) return p.shots["/"];

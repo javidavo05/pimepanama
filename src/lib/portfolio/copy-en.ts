@@ -29,7 +29,7 @@ export const copyEn: Record<string, ProjectCopyEn> = {
       "Email templates and WhatsApp notifications",
       "Multi-academy superadmin with cron panel",
     ],
-    routes: {
+    routes: { "/soluciones/academias": "Sports academies", "/soluciones/escuelas": "Schools",
       "/": "Landing", "/enrollment": "Public enrollment", "/pay/[playerId]": "Payment link",
       "/dashboard": "Dashboard", "/dashboard/finance": "Finance", "/dashboard/players": "Players",
       "/teacher/courses": "Teacher classroom", "/student/exams": "Student exams", "/superadmin/cron-dashboard": "Crons",
@@ -170,7 +170,7 @@ export const copyEn: Record<string, ProjectCopyEn> = {
       "Twelve SQL migrations with RLS",
       "Own SDK and CLI",
     ],
-    routes: { "/": "Dashboard", "/jobs": "Jobs", "/agents": "Agents", "/certificates": "Certificates" },
+    routes: { "/dashboard": "Control panel", "/projects": "Backup projects", "/jobs": "Live jobs", "/agents": "Agents", "/reports": "Verification reports" },
     metrics: { gb: { label: "GB verified", unit: "GB" }, files: { label: "Files certified", unit: "files" } },
   },
   misaza: {
@@ -207,7 +207,7 @@ export const copyEn: Record<string, ProjectCopyEn> = {
       "Client document verification",
       "Image pipeline with variants and audit",
     ],
-    routes: { "/": "Landing", "/propiedades": "Properties", "/proyectos": "Pre-construction", "/list-with-us": "List your property", "/cms": "CMS", "/portal": "Client portal" },
+    routes: { "/cms/leads": "Leads", "/": "Landing", "/propiedades": "Properties", "/proyectos": "Pre-construction", "/list-with-us": "List your property", "/cms": "CMS", "/portal": "Client portal" },
     metrics: { leads: { label: "Qualified leads", unit: "leads" }, listings: { label: "Published listings", unit: "listings" } },
   },
   "holo-realty": {
@@ -224,7 +224,7 @@ export const copyEn: Record<string, ProjectCopyEn> = {
       "Buildings: units, contracts, inspections",
       "Inventory switchable between Wasi and CMS",
     ],
-    routes: { "/": "Landing", "/relocation": "Relocation", "/propiedades": "Properties", "/portal": "Client portal", "/cms/crm": "CRM" },
+    routes: { "/propiedades/[slug]": "Property page", "/": "Landing", "/relocation": "Relocation", "/propiedades": "Properties", "/portal": "Client portal", "/cms/crm": "CRM" },
     metrics: { cases: { label: "Active files", unit: "files" }, milestones: { label: "Milestones closed", unit: "milestones" } },
   },
   "john-henry": {
@@ -241,7 +241,7 @@ export const copyEn: Record<string, ProjectCopyEn> = {
       "Finance: collections, royalties and commissions",
       "Editable email templates",
     ],
-    routes: { "/": "Landing", "/citas": "Book appointment", "/ready-to-wear": "Ready-to-wear", "/clients/[id]/medidas": "Measurements", "/orders/[id]/orden-taller": "Workshop order", "/finance/reportes": "Reports" },
+    routes: { "/dashboard": "Dashboard", "/orders": "Orders", "/": "Landing", "/citas": "Book appointment", "/ready-to-wear": "Ready-to-wear", "/clients/[id]/medidas": "Measurements", "/orders/[id]/orden-taller": "Workshop order", "/finance/reportes": "Reports" },
     metrics: { orders: { label: "Workshop orders", unit: "orders" }, appointments: { label: "Appointments", unit: "appts" } },
   },
 };

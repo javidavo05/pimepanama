@@ -33,6 +33,24 @@ export function usePress(strength: "soft" | "firm" = "soft") {
 
 export const MotionLink = motion.create(Link);
 
+/**
+ * Índice que avanza solo cada `intervalMs` mientras `active` sea verdadero.
+ * Con reduced-motion no avanza: se queda en la primera pantalla.
+ */
+export function useCycle(length: number, intervalMs: number, active: boolean) {
+  const reduce = useReducedMotion();
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    setIndex(0);
+  }, [length]);
+  useEffect(() => {
+    if (!active || reduce || length < 2) return;
+    const t = window.setInterval(() => setIndex((v) => (v + 1) % length), intervalMs);
+    return () => window.clearInterval(t);
+  }, [active, reduce, length, intervalMs]);
+  return [index, setIndex] as const;
+}
+
 /** Botón con respuesta táctil. Mismo API que `<button>`. */
 export function PressButton({ strength = "soft", children, ...rest }: HTMLMotionProps<"button"> & { strength?: "soft" | "firm" }) {
   const press = usePress(strength);

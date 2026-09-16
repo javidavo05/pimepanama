@@ -23,6 +23,8 @@ export function SiteWindow({
   radius = 14,
   image,
   priority = false,
+  sampleLabel,
+  sampleNote,
 }: {
   brand: ProjectBrand;
   screen: ScreenKind;
@@ -35,6 +37,9 @@ export function SiteWindow({
   /** Captura real de esa ruta; si falta se dibuja la pantalla sintética. */
   image?: Shot;
   priority?: boolean;
+  /** Texto de la bandera cuando la captura lleva datos de muestra. */
+  sampleLabel?: string;
+  sampleNote?: string;
 }) {
   const reduce = useReducedMotion();
   const [typed, setTyped] = useState(path);
@@ -81,7 +86,7 @@ export function SiteWindow({
             <span key={c} className="h-2.5 w-2.5 rounded-full" style={{ background: c, opacity: live ? 1 : 0.55 }} />
           ))}
         </div>
-        <div className="ml-2 flex h-5 flex-1 items-center gap-1.5 rounded-md px-2" style={{ background: urlBg }}>
+        <div className="ml-2 flex h-5 min-w-0 flex-1 items-center gap-1.5 rounded-md px-2" style={{ background: urlBg }}>
           <span className="h-2 w-2 rounded-full" style={{ background: live ? "#28c840" : chromeInk, opacity: live ? 1 : 0.4 }} />
           <span className="pf-mono truncate" style={{ color: chromeInk, fontSize: "0.65rem" }}>
             <span style={{ opacity: 0.55 }}>{host}</span>
@@ -89,6 +94,17 @@ export function SiteWindow({
             {typed.length < path.length ? <span className="animate-pulse">▍</span> : null}
           </span>
         </div>
+        {image?.kind === "sample" && sampleLabel ? (
+          <span
+            className="flex h-5 shrink-0 items-center gap-1.5 rounded-md px-2 text-[0.625rem] font-semibold"
+            style={{ background: "rgba(220,170,74,0.16)", border: "1px solid rgba(220,170,74,0.45)", color: dark ? "#f0cf8a" : "#7a5510" }}
+            title={sampleNote}
+            aria-label={sampleNote}
+          >
+            <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#dcaa4a" }} aria-hidden />
+            {sampleLabel}
+          </span>
+        ) : null}
       </div>
 
       <div className="relative flex-1 overflow-hidden">

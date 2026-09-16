@@ -16,6 +16,8 @@ const ui = {
       autoplay: "Reproducción automática",
       pause: "Pausar",
       play: "Reanudar",
+      screen: (k: number, n: number, label: string) => `Pantalla ${k} de ${n}: ${label}`,
+      screens: (n: number) => (n === 1 ? "1 pantalla" : `${n} pantallas`),
     },
     index: {
       title: "Índice completo",
@@ -50,7 +52,7 @@ const ui = {
     },
     dossier: {
       routes: "Rutas de acceso",
-      routesHint: "Pasa el cursor por una ruta para verla en la ventana.",
+      routesHint: "Pasa el cursor por una ruta con punto para verla en la ventana.",
       features: "Qué hace",
       stack: "Stack",
       metrics: "Actividad",
@@ -94,7 +96,12 @@ const ui = {
       prev: "Anterior",
       sameLevel: "Del mismo nivel",
     },
-    window: { live: "En vivo", loading: "Cargando pantalla" },
+    window: {
+      live: "En vivo",
+      loading: "Cargando pantalla",
+      sample: "Datos no finales",
+      sampleNote: "Pantalla real del sistema. Los nombres y montos son de muestra y las cifras no son finales.",
+    },
   },
   en: {
     nav: { services: "Services", portfolio: "Portfolio", contact: "Contact", home: "Home" },
@@ -111,6 +118,8 @@ const ui = {
       autoplay: "Autoplay",
       pause: "Pause",
       play: "Resume",
+      screen: (k: number, n: number, label: string) => `Screen ${k} of ${n}: ${label}`,
+      screens: (n: number) => (n === 1 ? "1 screen" : `${n} screens`),
     },
     index: {
       title: "Full index",
@@ -145,7 +154,7 @@ const ui = {
     },
     dossier: {
       routes: "Access routes",
-      routesHint: "Hover a route to see it in the window.",
+      routesHint: "Hover a route with a dot to see it in the window.",
       features: "What it does",
       stack: "Stack",
       metrics: "Activity",
@@ -189,7 +198,12 @@ const ui = {
       prev: "Previous",
       sameLevel: "Same level",
     },
-    window: { live: "Live", loading: "Loading screen" },
+    window: {
+      live: "Live",
+      loading: "Loading screen",
+      sample: "Not final data",
+      sampleNote: "Real system screen. Names and amounts are sample data and figures are not final.",
+    },
   },
 } as const;
 

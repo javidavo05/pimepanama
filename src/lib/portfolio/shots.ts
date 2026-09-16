@@ -1,80 +1,97 @@
 /**
- * Capturas reales de los sitios publicados, indexadas por slug y por ruta
- * del catálogo. Las públicas se tomaron el 2026-09-15; las de paneles
- * internos (tras iniciar sesión) el 2026-09-16, a 1280×800, con datos
- * reales de producción. `live` es la pantalla real del producto; `demo`
- * es la demo navegable que vive en pimepanama.com para sistemas sin sitio
- * público. Las rutas sin captura se dibujan con la pantalla sintética.
+ * Capturas de los sistemas publicados, indexadas por slug y por ruta del
+ * catálogo, a 1280×800.
+ *
+ * - `live`: página pública real, tal como la ve cualquier visitante.
+ * - `sample`: pantalla interna real (tras iniciar sesión) con datos de
+ *   muestra. Nunca datos de clientes. La ventana la marca con una bandera.
+ * - `demo`: demo navegable que vive en pimepanama.com.
+ *
+ * Una pantalla de login no es una captura válida: no muestra el sistema.
  */
-export type Shot = { src: string; kind: "live" | "demo" };
+export type Shot = { src: string; kind: "live" | "sample" | "demo" };
 
 const S = (name: string, kind: Shot["kind"] = "live"): Shot => ({ src: `/portfolio/shots/${name}.jpg`, kind });
+/** Pantalla interna real con datos de muestra. */
+const M = (name: string): Shot => S(name, "sample");
 
 export const shots: Record<string, Record<string, Shot>> = {
-  academyx: { "/": S("academyx") },
+  academyx: {
+    "/": S("academyx"),
+    "/soluciones/academias": S("academyx--academias"),
+    "/soluciones/escuelas": S("academyx--escuelas"),
+  },
   "uapa-suite": {
-    "/ingresar": S("uapa-suite"),
-    "/sistemas": S("uapa-suite--sistemas"),
-    "/secretaria/tablero": S("uapa-suite--tablero"),
-    "/secretaria/propiedades": S("uapa-suite--propiedades"),
-    "/secretaria/documentos": S("uapa-suite--documentos"),
-    "/secretaria/votos": S("uapa-suite--votos"),
-    "/secretaria/asistente": S("uapa-suite--asistente"),
+    "/sistemas": M("uapa-suite--sistemas"),
+    "/secretaria/tablero": M("uapa-suite--tablero"),
+    "/secretaria/propiedades": M("uapa-suite--propiedades"),
+    "/secretaria/documentos": M("uapa-suite--documentos"),
   },
   visita7: {
     "/portal": S("visita7"),
-    "/dashboard": S("visita7--dashboard"),
-    "/visits/create": S("visita7--visits-create"),
-    "/hierarchy": S("visita7--hierarchy"),
-    "/iglesias": S("visita7--iglesias"),
-    "/calendar": S("visita7--calendar"),
+    "/dashboard": M("visita7--dashboard"),
+    "/visits/create": M("visita7--visits-create"),
+    "/hierarchy": M("visita7--hierarchy"),
+    "/iglesias": M("visita7--iglesias"),
   },
   "smart-church": {
     "/": S("smart-church--revive"),
     "/agenda-una-cita": S("smart-church--cita"),
-    "/dashboard": S("smart-church--dashboard"),
-    "/ministries": S("smart-church--ministries"),
-    "/tesoreria": S("smart-church--tesoreria"),
-    "/cms": S("smart-church--cms"),
+    "/dashboard": M("smart-church--dashboard"),
+    "/ministries": M("smart-church--ministries"),
+    "/tesoreria": M("smart-church--tesoreria"),
+    "/cms": M("smart-church--cms"),
   },
   "wedding-site": {
     "/": S("wedding-site"),
-    "/invite/rsvp": S("wedding-site--invite"),
     "/gallery/[event]": S("wedding-site--gallery"),
-    "/admin/guests": S("wedding-site--admin-guests"),
-    "/admin/seating": S("wedding-site--admin-seating"),
-    "/admin/wedding/day-control": S("wedding-site--admin-day-control"),
+    "/admin/guests": M("wedding-site--admin-guests"),
+    "/admin/seating": M("wedding-site--admin-seating"),
   },
   godmode: {
     "/": S("godmode"),
-    "/dashboard": S("godmode--dashboard"),
-    "/dashboard/companies": S("godmode--companies"),
-    "/dashboard/vehicles": S("godmode--vehicles"),
-    "/dashboard/analytics": S("godmode--analytics"),
-    "/dashboard/control-plane/tenants": S("godmode--tenants"),
+    "/dashboard": M("godmode--dashboard"),
+    "/dashboard/companies": M("godmode--companies"),
+    "/dashboard/control-plane/tenants": M("godmode--tenants"),
   },
-  cifrapp: { "/es": S("cifrapp"), "/es/pricing": S("cifrapp--pricing"), "/es/access/accountants": S("cifrapp--accountants") },
-  "pime-backup": { "/": S("pime-backup--login") },
-  misaza: { "/": S("misaza"), "/explore": S("misaza--explore"), "/mayoreo": S("misaza--mayoreo") },
+  cifrapp: {
+    "/es": S("cifrapp"),
+    "/es/pricing": S("cifrapp--pricing"),
+    "/es/access/accountants": S("cifrapp--accountants"),
+  },
+  "pime-backup": {
+    "/dashboard": M("pime-backup--dashboard"),
+    "/projects": M("pime-backup--projects"),
+    "/jobs": M("pime-backup--jobs"),
+    "/agents": M("pime-backup--agents"),
+    "/reports": M("pime-backup--reports"),
+  },
+  misaza: {
+    "/": S("misaza"),
+    "/product/[id]": S("misaza--product"),
+    "/mayoreo": S("misaza--mayoreo"),
+  },
   "bnb-real-estate": {
     "/": S("bnb-real-estate"),
     "/propiedades": S("bnb-real-estate--propiedades"),
     "/proyectos": S("bnb-real-estate--proyectos"),
     "/list-with-us": S("bnb-real-estate--list-with-us"),
-    "/cms": S("bnb-real-estate--cms"),
+    "/cms": M("bnb-real-estate--cms"),
+    "/cms/leads": M("bnb-real-estate--cms-leads"),
   },
   "holo-realty": {
     "/": S("holo-realty--home"),
     "/relocation": S("holo-realty--relocation"),
     "/propiedades": S("holo-realty--propiedades"),
-    "/portal": S("holo-realty--portal-login"),
+    "/propiedades/[slug]": S("holo-realty--propiedad"),
   },
   "john-henry": {
     "/": S("john-henry"),
     "/citas": S("john-henry--citas"),
     "/ready-to-wear": S("john-henry--ready-to-wear"),
-    "/clients/[id]/medidas": S("john-henry--medidas"),
-    "/orders/[id]/orden-taller": S("john-henry--orden-taller"),
-    "/finance/reportes": S("john-henry--finance"),
+    "/dashboard": M("john-henry--dashboard"),
+    "/orders": M("john-henry--orders"),
+    "/orders/[id]/orden-taller": M("john-henry--orden-taller"),
+    "/finance/reportes": M("john-henry--finance"),
   },
 };

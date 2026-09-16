@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useMotionValue, useReducedMotion, useSpring } from "framer-motion";
 import { Icon } from "@iconify/react";
-import { shotFor, type LocalizedProject } from "@/lib/portfolio/localize";
+import { shotFor, shotRoutes, type LocalizedProject } from "@/lib/portfolio/localize";
 import type { EngineUi } from "./i18n";
 import { heroRoute } from "./showreel";
 import { SiteWindow } from "./site-window";
-import { LevelMeter, MotionLink, PressButton, StatusDot, hostOf } from "./ui";
+import { LevelMeter, MotionLink, PressButton, StatusDot, hostOf, useCycle } from "./ui";
 
 /**
  * Índice completo: se revela con un recorte circular desde el transporte y
@@ -26,6 +26,9 @@ export function IndexOverlay({
 }) {
   const reduce = useReducedMotion();
   const [hover, setHover] = useState<LocalizedProject | null>(null);
+  const hoverScreens = useMemo(() => (hover ? shotRoutes(hover) : []), [hover]);
+  const [hoverTick] = useCycle(hoverScreens.length, 1300, Boolean(hover));
+  const hoverRoute = hoverScreens[hoverTick] ?? (hover ? heroRoute(hover) : null);
   const x = useMotionValue(0);
   const y = useMotionValue(0);
   const sx = useSpring(x, { stiffness: 180, damping: 24 });
@@ -121,7 +124,7 @@ export function IndexOverlay({
                 transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               >
                 <div className="aspect-[16/10]">
-                  <SiteWindow brand={hover.brand} screen={heroRoute(hover).screen} path={heroRoute(hover).path} host={hostOf(hover)} live showCursor={false} className="h-full w-full" radius={10} image={shotFor(hover, heroRoute(hover).path)} />
+                  <SiteWindow brand={hover.brand} screen={(hoverRoute ?? heroRoute(hover)).screen} path={(hoverRoute ?? heroRoute(hover)).path} host={hostOf(hover)} live showCursor={false} className="h-full w-full" radius={10} image={shotFor(hover, (hoverRoute ?? heroRoute(hover)).path)} sampleLabel={ui.window.sample} sampleNote={ui.window.sampleNote} />
                 </div>
               </motion.div>
             ) : null}

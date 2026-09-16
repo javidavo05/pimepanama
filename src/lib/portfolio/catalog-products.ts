@@ -24,6 +24,8 @@ export const productProjects: Project[] = [
     ],
     routes: [
       { path: "/", label: "Landing", group: "publico", screen: "landing" },
+      { path: "/soluciones/academias", label: "Academias deportivas", group: "publico", screen: "landing" },
+      { path: "/soluciones/escuelas", label: "Escuelas y colegios", group: "publico", screen: "landing" },
       { path: "/enrollment", label: "Matrícula pública", group: "publico", screen: "form" },
       { path: "/pay/[playerId]", label: "Link de pago", group: "publico", screen: "checkout" },
       { path: "/dashboard", label: "Tablero", group: "panel", screen: "dashboard" },
@@ -301,10 +303,11 @@ export const productProjects: Project[] = [
       "SDK y CLI propios",
     ],
     routes: [
-      { path: "/", label: "Dashboard", group: "panel", screen: "dashboard" },
-      { path: "/jobs", label: "Jobs", group: "panel", screen: "table" },
+      { path: "/dashboard", label: "Panel de control", group: "panel", screen: "dashboard" },
+      { path: "/projects", label: "Proyectos de respaldo", group: "panel", screen: "table" },
+      { path: "/jobs", label: "Trabajos en vivo", group: "operacion", screen: "table" },
       { path: "/agents", label: "Agentes", group: "operacion", screen: "terminal" },
-      { path: "/certificates", label: "Certificados", group: "panel", screen: "docs" },
+      { path: "/reports", label: "Reportes de verificación", group: "panel", screen: "docs" },
     ],
     liveUrl: "https://web-ebon-nu-55.vercel.app",
     demoUrl: null,

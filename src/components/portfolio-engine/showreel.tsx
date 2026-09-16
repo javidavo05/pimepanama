@@ -3,12 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
 import { Icon } from "@iconify/react";
-import { shotFor, type LocalizedProject } from "@/lib/portfolio/localize";
+import { shotFor, shotRoutes, type LocalizedProject } from "@/lib/portfolio/localize";
 import type { EngineUi } from "./i18n";
 import { SiteWindow } from "./site-window";
 import { Kicker, LevelMeter, PressButton, PressLink, RingButton, StatusDot, hostOf, projectYears } from "./ui";
 
-const AUTOPLAY_MS = 8000;
+/** Tiempo mínimo en escena por sistema, y tiempo por cada pantalla suya. */
+const STAGE_MIN_MS = 8000;
+const PER_SCREEN_MS = 2600;
 
 /** La primera ruta con captura real; si no hay, la primera del catálogo. */
 export function heroRoute(p: LocalizedProject) {
@@ -18,7 +20,8 @@ export function heroRoute(p: LocalizedProject) {
 /**
  * Escenario principal: un proyecto a la vez, nombre gigante que se solapa con
  * la ventana, índice numérico, botón circular giratorio y transporte tipo
- * reproductor. Avanza solo cada ocho segundos; se pausa al posar el cursor.
+ * reproductor. Cada sistema recorre todas sus pantallas antes de pasar al
+ * siguiente, con las dos próximas asomando detrás; se pausa al posar el cursor.
  */
 export function Showreel({
   projects,
@@ -40,6 +43,13 @@ export function Showreel({
   const elapsedRef = useRef<number>(0);
   const total = projects.length;
   const project = projects[i];
+  const screens = shotRoutes(project);
+  const screenCount = Math.max(1, screens.length);
+  const stageMs = Math.max(STAGE_MIN_MS, screenCount * PER_SCREEN_MS);
+  // La pantalla visible sale del mismo reloj que el anillo: no hay un segundo temporizador.
+  const screenIndex = reduce ? 0 : Math.min(screenCount - 1, Math.floor(progress * screenCount));
+  const route = screens[screenIndex] ?? heroRoute(project);
+  const within = reduce ? 0 : progress * screenCount - screenIndex;
 
   const go = useCallback(
     (delta: number) => {
@@ -60,7 +70,7 @@ export function Showreel({
     const tick = (t: number) => {
       if (!paused) {
         elapsedRef.current = t - startRef.current;
-        const p = elapsedRef.current / AUTOPLAY_MS;
+        const p = elapsedRef.current / stageMs;
         if (p >= 1) {
           go(1);
           startRef.current = t;
@@ -74,7 +84,13 @@ export function Showreel({
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-  }, [paused, go, reduce, i]);
+  }, [paused, go, reduce, i, stageMs]);
+
+  const jumpToScreen = (k: number) => {
+    elapsedRef.current = (k / screenCount) * stageMs;
+    startRef.current = performance.now() - elapsedRef.current;
+    setProgress(k / screenCount);
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -136,6 +152,27 @@ export function Showreel({
           onMouseEnter={() => setPaused(true)}
           onMouseLeave={() => setPaused(false)}
         >
+          {/* Las dos pantallas siguientes asoman detrás: se ven varias partes del sistema a la vez. */}
+          {!reduce && screens.length > 1
+            ? [2, 1].map((offset) => {
+                if (screens.length <= offset) return null;
+                const r = screens[(screenIndex + offset) % screens.length];
+                const side = offset === 1 ? 1 : -1;
+                return (
+                  <motion.div
+                    key={`deck-${project.slug}-${offset}`}
+                    aria-hidden
+                    className="pointer-events-none absolute inset-0 aspect-[16/10] w-full"
+                    initial={{ opacity: 0, x: 0, rotate: 0, scale: 0.9 }}
+                    animate={{ opacity: offset === 1 ? 0.55 : 0.3, x: `${side * (offset === 1 ? 9 : 14)}%`, y: `${offset === 1 ? -5 : -9}%`, rotate: side * (offset === 1 ? 4 : 7), scale: offset === 1 ? 0.86 : 0.76 }}
+                    transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                  >
+                    <SiteWindow brand={project.brand} screen={r.screen} path={r.path} host={hostOf(project)} live={false} showCursor={false} className="h-full w-full" radius={16} image={shotFor(project, r.path)} sampleLabel={ui.window.sample} sampleNote={ui.window.sampleNote} />
+                  </motion.div>
+                );
+              })
+            : null}
+
           <AnimatePresence mode="popLayout" custom={dir} initial={false}>
             <motion.div
               key={project.slug}
@@ -147,10 +184,50 @@ export function Showreel({
               style={{ rotateX: winRx, rotateY: winRy, transformPerspective: 1400 }}
               className="relative aspect-[16/10] w-full"
             >
-              <SiteWindow brand={project.brand} screen={heroRoute(project).screen} path={heroRoute(project).path} host={hostOf(project)} live className="h-full w-full" radius={16} image={shotFor(project, heroRoute(project).path)} priority={i === 0} />
+              <SiteWindow brand={project.brand} screen={route.screen} path={route.path} host={hostOf(project)} live className="h-full w-full" radius={16} image={shotFor(project, route.path)} priority={i === 0} sampleLabel={ui.window.sample} sampleNote={ui.window.sampleNote} />
             </motion.div>
           </AnimatePresence>
 
+          {/* Una pieza por pantalla: la actual se llena con el reloj y cualquiera se puede elegir. */}
+          {screens.length > 1 ? (
+            <div className="relative mx-auto mt-4 flex w-full max-w-md items-center gap-3">
+              <div className="flex flex-1 items-center gap-1" role="group" aria-label={ui.hero.screens(screens.length)}>
+                {screens.map((r, k) => {
+                  const fill = k < screenIndex ? 1 : k === screenIndex ? within : 0;
+                  return (
+                    <button
+                      key={r.path}
+                      type="button"
+                      onClick={() => jumpToScreen(k)}
+                      aria-label={ui.hero.screen(k + 1, screens.length, r.label)}
+                      aria-current={k === screenIndex ? "true" : undefined}
+                      className="group flex h-11 flex-1 items-center"
+                    >
+                      <span className="relative block h-1 w-full overflow-hidden rounded-full transition-[height] duration-300 group-hover:h-1.5" style={{ background: "var(--pf-line-2)" }}>
+                        <span className="absolute inset-y-0 left-0 rounded-full" style={{ width: `${fill * 100}%`, background: k === screenIndex ? "var(--pf-accent)" : "var(--pf-ink-3)" }} />
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.p
+                  key={route.path}
+                  className="pf-mono flex shrink-0 items-center gap-2 tabular-nums"
+                  style={{ color: "var(--pf-ink-2)" }}
+                  initial={reduce ? false : { opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={reduce ? undefined : { opacity: 0, y: -4 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <span className="hidden max-w-[10rem] truncate sm:inline">{route.label}</span>
+                  <span style={{ color: "var(--pf-ink)" }}>
+                    {String(screenIndex + 1).padStart(2, "0")}/{String(screens.length).padStart(2, "0")}
+                  </span>
+                </motion.p>
+              </AnimatePresence>
+            </div>
+          ) : null}
         </div>
 
         {/* Nombre gigante que cruza la ventana */}
