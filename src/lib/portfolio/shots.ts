@@ -37,11 +37,6 @@ export const shots: Record<string, Record<string, Shot>> = {
     "/tesoreria": S("smart-church--tesoreria"),
     "/cms": S("smart-church--cms"),
   },
-  sembradores: {
-    "/signup": S("sembradores--signup"),
-    "/t/[slug]/dashboard": S("sembradores--demo", "demo"),
-    "/t/[slug]/portal": S("sembradores--login"),
-  },
   "wedding-site": {
     "/": S("wedding-site"),
     "/invite/rsvp": S("wedding-site--invite"),

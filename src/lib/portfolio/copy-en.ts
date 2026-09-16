@@ -96,26 +96,6 @@ export const copyEn: Record<string, ProjectCopyEn> = {
     },
     metrics: { visits: { label: "Visits logged", unit: "visits" }, pastors: { label: "Active pastors", unit: "accounts" } },
   },
-  sembradores: {
-    client: "Churches and denominations",
-    industry: "Religious organizations",
-    tagline: "Multi-tenant church SaaS with double-entry accounting.",
-    description:
-      "Each congregation lives at /t/[slug] with its own login, branding, domain and modules. People, households, attendance, ministries, donations through several gateways and accounting with chart of accounts, journal entries and periods. A platform panel onboards churches and tracks usage and subscription.",
-    features: [
-      "Self-service onboarding with signup status",
-      "Per-tenant runtime with suspension and branding",
-      "People, households and networks with Excel import",
-      "Donations, reconciliation and full accounting",
-      "Pastoral follow-ups and prayer requests",
-      "Platform panel with runtime health",
-    ],
-    routes: {
-      "/signup": "Sign up", "/t/[slug]/dashboard": "Dashboard", "/t/[slug]/people": "People",
-      "/t/[slug]/accounting/journal-entries": "Journal entries", "/t/[slug]/portal": "Member portal", "/churches": "Churches (platform)",
-    },
-    metrics: { tenants: { label: "Active churches", unit: "tenants" }, donations: { label: "Donations", unit: "USD" } },
-  },
   "wedding-site": {
     client: "Private wedding",
     industry: "Events",
