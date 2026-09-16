@@ -1,6 +1,18 @@
 import type { Locale } from "@/lib/i18n";
 import { copyEn } from "./copy-en";
 import { shots, type Shot } from "./shots";
+
+/**
+ * Captura para una ruta. Si la ruta no tiene la suya, cae a la primera
+ * captura real del proyecto: la ventana siempre muestra el sitio, nunca
+ * una pantalla dibujada.
+ */
+export function shotFor(p: { shots: Record<string, Shot>; routes: ProjectRoute[] }, path: string): Shot | undefined {
+  if (p.shots[path]) return p.shots[path];
+  if (p.shots["/"]) return p.shots["/"];
+  const first = p.routes.find((r) => p.shots[r.path]);
+  return first ? p.shots[first.path] : Object.values(p.shots)[0];
+}
 import type {
   MetricSpec,
   Project,

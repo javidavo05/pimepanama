@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useMotionValue, useReducedMotion, useSpring } from "framer-motion";
 import { Icon } from "@iconify/react";
-import type { LocalizedProject } from "@/lib/portfolio/localize";
+import { shotFor, type LocalizedProject } from "@/lib/portfolio/localize";
 import type { EngineUi } from "./i18n";
 import { heroRoute } from "./showreel";
 import { SiteWindow } from "./site-window";
@@ -121,7 +121,7 @@ export function IndexOverlay({
                 transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
               >
                 <div className="aspect-[16/10]">
-                  <SiteWindow brand={hover.brand} screen={heroRoute(hover).screen} path={heroRoute(hover).path} host={hostOf(hover)} live showCursor={false} className="h-full w-full" radius={10} image={hover.shots[heroRoute(hover).path]} />
+                  <SiteWindow brand={hover.brand} screen={heroRoute(hover).screen} path={heroRoute(hover).path} host={hostOf(hover)} live showCursor={false} className="h-full w-full" radius={10} image={shotFor(hover, heroRoute(hover).path)} />
                 </div>
               </motion.div>
             ) : null}

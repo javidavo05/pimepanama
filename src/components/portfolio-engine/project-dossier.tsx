@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import type { LocalizedProject } from "@/lib/portfolio/localize";
-import { routeGroupLabel } from "@/lib/portfolio/localize";
+import { routeGroupLabel, shotFor } from "@/lib/portfolio/localize";
 import { buildAllSeries } from "@/lib/portfolio/mock-metrics";
 import type { Locale } from "@/lib/i18n";
 import type { RouteGroup } from "@/lib/portfolio/types";
@@ -32,7 +32,7 @@ export function ProjectDossier({ project, ui, locale, compact = false }: { proje
       {/* Ventana + rutas */}
       <div className="lg:col-span-7">
         <div className="aspect-[16/10]">
-          <SiteWindow brand={project.brand} screen={route.screen} path={route.path} host={hostOf(project)} live className="h-full w-full" radius={14} image={project.shots[route.path]} />
+          <SiteWindow brand={project.brand} screen={route.screen} path={route.path} host={hostOf(project)} live className="h-full w-full" radius={14} image={shotFor(project, route.path)} />
         </div>
 
         <div className="mt-6">

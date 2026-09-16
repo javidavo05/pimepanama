@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useMotionValue, useReducedMotion, useSpring, useTransform } from "framer-motion";
 import { Icon } from "@iconify/react";
-import type { LocalizedProject } from "@/lib/portfolio/localize";
+import { shotFor, type LocalizedProject } from "@/lib/portfolio/localize";
 import type { EngineUi } from "./i18n";
 import { SiteWindow } from "./site-window";
 import { Kicker, LevelMeter, PressButton, PressLink, RingButton, StatusDot, hostOf, projectYears } from "./ui";
@@ -147,7 +147,7 @@ export function Showreel({
               style={{ rotateX: winRx, rotateY: winRy, transformPerspective: 1400 }}
               className="relative aspect-[16/10] w-full"
             >
-              <SiteWindow brand={project.brand} screen={heroRoute(project).screen} path={heroRoute(project).path} host={hostOf(project)} live className="h-full w-full" radius={16} image={project.shots[heroRoute(project).path]} priority={i === 0} />
+              <SiteWindow brand={project.brand} screen={heroRoute(project).screen} path={heroRoute(project).path} host={hostOf(project)} live className="h-full w-full" radius={16} image={shotFor(project, heroRoute(project).path)} priority={i === 0} />
             </motion.div>
           </AnimatePresence>
 

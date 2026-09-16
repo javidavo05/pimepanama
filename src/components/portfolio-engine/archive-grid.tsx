@@ -4,7 +4,7 @@ import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import type { ComplexityTier, LocalizedProject } from "@/lib/portfolio/localize";
-import { categoryLabel, complexityLabel, statusLabel } from "@/lib/portfolio/localize";
+import { categoryLabel, complexityLabel, shotFor, statusLabel } from "@/lib/portfolio/localize";
 import { buildSeries } from "@/lib/portfolio/mock-metrics";
 import type { Locale } from "@/lib/i18n";
 import type { ProjectCategory, ProjectStatus } from "@/lib/portfolio/types";
@@ -222,7 +222,7 @@ function Tile({ project: p, index, ui, locale, open, onToggle }: { project: Loca
         <motion.button type="button" onClick={onToggle} aria-expanded={open} className="text-left" data-cursor="grow" whileTap={reduce ? undefined : { scale: 0.985 }} transition={{ type: "spring", stiffness: 520, damping: 28 }}>
           <div className={`relative overflow-hidden p-3 pb-0 ${open ? "hidden" : "aspect-[16/10]"}`}>
             <motion.div animate={{ scale: live ? 1.015 : 1 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} className="h-full">
-              <SiteWindow brand={p.brand} screen={route.screen} path={route.path} host={hostOf(p)} live={live} showCursor={!open} className="h-full w-full" radius={10} image={p.shots[route.path]} />
+              <SiteWindow brand={p.brand} screen={route.screen} path={route.path} host={hostOf(p)} live={live} showCursor={!open} className="h-full w-full" radius={10} image={shotFor(p, route.path)} />
             </motion.div>
             <span className="pf-mono absolute right-5 top-5 rounded-md px-1.5 py-0.5 tabular-nums" style={{ background: "rgba(12,15,20,0.7)", color: "var(--pf-ink-2)", backdropFilter: "blur(6px)" }}>{String(index + 1).padStart(2, "0")}</span>
           </div>
