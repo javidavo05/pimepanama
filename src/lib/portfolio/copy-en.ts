@@ -96,6 +96,26 @@ export const copyEn: Record<string, ProjectCopyEn> = {
     },
     metrics: { visits: { label: "Visits logged", unit: "visits" }, pastors: { label: "Active pastors", unit: "accounts" } },
   },
+  sembradores: {
+    client: "Churches and denominations",
+    industry: "Religious organizations",
+    tagline: "Multi-tenant church SaaS with double-entry accounting.",
+    description:
+      "Each congregation lives at /t/[slug] with its own login, branding, domain and modules. People, households, attendance, ministries, donations through several gateways and accounting with chart of accounts, journal entries and periods. A platform panel onboards churches and tracks usage and subscription.",
+    features: [
+      "Self-service onboarding with signup status",
+      "Per-tenant runtime with suspension and branding",
+      "People, households and networks with Excel import",
+      "Donations, reconciliation and full accounting",
+      "Pastoral follow-ups and prayer requests",
+      "Platform panel with runtime health",
+    ],
+    routes: {
+      "/signup": "Sign up", "/t/[slug]/dashboard": "Dashboard", "/t/[slug]/people": "People",
+      "/t/[slug]/accounting/journal-entries": "Journal entries", "/t/[slug]/portal": "Member portal", "/churches": "Churches (platform)",
+    },
+    metrics: { tenants: { label: "Active churches", unit: "tenants" }, donations: { label: "Donations", unit: "USD" } },
+  },
   "wedding-site": {
     client: "Private wedding",
     industry: "Events",
@@ -156,6 +176,23 @@ export const copyEn: Record<string, ProjectCopyEn> = {
     },
     metrics: { households: { label: "Households", unit: "households" }, movements: { label: "Movements classified", unit: "mov." } },
   },
+  "pime-backup": {
+    client: "Grupo GRF",
+    industry: "Document compliance",
+    tagline: "Download, verify and certify the integrity of corporate Google Drive.",
+    description:
+      "Files travel directly between Google Drive and the client's machine; the cloud only coordinates and stores metadata. A Python agent installs on Windows, schedules jobs and certifies every download. Web dashboard, SDK and CLI in one monorepo.",
+    features: [
+      "Windows agent installed with one script",
+      "Direct Drive → client machine transfer",
+      "Integrity verification and certification",
+      "Scheduled jobs with dedicated workers",
+      "Twelve SQL migrations with RLS",
+      "Own SDK and CLI",
+    ],
+    routes: { "/": "Dashboard", "/jobs": "Jobs", "/agents": "Agents", "/certificates": "Certificates" },
+    metrics: { gb: { label: "GB verified", unit: "GB" }, files: { label: "Files certified", unit: "files" } },
+  },
   misaza: {
     client: "Misaza",
     industry: "Retail and fashion",
@@ -192,6 +229,23 @@ export const copyEn: Record<string, ProjectCopyEn> = {
     ],
     routes: { "/": "Landing", "/propiedades": "Properties", "/proyectos": "Pre-construction", "/list-with-us": "List your property", "/cms": "CMS", "/portal": "Client portal" },
     metrics: { leads: { label: "Qualified leads", unit: "leads" }, listings: { label: "Published listings", unit: "listings" } },
+  },
+  "holo-realty": {
+    client: "HOLO Realty & Relocation",
+    industry: "Real estate and relocation",
+    tagline: "Sales, rentals, relocation and investment with a real-time client portal.",
+    description:
+      "A rebrand on the same real estate base: the differentiator is a portal where the client sees progress, accepts or rejects decisions and follows milestones in real time. The internal CRM covers a configurable pipeline, finance, relocation files and buildings with contracts and inspections.",
+    features: [
+      "Client portal with progress and decisions",
+      "CRM with interaction log",
+      "Configurable no-code pipeline",
+      "Relocation with files and checklists",
+      "Buildings: units, contracts, inspections",
+      "Inventory switchable between Wasi and CMS",
+    ],
+    routes: { "/": "Landing", "/relocation": "Relocation", "/propiedades": "Properties", "/portal": "Client portal", "/cms/crm": "CRM" },
+    metrics: { cases: { label: "Active files", unit: "files" }, milestones: { label: "Milestones closed", unit: "milestones" } },
   },
   "john-henry": {
     client: "John Henry Tailoring",

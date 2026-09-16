@@ -37,6 +37,11 @@ export const shots: Record<string, Record<string, Shot>> = {
     "/tesoreria": S("smart-church--tesoreria"),
     "/cms": S("smart-church--cms"),
   },
+  sembradores: {
+    "/signup": S("sembradores--signup"),
+    "/t/[slug]/dashboard": S("sembradores--demo", "demo"),
+    "/t/[slug]/portal": S("sembradores--login"),
+  },
   "wedding-site": {
     "/": S("wedding-site"),
     "/invite/rsvp": S("wedding-site--invite"),
@@ -54,6 +59,7 @@ export const shots: Record<string, Record<string, Shot>> = {
     "/dashboard/control-plane/tenants": S("godmode--tenants"),
   },
   cifrapp: { "/es": S("cifrapp"), "/es/pricing": S("cifrapp--pricing"), "/es/access/accountants": S("cifrapp--accountants") },
+  "pime-backup": { "/": S("pime-backup--login") },
   misaza: { "/": S("misaza"), "/explore": S("misaza--explore"), "/mayoreo": S("misaza--mayoreo") },
   "bnb-real-estate": {
     "/": S("bnb-real-estate"),
@@ -61,6 +67,12 @@ export const shots: Record<string, Record<string, Shot>> = {
     "/proyectos": S("bnb-real-estate--proyectos"),
     "/list-with-us": S("bnb-real-estate--list-with-us"),
     "/cms": S("bnb-real-estate--cms"),
+  },
+  "holo-realty": {
+    "/": S("holo-realty--home"),
+    "/relocation": S("holo-realty--relocation"),
+    "/propiedades": S("holo-realty--propiedades"),
+    "/portal": S("holo-realty--portal-login"),
   },
   "john-henry": {
     "/": S("john-henry"),
