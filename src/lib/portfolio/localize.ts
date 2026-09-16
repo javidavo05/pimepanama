@@ -31,7 +31,7 @@ import { CATEGORY_LABEL, ROUTE_GROUP_LABEL, STATUS_LABEL } from "./types";
 export type ComplexityTier = 1 | 2 | 3 | 4 | 5;
 
 export const COMPLEXITY: Record<string, ComplexityTier> = {
-  academyx: 5, "uapa-suite": 5, visita7: 4, "wedding-site": 3, godmode: 4, cifrapp: 4, misaza: 4, "bnb-real-estate": 3, "john-henry": 3,
+  academyx: 5, "uapa-suite": 5, visita7: 4, "smart-church": 3, "wedding-site": 3, godmode: 4, cifrapp: 4, misaza: 4, "bnb-real-estate": 3, "john-henry": 3,
 };
 
 const COMPLEXITY_LABEL: Record<ComplexityTier, { es: string; en: string }> = {

@@ -56,6 +56,26 @@ export const copyEn: Record<string, ProjectCopyEn> = {
     },
     metrics: { documents: { label: "Documents processed", unit: "docs" }, users: { label: "Active accounts", unit: "accounts" } },
   },
+  "smart-church": {
+    client: "Local churches",
+    industry: "Religious organizations",
+    tagline: "Running a local church: ministries, services, treasury and appointments.",
+    description:
+      "White-label: cloning the repo and reconfiguring the church produces a new instance. Service rosters, real-time worship setlists, board mode with live voting, a visit CRM, pastoral appointments synced with Google Calendar and cron-driven reminders.",
+    features: [
+      "Landing with CMS and contact inbox",
+      "Ministries with members, events and assignments",
+      "Board mode with agenda and live voting",
+      "Real-time worship setlists",
+      "Pastoral appointments with Google Calendar and .ics feed",
+      "T-7, T-3 and T-1 reminder cron",
+    ],
+    routes: {
+      "/": "Landing", "/agenda-una-cita": "Book appointment", "/dashboard": "Dashboard", "/ministries": "Ministries",
+      "/board/[sessionId]": "Live board", "/tesoreria": "Treasury", "/cms": "CMS",
+    },
+    metrics: { members: { label: "Registered members", unit: "people" }, events: { label: "Scheduled events", unit: "events" } },
+  },
   visita7: {
     client: "Panamanian Adventist Union",
     industry: "Pastoral management",

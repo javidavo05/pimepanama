@@ -29,6 +29,14 @@ export const shots: Record<string, Record<string, Shot>> = {
     "/iglesias": S("visita7--iglesias"),
     "/calendar": S("visita7--calendar"),
   },
+  "smart-church": {
+    "/": S("smart-church--revive"),
+    "/agenda-una-cita": S("smart-church--cita"),
+    "/dashboard": S("smart-church--dashboard"),
+    "/ministries": S("smart-church--ministries"),
+    "/tesoreria": S("smart-church--tesoreria"),
+    "/cms": S("smart-church--cms"),
+  },
   "wedding-site": {
     "/": S("wedding-site"),
     "/invite/rsvp": S("wedding-site--invite"),
