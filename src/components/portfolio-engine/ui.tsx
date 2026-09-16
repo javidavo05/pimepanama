@@ -37,7 +37,7 @@ export const MotionLink = motion.create(Link);
 export function PressButton({ strength = "soft", children, ...rest }: HTMLMotionProps<"button"> & { strength?: "soft" | "firm" }) {
   const press = usePress(strength);
   return (
-    <motion.button type="button" data-cursor="grow" {...press} {...rest}>
+    <motion.button type="button" {...press} {...rest}>
       {children}
     </motion.button>
   );
@@ -47,7 +47,7 @@ export function PressButton({ strength = "soft", children, ...rest }: HTMLMotion
 export function PressLink({ strength = "soft", children, ...rest }: React.ComponentProps<typeof MotionLink> & { strength?: "soft" | "firm" }) {
   const press = usePress(strength);
   return (
-    <MotionLink data-cursor="grow" {...press} {...rest}>
+    <MotionLink {...press} {...rest}>
       {children}
     </MotionLink>
   );

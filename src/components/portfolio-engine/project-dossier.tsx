@@ -114,7 +114,7 @@ export function ProjectDossier({ project, ui, locale, compact = false }: { proje
 
         <div className="flex flex-wrap gap-3">
           {project.liveUrl ? (
-            <motion.a href={project.liveUrl} target="_blank" rel="noopener noreferrer" data-cursor="grow" {...pressFirm} className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-xs font-semibold uppercase tracking-[0.18em] transition hover:brightness-110" style={{ background: "var(--pf-accent)", color: "var(--pf-accent-ink)" }}>
+            <motion.a href={project.liveUrl} target="_blank" rel="noopener noreferrer" {...pressFirm} className="inline-flex min-h-[44px] items-center gap-2 rounded-full px-5 text-xs font-semibold uppercase tracking-[0.18em] transition hover:brightness-110" style={{ background: "var(--pf-accent)", color: "var(--pf-accent-ink)" }}>
               {ui.dossier.live}
               <Icon icon="ph:arrow-up-right" className="h-3.5 w-3.5" />
             </motion.a>

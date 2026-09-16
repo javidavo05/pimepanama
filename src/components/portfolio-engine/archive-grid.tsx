@@ -219,7 +219,7 @@ function Tile({ project: p, index, ui, locale, open, onToggle }: { project: Loca
       onMouseLeave={() => setHover(false)}
     >
       <motion.div layout="position" className="flex flex-col">
-        <motion.button type="button" onClick={onToggle} aria-expanded={open} className="text-left" data-cursor="grow" whileTap={reduce ? undefined : { scale: 0.985 }} transition={{ type: "spring", stiffness: 520, damping: 28 }}>
+        <motion.button type="button" onClick={onToggle} aria-expanded={open} className="text-left" whileTap={reduce ? undefined : { scale: 0.985 }} transition={{ type: "spring", stiffness: 520, damping: 28 }}>
           <div className={`relative overflow-hidden p-3 pb-0 ${open ? "hidden" : "aspect-[16/10]"}`}>
             <motion.div animate={{ scale: live ? 1.015 : 1 }} transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }} className="h-full">
               <SiteWindow brand={p.brand} screen={route.screen} path={route.path} host={hostOf(p)} live={live} showCursor={!open} className="h-full w-full" radius={10} image={shotFor(p, route.path)} />

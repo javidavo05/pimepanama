@@ -8,7 +8,6 @@ import { localizeProject } from "@/lib/portfolio/localize";
 import type { Locale } from "@/lib/i18n";
 import { localizedPath } from "@/lib/seo-urls";
 import "./engine.css";
-import { EngineCursor } from "./cursor";
 import { engineUi } from "./i18n";
 import { navItemsFor } from "./portfolio-page";
 import { ProjectDossier } from "./project-dossier";
@@ -30,7 +29,6 @@ export function ProjectEnginePage({ slug, locale }: { slug: string; locale: Loca
     <>
       <NavigationBar locale={locale} items={navItemsFor(locale)} />
       <div className="pf-root">
-        <EngineCursor />
         <main className="relative overflow-hidden">
           <div className="pf-ghost absolute -right-[6vw] top-[4vw] text-[24vw]" aria-hidden>{ghost}</div>
 

@@ -43,7 +43,7 @@ export function ComplexityLadder({ projects, ui, locale }: { projects: Localized
                   aria-selected={on}
                   onClick={() => setActive(tier)}
                   onMouseEnter={() => setActive(tier)}
-                  data-cursor="grow"
+                 
                   initial={reduce ? false : { opacity: 0, scaleY: 0 }}
                   whileInView={{ opacity: 1, scaleY: 1 }}
                   whileTap={reduce ? undefined : { scale: 0.96 }}

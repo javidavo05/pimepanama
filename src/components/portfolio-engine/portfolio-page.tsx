@@ -11,7 +11,6 @@ import { localizedPath } from "@/lib/seo-urls";
 import "./engine.css";
 import { ArchiveGrid } from "./archive-grid";
 import { ComplexityLadder } from "./complexity-ladder";
-import { EngineCursor } from "./cursor";
 import { EngineAnalytics } from "./engine-analytics";
 import { engineUi } from "./i18n";
 import { IndexOverlay } from "./index-overlay";
@@ -40,7 +39,6 @@ export function PortfolioEnginePage({ locale }: { locale: Locale }) {
     <>
       <NavigationBar locale={locale} items={navItemsFor(locale)} />
       <div className="pf-root">
-        <EngineCursor />
         <main>
           <Showreel projects={featured} ui={ui} onOpenIndex={() => setIndexOpen(true)} />
 

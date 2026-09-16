@@ -82,7 +82,7 @@ export function IndexOverlay({
                 >
                   <MotionLink
                     href={p.href}
-                    data-cursor="grow"
+                   
                     whileTap={reduce ? undefined : { scale: 0.99, x: 4 }}
                     transition={{ type: "spring", stiffness: 520, damping: 28 }}
                     onMouseEnter={() => setHover(p)}

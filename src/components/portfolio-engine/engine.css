@@ -195,15 +195,6 @@
   display: none;
 }
 
-/* Cursor propio */
-@media (pointer: fine) {
-  .pf-root.pf-has-cursor,
-  .pf-root.pf-has-cursor a,
-  .pf-root.pf-has-cursor button {
-    cursor: none;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .pf-ring,
   .pf-marquee,
