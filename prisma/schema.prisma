@@ -261,6 +261,7 @@ model EmpresaUser {
   expenses              Expense[]
   meetings              Meeting[]
   pushSubscriptions     PushSubscription[]
+  watchedThreads        WatchedThread[]
   /// PAT de GitHub cifrado (AES-256-GCM). Es del usuario, no del proyecto: un
   /// token sirve para todos sus repos.
   githubTokenEnc        String?
@@ -927,6 +928,31 @@ model MailNotification {
   createdAt DateTime @default(now())
 
   @@index([userId, read])
+}
+
+/// Conversación de correo marcada como importante: cada respuesta nueva del
+/// hilo avisa por campana y push. Solo cuentan correos posteriores a
+/// `lastMessageAt`, así lo que ya estaba en el hilo al marcarlo no avisa.
+model WatchedThread {
+  id               String      @id @default(cuid())
+  userId           String
+  user             EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Correo desde el que se marcó; es a donde lleva el aviso si no hay respuesta.
+  emailId          String
+  subject          String?
+  normSubject      String
+  /// Direcciones de la contraparte (sin la cuenta propia), en minúsculas.
+  participants     String[]    @default([])
+  /// Message-ID del hilo, para casar In-Reply-To / References.
+  messageIds       String[]    @default([])
+  lastMessageAt    DateTime
+  lastReplyAt      DateTime?
+  lastReplyEmailId String?
+  replyCount       Int         @default(0)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([userId])
 }
 
 /// Suscripción Web Push de un navegador/dispositivo al PWA de Pime Suite.

@@ -16,6 +16,7 @@ interface InboxEmailRow {
   receivedAt: string;
   isRead: boolean;
   isStarred: boolean;
+  isWatched?: boolean;
   aiTags: string[];
   aiSummary: string | null;
   messageId: string | null;
@@ -339,7 +340,7 @@ export function InboxList({
             <div className="w-px h-4 bg-fill-3" />
 
             {/* Quick filters */}
-            {[["unread","No leídos"], ["starred","Destacados"]].map(([f, l]) => (
+            {[["unread","No leídos"], ["starred","Destacados"], ["important","Importantes"]].map(([f, l]) => (
               <button key={f} onClick={() => toggleFilter(f)}
                 className={`px-2.5 py-1 rounded-lg text-xs border transition-all ${activeFilter === f ? "bg-brand/10 border-brand/25 text-brand-fg" : "border-line text-fg-dim hover:text-fg-dim"}`}>
                 {l}
@@ -443,7 +444,14 @@ export function InboxList({
       {/* Email rows */}
       {visible.length === 0 ? (
         <div className="text-center py-20 text-fg-faint text-sm space-y-1">
-          <p>{hasActiveFilters ? "Sin resultados para este filtro." : "No hay correos."}</p>
+          <p>
+            {activeFilter === "important"
+              ? "No hay conversaciones importantes en esta carpeta."
+              : hasActiveFilters ? "Sin resultados para este filtro." : "No hay correos."}
+          </p>
+          {activeFilter === "important" && (
+            <p className="text-xs">Abre un correo y pulsa «Avisarme si responden» para seguirlo aquí.</p>
+          )}
           {!hasActiveFilters && <p className="text-xs">El sync corre automáticamente al entrar.</p>}
         </div>
       ) : (
@@ -527,6 +535,14 @@ export function InboxList({
                       <p className="text-fg-faint text-xs truncate">{email.aiSummary}</p>
                     )}
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                      {email.isWatched && (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded border bg-amber2/10 text-amber2 border-amber2/25">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24" aria-hidden>
+                            <path d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
+                          </svg>
+                          Importante
+                        </span>
+                      )}
                       {isSentFolder && (
                         <MailDeliveryStatusBadge
                           email={{

@@ -6,13 +6,14 @@ import { analyzeEmail } from "./ai-analyze";
 import { isHtmlEmail, extractEmailHtml } from "./email-html";
 import { assertR2Configured, putR2Object } from "@/lib/r2";
 import { randomUUID } from "crypto";
-import type { MailAccount } from "@prisma/client";
+import type { MailAccount, WatchedThread } from "@prisma/client";
 import {
   type CanonicalFolder,
   CANONICAL_FOLDERS,
   resolveImapPath,
 } from "./folders";
 import { buildThreadKey } from "./thread";
+import { handleIncomingForWatches } from "./watch";
 
 const MAX_PER_FOLDER = 200;
 const BACKFILL_MAX_PER_FOLDER = 500;
@@ -24,13 +25,20 @@ export type SyncOptions = {
   /** Override sync window — ignores lastSyncAt when set. */
   since?: Date;
   maxPerFolder?: number;
+  /**
+   * En false no mueve `lastSyncAt`. Lo usa el cron de hilos marcados, que solo
+   * baja INBOX: si moviera el sello, el siguiente sync completo se saltaría
+   * enviados de esos días.
+   */
+  touchLastSync?: boolean;
 };
 
 async function processMessage(
   account: MailAccount,
   uid: number,
   folder: CanonicalFolder,
-  source: Buffer
+  source: Buffer,
+  watches: WatchedThread[]
 ): Promise<boolean> {
   const existing = await prisma.inboxEmail.findUnique({
     where: { accountId_uid_folder: { accountId: account.id, uid, folder } },
@@ -136,7 +144,10 @@ async function processMessage(
     },
   });
 
-  if (shouldNotify) {
+  const watchNotified =
+    watches.length > 0 && (await handleIncomingForWatches(email, watches, account.username));
+
+  if (shouldNotify && !watchNotified) {
     await prisma.mailNotification.create({
       data: {
         userId: account.userId,
@@ -156,7 +167,8 @@ async function syncFolder(
   imapPath: string,
   canonical: CanonicalFolder,
   since: Date,
-  maxPerFolder: number
+  maxPerFolder: number,
+  watches: WatchedThread[]
 ): Promise<number> {
   let fetched = 0;
   const lock = await client.getMailboxLock(imapPath);
@@ -167,11 +179,22 @@ async function syncFolder(
       uids = uids.slice(-maxPerFolder);
     }
 
+    // Descartar de una vez los UID ya guardados: evita bajar el mensaje entero
+    // solo para descubrir que existía (el cron de hilos marcados repasa días).
+    if (uids.length > 0) {
+      const known = await prisma.inboxEmail.findMany({
+        where: { accountId: account.id, folder: canonical, uid: { in: uids } },
+        select: { uid: true },
+      });
+      const knownSet = new Set(known.map((k) => k.uid));
+      uids = uids.filter((uid) => !knownSet.has(uid));
+    }
+
     for (const uid of uids) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const msg: any = await client.fetchOne(String(uid), { source: true });
       if (!msg?.source) continue;
-      const added = await processMessage(account, uid, canonical, msg.source as Buffer);
+      const added = await processMessage(account, uid, canonical, msg.source as Buffer, watches);
       if (added) fetched++;
     }
   } finally {
@@ -204,6 +227,9 @@ export async function syncAccount(
     new Date(Date.now() - SYNC_DAYS * 24 * 60 * 60 * 1000);
   const maxPerFolder = options?.maxPerFolder ?? MAX_PER_FOLDER;
   const listed = (await client.list()).map((m) => m.path);
+  const watches = await prisma.watchedThread
+    .findMany({ where: { userId: account.userId } })
+    .catch(() => [] as WatchedThread[]);
   const folderStats: Record<string, number> = {};
   let totalFetched = 0;
 
@@ -212,7 +238,7 @@ export async function syncAccount(
       const imapPath = resolveImapPath(canonical, listed);
       if (!imapPath) continue;
       try {
-        const n = await syncFolder(client, account, imapPath, canonical, since, maxPerFolder);
+        const n = await syncFolder(client, account, imapPath, canonical, since, maxPerFolder, watches);
         folderStats[canonical] = n;
         totalFetched += n;
       } catch {
@@ -223,10 +249,12 @@ export async function syncAccount(
     await client.logout();
   }
 
-  await prisma.mailAccount.update({
-    where: { id: account.id },
-    data: { lastSyncAt: new Date() },
-  });
+  if (options?.touchLastSync !== false) {
+    await prisma.mailAccount.update({
+      where: { id: account.id },
+      data: { lastSyncAt: new Date() },
+    });
+  }
 
   return { fetched: totalFetched, folders: folderStats };
 }

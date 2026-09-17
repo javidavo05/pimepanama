@@ -43,3 +43,4 @@ Todas las migraciones se corren manualmente en **Supabase → SQL Editor**.
 | 0028 | `0028_meeting_spoken_languages.sql` | Meeting.spokenLanguages — reuniones bilingües: con más de un idioma Whisper detecta por tramo en vez de forzar uno; language queda como idioma de la minuta | 2026-09-02 | ✅ Aplicado |
 | 0029 | `0029_push_subscriptions.sql` | Web Push: tabla PushSubscription (una fila por dispositivo suscrito al PWA). Habilita el aviso de nuevo lead del formulario público en el teléfono | 2026-09-06 | ✅ Aplicado |
 | 0030 | `0030_lead_priority.sql` | Lead.priority (enum LeadPriority BAJA/MEDIA/ALTA) + Lead.priorityReason — la IA clasifica qué tan caliente está el prospecto y deja escrito por qué | 2026-09-07 | ✅ Aplicado |
+| 0031 | `0031_watched_threads.sql` | WatchedThread — conversaciones de correo marcadas como importantes; cada respuesta nueva del hilo avisa por campana y push | 2026-09-17 | ✅ Aplicado |

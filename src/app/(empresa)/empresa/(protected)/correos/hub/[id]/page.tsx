@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { EmailDetailClient } from "./email-detail-client";
 
 import { ensureMailSignaturesSeeded } from "@/lib/mail/signature-bootstrap";
+import { findWatchForEmail, serializeWatch } from "@/lib/mail/watch";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ export default async function EmailDetailPage({ params }: { params: Promise<{ id
   await ensureMailSignaturesSeeded(user.id);
   const { id } = await params;
 
-  const [email, accounts, company] = await Promise.all([
+  const [email, accounts, company, watches] = await Promise.all([
     prisma.inboxEmail.findFirst({
       where: { id, userId: user.id },
       include: {
@@ -41,8 +42,11 @@ export default async function EmailDetailPage({ params }: { params: Promise<{ id
           select: { name: true, email: true, phone: true, website: true, logoUrl: true },
         })
       : Promise.resolve(null),
+    prisma.watchedThread.findMany({ where: { userId: user.id } }),
   ]);
   if (!email) notFound();
+
+  const watch = serializeWatch(findWatchForEmail(email, watches, email.account.username));
 
   // Mark as read
   if (!email.isRead) {
@@ -83,6 +87,7 @@ export default async function EmailDetailPage({ params }: { params: Promise<{ id
       }}
         accounts={accounts}
         company={company}
+        initialWatch={watch}
       />
     </div>
   );

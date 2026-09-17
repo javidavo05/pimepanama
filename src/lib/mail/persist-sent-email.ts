@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import type { MailOutgoingAttachment } from "./outgoing-attachments";
 import { wrapBodyWithSignature } from "./signature";
 import { buildThreadKey } from "./thread";
+import { handleIncomingForWatches } from "./watch";
 
 export async function persistSentEmail(params: {
   account: MailAccount;
@@ -72,6 +73,15 @@ export async function persistSentEmail(params: {
         size: att.content.length,
       })),
     });
+  }
+
+  // Si el hilo está marcado, su Message-ID queda registrado: la respuesta a
+  // este envío casa por In-Reply-To aunque la otra parte cambie el asunto.
+  const watches = await prisma.watchedThread
+    .findMany({ where: { userId: params.userId } })
+    .catch(() => []);
+  if (watches.length > 0) {
+    await handleIncomingForWatches(sentEmail, watches, params.account.username);
   }
 
   return sentEmail;

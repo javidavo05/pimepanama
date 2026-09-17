@@ -34,6 +34,7 @@ interface HubMailShellProps {
   activeFolder: CanonicalFolder;
   folderCounts: Record<CanonicalFolder, number>;
   unreadCount: number;
+  watchedCount: number;
   filter?: string;
   searchParams: {
     q?: string;
@@ -57,6 +58,7 @@ export function HubMailShell({
   activeFolder,
   folderCounts,
   unreadCount,
+  watchedCount,
   filter,
   searchParams,
   initialQ,
@@ -98,6 +100,16 @@ export function HubMailShell({
               searchParams={searchParams}
             />
           )}
+          <UnreadBadge
+            count={watchedCount}
+            active={filter === "important"}
+            searchParams={searchParams}
+            filterValue="important"
+            label={`${watchedCount} importante${watchedCount !== 1 ? "s" : ""}`}
+            titleOn="Quitar filtro de importantes"
+            titleOff="Ver solo conversaciones marcadas como importantes"
+            tone="amber"
+          />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <button

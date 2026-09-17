@@ -179,8 +179,8 @@ export function PushToggle() {
           <p className="text-fg-mute text-[11px] font-medium">Avisos en este dispositivo</p>
           <p className="text-fg-faint text-[10px] leading-snug">
             {state.kind === "on"
-              ? "Recibes un aviso al llegar un lead nuevo, aunque el panel esté cerrado."
-              : "Te avisamos aquí cuando entre un lead nuevo, aunque el panel esté cerrado."}
+              ? "Recibes leads nuevos y respuestas a correos importantes, aunque el panel esté cerrado."
+              : "Te avisamos aquí de leads nuevos y respuestas a correos importantes, aunque el panel esté cerrado."}
           </p>
         </div>
         <button

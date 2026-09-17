@@ -9,6 +9,8 @@ import { MailDeliveryStatusBadge } from "@/components/empresa/mail/mail-delivery
 import type { ComposeAccount, CompanyPreview } from "@/components/empresa/mail/email-compose-modal";
 import { formatEmailReceivedAt } from "@/lib/format-datetime";
 import { resolveReplyRecipient } from "@/lib/mail/reply-recipient";
+import type { WatchStatus } from "@/lib/mail/watch";
+import { useThreadWatch, WatchStatusCard, WatchToggleButton } from "@/components/empresa/mail/thread-watch";
 
 const TAG_COLORS: Record<string, string> = {
   urgent: "bg-danger/15 text-danger border-danger/20",
@@ -44,6 +46,7 @@ interface EmailDetailClientProps {
   email: EmailData;
   accounts: ComposeAccount[];
   company: CompanyPreview | null;
+  initialWatch: WatchStatus;
 }
 
 function fmtBytes(b: number): string {
@@ -52,8 +55,9 @@ function fmtBytes(b: number): string {
   return `${(b / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export function EmailDetailClient({ email, accounts, company }: EmailDetailClientProps) {
+export function EmailDetailClient({ email, accounts, company, initialWatch }: EmailDetailClientProps) {
   const router = useRouter();
+  const watchState = useThreadWatch(email.id, initialWatch);
   const [replyOpen, setReplyOpen] = useState(false);
   const [threadRefreshKey, setThreadRefreshKey] = useState(0);
   const [bodyText, setBodyText] = useState(email.bodyText);
@@ -114,6 +118,7 @@ export function EmailDetailClient({ email, accounts, company }: EmailDetailClien
             )}
           </div>
           <div className="flex items-center gap-2 flex-none">
+            <WatchToggleButton state={watchState} />
             <button onClick={handleStar} className={`p-1.5 rounded-lg transition-colors ${isStarred ? "text-warn" : "text-fg-faint hover:text-warn"}`}>
               <svg className="w-4 h-4" fill={isStarred ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
@@ -205,6 +210,7 @@ export function EmailDetailClient({ email, accounts, company }: EmailDetailClien
 
         {/* AI Panel — narrow sidebar */}
         <div className="space-y-4 xl:sticky xl:top-4">
+        <WatchStatusCard state={watchState} currentEmailId={email.id} />
         <div className="bg-panel border border-line rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Análisis IA</h3>

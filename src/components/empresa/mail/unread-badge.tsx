@@ -14,9 +14,35 @@ interface UnreadBadgeProps {
     filter?: string;
     folder?: string;
   };
+  /** Valor de `filter` que activa el badge. Por defecto, no leídos. */
+  filterValue?: string;
+  label?: string;
+  titleOn?: string;
+  titleOff?: string;
+  tone?: "brand" | "amber";
 }
 
-export function UnreadBadge({ count, active, searchParams }: UnreadBadgeProps) {
+const TONES = {
+  brand: {
+    on: "bg-brand/30 text-brand-fg border border-brand/40 ring-1 ring-brand/20",
+    off: "bg-brand/20 text-brand-fg hover:bg-brand/30",
+  },
+  amber: {
+    on: "bg-amber2/25 text-amber2 border border-amber2/40 ring-1 ring-amber2/20",
+    off: "bg-amber2/10 text-amber2 hover:bg-amber2/20",
+  },
+};
+
+export function UnreadBadge({
+  count,
+  active,
+  searchParams,
+  filterValue = "unread",
+  label,
+  titleOn = "Quitar filtro de no leídos",
+  titleOff = "Ver solo no leídos (todas las bandejas)",
+  tone = "brand",
+}: UnreadBadgeProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [, startTransition] = useTransition();
@@ -24,7 +50,7 @@ export function UnreadBadge({ count, active, searchParams }: UnreadBadgeProps) {
   if (count <= 0) return null;
 
   function toggleUnread() {
-    const nextFilter = active ? "" : "unread";
+    const nextFilter = active ? "" : filterValue;
     const params = new URLSearchParams();
     if (searchParams.q) params.set("q", searchParams.q);
     if (searchParams.dateFrom) params.set("dateFrom", searchParams.dateFrom);
@@ -40,14 +66,13 @@ export function UnreadBadge({ count, active, searchParams }: UnreadBadgeProps) {
     <button
       type="button"
       onClick={toggleUnread}
-      title={active ? "Quitar filtro de no leídos" : "Ver solo no leídos (todas las bandejas)"}
+      title={active ? titleOn : titleOff}
+      aria-pressed={active}
       className={`text-xs rounded-full px-2 py-0.5 font-medium transition-all ${
-        active
-          ? "bg-brand/30 text-brand-fg border border-brand/40 ring-1 ring-brand/20"
-          : "bg-brand/20 text-brand-fg hover:bg-brand/30"
+        active ? TONES[tone].on : TONES[tone].off
       }`}
     >
-      {count} sin leer
+      {label ?? `${count} sin leer`}
     </button>
   );
 }

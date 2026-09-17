@@ -11,6 +11,7 @@ import {
 } from "@/lib/mail/folders";
 import { extractEmailAddress } from "@/lib/mail/thread";
 import { mailBodyPreview } from "@/lib/mail/body-format";
+import { findWatchForEmail } from "@/lib/mail/watch";
 
 export const metadata = { title: "Bandeja de entrada — Pime Suite" };
 export const dynamic = "force-dynamic";
@@ -40,7 +41,7 @@ export default async function HubPage({
   const filter = sp.filter;
   const activeFolder = parseFolderParam(sp.folder);
 
-  const [accounts, clients, globalUnreadCount, folderGroups, company] = await Promise.all([
+  const [accounts, clients, globalUnreadCount, folderGroups, company, watches] = await Promise.all([
     prisma.mailAccount.findMany({
       where: { userId: user.id, active: true },
       orderBy: { createdAt: "asc" },
@@ -66,6 +67,17 @@ export default async function HubPage({
           select: { name: true, email: true, phone: true, website: true, logoUrl: true },
         })
       : Promise.resolve(null),
+    prisma.watchedThread.findMany({ where: { userId: user.id } }),
+  ]);
+
+  // Filtro "Importantes": la base trae candidatos por asunto (o el correo
+  // marcado) y el casado fino por contraparte / Message-ID se hace abajo.
+  const importantFilter = filter === "important";
+  const watchCandidates = watches.flatMap((w) => [
+    { id: w.emailId },
+    ...(w.normSubject
+      ? [{ subject: { contains: w.normSubject, mode: "insensitive" as const } }]
+      : []),
   ]);
 
   const folderCounts = Object.fromEntries(
@@ -82,6 +94,7 @@ export default async function HubPage({
       folder: activeFolder,
       ...(filter === "unread" && activeFolder === "INBOX" && { isRead: false }),
       ...(filter === "starred" && { isStarred: true }),
+      ...(importantFilter && { AND: [{ OR: watchCandidates.length > 0 ? watchCandidates : [{ id: "__none__" }] }] }),
       ...(tag && { aiTags: { has: tag } }),
       ...(dateFrom && { receivedAt: { gte: dateFrom } }),
       ...(dateTo && { receivedAt: dateTo ? { ...(dateFrom ? { gte: dateFrom } : {}), lte: dateTo } : undefined }),
@@ -99,9 +112,10 @@ export default async function HubPage({
       id: true, subject: true, fromName: true, fromEmail: true, toAddresses: true,
       receivedAt: true, isRead: true, isStarred: true, aiTags: true,
       aiSummary: true, folder: true, messageId: true,
+      inReplyTo: true, referencesHeader: true,
       deliveryStatus: true, resendId: true, bounceReason: true,
       bodyText: true,
-      account: { select: { id: true, label: true } },
+      account: { select: { id: true, label: true, username: true } },
       _count: { select: { attachments: true } },
     },
     orderBy: { receivedAt: "desc" },
@@ -117,13 +131,25 @@ export default async function HubPage({
     clients.flatMap((c) => (c.email ? [[c.email.toLowerCase(), c]] : []))
   );
 
-  const serialized = emails.map((e) => {
+  const rows = emails
+    .map((e) => ({
+      email: e,
+      isWatched: watches.length > 0 && !!findWatchForEmail(e, watches, e.account.username),
+    }))
+    .filter((r) => !importantFilter || r.isWatched);
+
+  const serialized = rows.map(({ email: e, isWatched }) => {
+    // Las cabeceras de hilo solo sirven para casar en servidor; no viajan al cliente.
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { inReplyTo: _inReplyTo, referencesHeader: _references, ...rest } = e;
     const counterparty =
       e.folder === "SENT" && e.toAddresses[0]
         ? extractEmailAddress(e.toAddresses[0])
         : e.fromEmail.toLowerCase();
     return {
-      ...e,
+      ...rest,
+      account: { id: e.account.id, label: e.account.label },
+      isWatched,
       receivedAt: e.receivedAt.toISOString(),
       bodyPreview: e.folder === "SENT" ? mailBodyPreview(e.bodyText) : null,
       clientMatch: clientByEmail[counterparty] ?? null,
@@ -153,6 +179,7 @@ export default async function HubPage({
           activeFolder={activeFolder}
           folderCounts={folderCounts}
           unreadCount={globalUnreadCount}
+          watchedCount={watches.length}
           filter={filter}
           searchParams={{ q, dateFrom: sp.dateFrom, dateTo: sp.dateTo, tag, filter, folder: sp.folder }}
           initialQ={q}
