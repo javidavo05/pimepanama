@@ -47,7 +47,7 @@ export default async function ReunionesPage({
 
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-fg text-2xl font-semibold tracking-tight">Reuniones</h1>
           <p className="text-fg-dim text-sm mt-1">
@@ -57,12 +57,20 @@ export default async function ReunionesPage({
             )}
           </p>
         </div>
-        <Link
-          href="/empresa/reuniones/nueva"
-          className="px-4 py-2 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-all"
-        >
-          🎙️ Grabar reunión
-        </Link>
+        <div className="flex items-center gap-2 shrink-0">
+          <Link
+            href="/empresa/reuniones/notas-de-voz"
+            className="px-4 py-2 border border-line-mid hover:border-line-loud text-fg-mute hover:text-fg text-sm font-medium rounded-lg transition-all"
+          >
+            Notas de voz
+          </Link>
+          <Link
+            href="/empresa/reuniones/nueva"
+            className="px-4 py-2 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-all"
+          >
+            🎙️ Grabar reunión
+          </Link>
+        </div>
       </div>
 
       <PendingOfflineMeetings />

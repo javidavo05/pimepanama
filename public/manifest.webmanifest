@@ -47,6 +47,19 @@
           "type": "image/png"
         }
       ]
+    },
+    {
+      "name": "Notas de voz",
+      "short_name": "Notas de voz",
+      "description": "Pasa notas de voz de WhatsApp a texto",
+      "url": "/empresa/reuniones/notas-de-voz",
+      "icons": [
+        {
+          "src": "/icons/empresa-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }
