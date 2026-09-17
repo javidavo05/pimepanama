@@ -70,3 +70,7 @@ photorec.*
 GATES.md
 *.code-workspace
 login-light.png
+
+# Credenciales locales por proyecto (nunca se commitean)
+.claude/settings.local.json
+.pime/preflight.json

@@ -13,7 +13,7 @@ const LOOKBACK_MS = 2 * 24 * 60 * 60 * 1000;
  * que la respuesta avise aunque nadie tenga el hub abierto. El aviso en sí lo
  * dispara el sync (handleIncomingForWatches).
  *
- * Lo llama un scheduler externo cada pocos minutos (GitHub Actions): el plan
+ * Lo llama pg_cron desde Supabase cada 10 minutos (migración 0032): el plan
  * Hobby de Vercel solo permite crons diarios.
  */
 async function run(req: NextRequest) {
