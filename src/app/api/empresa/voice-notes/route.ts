@@ -5,12 +5,12 @@ import { withEmpresaRoute } from "@/app/api/empresa/_route";
 import { prisma } from "@/lib/prisma";
 import { calcGptCost, calcWhisperCost } from "@/lib/ai-pricing";
 import { applyGlossary, WHISPER_PROMPT } from "@/lib/voice-notes/glossary";
+import { deleteR2Object, getR2Object } from "@/lib/r2";
+import { MAX_VOICE_NOTE_BYTES, voiceNoteKeyPrefix } from "@/lib/voice-notes/storage";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
-/** Tope de Whisper por archivo. Una nota de WhatsApp de 10 min pesa ~2 MB. */
-const MAX_BYTES = 25 * 1024 * 1024;
 /** Bajo este avg_logprob un tramo se marca como dudoso (mismo umbral que la skill). */
 const LOW_CONFIDENCE = -1.0;
 const INTERPRET_MODEL = "gpt-4o";
@@ -48,13 +48,33 @@ Reglas:
 
 export const POST = withEmpresaRoute(async (request) => {
   const user = await requireEmpresaUser(request);
-  const formData = await request.formData();
-  const audio = formData.get("audio");
+  const { key, name, type } = (await request.json().catch(() => ({}))) as {
+    key?: string;
+    name?: string;
+    type?: string;
+  };
 
-  if (!(audio instanceof File) || audio.size === 0) {
+  // El audio ya está en R2 (ver upload-url): aquí solo llega la clave.
+  if (typeof key !== "string" || !key.startsWith(voiceNoteKeyPrefix(user.id))) {
     return NextResponse.json({ error: "No llegó ningún audio." }, { status: 400 });
   }
-  if (audio.size > MAX_BYTES) {
+
+  let buffer: Buffer;
+  try {
+    const object = await getR2Object(key);
+    buffer = Buffer.from(await object.Body!.transformToByteArray());
+  } catch (err) {
+    console.error("[voice-notes] r2 get", err);
+    return NextResponse.json({ error: "No se encontró el audio subido. Reintenta." }, { status: 404 });
+  } finally {
+    // La nota no se guarda: se borra en cuanto está en memoria.
+    await deleteR2Object(key).catch((err) => console.error("[voice-notes] r2 delete", err));
+  }
+
+  if (buffer.length === 0) {
+    return NextResponse.json({ error: "El archivo llegó vacío." }, { status: 400 });
+  }
+  if (buffer.length > MAX_VOICE_NOTE_BYTES) {
     return NextResponse.json(
       { error: "Pesa más de 25 MB. Para una grabación larga usa «Grabar reunión → Subir audio»." },
       { status: 413 }
@@ -62,13 +82,12 @@ export const POST = withEmpresaRoute(async (request) => {
   }
 
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  const buffer = Buffer.from(await audio.arrayBuffer());
 
   let transcription: OpenAI.Audio.TranscriptionVerbose;
   const started = Date.now();
   try {
     transcription = await openai.audio.transcriptions.create({
-      file: await toFile(buffer, whisperFileName(audio.name), { type: audio.type || "audio/ogg" }),
+      file: await toFile(buffer, whisperFileName(name ?? key), { type: type || "audio/ogg" }),
       model: "whisper-1",
       language: "es",
       prompt: WHISPER_PROMPT,

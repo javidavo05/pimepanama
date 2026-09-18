@@ -39,6 +39,26 @@ function asPlainText(r: VoiceNoteResult): string {
   return parts.join("\n\n");
 }
 
+/** POST con JSON; si falla, lanza el mensaje del servidor o uno según el código. */
+async function postJson<T>(url: string, body: unknown): Promise<T> {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data) {
+    const fallback =
+      res.status === 401
+        ? "Tu sesión expiró. Recarga la página e inicia sesión."
+        : res.status === 413
+          ? "La nota pesa demasiado para procesarla."
+          : "No se pudo transcribir esta nota.";
+    throw new Error(data?.error ?? fallback);
+  }
+  return data as T;
+}
+
 export function VoiceNotes() {
   const [notes, setNotes] = useState<Note[]>([]);
   const [dragging, setDragging] = useState(false);
@@ -49,13 +69,23 @@ export function VoiceNotes() {
   async function transcribe(id: string, file: File) {
     update(id, { id, file, status: "transcribing" });
     try {
-      const body = new FormData();
-      body.append("audio", file);
-      const res = await fetch("/api/empresa/voice-notes", { method: "POST", body });
-      const data = await res.json().catch(() => null);
-      if (!res.ok || !data) {
-        throw new Error(data?.error ?? "No se pudo transcribir esta nota.");
-      }
+      // El audio va directo a R2: Vercel corta los cuerpos de más de ~4.5 MB.
+      const target = await postJson<{ url: string; key: string; contentType: string }>(
+        "/api/empresa/voice-notes/upload-url",
+        { name: file.name, type: file.type, size: file.size }
+      );
+      const put = await fetch(target.url, {
+        method: "PUT",
+        headers: { "Content-Type": target.contentType },
+        body: file,
+      });
+      if (!put.ok) throw new Error("No se pudo subir la nota. Reintenta.");
+
+      const data = await postJson<VoiceNoteResult>("/api/empresa/voice-notes", {
+        key: target.key,
+        name: file.name,
+        type: file.type,
+      });
       update(id, { id, file, status: "done", result: data });
     } catch (err) {
       const message =
@@ -113,7 +143,7 @@ export function VoiceNotes() {
           {notes.length ? "Transcribir otra nota" : "Elegir notas de voz"}
         </span>
         <p className="text-fg-faint text-xs mt-3">
-          O arrástralas aquí. Puedes soltar varias a la vez · ogg, opus, m4a, mp3 o wav
+          O arrástralas aquí. Puedes soltar varias a la vez · ogg, opus, m4a, mp4, mp3 o wav
         </p>
       </label>
 
