@@ -5,6 +5,7 @@ import { buildProjectContext, withManualContext, withRepoContext } from "@/lib/m
 import { findEchoes, withoutEchoes } from "@/lib/meetings/echo";
 import { resolveMeetingStatus } from "@/lib/meetings/meeting-status";
 import {
+  describeAiError,
   getOpenAI,
   logMeetingAiUsage,
   runActionItems,
@@ -353,7 +354,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           where: { id: meetingId },
           data: {
             status: "FAILED",
-            errorMessage: err instanceof Error ? err.message.slice(0, 500) : "Error desconocido",
+            errorMessage: describeAiError(err),
           },
         })
         .catch(() => undefined);

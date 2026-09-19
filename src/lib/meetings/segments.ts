@@ -1,5 +1,6 @@
 import type { MeetingSegment as SegmentRow } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { isHallucination } from "./hallucinations";
 import type { MeetingChannel, MeetingSegment } from "./types";
 
 /**
@@ -52,7 +53,9 @@ export async function loadSegments(meetingId: string): Promise<MeetingSegment[]>
     where: { meetingId },
     orderBy: { startMs: "asc" },
   });
-  return rows.map(toDomain);
+  // Reuniones transcritas antes del filtro todavía guardan los créditos que
+  // Whisper inventa en los silencios; así no llegan ni a la vista ni a la minuta.
+  return rows.map(toDomain).filter((s) => !isHallucination(s.text));
 }
 
 export function countSegments(meetingId: string): Promise<number> {

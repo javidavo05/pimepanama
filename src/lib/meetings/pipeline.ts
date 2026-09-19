@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { prisma } from "@/lib/prisma";
 import { calcGptCost } from "@/lib/ai-pricing";
+import { acquireSlot, disableLane, estimateInputTokens, releaseSlot, settleSlot } from "./rate-limit";
 import {
   actionItemsPrompt,
   askPrompt,
@@ -41,7 +42,8 @@ import type {
   TechnicalMinutes,
 } from "./types";
 
-const MODEL = "gpt-4o";
+/** Etiqueta del registro de uso: las llamadas se reparten entre ambos modelos. */
+const MODEL = "gpt-4.1/gpt-4o";
 /** Segmentos por llamada de diarización — acota tokens de salida y permite arrastrar el roster. */
 const DIARIZATION_BATCH = 100;
 /** Tope de caracteres de transcripción por llamada de análisis (~40k tokens de entrada). */
@@ -76,7 +78,14 @@ const TECH_MERGE_PLAN_TOKENS = 4_000;
  * multiplicado por cada tema encarecería la etapa sin cambiar la respuesta.
  */
 const TOPIC_EXPANSION_TOKENS = 3_000;
-const TOPIC_EXPANSION_CONCURRENCY = 6;
+const TOPIC_EXPANSION_CONCURRENCY = 3;
+/**
+ * La función muere a los 300 s. Esperando turno por el tope de tokens, una
+ * reunión larga puede no llegar a profundizar todos los temas: pasado este
+ * tiempo los que faltan se quedan con lo de la primera pasada y la minuta se
+ * guarda igual, en vez de perder la etapa entera por timeout.
+ */
+const EXPANSION_DEADLINE_MS = 220_000;
 const TOPIC_WINDOW_CHARS = 30_000;
 const EXPANSION_CONTEXT_CHARS = 8_000;
 
@@ -109,7 +118,21 @@ export function getOpenAI(): OpenAI {
       headers: { "Content-Type": "application/json" },
     });
   }
-  return new OpenAI({ apiKey });
+  // La cuenta tiene un tope de tokens por minuto (30k en gpt-4o) y las etapas
+  // lanzan varias llamadas en paralelo: chocar con el tope es lo normal en una
+  // reunión larga, no un error. El SDK reintenta los 429 esperando lo que
+  // OpenAI indica en `retry-after`; con 2 reintentos (el default) se rendía.
+  return new OpenAI({ apiKey, maxRetries: 8 });
+}
+
+/** Mensaje para el detalle de la reunión cuando una etapa falla. */
+export function describeAiError(err: unknown): string {
+  if (err instanceof OpenAI.RateLimitError) {
+    return err.code === "insufficient_quota"
+      ? "Se acabó el saldo de OpenAI. Recarga créditos en platform.openai.com y reintenta la etapa."
+      : "OpenAI estuvo al tope de uso por minuto de la cuenta. Espera un minuto y reintenta la etapa.";
+  }
+  return err instanceof Error ? err.message.slice(0, 500) : "Error desconocido";
 }
 
 async function jsonCall<T>(
@@ -118,17 +141,7 @@ async function jsonCall<T>(
   user: string,
   maxTokens: number
 ): Promise<AiCallResult<T>> {
-  const resp = await openai.chat.completions.create({
-    model: MODEL,
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: user },
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.25,
-    max_tokens: maxTokens,
-  });
-
+  const resp = await rateLimitedCompletion(openai, system, user, maxTokens);
   const inputTokens = resp.usage?.prompt_tokens ?? 0;
   const outputTokens = resp.usage?.completion_tokens ?? 0;
 
@@ -150,7 +163,46 @@ async function jsonCall<T>(
     data = {} as T;
   }
 
-  return { data, costUSD: calcGptCost(inputTokens, outputTokens), inputTokens, outputTokens };
+  return { data, costUSD: calcGptCost(inputTokens, outputTokens, resp.model), inputTokens, outputTokens };
+}
+
+/**
+ * Una llamada al modelo respetando el tope de tokens por minuto de la cuenta:
+ * espera su turno en vez de chocar con el 429. Ver `rate-limit.ts`.
+ */
+async function rateLimitedCompletion(
+  openai: OpenAI,
+  system: string,
+  user: string,
+  maxTokens: number
+): Promise<OpenAI.Chat.Completions.ChatCompletion> {
+  for (;;) {
+    const slot = await acquireSlot(estimateInputTokens(system, user), maxTokens);
+    try {
+      const { data, response } = await openai.chat.completions
+        .create({
+          model: slot.model,
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+          response_format: { type: "json_object" },
+          temperature: 0.25,
+          max_tokens: slot.maxTokens,
+        })
+        .withResponse();
+      settleSlot(slot, data.usage?.total_tokens, response.headers);
+      return data;
+    } catch (err) {
+      releaseSlot(slot);
+      // La cuenta no tiene ese modelo: se saca del reparto y se usa el otro.
+      if (err instanceof OpenAI.NotFoundError || (err instanceof OpenAI.APIError && err.code === "model_not_found")) {
+        disableLane(slot.model);
+        continue;
+      }
+      throw err;
+    }
+  }
 }
 
 export async function logMeetingAiUsage(
@@ -259,6 +311,7 @@ export interface MinutesResult {
  * de N pasadas se contabilice como una sola.
  */
 class CostTally {
+  readonly startedAt = Date.now();
   costUSD = 0;
   inputTokens = 0;
   outputTokens = 0;
@@ -470,6 +523,7 @@ async function expandTopics(
   const topics = await mapLimit(technical.topics, TOPIC_EXPANSION_CONCURRENCY, async (topic, i) => {
     const window = windows[i];
     if (!window) return topic;
+    if (Date.now() - tally.startedAt > EXPANSION_DEADLINE_MS) return topic;
     const slice = clampTranscript(transcriptWindow(diarizedText, window.from, window.to), TOPIC_WINDOW_CHARS);
     if (!slice) return topic;
     try {

@@ -6,6 +6,7 @@ import { generatePresignedDownloadUrl, putR2Object } from "@/lib/r2";
 import { calcWhisperCost } from "@/lib/ai-pricing";
 import { getOpenAI } from "@/lib/meetings/pipeline";
 import { withoutEchoes } from "@/lib/meetings/echo";
+import { isHallucination } from "@/lib/meetings/hallucinations";
 import { appendSegments, flatten, loadSegments } from "@/lib/meetings/segments";
 import {
   parseAudioChunks,
@@ -45,6 +46,8 @@ interface WhisperSegment {
   start: number;
   end: number;
   text: string;
+  no_speech_prob?: number;
+  avg_logprob?: number;
 }
 
 /**
@@ -133,6 +136,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const raw = transcription as unknown as { segments?: WhisperSegment[]; text?: string; duration?: number };
     const newSegments: MeetingSegment[] = (raw.segments ?? [])
+      // Tramos en silencio: Whisper rellena con créditos de subtítulos
+      // («Amara.org», «Gracias por ver») que nadie dijo.
+      .filter((s) => !isHallucination(String(s.text ?? ""), s))
       .map((s) => ({
         start: offsetMs + Math.round((Number(s.start) || 0) * 1000),
         end: offsetMs + Math.round((Number(s.end) || 0) * 1000),
@@ -142,7 +148,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       }))
       .filter((s) => s.text.length > 0);
 
-    const chunkText = (raw.text ?? newSegments.map((s) => s.text).join(" ")).trim();
+    const chunkText = newSegments.map((s) => s.text).join(" ").trim();
     const chunkMs = Math.round((Number(raw.duration) || 0) * 1000);
 
     // Insertar solo las filas de este tramo: la transcripción anterior no se

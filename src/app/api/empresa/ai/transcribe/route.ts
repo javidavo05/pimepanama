@@ -3,6 +3,7 @@ import OpenAI, { toFile } from "openai";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { calcWhisperCost } from "@/lib/ai-pricing";
+import { stripHallucinations } from "@/lib/meetings/hallucinations";
 
 export const runtime = "nodejs";
 
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
       },
     });
 
-    return NextResponse.json({ transcript: response, costUSD });
+    return NextResponse.json({ transcript: stripHallucinations(String(response)), costUSD });
   } catch (err) {
     if (err instanceof Response) return err;
     console.error("Transcribe error:", err);

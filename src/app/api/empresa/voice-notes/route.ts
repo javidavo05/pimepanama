@@ -5,6 +5,7 @@ import { withEmpresaRoute } from "@/app/api/empresa/_route";
 import { prisma } from "@/lib/prisma";
 import { calcGptCost, calcWhisperCost } from "@/lib/ai-pricing";
 import { applyGlossary, WHISPER_PROMPT } from "@/lib/voice-notes/glossary";
+import { isHallucination } from "@/lib/meetings/hallucinations";
 import { deleteR2Object, getR2Object } from "@/lib/r2";
 import { MAX_VOICE_NOTE_BYTES, voiceNoteKeyPrefix } from "@/lib/voice-notes/storage";
 
@@ -102,8 +103,11 @@ export const POST = withEmpresaRoute(async (request) => {
   }
 
   const durationSec = transcription.duration ?? 0;
-  const { text, corrections } = applyGlossary(transcription.text.trim());
-  const doubtful = (transcription.segments ?? [])
+  // Sin los créditos que Whisper inventa en los silencios («Amara.org»…).
+  const spoken = (transcription.segments ?? []).filter((s) => !isHallucination(s.text, s));
+  const rawText = transcription.segments ? spoken.map((s) => s.text.trim()).join(" ") : transcription.text;
+  const { text, corrections } = applyGlossary(rawText.trim());
+  const doubtful = spoken
     .filter((s) => s.avg_logprob < LOW_CONFIDENCE && s.text.trim())
     .map((s) => `${mmss(s.start)}–${mmss(s.end)}: ${applyGlossary(s.text.trim()).text}`);
 
