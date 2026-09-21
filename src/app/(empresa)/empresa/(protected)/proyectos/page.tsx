@@ -1,104 +1,146 @@
 import Link from "next/link";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
+import { loadTaskWorkspace } from "@/lib/tasks";
+import { TaskWorkspace } from "@/components/empresa/tasks/task-workspace";
+import { TaskOverview } from "@/components/empresa/tasks/task-overview";
+import { ProjectsTable, type ProjectRow } from "./projects-table";
 
 export const metadata = { title: "Proyectos — Pime Suite" };
 export const dynamic = "force-dynamic";
 
-const STATUS_LABEL: Record<string, string> = {
-  ACTIVE: "Activo", PAUSED: "Pausado", COMPLETED: "Completado", CANCELLED: "Cancelado",
-};
-const STATUS_COLOR: Record<string, string> = {
-  ACTIVE: "bg-ok/15 text-ok border-ok/20",
-  PAUSED: "bg-warn/15 text-warn border-warn/20",
-  COMPLETED: "bg-info/15 text-info border-info/20",
-  CANCELLED: "bg-fill-2 text-fg-dim border-line",
-};
+type Vista = "proyectos" | "tareas";
 
-export default async function ProyectosPage() {
+export default async function ProyectosPage({ searchParams }: { searchParams: Promise<{ vista?: string }> }) {
+  const { vista: rawVista } = await searchParams;
+  const vista: Vista = rawVista === "tareas" ? "tareas" : "proyectos";
   const user = await getEmpresaUser();
 
-  const projects = await prisma.project.findMany({
-    where: { userId: user.id },
-    include: {
-      client: { select: { name: true, company: true } },
-      clients: { include: { client: { select: { id: true, name: true, company: true } } } },
-      _count: { select: { documents: true, contracts: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+  const [projectCount, openTaskCount] = await Promise.all([
+    prisma.project.count({ where: { userId: user.id } }),
+    prisma.task.count({ where: { userId: user.id, completed: false, parentId: null } }),
+  ]);
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
+    <div className="max-w-6xl mx-auto">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+        <div className="min-w-0">
           <h1 className="text-fg text-2xl font-semibold tracking-tight">Proyectos</h1>
-          <p className="text-fg-dim text-sm mt-0.5">{projects.length} proyecto{projects.length !== 1 ? "s" : ""}</p>
+          <p className="text-fg-dim text-sm mt-1">
+            {projectCount} proyecto{projectCount !== 1 ? "s" : ""} · {openTaskCount} tarea{openTaskCount !== 1 ? "s" : ""} pendiente{openTaskCount !== 1 ? "s" : ""}
+          </p>
         </div>
-        <Link href="/empresa/proyectos/nuevo"
-          className="px-4 py-2 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-all">
-          + Nuevo proyecto
+        <Link
+          href="/empresa/proyectos/nuevo"
+          // En la pestaña de tareas la acción principal es agregar una tarea
+          className={`px-4 min-h-11 inline-flex items-center text-sm font-semibold rounded-lg transition-colors ${
+            vista === "tareas"
+              ? "bg-fill border border-line text-fg-mute hover:text-fg hover:border-line-loud"
+              : "bg-brand hover:bg-brand-hi text-on-brand"
+          }`}
+        >
+          Crear proyecto
         </Link>
       </div>
 
-      {projects.length === 0 ? (
-        <div className="bg-panel border border-line rounded-2xl p-12 text-center space-y-4">
-          <p className="text-fg-dim font-medium">No tienes proyectos aún</p>
-          <p className="text-fg-dim text-sm">Crea tu primer proyecto para vincular cotizaciones, contratos y pagos.</p>
-          <Link href="/empresa/proyectos/nuevo"
-            className="inline-block px-5 py-2 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-all">
-            Crear primer proyecto
+      <nav aria-label="Vistas de proyectos" className="flex gap-6 border-b border-line mb-6">
+        {(
+          [
+            { key: "proyectos", label: "Proyectos", href: "/empresa/proyectos", count: projectCount },
+            { key: "tareas", label: "Tareas", href: "/empresa/proyectos?vista=tareas", count: openTaskCount },
+          ] as const
+        ).map((tab) => (
+          <Link
+            key={tab.key}
+            href={tab.href}
+            aria-current={vista === tab.key ? "page" : undefined}
+            className={`-mb-px flex items-center gap-2 min-h-11 border-b-2 text-sm font-medium transition-colors ${
+              vista === tab.key ? "border-brand text-fg" : "border-transparent text-fg-dim hover:text-fg-mute"
+            }`}
+          >
+            {tab.label}
+            <span className="text-xs text-fg-faint tabular-nums">{tab.count}</span>
           </Link>
-        </div>
-      ) : (
-        <div className="grid gap-3">
-          {projects.map((p) => (
-            <Link key={p.id} href={`/empresa/proyectos/${p.id}`}
-              className="bg-panel border border-line hover:border-line-mid rounded-xl p-5 flex items-start gap-4 transition-all group">
-              <div className="w-10 h-10 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center text-lg shrink-0">
-                🗂️
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h2 className="text-fg font-medium truncate group-hover:text-brand-fg transition-colors">{p.name}</h2>
-                  <span className={`px-2 py-0.5 text-[10px] rounded border ${STATUS_COLOR[p.status]}`}>
-                    {STATUS_LABEL[p.status]}
-                  </span>
-                </div>
-                {p.clients.length > 0 ? (
-                  <p className="text-fg-dim text-sm truncate">
-                    {p.clients.map((pc) => pc.client.name).join(" · ")}
-                  </p>
-                ) : p.client?.name ? (
-                  <p className="text-fg-dim text-sm truncate">
-                    {p.client.name}{p.client.company ? ` — ${p.client.company}` : ""}
-                  </p>
-                ) : (
-                  <p className="text-warn text-sm truncate">Sin cliente asignado</p>
-                )}
-                <div className="flex items-center gap-4 mt-2">
-                  <span className="text-fg-faint text-xs">{p._count.documents} doc.</span>
-                  <span className="text-fg-faint text-xs">{p._count.contracts} contrato{p._count.contracts !== 1 ? "s" : ""}</span>
-                  {p.totalBudget && (
-                    <span className="text-sand-fg text-xs font-mono">
-                      ${Number(p.totalBudget).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                    </span>
-                  )}
-                  {p.startDate && (
-                    <span className="text-fg-faint text-xs">
-                      {new Date(p.startDate).toLocaleDateString("es-PA")}
-                      {p.endDate ? ` → ${new Date(p.endDate).toLocaleDateString("es-PA")}` : ""}
-                    </span>
-                  )}
-                </div>
-              </div>
-              <svg className="w-4 h-4 text-fg-faint group-hover:text-fg-faint transition-colors shrink-0 mt-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          ))}
-        </div>
-      )}
+        ))}
+      </nav>
+
+      {vista === "tareas" ? <TasksTab userId={user.id} /> : <ProjectsTab userId={user.id} />}
     </div>
   );
+}
+
+async function TasksTab({ userId }: { userId: string }) {
+  const { tasks, projects } = await loadTaskWorkspace(userId);
+  return (
+    <TaskWorkspace tasks={tasks} projects={projects}>
+      <TaskOverview defaultGroupBy="project" />
+    </TaskWorkspace>
+  );
+}
+
+async function ProjectsTab({ userId }: { userId: string }) {
+  const [projects, taskCounts, nextTasks] = await Promise.all([
+    prisma.project.findMany({
+      where: { userId },
+      include: {
+        client: { select: { name: true, company: true } },
+        clients: { include: { client: { select: { name: true, company: true } } } },
+      },
+      orderBy: { updatedAt: "desc" },
+    }),
+    prisma.task.groupBy({
+      by: ["projectId", "completed"],
+      where: { userId, projectId: { not: null }, parentId: null },
+      _count: { _all: true },
+    }),
+    // La próxima entrega pendiente de cada proyecto
+    prisma.task.findMany({
+      where: { userId, projectId: { not: null }, parentId: null, completed: false, dueDate: { not: null } },
+      select: { projectId: true, title: true, dueDate: true, allDay: true },
+      orderBy: { dueDate: "asc" },
+      distinct: ["projectId"],
+    }),
+  ]);
+
+  if (projects.length === 0) {
+    return (
+      <div className="bg-panel border border-line rounded-xl px-6 py-12 text-center">
+        <p className="text-fg-mute font-medium">Todavía no tienes proyectos</p>
+        <p className="text-fg-dim text-sm mt-1 max-w-md mx-auto leading-relaxed">
+          Un proyecto reúne a su cliente, sus tareas, cotizaciones, contratos y pagos en un solo lugar.
+        </p>
+        <Link
+          href="/empresa/proyectos/nuevo"
+          className="inline-flex items-center mt-6 px-4 min-h-11 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-colors"
+        >
+          Crear el primer proyecto
+        </Link>
+      </div>
+    );
+  }
+
+  const rows: ProjectRow[] = projects.map((p) => {
+    const counts = taskCounts.filter((c) => c.projectId === p.id);
+    const done = counts.find((c) => c.completed)?._count._all ?? 0;
+    const open = counts.find((c) => !c.completed)?._count._all ?? 0;
+    const next = nextTasks.find((t) => t.projectId === p.id);
+    const clientNames =
+      p.clients.length > 0
+        ? p.clients.map((pc) => pc.client.company || pc.client.name)
+        : p.client
+          ? [p.client.company || p.client.name]
+          : [];
+    return {
+      id: p.id,
+      name: p.name,
+      status: p.status,
+      clients: clientNames,
+      done,
+      total: done + open,
+      endDate: p.endDate?.toISOString() ?? null,
+      next: next ? { title: next.title, dueDate: next.dueDate!.toISOString(), allDay: next.allDay } : null,
+    };
+  });
+
+  return <ProjectsTable rows={rows} />;
 }

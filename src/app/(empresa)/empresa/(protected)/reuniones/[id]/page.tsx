@@ -9,6 +9,8 @@ import {
 import { loadSegments } from "@/lib/meetings/segments";
 import type { ExecutiveMinutes } from "@/lib/meetings/types";
 import { parseTechnicalMinutes } from "@/lib/meetings/technical";
+import { loadTaskWorkspace } from "@/lib/tasks";
+import { TaskWorkspace } from "@/components/empresa/tasks/task-workspace";
 import { MeetingDetail } from "./meeting-detail";
 
 export const dynamic = "force-dynamic";
@@ -51,8 +53,18 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
 
   if (!meeting) notFound();
 
+  // Las tareas del proyecto (y las que salieron de esta reunión aunque no
+  // tenga proyecto): los pendientes muestran su estado real y se pueden
+  // completar desde aquí.
+  const linkedTaskIds = [
+    ...meeting.actionItems.map((i) => i.taskId),
+    meeting.nextMeetingTaskId,
+  ].filter((x): x is string => Boolean(x));
+  const workspace = await loadTaskWorkspace(user.id, meeting.projectId, linkedTaskIds);
+
   return (
     <div className="max-w-4xl mx-auto">
+      <TaskWorkspace tasks={workspace.tasks} projects={workspace.projects}>
       <MeetingDetail
         meeting={serializeMeeting(meeting, segments.length)}
         segments={segments}
@@ -66,6 +78,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
         technical={parseTechnicalMinutes(meeting.technicalMinutes)}
         hasRepo={meeting.project?.repoSnapshot != null}
       />
+      </TaskWorkspace>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { withEmpresaIdRoute } from "@/app/api/empresa/_route";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { serializeMeetingActionItem } from "@/lib/meetings/serialize";
+import { TASK_INCLUDE, resolveTaskPlacement, serializeTask } from "@/lib/tasks";
 
 export const runtime = "nodejs";
 
@@ -13,10 +14,12 @@ function buildTaskDescription(item: {
   touchpoints: string[];
   meetingTitle: string;
   meetingDate: Date;
+  /** Los criterios viajan como subtareas: no se repiten en la descripción */
+  criteriaAsSubtasks: boolean;
 }): string {
   const parts: string[] = [];
   if (item.detail) parts.push(item.detail);
-  if (item.acceptance.length > 0) {
+  if (item.acceptance.length > 0 && !item.criteriaAsSubtasks) {
     parts.push(`Criterios de aceptación:\n${item.acceptance.map((a) => `- ${a}`).join("\n")}`);
   }
   if (item.touchpoints.length > 0) {
@@ -31,6 +34,10 @@ function buildTaskDescription(item: {
  * Materializa pendientes de la reunión en el módulo de Tareas (y opcionalmente
  * como entregables del proyecto). Es idempotente por pendiente: uno que ya tiene
  * `taskId` se salta en vez de duplicarse.
+ *
+ * La tarea cae en el proyecto de la reunión y, si se pide, en una de sus
+ * secciones. Los criterios de aceptación pueden bajar como subtareas: así
+ * "terminado" se puede marcar criterio por criterio.
  */
 export const POST = withEmpresaIdRoute(async (req, { params }) => {
   const user = await requireEmpresaUser(req);
@@ -45,6 +52,13 @@ export const POST = withEmpresaIdRoute(async (req, { params }) => {
   const body = await req.json().catch(() => ({}));
   const itemIds: string[] = Array.isArray(body.itemIds) ? body.itemIds.map(String) : [];
   const asDeliverables = body.asDeliverables === true;
+  const criteriaAsSubtasks = body.criteriaAsSubtasks !== false;
+  const placement = await resolveTaskPlacement(
+    user.id,
+    meeting.projectId,
+    typeof body.sectionId === "string" ? body.sectionId : null,
+  );
+  if ("error" in placement) return NextResponse.json({ error: placement.error }, { status: 400 });
 
   if (itemIds.length === 0) {
     return NextResponse.json({ error: "No se seleccionó ningún pendiente" }, { status: 400 });
@@ -63,6 +77,7 @@ export const POST = withEmpresaIdRoute(async (req, { params }) => {
 
   const created: string[] = [];
   const skipped: string[] = [];
+  const taskIds: string[] = [];
 
   for (const item of items) {
     if (item.taskId) {
@@ -76,6 +91,7 @@ export const POST = withEmpresaIdRoute(async (req, { params }) => {
       touchpoints: item.touchpoints,
       meetingTitle: meeting.title,
       meetingDate: meeting.meetingDate,
+      criteriaAsSubtasks,
     });
 
     const task = await prisma.task.create({
@@ -87,8 +103,25 @@ export const POST = withEmpresaIdRoute(async (req, { params }) => {
         priority: item.priority,
         dueDate: item.dueDate,
         allDay: true,
+        projectId: placement.projectId,
+        sectionId: placement.sectionId,
+        sortOrder: item.sortOrder,
       },
     });
+
+    if (criteriaAsSubtasks && item.acceptance.length > 0) {
+      await prisma.task.createMany({
+        data: item.acceptance.map((criterion, i) => ({
+          userId: user.id,
+          title: criterion,
+          parentId: task.id,
+          projectId: placement.projectId,
+          sortOrder: i + 1,
+          priority: item.priority,
+        })),
+      });
+    }
+    taskIds.push(task.id);
 
     let deliverableId: string | null = null;
     if (asDeliverables && meeting.projectId && item.kind === "TECNICO") {
@@ -112,14 +145,21 @@ export const POST = withEmpresaIdRoute(async (req, { params }) => {
     created.push(item.id);
   }
 
-  const refreshed = await prisma.meetingActionItem.findMany({
-    where: { meetingId: id },
-    orderBy: { sortOrder: "asc" },
-  });
+  const [refreshed, tasks] = await Promise.all([
+    prisma.meetingActionItem.findMany({
+      where: { meetingId: id },
+      orderBy: { sortOrder: "asc" },
+    }),
+    prisma.task.findMany({
+      where: { userId: user.id, OR: [{ id: { in: taskIds } }, { parentId: { in: taskIds } }] },
+      include: TASK_INCLUDE,
+    }),
+  ]);
 
   return NextResponse.json({
     created: created.length,
     skipped: skipped.length,
     actionItems: refreshed.map(serializeMeetingActionItem),
+    tasks: tasks.map(serializeTask),
   });
 });

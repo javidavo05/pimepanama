@@ -3,15 +3,24 @@ import { notFound } from "next/navigation";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import type { FinancingPlan } from "@/lib/financing";
+import { loadTaskWorkspace } from "@/lib/tasks";
+import { TaskWorkspace } from "@/components/empresa/tasks/task-workspace";
+import { ProjectTasks } from "@/components/empresa/tasks/project-tasks";
 import { ProjectDetailClient } from "./project-detail-client";
 
 export const dynamic = "force-dynamic";
 
-export default async function ProyectoDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function ProyectoDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
+}) {
+  const [{ id }, { tab }] = await Promise.all([params, searchParams]);
   const user = await getEmpresaUser();
 
-  const [project, allClients] = await Promise.all([
+  const [project, allClients, workspace] = await Promise.all([
     prisma.project.findFirst({
       where: { id, userId: user.id },
       include: {
@@ -34,6 +43,7 @@ export default async function ProyectoDetailPage({ params }: { params: Promise<{
       },
     }),
     prisma.client.findMany({ where: { userId: user.id }, orderBy: { name: "asc" } }),
+    loadTaskWorkspace(user.id, id),
   ]);
 
   if (!project) notFound();
@@ -96,15 +106,22 @@ export default async function ProyectoDetailPage({ params }: { params: Promise<{
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-6xl mx-auto">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 mb-5 text-sm">
+      <div className="flex items-center gap-2 mb-4 text-sm">
         <Link href="/empresa/proyectos" className="text-fg-dim hover:text-fg-mute transition-colors">Proyectos</Link>
         <span className="text-fg-faint">/</span>
         <span className="text-fg-dim truncate max-w-xs">{project.name}</span>
       </div>
 
-      <ProjectDetailClient project={serialized} allClients={allClients} />
+      <TaskWorkspace tasks={workspace.tasks} projects={workspace.projects}>
+        <ProjectDetailClient
+          project={serialized}
+          allClients={allClients}
+          initialTab={tab === "resumen" ? "resumen" : "tareas"}
+          tasksPanel={<ProjectTasks projectId={project.id} />}
+        />
+      </TaskWorkspace>
     </div>
   );
 }

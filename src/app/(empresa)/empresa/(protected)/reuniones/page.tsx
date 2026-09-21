@@ -27,6 +27,7 @@ export default async function ReunionesPage({
         project: { select: { id: true, name: true } },
         client: { select: { name: true, company: true } },
         _count: { select: { actionItems: true, speakers: true } },
+        actionItems: { select: { taskId: true, task: { select: { completed: true } } } },
       },
       orderBy: { meetingDate: "desc" },
     }),
@@ -135,9 +136,32 @@ export default async function ReunionesPage({
                   {m._count.speakers > 0 && (
                     <span className="text-fg-faint text-xs">{m._count.speakers} hablantes</span>
                   )}
-                  {m._count.actionItems > 0 && (
-                    <span className="text-brand-fg text-xs">{m._count.actionItems} pendientes</span>
-                  )}
+                  {(() => {
+                    // Lo que importa de los pendientes es cuánto se cumplió
+                    const inTasks = m.actionItems.filter((i) => i.task);
+                    const done = inTasks.filter((i) => i.task!.completed).length;
+                    const toReview = m.actionItems.length - inTasks.length;
+                    return (
+                      <>
+                        {inTasks.length > 0 && (
+                          <span className="flex items-center gap-2 text-xs text-fg-dim">
+                            <span className="w-12 h-1 rounded-full bg-fill-2 overflow-hidden">
+                              <span
+                                className="block h-full bg-ok-solid rounded-full"
+                                style={{ width: `${Math.round((done / inTasks.length) * 100)}%` }}
+                              />
+                            </span>
+                            {done}/{inTasks.length} tareas hechas
+                          </span>
+                        )}
+                        {toReview > 0 && (
+                          <span className="text-brand-fg text-xs">
+                            {toReview} pendiente{toReview !== 1 ? "s" : ""} por revisar
+                          </span>
+                        )}
+                      </>
+                    );
+                  })()}
                   {m.aiCostUSD > 0 && (
                     <span className="text-sand-fg text-xs font-mono">
                       ${m.aiCostUSD.toFixed(3)}

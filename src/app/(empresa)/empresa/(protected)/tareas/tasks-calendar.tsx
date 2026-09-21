@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { TaskPriority } from "@prisma/client";
 import type { SerializedTask } from "./tasks-view";
-import { addDays, allDayISO, mondayOf, sameDay, startOfDay, taskLocalDate, taskLocalEndDate, timedISO } from "./date-utils";
+import type { ProjectOption } from "@/components/empresa/tasks/types";
+import { addDays, allDayISO, mondayOf, sameDay, startOfDay, taskLocalDate, taskLocalEndDate, timedISO } from "@/components/empresa/tasks/date-utils";
 
 const PRIORITY_DOT: Record<TaskPriority, string> = {
   HIGH: "bg-danger",
@@ -37,12 +38,13 @@ type PopoverState =
 interface TasksCalendarProps {
   mode: "month" | "week" | "day";
   tasks: SerializedTask[];
+  projects: ProjectOption[];
   onPatch: (id: string, data: Record<string, unknown>) => void;
   onDelete: (id: string) => void;
   onCreate: (payload: Record<string, unknown>) => Promise<SerializedTask | null>;
 }
 
-export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: TasksCalendarProps) {
+export function TasksCalendar({ mode, tasks, projects, onPatch, onDelete, onCreate }: TasksCalendarProps) {
   const [cursor, setCursor] = useState(() => startOfDay(new Date()));
   const [popover, setPopover] = useState<PopoverState | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -160,7 +162,7 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
             e.stopPropagation();
             setPopover({ kind: "edit", task });
           }}
-          className={`w-full h-full text-left flex flex-col gap-0.5 px-1.5 py-1 rounded border overflow-hidden transition-colors ${
+          className={`w-full h-full text-left flex flex-col gap-1 px-2 py-1 rounded border overflow-hidden transition-colors ${
             task.completed
               ? "border-line text-fg-faint line-through"
               : "border-brand/20 bg-brand/[0.08] text-fg-mute hover:border-brand/40"
@@ -184,7 +186,7 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
           e.stopPropagation();
           setPopover({ kind: "edit", task });
         }}
-        className={`w-full text-left flex items-center gap-1 px-1.5 py-0.5 rounded border transition-colors ${
+        className={`w-full text-left flex items-center gap-1 px-2 py-1 rounded border transition-colors ${
           task.completed
             ? "border-line text-fg-faint line-through"
             : "border-brand/20 bg-brand/[0.06] text-fg-mute hover:border-brand/40"
@@ -219,6 +221,7 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
     const [startTime, setStartTime] = useState(initialStartTime);
     const [endTime, setEndTime] = useState(initialEndTime);
     const [priority, setPriority] = useState<TaskPriority>(task?.priority ?? "MEDIUM");
+    const [projectId, setProjectId] = useState(task?.projectId ?? "");
     const [saving, setSaving] = useState(false);
 
     function buildDueDate(): string {
@@ -246,6 +249,7 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
         title: title.trim(),
         assignee: assignee.trim() || null,
         priority,
+        ...(task?.parentId ? {} : { projectId: projectId || null }),
         allDay,
         dueDate: buildDueDate(),
         endDate: buildEndDate(),
@@ -323,28 +327,44 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
             </select>
           </div>
 
-          <label className="flex items-center gap-1.5 text-xs text-fg-faint">
+          {!task?.parentId && (
+            <select
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              aria-label="Proyecto"
+              className="w-full bg-fill border border-line rounded-lg px-3 py-2 text-xs text-fg-mute outline-none focus:border-brand/40"
+            >
+              <option value="">Sin proyecto</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          )}
+
+          <label className="flex items-center gap-2 text-xs text-fg-faint">
             <input type="checkbox" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} className="accent-brand" />
             Todo el día
           </label>
           {!allDay && (
             <div className="flex items-center gap-2">
-              <label className="flex items-center gap-1.5 text-xs text-fg-dim">
+              <label className="flex items-center gap-2 text-xs text-fg-dim">
                 Desde
                 <input
                   type="time"
                   value={startTime}
                   onChange={(e) => setStartTime(e.target.value)}
-                  className="bg-fill border border-line rounded-lg px-2 py-1.5 text-xs text-fg-mute outline-none focus:border-brand/40 [color-scheme:dark]"
+                  className="bg-fill border border-line rounded-lg px-2 py-2 text-xs text-fg-mute outline-none focus:border-brand/40 [color-scheme:dark]"
                 />
               </label>
-              <label className="flex items-center gap-1.5 text-xs text-fg-dim">
+              <label className="flex items-center gap-2 text-xs text-fg-dim">
                 Hasta
                 <input
                   type="time"
                   value={endTime}
                   onChange={(e) => setEndTime(e.target.value)}
-                  className="bg-fill border border-line rounded-lg px-2 py-1.5 text-xs text-fg-mute outline-none focus:border-brand/40 [color-scheme:dark]"
+                  className="bg-fill border border-line rounded-lg px-2 py-2 text-xs text-fg-mute outline-none focus:border-brand/40 [color-scheme:dark]"
                 />
               </label>
             </div>
@@ -373,7 +393,7 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
                 type="button"
                 onClick={handleSave}
                 disabled={!title.trim() || saving}
-                className="px-3 py-1.5 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
+                className="px-3 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
               >
                 {isEdit ? "Guardar" : "Crear"}
               </button>
@@ -423,18 +443,18 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={(e) => handleDropOnDay(e, day)}
                   onClick={() => setPopover({ kind: "create", date: day, hour: null })}
-                  className={`min-h-[104px] border-b border-r border-line p-1.5 cursor-pointer hover:bg-fill transition-colors ${
+                  className={`min-h-[104px] border-b border-r border-line p-2 cursor-pointer hover:bg-fill transition-colors ${
                     isCurrentMonth ? "" : "opacity-30"
                   }`}
                 >
                   <p className={`text-xs mb-1 ${isToday ? "w-5 h-5 flex items-center justify-center rounded-full bg-brand text-on-brand font-semibold" : "text-fg-dim"}`}>
                     {day.getDate()}
                   </p>
-                  <div className="space-y-0.5">
+                  <div className="space-y-1">
                     {visible.map((t) => (
                       <TaskChip key={t.id} task={t} compact />
                     ))}
-                    {overflow > 0 && <p className="text-[10px] text-fg-faint px-1.5">+{overflow} más</p>}
+                    {overflow > 0 && <p className="text-[10px] text-fg-faint px-2">+{overflow} más</p>}
                   </div>
                 </div>
               );
@@ -450,20 +470,20 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
             {weekDays.map((day) => (
               <div key={day.toISOString()} className={`px-2 py-2 text-center border-l border-line ${sameDay(day, new Date()) ? "bg-brand/[0.06]" : ""}`}>
                 <p className="text-[10px] uppercase tracking-widest text-fg-faint">{day.toLocaleDateString("es-PA", { weekday: "short" })}</p>
-                <p className={`text-sm mt-0.5 ${sameDay(day, new Date()) ? "text-brand-fg font-semibold" : "text-fg-dim"}`}>{day.getDate()}</p>
+                <p className={`text-sm mt-1 ${sameDay(day, new Date()) ? "text-brand-fg font-semibold" : "text-fg-dim"}`}>{day.getDate()}</p>
               </div>
             ))}
           </div>
 
           <div className={`grid border-b border-line`} style={{ gridTemplateColumns: `56px repeat(${weekDays.length}, 1fr)` }}>
-            <div className="px-2 py-1.5 text-[9px] text-fg-faint text-right">todo el día</div>
+            <div className="px-2 py-2 text-[9px] text-fg-faint text-right">todo el día</div>
             {weekDays.map((day) => (
               <div
                 key={day.toISOString()}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => handleDropOnAllDayRow(e, day)}
                 onClick={() => setPopover({ kind: "create", date: day, hour: null })}
-                className="min-h-[32px] border-l border-line p-1 space-y-0.5 cursor-pointer hover:bg-fill"
+                className="min-h-[32px] border-l border-line p-1 space-y-1 cursor-pointer hover:bg-fill"
               >
                 {tasksOnDay(day)
                   .filter((t) => t.allDay)
@@ -504,7 +524,7 @@ export function TasksCalendar({ mode, tasks, onPatch, onDelete, onCreate }: Task
                       const durationMin = end ? Math.max((end.getTime() - local.getTime()) / 60000, 15) : 30;
                       const height = (durationMin / 60) * ROW_HEIGHT;
                       return (
-                        <div key={t.id} className="absolute left-0.5 right-0.5 z-10" style={{ top, height }}>
+                        <div key={t.id} className="absolute left-1 right-1 z-10" style={{ top, height }}>
                           <TaskChip task={t} compact block />
                         </div>
                       );

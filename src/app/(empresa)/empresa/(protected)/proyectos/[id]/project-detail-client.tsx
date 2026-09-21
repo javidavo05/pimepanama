@@ -14,6 +14,7 @@ import { DeliverablesPanel } from "./deliverables-panel";
 import { ContractsPanel } from "./contracts-panel";
 import { MeetingsPanel } from "./meetings-panel";
 import { RepoPanel } from "./repo-panel";
+import { useTaskStore } from "@/components/empresa/tasks/task-store";
 import {
   PROJECT_STATUS_COLOR,
   PROJECT_STATUS_LABEL,
@@ -32,14 +33,31 @@ const DOC_TYPE_PATH: Record<string, string> = {
   FACTURA: "facturas", COTIZACION: "cotizaciones", BITACORA: "bitacoras", CORREO: "correos",
 };
 
+type Tab = "tareas" | "resumen";
+
 export function ProjectDetailClient({
   project,
   allClients,
+  initialTab,
+  tasksPanel,
 }: {
   project: Project;
   allClients: Client[];
+  initialTab: Tab;
+  tasksPanel: React.ReactNode;
 }) {
   const router = useRouter();
+  const { tasks } = useTaskStore();
+  const openTaskCount = tasks.filter((t) => t.projectId === project.id && !t.parentId && !t.completed).length;
+  const [tab, setTab] = useState<Tab>(initialTab);
+
+  function changeTab(next: Tab) {
+    setTab(next);
+    const url = new URL(window.location.href);
+    if (next === "tareas") url.searchParams.delete("tab");
+    else url.searchParams.set("tab", next);
+    window.history.replaceState(null, "", url);
+  }
   const [editing, setEditing] = useState<EditSection | null>(null);
   const [payingId, setPayingId] = useState<string | null>(null);
   const [paidIds, setPaidIds] = useState<Set<string>>(new Set());
@@ -93,7 +111,7 @@ export function ProjectDetailClient({
         <div className="min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <h1 className="text-fg text-2xl font-semibold tracking-tight truncate">{project.name}</h1>
-            <span className={`px-2 py-0.5 text-xs rounded border shrink-0 ${PROJECT_STATUS_COLOR[project.status]}`}>
+            <span className={`px-2 py-1 text-xs rounded border shrink-0 ${PROJECT_STATUS_COLOR[project.status]}`}>
               {PROJECT_STATUS_LABEL[project.status]}
             </span>
           </div>
@@ -119,7 +137,7 @@ export function ProjectDetailClient({
           <button
             type="button"
             onClick={() => setEditing("form")}
-            className="px-3 py-1.5 bg-fill border border-line text-fg-dim text-xs font-medium rounded-lg hover:text-fg hover:border-line-loud transition-all shrink-0"
+            className="px-3 min-h-9 bg-fill border border-line text-fg-dim text-xs font-medium rounded-lg hover:text-fg hover:border-line-loud transition-all shrink-0"
           >
             Editar proyecto
           </button>
@@ -138,15 +156,41 @@ export function ProjectDetailClient({
       {/* Sin cliente el proyecto no factura: el aviso va a ancho completo,
           no escondido en la barra lateral. */}
       {project.clients.length === 0 && (
-        <div className="mb-5">{clientsPanel}</div>
+        <div className="mb-6">{clientsPanel}</div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div role="tablist" aria-label="Secciones del proyecto" className="flex gap-6 border-b border-line mb-6">
+        {(
+          [
+            { key: "tareas", label: "Tareas", count: openTaskCount },
+            { key: "resumen", label: "Resumen" },
+          ] as { key: Tab; label: string; count?: number }[]
+        ).map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.key}
+            onClick={() => changeTab(t.key)}
+            className={`-mb-px flex items-center gap-2 min-h-11 border-b-2 text-sm font-medium transition-colors ${
+              tab === t.key ? "border-brand text-fg" : "border-transparent text-fg-dim hover:text-fg-mute"
+            }`}
+          >
+            {t.label}
+            {t.count !== undefined && <span className="text-xs text-fg-faint tabular-nums">{t.count}</span>}
+          </button>
+        ))}
+      </div>
+
+      {/* Se oculta en vez de desmontarse: la lista conserva lo que se editó al volver */}
+      <div className={tab === "tareas" ? "" : "hidden"}>{tasksPanel}</div>
+
+      <div className={tab === "resumen" ? "grid grid-cols-1 lg:grid-cols-3 gap-6" : "hidden"}>
         {/* Main column */}
-        <div className="lg:col-span-2 space-y-5">
+        <div className="lg:col-span-2 space-y-6">
 
           {/* Description / Scope */}
-          <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
+          <div className="bg-panel border border-line rounded-xl p-6 space-y-4">
             {!project.description && !project.scope ? (
               <div className="flex items-center justify-between">
                 <p className="text-fg-faint text-sm">Sin descripción ni alcance.</p>
@@ -206,7 +250,7 @@ export function ProjectDetailClient({
 
           {/* Propuesta comercial (PDF, estilo design-system) */}
           <div className="bg-panel border border-line rounded-xl overflow-hidden">
-            <div className="px-5 py-4 flex items-center justify-between">
+            <div className="px-6 py-4 flex items-center justify-between">
               <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Propuesta comercial</h3>
               <div className="flex items-center gap-2">
                 <button
@@ -226,10 +270,10 @@ export function ProjectDetailClient({
               </div>
             </div>
             {proposalError && (
-              <div className="px-5 pb-4 text-danger text-xs">{proposalError}</div>
+              <div className="px-6 pb-4 text-danger text-xs">{proposalError}</div>
             )}
             {!project.hasProposal && (
-              <div className="px-5 pb-5 text-fg-faint text-sm">
+              <div className="px-6 pb-6 text-fg-faint text-sm">
                 Genera el contenido de la propuesta con IA (portada, fases, inversión y cierre en el estilo de Pime) para poder descargarla.
               </div>
             )}
@@ -245,7 +289,7 @@ export function ProjectDetailClient({
 
           {/* Documentos vinculados */}
           <div className="bg-panel border border-line rounded-xl overflow-hidden">
-            <div className="px-5 py-4 border-b border-line flex items-center justify-between">
+            <div className="px-6 py-4 border-b border-line flex items-center justify-between">
               <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Documentos</h3>
               <div className="flex items-center gap-3">
                 <Link href={`/empresa/cotizaciones/nueva?projectId=${project.id}${mainClient ? `&clientId=${mainClient.id}` : ""}`}
@@ -259,20 +303,20 @@ export function ProjectDetailClient({
               </div>
             </div>
             {project.documents.length === 0 ? (
-              <div className="px-5 py-6 text-fg-faint text-sm text-center">Sin documentos vinculados</div>
+              <div className="px-6 py-6 text-fg-faint text-sm text-center">Sin documentos vinculados</div>
             ) : (
               <div className="divide-y divide-line">
                 {project.documents.map((doc) => (
                   <Link key={doc.id}
                     href={`/empresa/${DOC_TYPE_PATH[doc.type] ?? "facturas"}/${doc.id}`}
-                    className="flex items-center justify-between px-5 py-3 hover:bg-fill transition-colors group">
+                    className="flex items-center justify-between px-6 py-3 hover:bg-fill transition-colors group">
                     <div>
                       <span className="text-fg-mute text-sm font-mono group-hover:text-brand-fg transition-colors">
                         {doc.number ?? doc.type}
                       </span>
                       <span className="text-fg-dim text-xs ml-2">{doc.clientName}</span>
                       {doc.type === "COTIZACION" && doc.status === "ACCEPTED" && !doc.linkedDocumentId && (
-                        <span className="ml-2 text-[10px] text-warn border border-warn/30 rounded px-1.5 py-0.5">⚠ Sin factura</span>
+                        <span className="ml-2 text-[10px] text-warn border border-warn/30 rounded px-2 py-1">⚠ Sin factura</span>
                       )}
                     </div>
                     <div className="flex items-center gap-3">
@@ -290,7 +334,7 @@ export function ProjectDetailClient({
           {/* Plan de pagos */}
           {allSchedules.length > 0 && (
             <div className="bg-panel border border-line rounded-xl overflow-hidden">
-              <div className="px-5 py-4 border-b border-line flex items-center justify-between">
+              <div className="px-6 py-4 border-b border-line flex items-center justify-between">
                 <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Plan de pagos</h3>
                 <div className="text-right">
                   <span className="text-sand-fg text-xs font-mono">${fmtUSD(totalPaid)}</span>
@@ -303,16 +347,16 @@ export function ProjectDetailClient({
                   const isOverdue = sc.status === "OVERDUE" && !isPaid;
                   const dueDate = new Date(sc.dueDate);
                   return (
-                    <div key={sc.id} className="flex items-center justify-between px-5 py-3">
+                    <div key={sc.id} className="flex items-center justify-between px-6 py-3">
                       <div className="flex-1 min-w-0">
                         <p className="text-fg-mute text-sm truncate">{sc.description}</p>
-                        <p className={`text-xs mt-0.5 ${isOverdue ? "text-danger" : "text-fg-dim"}`}>
+                        <p className={`text-xs mt-1 ${isOverdue ? "text-danger" : "text-fg-dim"}`}>
                           {isOverdue ? "Vencido — " : ""}{dueDate.toLocaleDateString("es-PA")}
                         </p>
                       </div>
                       <div className="flex items-center gap-3 ml-4 shrink-0">
                         <span className="text-fg-dim text-sm font-mono">${fmtUSD(sc.amount)}</span>
-                        <span className={`px-2 py-0.5 text-[10px] rounded border ${SCHEDULE_STATUS_COLOR[isPaid ? "PAID" : sc.status]}`}>
+                        <span className={`px-2 py-1 text-[10px] rounded border ${SCHEDULE_STATUS_COLOR[isPaid ? "PAID" : sc.status]}`}>
                           {isPaid ? "Pagado" : sc.status === "OVERDUE" ? "Vencido" : sc.status === "PENDING" ? "Pendiente" : sc.status}
                         </span>
                         {!isPaid && sc.status !== "CANCELLED" && (
@@ -337,7 +381,7 @@ export function ProjectDetailClient({
           {project.clients.length > 0 && clientsPanel}
 
           {/* Fechas y presupuesto */}
-          <div className="bg-panel border border-line rounded-xl p-5 space-y-3">
+          <div className="bg-panel border border-line rounded-xl p-6 space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-fg-faint text-[10px] uppercase tracking-widest">Resumen</p>
               <button
@@ -373,14 +417,14 @@ export function ProjectDetailClient({
             {project.aiTags.length > 0 && (
               <div className="flex flex-wrap gap-1 pt-2 border-t border-line">
                 {project.aiTags.map((t) => (
-                  <span key={t} className="px-2 py-0.5 text-[10px] rounded border border-line text-fg-dim">{t}</span>
+                  <span key={t} className="px-2 py-1 text-[10px] rounded border border-line text-fg-dim">{t}</span>
                 ))}
               </div>
             )}
           </div>
 
           {/* Financiación */}
-          <div className="bg-panel border border-line rounded-xl p-5 space-y-2">
+          <div className="bg-panel border border-line rounded-xl p-6 space-y-2">
             <div className="flex items-center justify-between">
               <p className="text-fg-faint text-[10px] uppercase tracking-widest">Financiación</p>
               <button

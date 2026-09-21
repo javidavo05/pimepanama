@@ -67,6 +67,7 @@ export const POST = withEmpresaIdRoute(async (req, { params }) => {
       dueDate,
       allDay: body.allDay !== false,
       priority: "MEDIUM",
+      projectId: meeting.projectId,
     },
   });
 

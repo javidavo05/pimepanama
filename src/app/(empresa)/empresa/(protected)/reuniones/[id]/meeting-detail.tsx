@@ -635,9 +635,12 @@ export function MeetingDetail({
         {tab === "pendientes" && (
           <ActionItemsPanel
             meetingId={meeting.id}
+            meetingTitle={meeting.title}
+            clientId={meeting.clientId}
             items={items}
             onItemsChange={setItems}
-            hasProject={project !== null}
+            project={project}
+            projectOptions={projects}
           />
         )}
 
@@ -662,7 +665,7 @@ export function MeetingDetail({
                     </span>
                   </div>
                   {c.summary && (
-                    <p className="text-fg-dim text-xs mt-1 leading-relaxed pl-[3.6rem]">{c.summary}</p>
+                    <p className="text-fg-dim text-xs mt-1 leading-relaxed pl-12">{c.summary}</p>
                   )}
                 </button>
               ))}

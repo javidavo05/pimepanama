@@ -1,4 +1,4 @@
-import type { SerializedTask } from "./tasks-view";
+import type { TaskItem as SerializedTask } from "./types";
 
 // Todo-el-día se guarda como "medianoche UTC" del día elegido (una etiqueta de
 // calendario sin zona horaria) — se lee con getters UTC. Las tareas con hora
