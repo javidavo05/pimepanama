@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LANGUAGE_LABEL, MEETING_LANGUAGES, type MeetingLanguage } from "@/lib/meetings/types";
+import { StageProgress } from "./stage-progress";
 
 interface ProjectOption {
   id: string;
@@ -38,9 +39,9 @@ interface MeetingContextPanelProps {
 }
 
 const REPROCESS_STAGES = [
-  { key: "minutes", label: "Minutas" },
-  { key: "items", label: "Pendientes" },
-  { key: "prompt", label: "Prompt" },
+  { key: "minutes", label: "Redactando las minutas" },
+  { key: "items", label: "Extrayendo los pendientes" },
+  { key: "prompt", label: "Armando el prompt" },
 ] as const;
 
 /**
@@ -75,6 +76,9 @@ export function MeetingContextPanel({
   const [busy, setBusy] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Avance del reanálisis: etapa en curso, cuándo arrancó y si se cortó.
+  const [run, setRun] = useState<{ step: number; startedAt: number; failed: boolean } | null>(null);
+  const [analyzed, setAnalyzed] = useState(false);
 
   const dirty =
     project !== (projectId ?? "") ||
@@ -116,8 +120,13 @@ export function MeetingContextPanel({
   async function saveAndReprocess() {
     if (dirty && !(await save())) return;
 
-    for (const stage of REPROCESS_STAGES) {
+    setSaved(false);
+    setAnalyzed(false);
+    setError(null);
+    const startedAt = Date.now();
+    for (const [step, stage] of REPROCESS_STAGES.entries()) {
       setBusy(stage.key);
+      setRun({ step, startedAt, failed: false });
       const res = await fetch(`/api/empresa/meetings/${meetingId}/process`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -125,14 +134,16 @@ export function MeetingContextPanel({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error ?? `Error rehaciendo ${stage.label.toLowerCase()}`);
+        setError(data.error ?? `No se pudo terminar: ${stage.label.toLowerCase()}. Reintenta el análisis.`);
+        setRun({ step, startedAt, failed: true });
         setBusy(null);
         return;
       }
     }
 
     setBusy(null);
-    setSaved(true);
+    setRun(null);
+    setAnalyzed(true);
     router.refresh();
   }
 
@@ -285,14 +296,40 @@ export function MeetingContextPanel({
               className="px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
             >
               {busy && busy !== "save"
-                ? `Rehaciendo ${busy === "minutes" ? "minutas" : busy === "items" ? "pendientes" : "prompt"}…`
-                : hasMinutes
+                ? "Analizando…"
+                : run?.failed
+                  ? "Reintentar el análisis"
+                  : hasMinutes
                   ? "Guardar y volver a analizar"
                   : "Guardar y analizar"}
             </button>
             {saved && busy === null && <span className="text-ok text-xs">Guardado.</span>}
-            {error && <span className="text-danger text-xs">{error}</span>}
+            {analyzed && busy === null && (
+              <span className="text-ok text-xs">Análisis listo: minutas, pendientes y prompt al día.</span>
+            )}
+            {error && !run && <span className="text-danger text-xs">{error}</span>}
           </div>
+
+          {run && (
+            <div className="flex flex-col gap-2">
+              <StageProgress
+                steps={REPROCESS_STAGES}
+                current={run.step}
+                startedAt={run.startedAt}
+                failed={run.failed}
+              />
+              {run.failed && error ? (
+                <p className="text-danger text-xs leading-relaxed">{error}</p>
+              ) : (
+                run.step === 0 && (
+                  <p className="text-fg-ghost text-xs leading-relaxed">
+                    En una reunión larga la minuta puede tardar unos minutos. Deja esta página abierta:
+                    si la cierras, las etapas que faltan no se corren.
+                  </p>
+                )
+              )}
+            </div>
+          )}
 
           <p className="text-fg-ghost text-xs leading-relaxed">
             Volver a analizar rehace minutas, pendientes y prompt. Los pendientes que ya pasaste a

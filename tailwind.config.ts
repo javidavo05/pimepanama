@@ -128,8 +128,15 @@ export default {
       },
       animation: {
         "gradient-shift": "gradientShift 8s ease infinite",
+        "progress-sweep": "progressSweep 1.6s ease-in-out infinite",
       },
       keyframes: {
+        // Tramo de barra que recorre la etapa en curso: dice «sigue trabajando»
+        // sin inventar un porcentaje que no se conoce.
+        progressSweep: {
+          "0%": { transform: "translateX(-100%)" },
+          "100%": { transform: "translateX(300%)" },
+        },
         gradientShift: {
           "0%, 100%": { backgroundPosition: "0% 50%" },
           "50%": { backgroundPosition: "100% 50%" },
