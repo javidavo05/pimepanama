@@ -12,6 +12,8 @@ const KINDS = ["TECNICO", "COMERCIAL", "ADMINISTRATIVO", "DECISION", "RIESGO"] a
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH"] as const;
 /** Una decisión o un riesgo se registran, no se "hacen": no se preseleccionan como tarea. */
 const NOT_A_TODO = new Set(["DECISION", "RIESGO"]);
+/** Valor centinela del select de proyecto: abre el campo para crear uno ahí mismo. */
+const NEW_PROJECT = "__new__";
 
 interface Draft {
   title: string;
@@ -259,7 +261,14 @@ export function ActionItemsPanel({
   const [targetProjectId, setTargetProjectId] = useState(() =>
     project ? project.id : guessProject(meetingTitle, clientId, projectOptions),
   );
-  const target = project ?? projectOptions.find((p) => p.id === targetProjectId) ?? null;
+  // Proyectos creados desde aquí, hasta que el refresh los traiga en projectOptions.
+  const [createdProjects, setCreatedProjects] = useState<ActionItemsPanelProps["projectOptions"]>([]);
+  const allProjectOptions = [
+    ...createdProjects.filter((c) => !projectOptions.some((p) => p.id === c.id)),
+    ...projectOptions,
+  ];
+  const target = project ?? allProjectOptions.find((p) => p.id === targetProjectId) ?? null;
+  const [newProjectName, setNewProjectName] = useState<string | null>(null);
   const sections = projects.find((p) => p.id === target?.id)?.sections ?? [];
 
   const [selected, setSelected] = useState<string[]>(() =>
@@ -348,6 +357,33 @@ export function ActionItemsPanel({
       setSelected((prev) => prev.filter((id) => id !== itemId));
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo borrar");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function createProject() {
+    const name = newProjectName?.trim();
+    if (!name) {
+      setError("El proyecto necesita un nombre.");
+      return;
+    }
+    setBusy("project");
+    setError(null);
+    try {
+      const res = await fetch("/api/empresa/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, clientId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.id) throw new Error(data.error ?? "No se pudo crear el proyecto");
+      setCreatedProjects((prev) => [{ id: data.id, name: data.name, clientId }, ...prev]);
+      setTargetProjectId(data.id);
+      setSectionId("");
+      setNewProjectName(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo crear el proyecto");
     } finally {
       setBusy(null);
     }
@@ -572,10 +608,14 @@ export function ActionItemsPanel({
                     ? "Selecciona pendientes"
                     : `Crear ${selectedPending.length} tarea${selectedPending.length !== 1 ? "s" : ""}${target ? ` en ${target.name}` : ""}`}
               </button>
-              {!project && (
+              {!project && newProjectName === null && (
                 <select
                   value={targetProjectId}
                   onChange={(e) => {
+                    if (e.target.value === NEW_PROJECT) {
+                      setNewProjectName(meetingTitle);
+                      return;
+                    }
                     setTargetProjectId(e.target.value);
                     setSectionId("");
                   }}
@@ -583,12 +623,50 @@ export function ActionItemsPanel({
                   className="min-h-11 bg-fill border border-line rounded-lg px-3 text-sm text-fg-mute outline-none focus:border-brand/40 max-w-full"
                 >
                   <option value="">Sin proyecto (tareas sueltas)</option>
-                  {projectOptions.map((p) => (
+                  {allProjectOptions.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
                   ))}
+                  <option value={NEW_PROJECT}>+ Nuevo proyecto…</option>
                 </select>
+              )}
+              {!project && newProjectName !== null && (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    void createProject();
+                  }}
+                  className="flex flex-wrap items-center gap-2 max-w-full"
+                >
+                  <input
+                    autoFocus
+                    onFocus={(e) => e.currentTarget.select()}
+                    value={newProjectName}
+                    onChange={(e) => setNewProjectName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") setNewProjectName(null);
+                    }}
+                    placeholder="Nombre del proyecto"
+                    aria-label="Nombre del proyecto nuevo"
+                    className="min-h-11 w-64 max-w-full bg-fill border border-line rounded-lg px-3 text-sm text-fg placeholder:text-fg-trace outline-none focus:border-brand/40"
+                  />
+                  <button
+                    type="submit"
+                    disabled={busy !== null || !newProjectName.trim()}
+                    className="px-4 min-h-11 border border-line-mid hover:bg-fill disabled:opacity-40 text-fg text-sm font-semibold rounded-lg transition-colors"
+                  >
+                    {busy === "project" ? "Creando proyecto…" : "Crear proyecto"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewProjectName(null)}
+                    disabled={busy === "project"}
+                    className="px-3 min-h-11 text-sm text-fg-dim hover:text-fg-mute rounded-lg hover:bg-fill"
+                  >
+                    Cancelar
+                  </button>
+                </form>
               )}
               {target && sections.length > 0 && (
                 <select
