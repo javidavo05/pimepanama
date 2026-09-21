@@ -135,5 +135,9 @@ export function htmlToPlainText(html: string): string {
     .replace(/<[^>]+>/g, " ")
     .replace(/\s+/g, " ")
     .trim();
-  return decodeHtmlEntities(stripped);
+  // Los boletines rellenan el preheader con cientos de caracteres invisibles.
+  return decodeHtmlEntities(stripped)
+    .replace(/[\u00AD\u034F\u200B-\u200D\u2060\uFEFF]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }

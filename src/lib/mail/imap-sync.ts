@@ -3,7 +3,7 @@ import { simpleParser } from "mailparser";
 import { prisma } from "@/lib/prisma";
 import { decryptPassword } from "./crypto";
 import { analyzeEmail } from "./ai-analyze";
-import { isHtmlEmail, extractEmailHtml } from "./email-html";
+import { isHtmlEmail, extractEmailHtml, htmlToPlainText } from "./email-html";
 import { assertR2Configured, putR2Object } from "@/lib/r2";
 import { randomUUID } from "crypto";
 import type { MailAccount, WatchedThread } from "@prisma/client";
@@ -92,7 +92,13 @@ async function processMessage(
 
   if (folder === "INBOX") {
     try {
-      const textForAi = bodyPlain.slice(0, 2000);
+      // Quitar etiquetas a secas deja el CSS del <style> adentro: en correos
+      // solo-HTML los 2000 caracteres que ve la IA eran puro @font-face.
+      const textForAi = (
+        parsed.text && !isHtmlEmail(parsed.text)
+          ? parsed.text
+          : htmlToPlainText(bodyHtml ?? parsed.text ?? "")
+      ).slice(0, 2000);
       const analysis = await analyzeEmail(parsed.subject ?? "", textForAi);
       aiSummary = analysis.summary;
       aiTags = analysis.tags;

@@ -9,9 +9,11 @@ export const maxDuration = 300;
 const LOOKBACK_MS = 2 * 24 * 60 * 60 * 1000;
 
 /**
- * Baja la bandeja de entrada de quienes tienen conversaciones marcadas, para
- * que la respuesta avise aunque nadie tenga el hub abierto. El aviso en sí lo
- * dispara el sync (handleIncomingForWatches).
+ * Baja la bandeja de entrada de todas las cuentas activas, para que el correo
+ * nuevo se analice (resumen, etiquetas, aviso de urgentes) y las respuestas a
+ * hilos marcados avisen aunque nadie tenga el hub abierto. Los avisos los
+ * dispara el sync. Los UIDs ya guardados se descartan antes de bajarlos, así
+ * que la IA solo corre sobre correo realmente nuevo.
  *
  * Lo llama pg_cron desde Supabase cada 10 minutos (migración 0032): el plan
  * Hobby de Vercel solo permite crons diarios.
@@ -24,15 +26,8 @@ async function run(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const owners = await prisma.watchedThread.findMany({
-    distinct: ["userId"],
-    select: { userId: true },
-  });
-  if (owners.length === 0) return NextResponse.json({ accounts: 0, fetched: 0 });
-
-  const accounts = await prisma.mailAccount.findMany({
-    where: { userId: { in: owners.map((o) => o.userId) }, active: true },
-  });
+  const accounts = await prisma.mailAccount.findMany({ where: { active: true } });
+  if (accounts.length === 0) return NextResponse.json({ accounts: 0, fetched: 0 });
 
   const since = new Date(Date.now() - LOOKBACK_MS);
   const results = await Promise.all(

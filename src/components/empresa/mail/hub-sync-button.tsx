@@ -28,13 +28,38 @@ export function HubSyncButton({ accounts }: HubSyncButtonProps) {
       const htmlPart =
         bodyData?.upgraded > 0 ? ` · ${bodyData.upgraded} HTML` : "";
 
-      setResults((r) => ({ ...r, [id]: `+${data.fetched}${htmlPart}` }));
+      const analyzed = await analyzePending(id, `+${data.fetched}${htmlPart}`);
+      const aiPart = analyzed > 0 ? ` · ${analyzed} analizados` : "";
+
+      setResults((r) => ({ ...r, [id]: `+${data.fetched}${htmlPart}${aiPart}` }));
       router.refresh();
     } catch {
       setResults((r) => ({ ...r, [id]: "Error de red" }));
     } finally {
       setSyncing(null);
     }
+  }
+
+  /**
+   * Analiza con IA lo que quedó sin resumen, por tandas. Un fallo aquí no
+   * tumba el sync: el correo ya se bajó y se reintenta en el próximo.
+   */
+  async function analyzePending(id: string, prefix: string): Promise<number> {
+    let total = 0;
+    setResults((r) => ({ ...r, [id]: `${prefix} · analizando…` }));
+    for (let round = 0; round < 12; round++) {
+      try {
+        const res = await fetch(`/api/empresa/mail/accounts/${id}/analyze`, { method: "POST" });
+        if (!res.ok) break;
+        const data: { analyzed: number; remaining: number } = await res.json();
+        total += data.analyzed;
+        if (data.remaining === 0 || data.analyzed === 0) break;
+        setResults((r) => ({ ...r, [id]: `${prefix} · analizando, faltan ${data.remaining}` }));
+      } catch {
+        break;
+      }
+    }
+    return total;
   }
 
   async function resyncBodiesOnly(id: string) {
@@ -96,7 +121,7 @@ export function HubSyncButton({ accounts }: HubSyncButtonProps) {
         onClick={backfillSent}
         disabled={syncing !== null}
         title="Importar historial de enviados desde el servidor de correo (últimos 90 días)"
-        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-emerald2/10 border border-emerald2/20 hover:bg-emerald2/15 disabled:opacity-40 text-ok rounded-lg transition-all"
+        className="flex items-center gap-2 px-3 py-2 text-xs bg-emerald2/10 border border-emerald2/20 hover:bg-emerald2/15 disabled:opacity-40 text-ok rounded-lg transition-all"
       >
         {syncing === "backfill" ? (
           <span className="w-3 h-3 border border-emerald2/30 border-t-emerald-400 rounded-full animate-spin" />
@@ -117,7 +142,7 @@ export function HubSyncButton({ accounts }: HubSyncButtonProps) {
         <button
           onClick={syncAll}
           disabled={syncing !== null}
-          className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-fill border border-line hover:bg-fill-2 disabled:opacity-40 text-fg-dim rounded-lg transition-all"
+          className="flex items-center gap-2 px-3 py-2 text-xs bg-fill border border-line hover:bg-fill-2 disabled:opacity-40 text-fg-dim rounded-lg transition-all"
         >
           {syncing ? (
             <span className="w-3 h-3 border border-line-loud border-t-fg-dim rounded-full animate-spin" />
@@ -135,7 +160,7 @@ export function HubSyncButton({ accounts }: HubSyncButtonProps) {
           <button
             onClick={() => syncAccount(acc.id)}
             disabled={syncing !== null}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-brand/[0.06] border border-brand/20 hover:bg-brand/[0.12] disabled:opacity-40 text-brand-fg rounded-lg transition-all"
+            className="flex items-center gap-2 px-3 py-2 text-xs bg-brand/[0.06] border border-brand/20 hover:bg-brand/[0.12] disabled:opacity-40 text-brand-fg rounded-lg transition-all"
           >
             {syncing === acc.id ? (
               <span className="w-3 h-3 border border-brand/30 border-t-[#1AA7F0] rounded-full animate-spin" />
@@ -157,7 +182,7 @@ export function HubSyncButton({ accounts }: HubSyncButtonProps) {
             onClick={() => resyncBodiesOnly(acc.id)}
             disabled={syncing !== null}
             title="Recuperar HTML de correos guardados como texto"
-            className="px-2 py-1.5 text-[10px] bg-warn/10 border border-warn/20 hover:bg-warn/15 disabled:opacity-40 text-warn rounded-lg transition-all"
+            className="px-2 py-2 text-[10px] bg-warn/10 border border-warn/20 hover:bg-warn/15 disabled:opacity-40 text-warn rounded-lg transition-all"
           >
             HTML
           </button>
