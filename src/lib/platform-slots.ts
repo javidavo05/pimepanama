@@ -21,7 +21,22 @@ export type EmailSlotInventory = {
   available: number;
   freeSlots: number[];
   conflicts: Array<{ slot: number; platforms: string[] }>;
+  /** Cuenta Pro: sin límite de proyectos, los números de cupo no aplican. */
+  pro: boolean;
+  status: AccountStatus;
 };
+
+/**
+ * - pro: plan pagado, sin límite.
+ * - space: le queda al menos un cupo.
+ * - full: usa exactamente su capacidad.
+ * - over: tiene más proyectos de los que admite el plan gratis.
+ */
+export type AccountStatus = "pro" | "space" | "full" | "over";
+
+export function accountKey(provider: SlotProvider, email: string | null | undefined): string {
+  return `${provider}:${normalizePlatformEmail(email)}`;
+}
 
 export type PlatformSlotRow = {
   id: string;
@@ -62,7 +77,8 @@ function addAssignment(
 function buildInventoryForProvider(
   provider: SlotProvider,
   byEmail: Map<string, PlatformSlotRef[]>,
-  capacity: number
+  capacity: number,
+  proAccounts: ReadonlySet<string>
 ): EmailSlotInventory[] {
   const result: EmailSlotInventory[] = [];
 
@@ -98,7 +114,15 @@ function buildInventoryForProvider(
 
     // Cupo sin número cuenta como 1 uso pero no bloquea un número concreto
     const used = occupiedSlots.size + unassigned.length;
-    const available = Math.max(0, capacity - used);
+    const pro = proAccounts.has(accountKey(provider, email));
+    const available = pro ? 0 : Math.max(0, capacity - used);
+    const status: AccountStatus = pro
+      ? "pro"
+      : used > capacity
+        ? "over"
+        : used === capacity
+          ? "full"
+          : "space";
 
     result.push({
       provider,
@@ -109,7 +133,9 @@ function buildInventoryForProvider(
       used,
       available,
       freeSlots,
-      conflicts,
+      conflicts: pro ? [] : conflicts,
+      pro,
+      status,
     });
   }
 
@@ -118,7 +144,8 @@ function buildInventoryForProvider(
 
 export function buildSlotInventories(
   platforms: PlatformSlotRow[],
-  capacity = DEFAULT_SLOT_CAPACITY
+  capacity = DEFAULT_SLOT_CAPACITY,
+  proAccounts: ReadonlySet<string> = new Set()
 ): { supabase: EmailSlotInventory[]; vercel: EmailSlotInventory[] } {
   const supabaseMap = new Map<string, PlatformSlotRef[]>();
   const vercelMap = new Map<string, PlatformSlotRef[]>();
@@ -141,13 +168,7 @@ export function buildSlotInventories(
   }
 
   return {
-    supabase: buildInventoryForProvider("supabase", supabaseMap, capacity),
-    vercel: buildInventoryForProvider("vercel", vercelMap, capacity),
+    supabase: buildInventoryForProvider("supabase", supabaseMap, capacity, proAccounts),
+    vercel: buildInventoryForProvider("vercel", vercelMap, capacity, proAccounts),
   };
-}
-
-export function slotStatusColor(available: number, capacity: number): string {
-  if (available <= 0) return "text-danger border-danger/30 bg-danger/10";
-  if (available < capacity) return "text-warn border-warn/30 bg-warn/10";
-  return "text-ok border-ok/30 bg-ok/10";
 }

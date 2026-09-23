@@ -2,10 +2,12 @@
 
 import { useMemo, useState } from "react";
 import {
+  accountKey,
   buildSlotInventories,
   clampPlatformSlot,
   DEFAULT_SLOT_CAPACITY,
   normalizePlatformEmail,
+  type AccountStatus,
   type EmailSlotInventory,
   type SlotProvider,
 } from "@/lib/platform-slots";
@@ -31,6 +33,8 @@ export type SerializedPlatform = {
 
 interface PlatformsBoardProps {
   initialPlatforms: SerializedPlatform[];
+  /** Claves `proveedor:correo` de las cuentas con plan Pro. */
+  initialProAccounts: string[];
 }
 
 type PlatformApiRow = Omit<SerializedPlatform, "hasConfidential"> & {
@@ -126,15 +130,70 @@ function CopyButton({ value, label }: { value: string; label: string }) {
   );
 }
 
-/** Correo + número de cupo, compacto para la fila de la lista. */
-function AccountCell({ email, slot }: { email: string | null; slot: number | null }) {
+// ─── Código de color de las cuentas ─────────────────────────────────────────
+// Verde: le queda espacio · Rojo: llena · Rojo sólido: excedida · Azul: Pro.
+
+const STATUS_BOX: Record<AccountStatus, string> = {
+  space: "border-line bg-panel",
+  full: "border-danger/40 bg-danger/5",
+  over: "border-danger bg-danger/10",
+  pro: "border-brand/40 bg-brand/5",
+};
+
+const STATUS_BADGE: Record<AccountStatus, string> = {
+  space: "border-ok/30 bg-ok/10 text-ok",
+  full: "border-danger/30 bg-danger/10 text-danger",
+  over: "border-danger bg-danger-solid text-on-solid",
+  pro: "border-brand/30 bg-brand/10 text-brand-fg",
+};
+
+const STATUS_DOT: Record<AccountStatus, string> = {
+  space: "bg-ok",
+  full: "bg-danger",
+  over: "bg-danger",
+  pro: "bg-brand",
+};
+
+function statusLabel(inv: EmailSlotInventory) {
+  switch (inv.status) {
+    case "pro":
+      return "Pro · sin límite";
+    case "over":
+      return `Excedida · ${inv.used} de ${inv.capacity}`;
+    case "full":
+      return `Llena · ${inv.used} de ${inv.capacity}`;
+    default:
+      return inv.available === 1 ? "1 libre" : `${inv.available} libres`;
+  }
+}
+
+function StatusBadge({ inv }: { inv: EmailSlotInventory }) {
+  return (
+    <span className={`inline-flex items-center px-2 min-h-6 rounded-md border text-xs font-medium tabular-nums whitespace-nowrap ${STATUS_BADGE[inv.status]}`}>
+      {statusLabel(inv)}
+    </span>
+  );
+}
+
+/** Correo + cupo + estado de la cuenta, compacto para la fila de la lista. */
+function AccountCell({ email, slot, inv }: { email: string | null; slot: number | null; inv?: EmailSlotInventory }) {
   if (!email) return <span className="text-fg-ghost text-sm">—</span>;
   const n = clampPlatformSlot(slot);
+  const status = inv?.status ?? "space";
+  let text: string;
+  if (status === "pro") text = "Cuenta Pro";
+  else if (n == null) text = status === "over" ? "Sin cupo · cuenta excedida" : "Sin número de cupo";
+  else if (status === "over") text = `Cupo ${n} · cuenta excedida`;
+  else if (status === "full") text = `Cupo ${n} de ${DEFAULT_SLOT_CAPACITY} · llena`;
+  else text = `Cupo ${n} de ${DEFAULT_SLOT_CAPACITY} · queda espacio`;
+  const tone =
+    status === "pro" ? "text-brand-fg" : status === "space" ? (n == null ? "text-warn" : "text-fg-faint") : "text-danger";
   return (
     <div className="min-w-0">
       <p className="text-fg-soft text-sm truncate" title={email}>{email}</p>
-      <p className={`text-xs tabular-nums ${n == null ? "text-warn" : "text-fg-faint"}`}>
-        {n == null ? "Sin número de cupo" : `Cupo ${n} de ${DEFAULT_SLOT_CAPACITY}`}
+      <p className={`flex items-center gap-2 text-xs tabular-nums ${tone} ${status === "over" ? "font-medium" : ""}`}>
+        <span aria-hidden className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[status]}`} />
+        <span className="truncate">{text}</span>
       </p>
     </div>
   );
@@ -187,10 +246,67 @@ function SlotPill({ n, occupant }: { n: number; occupant: string | null }) {
   );
 }
 
+function AccountBox({
+  inv,
+  busy,
+  onTogglePro,
+}: {
+  inv: EmailSlotInventory;
+  busy: boolean;
+  onTogglePro: (pro: boolean) => void;
+}) {
+  const all = [...inv.bySlot.entries()].sort((x, y) => x[0] - y[0]).map(([, r]) => r.platformName);
+  return (
+    <div className={`rounded-lg border p-3 space-y-2 ${STATUS_BOX[inv.status]}`}>
+      <div className="flex items-center justify-between gap-2">
+        <StatusBadge inv={inv} />
+        <button
+          type="button"
+          role="switch"
+          aria-checked={inv.pro}
+          aria-label={`Plan Pro de ${inv.email} en ${PROVIDER_LABEL[inv.provider]}`}
+          disabled={busy}
+          onClick={() => onTogglePro(!inv.pro)}
+          className="-my-2 min-h-11 inline-flex items-center gap-2 text-xs text-fg-dim hover:text-fg disabled:opacity-50"
+        >
+          Pro
+          <span aria-hidden className={`flex w-8 h-5 p-1 rounded-full transition-colors ${inv.pro ? "bg-brand" : "bg-fill-3"}`}>
+            <span className={`w-3 h-3 rounded-full bg-white shadow transition-transform ${inv.pro ? "translate-x-3" : ""}`} />
+          </span>
+        </button>
+      </div>
+      {inv.pro ? (
+        <div className="flex flex-wrap gap-2">
+          {[...all, ...inv.unassigned.map((u) => u.platformName)].map((name) => (
+            <span key={name} className="inline-flex items-center px-2 min-h-8 rounded-md border border-line bg-fill text-xs text-fg-soft">
+              {name}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-2">
+            {Array.from({ length: inv.capacity }, (_, i) => i + 1).map((n) => (
+              <SlotPill key={n} n={n} occupant={inv.bySlot.get(n)?.platformName ?? null} />
+            ))}
+          </div>
+          {inv.unassigned.length > 0 && (
+            <p className={`text-xs ${inv.status === "over" ? "text-danger font-medium" : "text-warn"}`}>
+              {inv.status === "over" ? "De más: " : "Sin número: "}
+              {inv.unassigned.map((u) => u.platformName).join(", ")}
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 // ─── Tablero ────────────────────────────────────────────────────────────────
 
-export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
+export function PlatformsBoard({ initialPlatforms, initialProAccounts }: PlatformsBoardProps) {
   const [platforms, setPlatforms] = useState(initialPlatforms);
+  const [proAccounts, setProAccounts] = useState(() => new Set(initialProAccounts));
   const [tab, setTab] = useState<Tab>("proyectos");
   const [query, setQuery] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -201,7 +317,10 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
 
-  const inventories = useMemo(() => buildSlotInventories(platforms, DEFAULT_SLOT_CAPACITY), [platforms]);
+  const inventories = useMemo(
+    () => buildSlotInventories(platforms, DEFAULT_SLOT_CAPACITY, proAccounts),
+    [platforms, proAccounts]
+  );
 
   const inventoryByKey = useMemo(() => {
     const map = new Map<string, EmailSlotInventory>();
@@ -240,6 +359,14 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
   const issues = useMemo(() => {
     const list: string[] = [];
     for (const item of [...inventories.supabase, ...inventories.vercel]) {
+      if (item.pro) continue;
+      if (item.status === "over") {
+        const names = [...item.bySlot.values(), ...item.unassigned].map((r) => r.platformName);
+        list.push(
+          `${item.email} en ${PROVIDER_LABEL[item.provider]} tiene ${item.used} proyectos (${names.join(", ")}) y el plan gratis admite ${item.capacity}. Márcala como Pro o mueve uno a otra cuenta.`
+        );
+        continue;
+      }
       for (const u of item.unassigned) {
         list.push(`${u.platformName} no tiene número de cupo en ${PROVIDER_LABEL[item.provider]} (${item.email})`);
       }
@@ -330,6 +457,28 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
     setExpandedId(null);
   }
 
+  async function setPlan(provider: SlotProvider, email: string, pro: boolean) {
+    const key = accountKey(provider, email);
+    const apply = (on: boolean) =>
+      setProAccounts((prev) => {
+        const next = new Set(prev);
+        if (on) next.add(key);
+        else next.delete(key);
+        return next;
+      });
+    apply(pro);
+    const ok = await request(
+      "/api/empresa/platforms/accounts",
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, email, plan: pro ? "PRO" : "FREE" }),
+      },
+      "No se pudo cambiar el plan de la cuenta."
+    );
+    if (!ok) apply(!pro);
+  }
+
   async function syncCupos() {
     const data = await request("/api/empresa/platforms/sync", { method: "POST" }, "No se pudieron sincronizar los cupos.");
     if (data && Array.isArray(data.platforms)) {
@@ -416,7 +565,7 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
         <div className="mb-6 rounded-xl border border-warn/30 bg-warn/10 px-4 py-3">
           <p className="flex items-center gap-2 text-warn text-sm font-medium">
             <Icon d={LOCAL_ICON.alert} />
-            {issues.length === 1 ? "1 cupo por revisar" : `${issues.length} cupos por revisar`}
+            {issues.length === 1 ? "1 cuenta por revisar" : `${issues.length} cuentas por revisar`}
           </p>
           <ul className="mt-1 pl-6 space-y-1 text-sm text-fg-soft list-disc marker:text-warn/60">
             {issues.map((msg) => <li key={msg}>{msg}</li>)}
@@ -534,11 +683,19 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
                       <div className="col-span-2 lg:col-span-1 grid grid-cols-2 lg:contents gap-4">
                         <div className="min-w-0">
                           <p className="lg:hidden text-xs text-fg-faint mb-1">Supabase</p>
-                          <AccountCell email={p.supabaseEmail} slot={p.supabaseSlot} />
+                          <AccountCell
+                            email={p.supabaseEmail}
+                            slot={p.supabaseSlot}
+                            inv={p.supabaseEmail ? inventoryByKey.get(accountKey("supabase", p.supabaseEmail)) : undefined}
+                          />
                         </div>
                         <div className="min-w-0">
                           <p className="lg:hidden text-xs text-fg-faint mb-1">Vercel</p>
-                          <AccountCell email={p.vercelEmail} slot={p.vercelSlot} />
+                          <AccountCell
+                            email={p.vercelEmail}
+                            slot={p.vercelSlot}
+                            inv={p.vercelEmail ? inventoryByKey.get(accountKey("vercel", p.vercelEmail)) : undefined}
+                          />
                         </div>
                         <div className="min-w-0 hidden lg:block">
                           {p.githubEmail ? (
@@ -558,6 +715,7 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
                             setDraft={setDraft}
                             knownEmails={knownEmails}
                             occupants={(provider, email) => slotOccupants(provider, email, p.id)}
+                            isPro={(provider, email) => !!email && proAccounts.has(accountKey(provider, email))}
                             busy={busy}
                             onSave={() => void saveEdit(p.id)}
                             onCancel={() => setEditingId(null)}
@@ -619,12 +777,29 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
       ) : (
         <>
           <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-            <p className="text-sm text-fg-dim">
-              Cada correo admite {DEFAULT_SLOT_CAPACITY} proyectos por proveedor en el plan gratis.{" "}
-              <span className="text-ok tabular-nums">
-                Libres: {freeSupabase} en Supabase · {freeVercel} en Vercel
-              </span>
-            </p>
+            <div className="min-w-0 space-y-2">
+              <p className="text-sm text-fg-dim">
+                En el plan gratis cada correo admite {DEFAULT_SLOT_CAPACITY} proyectos por proveedor.{" "}
+                <span className="text-ok tabular-nums">
+                  Libres: {freeSupabase} en Supabase · {freeVercel} en Vercel
+                </span>
+              </p>
+              <ul aria-label="Código de color" className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-fg-dim">
+                {(
+                  [
+                    ["space", "1 libre", "le queda espacio"],
+                    ["full", "Llena", "usa sus 2 cupos"],
+                    ["over", "Excedida", "más proyectos de los que admite"],
+                    ["pro", "Pro", "sin límite"],
+                  ] as [AccountStatus, string, string][]
+                ).map(([st, tag, label]) => (
+                  <li key={st} className="flex items-center gap-2">
+                    <span className={`inline-flex items-center px-2 min-h-6 rounded-md border font-medium ${STATUS_BADGE[st]}`}>{tag}</span>
+                    {label}
+                  </li>
+                ))}
+              </ul>
+            </div>
             <button
               type="button"
               disabled={busy}
@@ -652,9 +827,9 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
               {accounts.map((a) => (
                 <div
                   key={a.email}
-                  className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-4 gap-y-2 px-4 py-3 border-b border-line last:border-b-0 items-center"
+                  className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-4 gap-y-2 px-4 py-3 border-b border-line last:border-b-0 items-start"
                 >
-                  <div className="flex items-center gap-1 min-w-0">
+                  <div className="flex items-center gap-1 min-w-0 md:min-h-11">
                     <p className="text-fg text-sm truncate" title={a.email}>{a.email}</p>
                     <CopyButton value={a.email} label="correo" />
                   </div>
@@ -664,18 +839,7 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
                       <div key={provider} className="min-w-0">
                         <p className="md:hidden text-xs text-fg-faint mb-1">{PROVIDER_LABEL[provider]}</p>
                         {inv ? (
-                          <>
-                            <div className="grid grid-cols-2 gap-2">
-                              {Array.from({ length: inv.capacity }, (_, i) => i + 1).map((n) => (
-                                <SlotPill key={n} n={n} occupant={inv.bySlot.get(n)?.platformName ?? null} />
-                              ))}
-                            </div>
-                            {inv.unassigned.length > 0 && (
-                              <p className="text-xs text-warn mt-1">
-                                Sin número: {inv.unassigned.map((u) => u.platformName).join(", ")}
-                              </p>
-                            )}
-                          </>
+                          <AccountBox inv={inv} busy={busy} onTogglePro={(pro) => void setPlan(provider, a.email, pro)} />
                         ) : (
                           <span className="text-fg-ghost text-sm">Sin uso</span>
                         )}
@@ -702,6 +866,7 @@ function EditForm({
   setDraft,
   knownEmails,
   occupants,
+  isPro,
   busy,
   onSave,
   onCancel,
@@ -711,6 +876,7 @@ function EditForm({
   setDraft: React.Dispatch<React.SetStateAction<Partial<SerializedPlatform>>>;
   knownEmails: string[];
   occupants: (provider: SlotProvider, email: string | null | undefined) => Map<number, string>;
+  isPro: (provider: SlotProvider, email: string | null | undefined) => boolean;
   busy: boolean;
   onSave: () => void;
   onCancel: () => void;
@@ -773,7 +939,13 @@ function EditForm({
             className={inputCls}
           />
         </div>
-        {email && (
+        {email && isPro(provider, email) && (
+          <p className="flex items-center gap-2 text-xs text-brand-fg">
+            <span aria-hidden className="w-2 h-2 rounded-full bg-brand" />
+            Cuenta Pro: sin límite de proyectos, no necesita número de cupo.
+          </p>
+        )}
+        {email && !isPro(provider, email) && (
           <div>
             <p className="text-xs text-fg-faint mb-1">Cupo en esa cuenta</p>
             <div role="radiogroup" aria-label={`Cupo en ${PROVIDER_LABEL[provider]}`} className="grid grid-cols-2 gap-2">
@@ -805,7 +977,7 @@ function EditForm({
             </div>
             {taken.size >= DEFAULT_SLOT_CAPACITY && (
               <p className="text-xs text-warn mt-1">
-                Esta cuenta ya tiene {DEFAULT_SLOT_CAPACITY} proyectos. Usa otro correo o libera un cupo.
+                Esta cuenta ya tiene {DEFAULT_SLOT_CAPACITY} proyectos. Usa otro correo, libera un cupo o márcala como Pro en «Cuentas y cupos».
               </p>
             )}
           </div>

@@ -13,14 +13,21 @@ export default async function PlatformsPage() {
   await ensurePlatformsSeeded(user.id);
   await syncPlatformsForUser(user.id);
 
-  const platforms = await prisma.platform.findMany({
-    where: { userId: user.id },
-    orderBy: { sortOrder: "asc" },
-  });
+  const [platforms, proAccounts] = await Promise.all([
+    prisma.platform.findMany({
+      where: { userId: user.id },
+      orderBy: { sortOrder: "asc" },
+    }),
+    prisma.platformAccount.findMany({
+      where: { userId: user.id, plan: "PRO" },
+      select: { provider: true, email: true },
+    }),
+  ]);
 
   return (
     <div className="w-full max-w-6xl">
       <PlatformsBoard
+        initialProAccounts={proAccounts.map((a) => `${a.provider}:${a.email}`)}
         initialPlatforms={platforms.map((p) => ({
           id: p.id,
           name: p.name,

@@ -1,25 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import { PLATFORMS_SEED, normEmail, normSlot } from "@/lib/platforms-seed";
+import { normSlot } from "@/lib/platforms-seed";
 import { DEFAULT_SLOT_CAPACITY } from "@/lib/platform-slots";
-
-const SEED_BY_NAME = new Map(
-  PLATFORMS_SEED.map((row) => [row.name.trim().toLowerCase(), row])
-);
-
-function seedPayload(row: (typeof PLATFORMS_SEED)[number]) {
-  return {
-    accessUrl: row.accessUrl ?? null,
-    supabaseEmail: normEmail(row.supabaseEmail),
-    supabaseSlot: normSlot(row.supabaseSlot),
-    vercelEmail: normEmail(row.vercelEmail),
-    vercelSlot: normSlot(row.vercelSlot),
-    linkUrl: row.linkUrl ?? null,
-    githubEmail: normEmail(row.githubEmail),
-    brevoEmail: normEmail(row.brevoEmail),
-    notes: row.notes ?? null,
-    sortOrder: row.sortOrder,
-  };
-}
 
 /** Ajusta cupos inválidos o duplicados en el mismo correo+proveedor. */
 function reconcileSlots<
@@ -85,10 +66,7 @@ function reconcileSlots<
   return updates;
 }
 
-/**
- * Sincroniza plataformas del usuario con PLATFORMS_SEED (por nombre)
- * y reconcilia cupos duplicados o fuera de rango.
- */
+/** Reconcilia cupos duplicados o fuera de rango. */
 export async function syncPlatformsForUser(userId: string): Promise<number> {
   const existing = await prisma.platform.findMany({
     where: { userId },
@@ -110,35 +88,9 @@ export async function syncPlatformsForUser(userId: string): Promise<number> {
     }
   }
 
-  const afterSanitize = changed > 0
-    ? await prisma.platform.findMany({ where: { userId }, orderBy: { sortOrder: "asc" } })
-    : existing;
-
-  for (const platform of afterSanitize) {
-    const seed = SEED_BY_NAME.get(platform.name.trim().toLowerCase());
-    if (!seed) continue;
-
-    const data = seedPayload(seed);
-    const needsUpdate =
-      platform.accessUrl !== data.accessUrl ||
-      platform.supabaseEmail?.toLowerCase() !== data.supabaseEmail ||
-      platform.supabaseSlot !== data.supabaseSlot ||
-      platform.vercelEmail?.toLowerCase() !== data.vercelEmail ||
-      platform.vercelSlot !== data.vercelSlot ||
-      platform.linkUrl !== data.linkUrl ||
-      platform.githubEmail?.toLowerCase() !== data.githubEmail ||
-      platform.brevoEmail?.toLowerCase() !== data.brevoEmail ||
-      platform.notes !== data.notes ||
-      platform.sortOrder !== data.sortOrder;
-
-    if (needsUpdate) {
-      await prisma.platform.update({
-        where: { id: platform.id },
-        data,
-      });
-      changed++;
-    }
-  }
+  // El seed solo crea las plataformas la primera vez (ensurePlatformsSeeded).
+  // Antes se reescribían desde el seed en cada carga y eso deshacía lo editado
+  // en la página: un correo cambiado volvía al del seed.
 
   const refreshed = await prisma.platform.findMany({
     where: { userId },

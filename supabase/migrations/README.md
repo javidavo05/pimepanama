@@ -46,3 +46,4 @@ Todas las migraciones se corren manualmente en **Supabase → SQL Editor**.
 | 0031 | `0031_watched_threads.sql` | WatchedThread — conversaciones de correo marcadas como importantes; cada respuesta nueva del hilo avisa por campana y push | 2026-09-17 | ✅ Aplicado |
 | 0032 | `0032_mail_watch_schedule.sql` | pg_cron + pg_net: job `mail-watch` cada 10 min llama a /api/empresa/cron/mail-watch; el Bearer sale del Vault (`mail_watch_cron_secret` = CRON_SECRET de Vercel) | 2026-09-17 | ✅ Aplicado |
 | 0033 | `0033_project_tasks.sql` | Tareas por proyecto estilo Asana: tabla ProjectSection + Task.projectId/sectionId/parentId (subtareas)/sortOrder; backfill del proyecto desde documento, cuota y reunión | 2026-09-21 | ✅ Aplicado |
+| 0034 | `0034_platform_accounts.sql` | PlatformAccount — plan (FREE/PRO) de cada cuenta de Supabase/Vercel usada en Platforms; una cuenta Pro no tiene el límite de 2 proyectos | 2026-09-23 | ✅ Aplicado |

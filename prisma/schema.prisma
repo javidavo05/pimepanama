@@ -258,6 +258,7 @@ model EmpresaUser {
   leads                 Lead[]
   tasks                 Task[]
   platforms             Platform[]
+  platformAccounts      PlatformAccount[]
   expenses              Expense[]
   meetings              Meeting[]
   pushSubscriptions     PushSubscription[]
@@ -801,6 +802,23 @@ model Platform {
 
   @@index([userId])
   @@index([userId, sortOrder])
+}
+
+/// Plan de una cuenta de Supabase o Vercel (correo + proveedor). Sin fila = gratis.
+model PlatformAccount {
+  id        String      @id @default(cuid())
+  userId    String
+  user      EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// "supabase" | "vercel"
+  provider  String
+  /// En minúsculas, igual que Platform.supabaseEmail / vercelEmail.
+  email     String
+  /// "FREE" (2 proyectos) | "PRO" (sin límite)
+  plan      String      @default("FREE")
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([userId, provider, email])
 }
 
 // ─── Por pagar (gastos) ──────────────────────────────────────────────────────
