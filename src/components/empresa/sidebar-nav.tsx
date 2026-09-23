@@ -139,10 +139,10 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
           {/* User + sign out */}
           <div className="mt-2 px-3 py-3 rounded-lg bg-fill border border-line">
             <p className="text-fg-dim text-xs truncate">{userEmail}</p>
-            <form action={signOutAction} className="mt-1.5">
+            <form action={signOutAction}>
               <button
                 type="submit"
-                className="text-fg-dim hover:text-danger text-xs transition-colors"
+                className="-mx-2 px-2 min-h-8 inline-flex items-center rounded-md text-fg-dim hover:text-danger text-xs transition-colors"
               >
                 Cerrar sesión →
               </button>

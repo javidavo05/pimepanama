@@ -147,7 +147,7 @@ export function PlatformConfidentialVault({
   }
 
   const inputCls =
-    "w-full bg-panel border border-line-mid rounded-lg px-3 min-h-11 text-base sm:text-sm text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40";
+    "w-full bg-panel border border-line-mid rounded-lg px-3 min-h-11 text-base text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40";
 
   return (
     <section className="rounded-lg border border-line bg-panel p-4 space-y-3 self-start">

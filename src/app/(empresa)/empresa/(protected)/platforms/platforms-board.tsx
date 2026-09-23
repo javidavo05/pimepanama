@@ -382,7 +382,7 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="Nombre del proyecto, p. ej. Academyx"
-            className="flex-1 min-w-0 bg-panel-2 border border-line-mid rounded-lg px-3 min-h-11 text-base sm:text-sm text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40"
+            className="flex-1 min-w-0 bg-panel-2 border border-line-mid rounded-lg px-3 min-h-11 text-base text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40"
           />
           <div className="flex gap-2">
             <button
@@ -461,7 +461,7 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
               onKeyDown={(e) => e.key === "Escape" && setQuery("")}
               placeholder="Buscar por proyecto, dominio o correo…"
               autoComplete="off"
-              className="w-full bg-panel border border-line-mid rounded-lg pl-8 pr-4 min-h-11 text-base sm:text-sm text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40 transition-colors"
+              className="w-full bg-panel border border-line-mid rounded-lg pl-8 pr-4 min-h-11 text-base text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40 transition-colors"
             />
           </div>
 
@@ -695,7 +695,7 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
 // ─── Formulario de edición ──────────────────────────────────────────────────
 
 const inputCls =
-  "w-full bg-panel border border-line-mid rounded-lg px-3 min-h-11 text-base sm:text-sm text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40";
+  "w-full bg-panel border border-line-mid rounded-lg px-3 min-h-11 text-base text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40";
 
 function EditForm({
   draft,
