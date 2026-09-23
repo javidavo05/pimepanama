@@ -20,6 +20,7 @@ export function PlatformConfidentialVault({
   const [content, setContent] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [composing, setComposing] = useState(false);
   const sessionPasswordRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -141,103 +142,145 @@ export function PlatformConfidentialVault({
     setPassword("");
     sessionPasswordRef.current = null;
     setError(null);
+    setComposing(false);
     setMode(hasVault ? "locked" : "setup");
   }
 
+  const inputCls =
+    "w-full bg-panel border border-line-mid rounded-lg px-3 min-h-11 text-base sm:text-sm text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40";
+
   return (
-    <div className="border border-warn/20 bg-warn/[0.04] rounded-lg p-3 space-y-2.5 mt-2">
+    <section className="rounded-lg border border-line bg-panel p-4 space-y-3 self-start">
       <div className="flex items-center justify-between gap-2">
-        <p className="text-[10px] uppercase tracking-widest text-warn font-medium flex items-center gap-1.5">
-          <span aria-hidden>🔒</span>
+        <h3 className="text-sm text-fg font-medium flex items-center gap-2">
+          <svg className="w-4 h-4 text-fg-faint" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
           Información confidencial
-        </p>
-        {hasVault && mode === "locked" && (
-          <span className="text-[9px] px-1.5 py-0.5 rounded bg-warn/15 text-warn-soft border border-warn/20">
-            Cifrado
-          </span>
+        </h3>
+        {hasVault && (
+          <span className="text-xs text-fg-faint">{mode === "unlocked" ? "Desbloqueada" : "Cifrada"}</span>
         )}
       </div>
 
-      <p className="text-[10px] text-fg-ghost leading-relaxed">
-        Credenciales y notas sensibles del proyecto. Protegido con la contraseña madre de la suite.
-      </p>
+      {mode === "setup" && !composing && (
+        <div className="space-y-3">
+          <p className="text-xs text-fg-faint leading-relaxed">
+            Guarda aquí API keys, usuarios y contraseñas del proyecto. Se cifran con la contraseña madre de la suite.
+          </p>
+          <button
+            type="button"
+            onClick={() => setComposing(true)}
+            className="px-4 min-h-11 border border-line-mid text-fg-soft hover:text-fg text-sm rounded-lg transition-colors"
+          >
+            Agregar información confidencial
+          </button>
+        </div>
+      )}
 
-      {mode === "setup" && (
+      {mode === "setup" && composing && (
         <div className="space-y-2">
+          <label htmlFor={`vault-new-${platformId}`} className="sr-only">Información confidencial</label>
           <textarea
+            id={`vault-new-${platformId}`}
+            autoFocus
             value={content}
             onChange={(e) => setContent(e.target.value)}
             rows={4}
-            placeholder="API keys, usuarios, contraseñas, notas del proyecto..."
-            className="w-full bg-panel-2 border border-line rounded px-2 py-1.5 text-xs text-fg placeholder:text-fg-trace resize-y min-h-[80px]"
+            placeholder="API keys, usuarios, contraseñas, notas del proyecto…"
+            className={`${inputCls} py-2 resize-y`}
           />
+          <label htmlFor={`vault-pw-${platformId}`} className="sr-only">Contraseña madre</label>
           <input
+            id={`vault-pw-${platformId}`}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Contraseña madre"
-            className="w-full bg-panel-2 border border-line rounded px-2 py-1.5 text-xs text-fg placeholder:text-fg-trace"
+            className={inputCls}
           />
-          <button
-            type="button"
-            disabled={busy || !password}
-            onClick={() => void handleCreate()}
-            className="w-full px-3 py-1.5 text-xs bg-warn/20 hover:bg-warn/30 border border-warn/30 text-warn-soft rounded-lg disabled:opacity-50"
-          >
-            {busy ? "Guardando..." : "Guardar información cifrada"}
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              disabled={busy || !password}
+              onClick={() => void handleCreate()}
+              className="px-4 min-h-11 bg-fill-2 hover:bg-fill-3 border border-line-mid text-fg text-sm font-medium rounded-lg disabled:opacity-50"
+            >
+              {busy ? "Guardando…" : "Cifrar y guardar"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setComposing(false);
+                setContent("");
+                setPassword("");
+                setError(null);
+              }}
+              className="px-4 min-h-11 text-fg-dim hover:text-fg text-sm rounded-lg"
+            >
+              Cancelar
+            </button>
+          </div>
         </div>
       )}
 
       {mode === "locked" && (
-        <div className="space-y-2">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void handleUnlock();
+          }}
+          className="flex flex-col sm:flex-row gap-2"
+        >
+          <label htmlFor={`vault-unlock-${platformId}`} className="sr-only">Contraseña madre</label>
           <input
+            id={`vault-unlock-${platformId}`}
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && void handleUnlock()}
             placeholder="Contraseña madre"
-            className="w-full bg-panel-2 border border-line rounded px-2 py-1.5 text-xs text-fg placeholder:text-fg-trace"
+            className={inputCls}
           />
           <button
-            type="button"
+            type="submit"
             disabled={busy || !password}
-            onClick={() => void handleUnlock()}
-            className="w-full px-3 py-1.5 text-xs bg-fill-2 hover:bg-fill-3 border border-line-mid text-fg-soft rounded-lg disabled:opacity-50"
+            className="shrink-0 px-4 min-h-11 bg-fill-2 hover:bg-fill-3 border border-line-mid text-fg text-sm font-medium rounded-lg disabled:opacity-50"
           >
-            {busy ? "Verificando..." : "Desbloquear"}
+            {busy ? "Verificando…" : "Desbloquear"}
           </button>
-        </div>
+        </form>
       )}
 
       {mode === "unlocked" && (
         <div className="space-y-2">
+          <label htmlFor={`vault-edit-${platformId}`} className="sr-only">Información confidencial</label>
           <textarea
+            id={`vault-edit-${platformId}`}
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            rows={5}
-            className="w-full bg-panel-2 border border-warn/20 rounded px-2 py-1.5 text-xs text-fg resize-y min-h-[100px]"
+            rows={6}
+            className={`${inputCls} py-2 resize-y`}
           />
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-2">
             <button
               type="button"
               disabled={busy}
               onClick={() => void handleSaveUnlocked()}
-              className="px-2.5 py-1 text-[11px] bg-ok/60 hover:bg-ok/80 text-fg rounded-md disabled:opacity-50"
+              className="px-4 min-h-11 bg-fill-2 hover:bg-fill-3 border border-line-mid text-fg text-sm font-medium rounded-lg disabled:opacity-50"
             >
-              {busy ? "Guardando..." : "Guardar cambios"}
+              {busy ? "Guardando…" : "Guardar cambios"}
             </button>
             <button
               type="button"
               onClick={lock}
-              className="px-2.5 py-1 text-[11px] border border-line-mid text-fg-dim rounded-md"
+              className="px-4 min-h-11 text-fg-dim hover:text-fg text-sm rounded-lg"
             >
               Bloquear
             </button>
             <button
               type="button"
               onClick={() => void handleRemove()}
-              className="px-2.5 py-1 text-[11px] text-danger rounded-md ml-auto"
+              className="ml-auto px-4 min-h-11 text-danger hover:bg-danger/10 text-sm rounded-lg"
             >
               Eliminar
             </button>
@@ -245,7 +288,7 @@ export function PlatformConfidentialVault({
         </div>
       )}
 
-      {error && <p className="text-[11px] text-danger">{error}</p>}
-    </div>
+      {error && <p role="alert" className="text-xs text-danger">{error}</p>}
+    </section>
   );
 }

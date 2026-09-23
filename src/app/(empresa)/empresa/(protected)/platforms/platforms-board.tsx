@@ -1,17 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   buildSlotInventories,
   clampPlatformSlot,
   DEFAULT_SLOT_CAPACITY,
   normalizePlatformEmail,
-  slotStatusColor,
   type EmailSlotInventory,
   type SlotProvider,
 } from "@/lib/platform-slots";
 import { PlatformConfidentialVault } from "@/components/empresa/platform-confidential-vault";
 import { hasPlatformVault } from "@/lib/platform-vault-shared";
+import { Icon, ICON } from "@/components/empresa/tasks/task-parts";
 
 export type SerializedPlatform = {
   id: string;
@@ -33,50 +33,23 @@ interface PlatformsBoardProps {
   initialPlatforms: SerializedPlatform[];
 }
 
+type PlatformApiRow = Omit<SerializedPlatform, "hasConfidential"> & {
+  confidentialVault?: string | null;
+  hasConfidential?: boolean;
+};
+
+type Tab = "proyectos" | "cuentas";
+
 const PROVIDER_LABEL: Record<SlotProvider, string> = {
   supabase: "Supabase",
   vercel: "Vercel",
 };
 
-const PROVIDER_ACCENT: Record<SlotProvider, string> = {
-  supabase: "text-mint",
-  vercel: "text-fg",
-};
-
-function copyText(text: string) {
-  navigator.clipboard.writeText(text).catch(() => {});
-}
-
-function parseSlotInput(raw: string | number | null | undefined): number | null {
-  const s = String(raw ?? "");
-  if (!s.trim()) return null;
-  return clampPlatformSlot(Number(s));
-}
-
-function normalizeSearch(text: string) {
-  return String(text).trim().toLowerCase();
-}
-
-function platformEmailKey(provider: SlotProvider, email: string | null | undefined): string | null {
-  const normalized = normalizePlatformEmail(email);
-  return normalized ? `${provider}:${normalized}` : null;
-}
-
-type PlatformApiRow = {
-  id: string;
-  name: string;
-  accessUrl: string | null;
-  supabaseEmail: string | null;
-  supabaseSlot: number | null;
-  vercelEmail: string | null;
-  vercelSlot: number | null;
-  linkUrl: string | null;
-  githubEmail: string | null;
-  brevoEmail: string | null;
-  notes: string | null;
-  confidentialVault?: string | null;
-  hasConfidential?: boolean;
-  sortOrder: number;
+const LOCAL_ICON = {
+  copy: "M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z",
+  lock: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z",
+  search: "M21 21l-5.2-5.2M17 10a7 7 0 11-14 0 7 7 0 0114 0z",
+  alert: "M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z",
 };
 
 function toSerializedPlatform(p: PlatformApiRow): SerializedPlatform {
@@ -97,442 +70,138 @@ function toSerializedPlatform(p: PlatformApiRow): SerializedPlatform {
   };
 }
 
-function platformSearchHaystack(p: SerializedPlatform) {
-  return [
-    p.name,
-    p.accessUrl,
-    p.linkUrl,
-    p.supabaseEmail,
-    p.vercelEmail,
-    p.githubEmail,
-    p.brevoEmail,
-    p.notes,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
+function byName(a: { name: string }, b: { name: string }) {
+  return a.name.localeCompare(b.name, "es", { sensitivity: "base" });
 }
 
-function scorePlatformMatch(p: SerializedPlatform, query: string): number {
-  const q = normalizeSearch(query);
-  if (!q) return 0;
+/** "https://www.bleiydavo.com/" → "bleiydavo.com" */
+function hostOf(url: string | null) {
+  if (!url) return null;
+  try {
+    return new URL(url.includes("://") ? url : `https://${url}`).hostname.replace(/^www\./, "");
+  } catch {
+    return url;
+  }
+}
+
+function hrefOf(url: string) {
+  return url.includes("://") ? url : `https://${url}`;
+}
+
+function scoreMatch(p: SerializedPlatform, q: string): number {
   const name = p.name.toLowerCase();
   if (name === q) return 100;
   if (name.startsWith(q)) return 80;
   if (name.includes(q)) return 65;
-  const haystack = platformSearchHaystack(p);
-  if (haystack.includes(q)) return 40;
-  return 0;
+  const haystack = [p.accessUrl, p.linkUrl, p.supabaseEmail, p.vercelEmail, p.githubEmail, p.brevoEmail, p.notes]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return haystack.includes(q) ? 40 : 0;
 }
 
-function rankPlatformMatches(platforms: SerializedPlatform[], query: string) {
-  const q = normalizeSearch(query);
-  if (!q) return [];
-  return platforms
-    .map((p) => ({ p, score: scorePlatformMatch(p, q) }))
-    .filter(({ score }) => score > 0)
-    .sort((a, b) => b.score - a.score || a.p.name.localeCompare(b.p.name))
-    .map(({ p }) => p);
-}
+// ─── Piezas chicas ───────────────────────────────────────────────────────────
 
-function HighlightMatch({ text, query }: { text: string; query: string }) {
-  const q = query.trim();
-  if (!q) return <>{text}</>;
-  const i = text.toLowerCase().indexOf(q.toLowerCase());
-  if (i === -1) return <>{text}</>;
+function CopyButton({ value, label }: { value: string; label: string }) {
+  const [copied, setCopied] = useState(false);
   return (
-    <>
-      {text.slice(0, i)}
-      <span className="text-fg font-semibold">{text.slice(i, i + q.length)}</span>
-      {text.slice(i + q.length)}
-    </>
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        navigator.clipboard
+          .writeText(value)
+          .then(() => {
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1500);
+          })
+          .catch(() => {});
+      }}
+      aria-label={`Copiar ${label}`}
+      title={copied ? "Copiado" : `Copiar ${label}`}
+      className="w-11 h-11 lg:w-8 lg:h-8 shrink-0 inline-flex items-center justify-center rounded-md text-fg-ghost hover:text-fg-mute hover:bg-fill transition-colors"
+    >
+      <Icon d={copied ? ICON.check : LOCAL_ICON.copy} className={`w-4 h-4 ${copied ? "text-ok" : ""}`} />
+    </button>
   );
 }
 
-function PlatformSearchInput({
-  platforms,
-  value,
-  onChange,
-  onSelect,
-}: {
-  platforms: SerializedPlatform[];
-  value: string;
-  onChange: (value: string) => void;
-  onSelect: (platform: SerializedPlatform) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [cursor, setCursor] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const suggestions = useMemo(
-    () => rankPlatformMatches(platforms, value).slice(0, 8),
-    [platforms, value]
-  );
-
-  const ghostSuffix = useCallback(() => {
-    const q = value.trim();
-    if (!q || suggestions.length === 0) return "";
-    const first = suggestions[0];
-    if (
-      first.name.toLowerCase().startsWith(q.toLowerCase()) &&
-      first.name.length > q.length
-    ) {
-      return first.name.slice(q.length);
-    }
-    return "";
-  }, [value, suggestions])();
-
-  useEffect(() => {
-    function onClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, []);
-
-  function pick(platform: SerializedPlatform) {
-    onSelect(platform);
-    onChange(platform.name);
-    setOpen(false);
-    setCursor(0);
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (!open && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
-      setOpen(true);
-      return;
-    }
-
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setCursor((c) => Math.min(c + 1, suggestions.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setCursor((c) => Math.max(c - 1, 0));
-    } else if (e.key === "Tab" && ghostSuffix) {
-      e.preventDefault();
-      onChange(value + ghostSuffix);
-      setCursor(0);
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      if (open && suggestions[cursor]) pick(suggestions[cursor]);
-      else if (suggestions.length === 1) pick(suggestions[0]);
-    } else if (e.key === "Escape") {
-      setOpen(false);
-      onChange("");
-    }
-  }
-
-  const showDropdown = open && value.trim().length > 0 && suggestions.length > 0;
-
+/** Correo + número de cupo, compacto para la fila de la lista. */
+function AccountCell({ email, slot }: { email: string | null; slot: number | null }) {
+  if (!email) return <span className="text-fg-ghost text-sm">—</span>;
+  const n = clampPlatformSlot(slot);
   return (
-    <div ref={ref} className="relative">
-      <div className="relative">
-        {ghostSuffix && open && (
-          <div
-            aria-hidden
-            className="absolute inset-0 px-3 py-2.5 text-sm pointer-events-none flex items-center overflow-hidden rounded-lg"
-          >
-            <span className="invisible whitespace-pre">{value}</span>
-            <span className="text-fg-faint">{ghostSuffix}</span>
-          </div>
-        )}
-        <input
-          ref={inputRef}
-          type="search"
-          value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-            setOpen(true);
-            setCursor(0);
-          }}
-          onFocus={() => setOpen(true)}
-          onKeyDown={handleKeyDown}
-          placeholder="Buscar proyecto…"
-          autoComplete="off"
-          className="w-full bg-panel border border-line-mid rounded-lg pl-9 pr-20 py-2.5 text-sm text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40 transition-colors"
-        />
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-fg-ghost text-sm pointer-events-none">
-          ⌕
-        </span>
-        {value && (
-          <button
-            type="button"
-            onClick={() => {
-              onChange("");
-              setOpen(false);
-              inputRef.current?.focus();
-            }}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-fg-faint hover:text-fg-mute px-2 py-1 rounded"
-          >
-            Limpiar
-          </button>
-        )}
-        {ghostSuffix && open && (
-          <span className="absolute right-16 top-1/2 -translate-y-1/2 text-[9px] text-fg-ghost font-mono bg-fill px-1 py-0.5 rounded pointer-events-none">
-            Tab ↹
-          </span>
-        )}
-      </div>
-
-      {showDropdown && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-pop border border-line rounded-xl shadow-2xl overflow-hidden z-50 max-h-64 overflow-y-auto">
-          {suggestions.map((p, i) => (
-            <button
-              key={p.id}
-              type="button"
-              onMouseDown={(e) => {
-                e.preventDefault();
-                pick(p);
-              }}
-              onMouseEnter={() => setCursor(i)}
-              className={`w-full text-left px-4 py-2.5 transition-colors flex items-center justify-between gap-3 ${
-                cursor === i ? "bg-fill-2" : "hover:bg-fill"
-              }`}
-            >
-              <div className="min-w-0">
-                <p className="text-fg text-sm truncate">
-                  <HighlightMatch text={p.name} query={value} />
-                </p>
-                {p.accessUrl && (
-                  <p className="text-fg-ghost text-[11px] truncate mt-0.5">{p.accessUrl}</p>
-                )}
-              </div>
-              <span className="text-[10px] text-fg-ghost shrink-0 font-mono">
-                {p.supabaseSlot != null ? `SB ${p.supabaseSlot}` : ""}
-                {p.supabaseSlot != null && p.vercelSlot != null ? " · " : ""}
-                {p.vercelSlot != null ? `V ${p.vercelSlot}` : ""}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
+    <div className="min-w-0">
+      <p className="text-fg-soft text-sm truncate" title={email}>{email}</p>
+      <p className={`text-xs tabular-nums ${n == null ? "text-warn" : "text-fg-faint"}`}>
+        {n == null ? "Sin número de cupo" : `Cupo ${n} de ${DEFAULT_SLOT_CAPACITY}`}
+      </p>
     </div>
   );
 }
 
-function FieldRow({
+function DetailRow({
   label,
   value,
   href,
 }: {
   label: string;
-  value: string | null | undefined;
-  href?: string | null;
+  value: string | null;
+  href?: boolean;
 }) {
-  if (!value) return null;
   return (
-    <div className="flex items-start justify-between gap-2 text-xs">
-      <span className="text-fg-faint shrink-0">{label}</span>
-      <div className="flex items-center gap-1 min-w-0">
-        {href ? (
+    <div className="grid grid-cols-[88px_minmax(0,1fr)_44px] lg:grid-cols-[88px_minmax(0,1fr)_32px] items-center gap-2 min-h-8">
+      <dt className="text-fg-faint text-xs">{label}</dt>
+      <dd className="min-w-0">
+        {!value ? (
+          <span className="text-fg-ghost text-sm">—</span>
+        ) : href ? (
           <a
-            href={href}
+            href={hrefOf(value)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-brand-fg hover:underline truncate"
+            className="text-brand-fg text-sm hover:underline truncate block"
+            title={value}
           >
-            {value}
+            {hostOf(value)}
           </a>
         ) : (
-          <span className="text-fg-soft truncate">{value}</span>
+          <span className="text-fg-soft text-sm truncate block" title={value}>{value}</span>
         )}
-        <button
-          type="button"
-          onClick={() => copyText(value)}
-          className="text-fg-ghost hover:text-fg-dim shrink-0"
-          title="Copiar"
-        >
-          ⧉
-        </button>
-      </div>
+      </dd>
+      {value ? <CopyButton value={value} label={label} /> : <span />}
     </div>
   );
 }
 
-function SlotBadge({
-  slot,
-  capacity,
-  conflict,
-}: {
-  slot: number | null;
-  capacity: number;
-  conflict?: boolean;
-}) {
-  if (slot == null) {
-    return (
-      <span className="text-[10px] px-2 py-0.5 rounded-full border border-warn/30 bg-warn/10 text-warn font-medium">
-        Sin cupo
-      </span>
-    );
-  }
-  const over = slot > capacity;
+function SlotPill({ n, occupant }: { n: number; occupant: string | null }) {
   return (
     <span
-      className={`text-[10px] px-2 py-0.5 rounded-full border font-semibold font-mono ${
-        conflict || over
-          ? "border-danger/40 bg-danger/15 text-danger"
-          : "border-brand/35 bg-brand/15 text-brand-fg"
+      className={`inline-flex items-center gap-1 min-w-0 max-w-full px-2 min-h-8 rounded-md border text-xs ${
+        occupant ? "border-line bg-fill text-fg-soft" : "border-ok/30 bg-ok/10 text-ok"
       }`}
     >
-      Cupo {slot}/{capacity}
+      <span className="tabular-nums text-fg-faint shrink-0">{n}</span>
+      <span className="truncate">{occupant ?? "Libre"}</span>
     </span>
   );
 }
 
-function AccountSlotRow({
-  provider,
-  email,
-  slot,
-  capacity,
-  inventory,
-}: {
-  provider: SlotProvider;
-  email: string;
-  slot: number | null;
-  capacity: number;
-  inventory?: EmailSlotInventory;
-}) {
-  const displaySlot = clampPlatformSlot(slot, capacity);
-  const conflict =
-    displaySlot != null &&
-    (inventory?.conflicts.some((c) => c.slot === displaySlot) ?? false);
-
-  const status =
-    inventory == null
-      ? "unknown"
-      : inventory.available <= 0
-        ? "full"
-        : inventory.available < inventory.capacity
-          ? "partial"
-          : "free";
-
-  return (
-    <div className="rounded-lg border border-line bg-fill p-2.5 space-y-2">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className={`text-[10px] uppercase tracking-widest font-medium ${PROVIDER_ACCENT[provider]}`}>
-            {PROVIDER_LABEL[provider]}
-          </p>
-          <p className="text-fg-soft text-xs truncate mt-0.5">{email}</p>
-        </div>
-        <SlotBadge slot={displaySlot} capacity={capacity} conflict={conflict} />
-      </div>
-      {inventory && (
-        <div className="flex items-center gap-2">
-          <div className="flex gap-1 flex-1">
-            {Array.from({ length: capacity }, (_, i) => i + 1).map((n) => {
-              const occupant = inventory.bySlot.get(n);
-              const isThis = displaySlot === n;
-              const taken = !!occupant;
-              return (
-                <div
-                  key={n}
-                  title={
-                    occupant
-                      ? `${occupant.platformName} (cupo ${n})`
-                      : `Cupo ${n} disponible`
-                  }
-                  className={`flex-1 h-2 rounded-full transition-colors ${
-                    taken
-                      ? isThis
-                        ? "bg-brand ring-1 ring-brand/50"
-                        : "bg-fg-ghost"
-                      : "bg-ok/40"
-                  }`}
-                />
-              );
-            })}
-          </div>
-          <span
-            className={`text-[10px] font-mono shrink-0 ${
-              status === "full"
-                ? "text-danger"
-                : status === "partial"
-                  ? "text-warn"
-                  : "text-ok"
-            }`}
-          >
-            {inventory.available} libre
-          </span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function InventoryCard({ item }: { item: EmailSlotInventory }) {
-  const statusCls = slotStatusColor(item.available, item.capacity);
-
-  return (
-    <div className={`rounded-xl border p-3 space-y-2 ${statusCls}`}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-[10px] uppercase tracking-widest opacity-70">
-            {PROVIDER_LABEL[item.provider]}
-          </p>
-          <p className="text-sm font-medium truncate">{item.email}</p>
-        </div>
-        <div className="text-right shrink-0">
-          <p className="text-lg font-mono font-semibold leading-none">
-            {item.available}/{item.capacity}
-          </p>
-          <p className="text-[10px] opacity-70 mt-0.5">disponibles</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-1.5">
-        {Array.from({ length: item.capacity }, (_, i) => i + 1).map((n) => {
-          const occupant = item.bySlot.get(n);
-          return (
-            <div
-              key={n}
-              className={`rounded-lg px-2 py-1.5 text-[11px] border ${
-                occupant
-                  ? "border-line-mid bg-fill-2 text-fg-soft"
-                  : "border-ok/25 bg-ok/10 text-ok"
-              }`}
-            >
-              <span className="font-mono font-semibold">#{n}</span>
-              <span className="mx-1 opacity-40">·</span>
-              <span className="truncate">{occupant ? occupant.platformName : "Libre"}</span>
-            </div>
-          );
-        })}
-      </div>
-
-      {item.unassigned.length > 0 && (
-        <p className="text-[10px] opacity-80">
-          Sin cupo asignado: {item.unassigned.map((u) => u.platformName).join(", ")}
-        </p>
-      )}
-      {item.conflicts.length > 0 && (
-        <p className="text-[10px] text-danger-soft">
-          Conflicto: cupo duplicado en{" "}
-          {item.conflicts.map((c) => `#${c.slot} (${c.platforms.join(", ")})`).join("; ")}
-        </p>
-      )}
-    </div>
-  );
-}
+// ─── Tablero ────────────────────────────────────────────────────────────────
 
 export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
   const [platforms, setPlatforms] = useState(initialPlatforms);
+  const [tab, setTab] = useState<Tab>("proyectos");
+  const [query, setQuery] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Partial<SerializedPlatform>>({});
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
-  const [showInventory, setShowInventory] = useState(true);
-  const [filterAvailable, setFilterAvailable] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [focusedPlatformId, setFocusedPlatformId] = useState<string | null>(null);
 
-  const inventories = useMemo(
-    () => buildSlotInventories(platforms, DEFAULT_SLOT_CAPACITY),
-    [platforms]
-  );
+  const inventories = useMemo(() => buildSlotInventories(platforms, DEFAULT_SLOT_CAPACITY), [platforms]);
 
   const inventoryByKey = useMemo(() => {
     const map = new Map<string, EmailSlotInventory>();
@@ -542,453 +211,663 @@ export function PlatformsBoard({ initialPlatforms }: PlatformsBoardProps) {
     return map;
   }, [inventories]);
 
-  const emailsWithAvailability = useMemo(() => {
+  /** Una fila por correo, con sus cupos en Supabase y en Vercel lado a lado. */
+  const accounts = useMemo(() => {
+    const emails = new Set([...inventories.supabase, ...inventories.vercel].map((i) => i.email));
+    return [...emails]
+      .sort()
+      .map((email) => ({
+        email,
+        supabase: inventoryByKey.get(`supabase:${email}`),
+        vercel: inventoryByKey.get(`vercel:${email}`),
+      }));
+  }, [inventories, inventoryByKey]);
+
+  const knownEmails = useMemo(() => {
     const set = new Set<string>();
-    for (const item of [...inventories.supabase, ...inventories.vercel]) {
-      if (item.available > 0) set.add(`${item.provider}:${item.email}`);
+    for (const p of platforms) {
+      for (const e of [p.supabaseEmail, p.vercelEmail, p.githubEmail, p.brevoEmail]) {
+        if (e) set.add(normalizePlatformEmail(e));
+      }
     }
-    return set;
+    return [...set].sort();
+  }, [platforms]);
+
+  const freeSupabase = inventories.supabase.reduce((s, i) => s + i.available, 0);
+  const freeVercel = inventories.vercel.reduce((s, i) => s + i.available, 0);
+
+  /** Lo que de verdad hay que arreglar: cupos sin número o repetidos. */
+  const issues = useMemo(() => {
+    const list: string[] = [];
+    for (const item of [...inventories.supabase, ...inventories.vercel]) {
+      for (const u of item.unassigned) {
+        list.push(`${u.platformName} no tiene número de cupo en ${PROVIDER_LABEL[item.provider]} (${item.email})`);
+      }
+      for (const c of item.conflicts) {
+        list.push(`${c.platforms.join(" y ")} comparten el cupo ${c.slot} en ${PROVIDER_LABEL[item.provider]} (${item.email})`);
+      }
+    }
+    return list;
   }, [inventories]);
 
-  const visiblePlatforms = useMemo(() => {
-    let list = platforms;
-    if (filterAvailable) {
-      list = list.filter((p) => {
-        const sbKey = platformEmailKey("supabase", p.supabaseEmail);
-        const vcKey = platformEmailKey("vercel", p.vercelEmail);
-        return (
-          (sbKey && emailsWithAvailability.has(sbKey)) ||
-          (vcKey && emailsWithAvailability.has(vcKey))
-        );
-      });
-    }
-    const q = normalizeSearch(searchQuery);
-    if (!q) return list;
-    const matched = new Set(rankPlatformMatches(list, q).map((p) => p.id));
-    return list.filter((p) => matched.has(p.id));
-  }, [platforms, filterAvailable, emailsWithAvailability, searchQuery]);
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [...platforms].sort(byName);
+    return platforms
+      .map((p) => ({ p, score: scoreMatch(p, q) }))
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score || byName(a.p, b.p))
+      .map(({ p }) => p);
+  }, [platforms, query]);
 
-  const totalFreeSupabase = inventories.supabase.reduce((s, i) => s + i.available, 0);
-  const totalFreeVercel = inventories.vercel.reduce((s, i) => s + i.available, 0);
-
-  useEffect(() => {
-    if (!focusedPlatformId) return;
-    const el = document.getElementById(`platform-card-${focusedPlatformId}`);
-    el?.scrollIntoView({ behavior: "smooth", block: "center" });
-    const timer = window.setTimeout(() => setFocusedPlatformId(null), 2400);
-    return () => window.clearTimeout(timer);
-  }, [focusedPlatformId]);
-
-  function handleSearchSelect(platform: SerializedPlatform) {
-    setFocusedPlatformId(platform.id);
-  }
-
-  function getInventory(provider: SlotProvider, email: string) {
-    return inventoryByKey.get(`${provider}:${normalizePlatformEmail(email)}`);
+  function toggleExpanded(id: string) {
+    if (editingId === id) return;
+    setExpandedId((cur) => (cur === id ? null : id));
+    setEditingId(null);
   }
 
   function startEdit(p: SerializedPlatform) {
+    setExpandedId(p.id);
     setEditingId(p.id);
     setDraft({ ...p });
+    setError(null);
+  }
+
+  async function request(input: string, init: RequestInit, failMsg: string) {
+    setBusy(true);
+    setError(null);
+    try {
+      const res = await fetch(input, init);
+      if (!res.ok) {
+        setError(failMsg);
+        return null;
+      }
+      return await res.json();
+    } catch {
+      setError(`${failMsg} Revisa la conexión.`);
+      return null;
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function saveEdit(id: string) {
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/empresa/platforms/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(draft),
-      });
-      if (!res.ok) return;
-      const updated = (await res.json()) as PlatformApiRow;
-      setPlatforms((list) =>
-        list.map((p) => (p.id === id ? toSerializedPlatform(updated) : p))
-      );
-      setEditingId(null);
-    } finally {
-      setBusy(false);
-    }
+    const updated = (await request(
+      `/api/empresa/platforms/${id}`,
+      { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(draft) },
+      "No se pudieron guardar los cambios."
+    )) as PlatformApiRow | null;
+    if (!updated) return;
+    setPlatforms((list) => list.map((p) => (p.id === id ? toSerializedPlatform(updated) : p)));
+    setEditingId(null);
   }
 
   async function addPlatform() {
-    if (!newName.trim()) return;
-    setBusy(true);
-    try {
-      const res = await fetch("/api/empresa/platforms", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName.trim() }),
-      });
-      if (!res.ok) return;
-      const created = (await res.json()) as PlatformApiRow;
-      setPlatforms((list) => [...list, toSerializedPlatform(created)]);
-      setNewName("");
-      setShowAdd(false);
-    } finally {
-      setBusy(false);
-    }
+    const name = newName.trim();
+    if (!name) return;
+    const created = (await request(
+      "/api/empresa/platforms",
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) },
+      "No se pudo crear la plataforma."
+    )) as PlatformApiRow | null;
+    if (!created) return;
+    const p = toSerializedPlatform(created);
+    setPlatforms((list) => [...list, p]);
+    setNewName("");
+    setShowAdd(false);
+    setQuery("");
+    setTab("proyectos");
+    // Recién creada solo tiene nombre: se abre directo para completar sus datos.
+    startEdit(p);
   }
 
-  async function removePlatform(id: string) {
-    if (!window.confirm("¿Eliminar esta plataforma?")) return;
-    setBusy(true);
-    try {
-      const res = await fetch(`/api/empresa/platforms/${id}`, { method: "DELETE" });
-      if (!res.ok) return;
-      setPlatforms((list) => list.filter((p) => p.id !== id));
-    } finally {
-      setBusy(false);
-    }
+  async function removePlatform(p: SerializedPlatform) {
+    if (!window.confirm(`¿Eliminar ${p.name}? Se borran sus accesos y su información confidencial.`)) return;
+    const ok = await request(`/api/empresa/platforms/${p.id}`, { method: "DELETE" }, "No se pudo eliminar la plataforma.");
+    if (!ok) return;
+    setPlatforms((list) => list.filter((item) => item.id !== p.id));
+    setEditingId(null);
+    setExpandedId(null);
   }
 
   async function syncCupos() {
-    setBusy(true);
-    try {
-      const res = await fetch("/api/empresa/platforms/sync", { method: "POST" });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (Array.isArray(data.platforms)) {
-        setPlatforms(data.platforms.map((p: PlatformApiRow) => toSerializedPlatform(p)));
-      }
-    } finally {
-      setBusy(false);
+    const data = await request("/api/empresa/platforms/sync", { method: "POST" }, "No se pudieron sincronizar los cupos.");
+    if (data && Array.isArray(data.platforms)) {
+      setPlatforms(data.platforms.map((p: PlatformApiRow) => toSerializedPlatform(p)));
     }
   }
 
+  /** Cupos de un correo en un proveedor, sin contar la plataforma que se edita. */
+  function slotOccupants(provider: SlotProvider, email: string | null | undefined, selfId: string) {
+    const inv = email ? inventoryByKey.get(`${provider}:${normalizePlatformEmail(email)}`) : undefined;
+    const out = new Map<number, string>();
+    if (!inv) return out;
+    for (const [n, ref] of inv.bySlot) if (ref.platformId !== selfId) out.set(n, ref.platformName);
+    return out;
+  }
+
+  // ─── Render ────────────────────────────────────────────────────────────────
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          <p className="text-fg-dim">{platforms.length} plataformas</p>
-          <span className="text-ok text-xs font-mono">
-            SB {totalFreeSupabase} cupos libres
-          </span>
-          <span className="text-ok text-xs font-mono">
-            Vercel {totalFreeVercel} cupos libres
-          </span>
+    <div>
+      {/* Encabezado */}
+      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
+        <div className="min-w-0">
+          <h1 className="text-fg text-xl font-semibold tracking-tight">Platforms</h1>
+          <p className="text-fg-faint text-sm mt-1">Accesos, cuentas de Supabase y Vercel y enlaces de cada proyecto.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => void syncCupos()}
-            className="px-3 py-2 border border-line-mid text-fg-dim hover:text-fg text-sm rounded-lg transition-colors disabled:opacity-50"
-          >
-            {busy ? "Sincronizando..." : "Sincronizar cupos"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowAdd((v) => !v)}
-            className="px-4 py-2 bg-brand hover:bg-brand-hi text-on-brand text-sm font-medium rounded-lg transition-colors"
-          >
-            + Plataforma
-          </button>
-        </div>
-      </div>
-
-      <PlatformSearchInput
-        platforms={platforms}
-        value={searchQuery}
-        onChange={(v) => {
-          setSearchQuery(v);
-          if (!v.trim()) setFocusedPlatformId(null);
-        }}
-        onSelect={handleSearchSelect}
-      />
-
-      {searchQuery.trim() && (
-        <p className="text-xs text-fg-faint -mt-2">
-          {visiblePlatforms.length === 0
-            ? "Sin coincidencias"
-            : `${visiblePlatforms.length} resultado${visiblePlatforms.length === 1 ? "" : "s"}`}
-        </p>
-      )}
-
-      {/* Panel de cupos */}
-      <div className="bg-panel border border-line rounded-xl overflow-hidden">
         <button
           type="button"
-          onClick={() => setShowInventory((v) => !v)}
-          className="w-full flex items-center justify-between px-4 py-3 hover:bg-fill transition-colors"
+          onClick={() => setShowAdd((v) => !v)}
+          aria-expanded={showAdd}
+          className="inline-flex items-center gap-2 px-4 min-h-11 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-colors"
         >
-          <div className="text-left">
-            <p className="text-fg text-sm font-medium">Disponibilidad de cupos</p>
-            <p className="text-fg-faint text-xs mt-0.5">
-              Máx. {DEFAULT_SLOT_CAPACITY} proyectos por correo en Supabase y Vercel
-            </p>
-          </div>
-          <span className="text-fg-ghost text-sm">{showInventory ? "▾" : "▸"}</span>
+          <Icon d={ICON.plus} />
+          Nueva plataforma
         </button>
-
-        {showInventory && (
-          <div className="px-4 pb-4 space-y-4 border-t border-line">
-            <div className="flex flex-wrap gap-2 pt-3">
-              <button
-                type="button"
-                onClick={() => setFilterAvailable(false)}
-                className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                  !filterAvailable
-                    ? "bg-fill-3 border-line-loud text-fg"
-                    : "border-line text-fg-faint"
-                }`}
-              >
-                Todas las plataformas
-              </button>
-              <button
-                type="button"
-                onClick={() => setFilterAvailable(true)}
-                className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                  filterAvailable
-                    ? "bg-ok/15 border-ok/30 text-ok"
-                    : "border-line text-fg-faint"
-                }`}
-              >
-                Solo con cupo disponible
-              </button>
-            </div>
-
-            {inventories.supabase.length > 0 && (
-              <div>
-                <p className="text-mint text-xs uppercase tracking-widest font-medium mb-2">
-                  Supabase
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
-                  {inventories.supabase.map((item) => (
-                    <InventoryCard key={item.email} item={item} />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {inventories.vercel.length > 0 && (
-              <div>
-                <p className="text-fg-mute text-xs uppercase tracking-widest font-medium mb-2">
-                  Vercel
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2">
-                  {inventories.vercel.map((item) => (
-                    <InventoryCard key={item.email} item={item} />
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
       </div>
 
       {showAdd && (
-        <div className="bg-fill border border-line rounded-xl p-4 flex flex-col sm:flex-row gap-2">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            void addPlatform();
+          }}
+          className="bg-panel border border-line rounded-xl p-4 mb-6 flex flex-col sm:flex-row gap-2"
+        >
+          <label htmlFor="new-platform" className="sr-only">Nombre de la plataforma</label>
           <input
+            id="new-platform"
+            autoFocus
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="Nombre de la plataforma"
-            className="flex-1 bg-panel border border-line-mid rounded-lg px-3 py-2 text-sm text-fg placeholder:text-fg-ghost"
+            placeholder="Nombre del proyecto, p. ej. Academyx"
+            className="flex-1 min-w-0 bg-panel-2 border border-line-mid rounded-lg px-3 min-h-11 text-base sm:text-sm text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40"
           />
-          <button
-            type="button"
-            disabled={busy || !newName.trim()}
-            onClick={addPlatform}
-            className="px-4 py-2 bg-ok-solid hover:bg-ok-solid/85 text-on-solid text-sm rounded-lg disabled:opacity-50"
-          >
-            Guardar
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={busy || !newName.trim()}
+              className="flex-1 sm:flex-none px-4 min-h-11 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
+            >
+              {busy ? "Creando…" : "Crear y completar datos"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowAdd(false)}
+              className="px-4 min-h-11 text-fg-dim hover:text-fg text-sm rounded-lg"
+            >
+              Cancelar
+            </button>
+          </div>
+        </form>
+      )}
+
+      {error && (
+        <div role="alert" className="mb-4 flex items-center justify-between gap-4 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2 text-sm text-danger">
+          <span>{error}</span>
+          <button type="button" onClick={() => setError(null)} aria-label="Cerrar aviso" className="w-8 h-8 inline-flex items-center justify-center shrink-0">
+            <Icon d={ICON.close} />
           </button>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-        {visiblePlatforms.map((p) => {
-          const isEditing = editingId === p.id;
-          const d = isEditing ? draft : p;
+      {issues.length > 0 && (
+        <div className="mb-6 rounded-xl border border-warn/30 bg-warn/10 px-4 py-3">
+          <p className="flex items-center gap-2 text-warn text-sm font-medium">
+            <Icon d={LOCAL_ICON.alert} />
+            {issues.length === 1 ? "1 cupo por revisar" : `${issues.length} cupos por revisar`}
+          </p>
+          <ul className="mt-1 pl-6 space-y-1 text-sm text-fg-soft list-disc marker:text-warn/60">
+            {issues.map((msg) => <li key={msg}>{msg}</li>)}
+          </ul>
+        </div>
+      )}
 
-          return (
-            <div
-              key={p.id}
-              id={`platform-card-${p.id}`}
-              className={`bg-panel border rounded-xl p-4 space-y-3 hover:border-line-mid transition-colors ${
-                focusedPlatformId === p.id
-                  ? "border-brand/60 ring-2 ring-brand/25"
-                  : "border-line"
-              }`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                {isEditing ? (
-                  <input
-                    value={d.name ?? ""}
-                    onChange={(e) => setDraft((prev) => ({ ...prev, name: e.target.value }))}
-                    className="flex-1 bg-panel-2 border border-line-mid rounded px-2 py-1 text-sm text-fg font-medium"
-                  />
-                ) : (
-                  <h3 className="text-fg font-medium text-sm flex items-center gap-1.5">
-                    {p.name}
-                    {p.hasConfidential && (
-                      <span className="text-[9px] text-warn" title="Tiene información confidencial">
-                        🔒
-                      </span>
-                    )}
-                  </h3>
-                )}
-                <div className="flex gap-1 shrink-0">
-                  {isEditing ? (
-                    <>
-                      <button
-                        type="button"
-                        disabled={busy}
-                        onClick={() => saveEdit(p.id)}
-                        className="text-xs text-ok hover:text-ok-soft px-2 py-1"
-                      >
-                        ✓
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setEditingId(null)}
-                        className="text-xs text-fg-faint hover:text-fg-mute px-2 py-1"
-                      >
-                        ✕
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => startEdit(p)}
-                        className="text-xs text-fg-faint hover:text-brand-fg px-2 py-1"
-                      >
-                        Editar
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removePlatform(p.id)}
-                        className="text-xs text-fg-ghost hover:text-danger px-2 py-1"
-                      >
-                        ×
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {isEditing ? (
-                <div className="space-y-2">
-                  {(
-                    [
-                      ["accessUrl", "Access"],
-                      ["linkUrl", "Link"],
-                      ["supabaseEmail", "Supabase"],
-                      ["vercelEmail", "Vercel"],
-                      ["githubEmail", "Github"],
-                      ["brevoEmail", "BREVO"],
-                      ["notes", "Notas"],
-                    ] as const
-                  ).map(([key, label]) => (
-                    <div key={key}>
-                      <label className="text-[10px] text-fg-ghost uppercase tracking-wider">
-                        {label}
-                      </label>
-                      <input
-                        value={(d[key] as string) ?? ""}
-                        onChange={(e) =>
-                          setDraft((prev) => ({
-                            ...prev,
-                            [key]: e.target.value || null,
-                          }))
-                        }
-                        className="w-full mt-0.5 bg-panel-2 border border-line rounded px-2 py-1.5 text-xs text-fg"
-                      />
-                    </div>
-                  ))}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-[10px] text-fg-ghost uppercase">
-                        Cupo Supabase (1–{DEFAULT_SLOT_CAPACITY})
-                      </label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={DEFAULT_SLOT_CAPACITY}
-                        placeholder="1 o 2"
-                        value={d.supabaseSlot ?? ""}
-                        onChange={(e) =>
-                          setDraft((prev) => ({
-                            ...prev,
-                            supabaseSlot: parseSlotInput(e.target.value),
-                          }))
-                        }
-                        className="w-full mt-0.5 bg-panel-2 border border-line rounded px-2 py-1.5 text-xs text-fg"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] text-fg-ghost uppercase">
-                        Cupo Vercel (1–{DEFAULT_SLOT_CAPACITY})
-                      </label>
-                      <input
-                        type="number"
-                        min={1}
-                        max={DEFAULT_SLOT_CAPACITY}
-                        placeholder="1 o 2"
-                        value={d.vercelSlot ?? ""}
-                        onChange={(e) =>
-                          setDraft((prev) => ({
-                            ...prev,
-                            vercelSlot: parseSlotInput(e.target.value),
-                          }))
-                        }
-                        className="w-full mt-0.5 bg-panel-2 border border-line rounded px-2 py-1.5 text-xs text-fg"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <FieldRow label="Access" value={p.accessUrl} href={p.accessUrl} />
-                  <FieldRow label="Link" value={p.linkUrl} href={p.linkUrl} />
-
-                  {p.supabaseEmail && (
-                    <AccountSlotRow
-                      provider="supabase"
-                      email={p.supabaseEmail}
-                      slot={clampPlatformSlot(p.supabaseSlot, DEFAULT_SLOT_CAPACITY)}
-                      capacity={DEFAULT_SLOT_CAPACITY}
-                      inventory={getInventory("supabase", p.supabaseEmail)}
-                    />
-                  )}
-                  {p.vercelEmail && (
-                    <AccountSlotRow
-                      provider="vercel"
-                      email={p.vercelEmail}
-                      slot={clampPlatformSlot(p.vercelSlot, DEFAULT_SLOT_CAPACITY)}
-                      capacity={DEFAULT_SLOT_CAPACITY}
-                      inventory={getInventory("vercel", p.vercelEmail)}
-                    />
-                  )}
-
-                  <FieldRow label="Github" value={p.githubEmail} />
-                  <FieldRow label="BREVO" value={p.brevoEmail} />
-                  {p.notes && (
-                    <p className="text-[11px] text-warn border-t border-line pt-2 mt-2">
-                      {p.notes}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {!isEditing && (
-                <PlatformConfidentialVault
-                  platformId={p.id}
-                  hasConfidential={p.hasConfidential}
-                  onUpdated={(hasConfidential) =>
-                    setPlatforms((list) =>
-                      list.map((item) =>
-                        item.id === p.id ? { ...item, hasConfidential } : item
-                      )
-                    )
-                  }
-                />
-              )}
-            </div>
-          );
-        })}
+      {/* Pestañas */}
+      <div role="tablist" aria-label="Vistas de plataformas" className="flex gap-6 border-b border-line mb-4">
+        {(
+          [
+            { key: "proyectos", label: "Proyectos", count: platforms.length },
+            { key: "cuentas", label: "Cuentas y cupos", count: accounts.length },
+          ] as { key: Tab; label: string; count: number }[]
+        ).map((t) => (
+          <button
+            key={t.key}
+            type="button"
+            role="tab"
+            aria-selected={tab === t.key}
+            onClick={() => setTab(t.key)}
+            className={`-mb-px flex items-center gap-2 min-h-11 border-b-2 text-sm font-medium transition-colors ${
+              tab === t.key ? "border-brand text-fg" : "border-transparent text-fg-dim hover:text-fg-mute"
+            }`}
+          >
+            {t.label}
+            <span className="text-xs text-fg-faint tabular-nums">{t.count}</span>
+          </button>
+        ))}
       </div>
+
+      {tab === "proyectos" ? (
+        <>
+          <div className="relative mb-4">
+            <Icon d={LOCAL_ICON.search} className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-fg-ghost pointer-events-none" />
+            <label htmlFor="platform-search" className="sr-only">Buscar plataforma</label>
+            <input
+              id="platform-search"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Escape" && setQuery("")}
+              placeholder="Buscar por proyecto, dominio o correo…"
+              autoComplete="off"
+              className="w-full bg-panel border border-line-mid rounded-lg pl-8 pr-4 min-h-11 text-base sm:text-sm text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40 transition-colors"
+            />
+          </div>
+
+          {platforms.length === 0 ? (
+            <div className="bg-panel border border-line rounded-xl px-6 py-12 text-center">
+              <p className="text-fg-mute font-medium">Todavía no hay plataformas</p>
+              <p className="text-fg-dim text-sm mt-1">
+                Registra cada proyecto con su dominio y las cuentas de Supabase y Vercel donde vive.
+              </p>
+              <button
+                type="button"
+                onClick={() => setShowAdd(true)}
+                className="mt-6 px-4 min-h-11 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-colors"
+              >
+                Registrar la primera plataforma
+              </button>
+            </div>
+          ) : visible.length === 0 ? (
+            <div className="bg-panel border border-line rounded-xl px-6 py-12 text-center">
+              <p className="text-fg-mute font-medium">Nada coincide con «{query.trim()}»</p>
+              <p className="text-fg-dim text-sm mt-1">Se busca en el nombre, los dominios y los correos de cada plataforma.</p>
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="mt-6 px-4 min-h-11 border border-line-mid text-fg-soft hover:text-fg text-sm rounded-lg transition-colors"
+              >
+                Ver las {platforms.length} plataformas
+              </button>
+            </div>
+          ) : (
+            <div className="bg-panel border border-line rounded-xl overflow-hidden">
+              <div className="hidden lg:grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_32px] gap-4 px-4 py-2 border-b border-line text-xs uppercase tracking-wider text-fg-faint">
+                <span>Proyecto</span>
+                <span>Supabase</span>
+                <span>Vercel</span>
+                <span>GitHub</span>
+                <span />
+              </div>
+              {visible.map((p) => {
+                const open = expandedId === p.id;
+                const editing = editingId === p.id;
+                const host = hostOf(p.accessUrl ?? p.linkUrl);
+                return (
+                  <div key={p.id} className="border-b border-line last:border-b-0">
+                    <button
+                      type="button"
+                      onClick={() => toggleExpanded(p.id)}
+                      aria-expanded={open}
+                      className={`w-full text-left px-4 py-3 grid grid-cols-[minmax(0,1fr)_32px] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_32px] gap-x-4 gap-y-2 items-center transition-colors ${
+                        open ? "bg-fill" : "hover:bg-fill"
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <p className="text-fg text-sm font-medium flex items-center gap-2 min-w-0">
+                          <span className="truncate">{p.name}</span>
+                          {p.hasConfidential && (
+                            <span title="Tiene información confidencial" className="text-fg-faint shrink-0">
+                              <Icon d={LOCAL_ICON.lock} className="w-4 h-4" />
+                              <span className="sr-only">Tiene información confidencial</span>
+                            </span>
+                          )}
+                        </p>
+                        <p className="text-fg-faint text-xs truncate">{host ?? "Sin dominio"}</p>
+                      </div>
+                      <Icon
+                        d={ICON.chevronDown}
+                        className={`w-4 h-4 text-fg-ghost justify-self-end lg:order-last transition-transform ${open ? "rotate-180" : ""}`}
+                      />
+                      {/* En móvil, las cuentas van debajo del nombre en dos columnas */}
+                      <div className="col-span-2 lg:col-span-1 grid grid-cols-2 lg:contents gap-4">
+                        <div className="min-w-0">
+                          <p className="lg:hidden text-xs text-fg-faint mb-1">Supabase</p>
+                          <AccountCell email={p.supabaseEmail} slot={p.supabaseSlot} />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="lg:hidden text-xs text-fg-faint mb-1">Vercel</p>
+                          <AccountCell email={p.vercelEmail} slot={p.vercelSlot} />
+                        </div>
+                        <div className="min-w-0 hidden lg:block">
+                          {p.githubEmail ? (
+                            <p className="text-fg-soft text-sm truncate" title={p.githubEmail}>{p.githubEmail}</p>
+                          ) : (
+                            <span className="text-fg-ghost text-sm">—</span>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+
+                    {open && (
+                      <div className="px-4 pb-4 pt-2 bg-fill">
+                        {editing ? (
+                          <EditForm
+                            draft={draft}
+                            setDraft={setDraft}
+                            knownEmails={knownEmails}
+                            occupants={(provider, email) => slotOccupants(provider, email, p.id)}
+                            busy={busy}
+                            onSave={() => void saveEdit(p.id)}
+                            onCancel={() => setEditingId(null)}
+                            onDelete={() => void removePlatform(p)}
+                          />
+                        ) : (
+                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div className="space-y-4">
+                              <section>
+                                <h3 className="text-xs uppercase tracking-wider text-fg-faint mb-1">Enlaces</h3>
+                                <dl>
+                                  <DetailRow label="Acceso" value={p.accessUrl} href />
+                                  {p.linkUrl && p.linkUrl !== p.accessUrl && <DetailRow label="Link" value={p.linkUrl} href />}
+                                </dl>
+                              </section>
+                              <section>
+                                <h3 className="text-xs uppercase tracking-wider text-fg-faint mb-1">Cuentas</h3>
+                                <dl>
+                                  <DetailRow label="Supabase" value={p.supabaseEmail} />
+                                  <DetailRow label="Vercel" value={p.vercelEmail} />
+                                  <DetailRow label="GitHub" value={p.githubEmail} />
+                                  <DetailRow label="Brevo" value={p.brevoEmail} />
+                                </dl>
+                              </section>
+                              {p.notes && (
+                                <section>
+                                  <h3 className="text-xs uppercase tracking-wider text-fg-faint mb-1">Notas</h3>
+                                  <p className="text-sm text-fg-soft whitespace-pre-line leading-relaxed">{p.notes}</p>
+                                </section>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => startEdit(p)}
+                                className="inline-flex items-center gap-2 px-4 min-h-11 border border-line-mid text-fg-soft hover:text-fg text-sm rounded-lg transition-colors"
+                              >
+                                <Icon d={ICON.pencil} />
+                                Editar datos
+                              </button>
+                            </div>
+                            <PlatformConfidentialVault
+                              platformId={p.id}
+                              hasConfidential={p.hasConfidential}
+                              onUpdated={(hasConfidential) =>
+                                setPlatforms((list) =>
+                                  list.map((item) => (item.id === p.id ? { ...item, hasConfidential } : item))
+                                )
+                              }
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+            <p className="text-sm text-fg-dim">
+              Cada correo admite {DEFAULT_SLOT_CAPACITY} proyectos por proveedor en el plan gratis.{" "}
+              <span className="text-ok tabular-nums">
+                Libres: {freeSupabase} en Supabase · {freeVercel} en Vercel
+              </span>
+            </p>
+            <button
+              type="button"
+              disabled={busy}
+              onClick={() => void syncCupos()}
+              className="px-4 min-h-11 border border-line-mid text-fg-soft hover:text-fg text-sm rounded-lg transition-colors disabled:opacity-50"
+            >
+              {busy ? "Sincronizando…" : "Sincronizar cupos"}
+            </button>
+          </div>
+
+          {accounts.length === 0 ? (
+            <div className="bg-panel border border-line rounded-xl px-6 py-12 text-center">
+              <p className="text-fg-mute font-medium">Ninguna plataforma tiene cuenta asignada</p>
+              <p className="text-fg-dim text-sm mt-1">
+                Al poner el correo de Supabase o Vercel en una plataforma, aquí ves cuántos cupos le quedan.
+              </p>
+            </div>
+          ) : (
+            <div className="bg-panel border border-line rounded-xl overflow-hidden">
+              <div className="hidden md:grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 px-4 py-2 border-b border-line text-xs uppercase tracking-wider text-fg-faint">
+                <span>Correo</span>
+                <span>Supabase</span>
+                <span>Vercel</span>
+              </div>
+              {accounts.map((a) => (
+                <div
+                  key={a.email}
+                  className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-4 gap-y-2 px-4 py-3 border-b border-line last:border-b-0 items-center"
+                >
+                  <div className="flex items-center gap-1 min-w-0">
+                    <p className="text-fg text-sm truncate" title={a.email}>{a.email}</p>
+                    <CopyButton value={a.email} label="correo" />
+                  </div>
+                  {(["supabase", "vercel"] as const).map((provider) => {
+                    const inv = a[provider];
+                    return (
+                      <div key={provider} className="min-w-0">
+                        <p className="md:hidden text-xs text-fg-faint mb-1">{PROVIDER_LABEL[provider]}</p>
+                        {inv ? (
+                          <>
+                            <div className="grid grid-cols-2 gap-2">
+                              {Array.from({ length: inv.capacity }, (_, i) => i + 1).map((n) => (
+                                <SlotPill key={n} n={n} occupant={inv.bySlot.get(n)?.platformName ?? null} />
+                              ))}
+                            </div>
+                            {inv.unassigned.length > 0 && (
+                              <p className="text-xs text-warn mt-1">
+                                Sin número: {inv.unassigned.map((u) => u.platformName).join(", ")}
+                              </p>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-fg-ghost text-sm">Sin uso</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
+  );
+}
+
+// ─── Formulario de edición ──────────────────────────────────────────────────
+
+const inputCls =
+  "w-full bg-panel border border-line-mid rounded-lg px-3 min-h-11 text-base sm:text-sm text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40";
+
+function EditForm({
+  draft,
+  setDraft,
+  knownEmails,
+  occupants,
+  busy,
+  onSave,
+  onCancel,
+  onDelete,
+}: {
+  draft: Partial<SerializedPlatform>;
+  setDraft: React.Dispatch<React.SetStateAction<Partial<SerializedPlatform>>>;
+  knownEmails: string[];
+  occupants: (provider: SlotProvider, email: string | null | undefined) => Map<number, string>;
+  busy: boolean;
+  onSave: () => void;
+  onCancel: () => void;
+  onDelete: () => void;
+}) {
+  const set = (key: keyof SerializedPlatform, value: string | number | null) =>
+    setDraft((prev) => ({ ...prev, [key]: value }));
+
+  function textField(key: "name" | "accessUrl" | "linkUrl" | "githubEmail" | "brevoEmail", label: string, placeholder: string, email = false) {
+    const id = `edit-${key}`;
+    return (
+      <div>
+        <label htmlFor={id} className="block text-xs text-fg-faint mb-1">{label}</label>
+        <input
+          id={id}
+          type={email ? "email" : "text"}
+          list={email ? "platform-emails" : undefined}
+          value={(draft[key] as string | null) ?? ""}
+          onChange={(e) => set(key, e.target.value || null)}
+          placeholder={placeholder}
+          className={inputCls}
+        />
+      </div>
+    );
+  }
+
+  function accountField(provider: SlotProvider) {
+    const emailKey = provider === "supabase" ? "supabaseEmail" : "vercelEmail";
+    const slotKey = provider === "supabase" ? "supabaseSlot" : "vercelSlot";
+    const email = draft[emailKey] ?? null;
+    const taken = occupants(provider, email);
+    const slot = clampPlatformSlot(draft[slotKey] ?? null);
+    const id = `edit-${emailKey}`;
+
+    return (
+      <fieldset className="rounded-lg border border-line p-3 space-y-3">
+        <legend className="px-1 text-xs text-fg-faint">{PROVIDER_LABEL[provider]}</legend>
+        <div>
+          <label htmlFor={id} className="block text-xs text-fg-faint mb-1">Correo de la cuenta</label>
+          <input
+            id={id}
+            type="email"
+            list="platform-emails"
+            value={email ?? ""}
+            onChange={(e) => {
+              const value = e.target.value || null;
+              setDraft((prev) => {
+                const next = { ...prev, [emailKey]: value };
+                // Si el cupo actual está tomado en la cuenta nueva, se propone el primero libre.
+                const occ = occupants(provider, value);
+                const cur = clampPlatformSlot(prev[slotKey] ?? null);
+                if (value && (cur == null || occ.has(cur))) {
+                  const free = Array.from({ length: DEFAULT_SLOT_CAPACITY }, (_, i) => i + 1).find((n) => !occ.has(n));
+                  next[slotKey] = free ?? cur;
+                }
+                return next;
+              });
+            }}
+            placeholder="cuenta@gmail.com"
+            className={inputCls}
+          />
+        </div>
+        {email && (
+          <div>
+            <p className="text-xs text-fg-faint mb-1">Cupo en esa cuenta</p>
+            <div role="radiogroup" aria-label={`Cupo en ${PROVIDER_LABEL[provider]}`} className="grid grid-cols-2 gap-2">
+              {Array.from({ length: DEFAULT_SLOT_CAPACITY }, (_, i) => i + 1).map((n) => {
+                const other = taken.get(n);
+                const selected = slot === n;
+                return (
+                  <button
+                    key={n}
+                    type="button"
+                    role="radio"
+                    aria-checked={selected}
+                    onClick={() => set(slotKey, n)}
+                    className={`min-h-11 px-3 rounded-lg border text-left text-sm transition-colors ${
+                      selected
+                        ? other
+                          ? "border-danger/50 bg-danger/10 text-fg"
+                          : "border-brand/50 bg-brand/10 text-fg"
+                        : "border-line-mid text-fg-soft hover:bg-fill-2"
+                    }`}
+                  >
+                    <span className="tabular-nums font-medium">Cupo {n}</span>
+                    <span className={`block text-xs truncate ${other ? (selected ? "text-danger" : "text-fg-faint") : "text-ok"}`}>
+                      {other ? `Ocupado por ${other}` : "Libre"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+            {taken.size >= DEFAULT_SLOT_CAPACITY && (
+              <p className="text-xs text-warn mt-1">
+                Esta cuenta ya tiene {DEFAULT_SLOT_CAPACITY} proyectos. Usa otro correo o libera un cupo.
+              </p>
+            )}
+          </div>
+        )}
+      </fieldset>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        onSave();
+      }}
+      className="space-y-4"
+    >
+      <datalist id="platform-emails">
+        {knownEmails.map((e) => <option key={e} value={e} />)}
+      </datalist>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {textField("name", "Nombre", "Nombre del proyecto")}
+        {textField("accessUrl", "Acceso (URL del sitio o panel)", "https://…")}
+        {textField("linkUrl", "Link (si es distinto del acceso)", "https://…")}
+        {textField("githubEmail", "Cuenta de GitHub", "cuenta@gmail.com", true)}
+        {accountField("supabase")}
+        {accountField("vercel")}
+        {textField("brevoEmail", "Cuenta de Brevo", "cuenta@gmail.com", true)}
+        <div className="md:col-span-2">
+          <label htmlFor="edit-notes" className="block text-xs text-fg-faint mb-1">Notas</label>
+          <textarea
+            id="edit-notes"
+            rows={3}
+            value={draft.notes ?? ""}
+            onChange={(e) => set("notes", e.target.value || null)}
+            placeholder="Lo que conviene recordar de este proyecto"
+            className={`${inputCls} py-2 resize-y`}
+          />
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        <button
+          type="submit"
+          disabled={busy || !String(draft.name ?? "").trim()}
+          className="px-4 min-h-11 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
+        >
+          {busy ? "Guardando…" : "Guardar cambios"}
+        </button>
+        <button type="button" onClick={onCancel} className="px-4 min-h-11 text-fg-dim hover:text-fg text-sm rounded-lg">
+          Cancelar
+        </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={busy}
+          className="ml-auto inline-flex items-center gap-2 px-4 min-h-11 text-danger hover:bg-danger/10 text-sm rounded-lg transition-colors disabled:opacity-50"
+        >
+          <Icon d={ICON.trash} />
+          Eliminar plataforma
+        </button>
+      </div>
+    </form>
   );
 }
