@@ -78,6 +78,12 @@ interface MeetingRecorderProps {
   creatorName: string | null;
   /** Preselecciona el proyecto cuando se entra desde el detalle de un proyecto */
   initialProjectId?: string;
+  /**
+   * Datos que llegan ya decididos, p. ej. desde PIME Guard en la barra de menú
+   * de la Mac. Con título, la pantalla abre lista para grabar.
+   */
+  initialTitle?: string;
+  initialSource?: string;
 }
 
 /** `saved`: terminó sin conexión y la reunión quedó guardada en el equipo. */
@@ -178,11 +184,13 @@ export function MeetingRecorder({
   clients,
   creatorName,
   initialProjectId,
+  initialTitle,
+  initialSource,
 }: MeetingRecorderProps) {
   const router = useRouter();
 
   const [phase, setPhase] = useState<Phase>("setup");
-  const [title, setTitle] = useState("");
+  const [title, setTitle] = useState(initialTitle?.slice(0, 200) ?? "");
   const [projectId, setProjectId] = useState(initialProjectId ?? "");
   const [clientId, setClientId] = useState("");
   // Qué se habla en la reunión y en qué idioma sale la minuta son dos cosas
@@ -195,7 +203,9 @@ export function MeetingRecorder({
     { name: "", org: "CLIENTE" },
   ]);
 
-  const [mode, setMode] = useState<CaptureMode>("ambient");
+  const presetSource = AUDIO_SOURCES.find((s) => s.key === initialSource)?.key;
+  // Una nota de voz es una sola persona hablando: no hace falta captar la sala.
+  const [mode, setMode] = useState<CaptureMode>(presetSource === "NOTA_VOZ" ? "mic" : "ambient");
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const [micDeviceId, setMicDeviceId] = useState("");
   const [systemDeviceId, setSystemDeviceId] = useState("");
@@ -225,7 +235,7 @@ export function MeetingRecorder({
   });
   const [uploading, setUploading] = useState(0);
   const [entry, setEntry] = useState<Entry>("record");
-  const [audioSource, setAudioSource] = useState<AudioSource>("VIDEOLLAMADA");
+  const [audioSource, setAudioSource] = useState<AudioSource>(presetSource ?? "VIDEOLLAMADA");
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importProgress, setImportProgress] = useState<ImportProgress | null>(null);
   const [stageIndex, setStageIndex] = useState(-1);
@@ -237,6 +247,7 @@ export function MeetingRecorder({
   const [pendingCount, setPendingCount] = useState(0);
   const [syncProgress, setSyncProgress] = useState<SyncProgress | null>(null);
 
+  const startButtonRef = useRef<HTMLButtonElement | null>(null);
   const captureRef = useRef<MeetingCapture | null>(null);
   const startedAtRef = useRef(0);
   const meetingIdRef = useRef<string | null>(null);
@@ -282,6 +293,14 @@ export function MeetingRecorder({
   useEffect(() => {
     if (selectedProject?.clientId && !clientId) setClientId(selectedProject.clientId);
   }, [selectedProject, clientId]);
+
+  // Si llegó preparada (título incluido), el siguiente paso es solo grabar: el
+  // botón queda a la vista y con el foco. No arranca sola: el navegador no deja
+  // abrir el audio sin un clic y la grabación saldría muda.
+  const preset = Boolean(initialTitle?.trim());
+  useEffect(() => {
+    if (preset) startButtonRef.current?.focus({ preventScroll: true });
+  }, [preset]);
 
   // Cronómetro de la grabación
   useEffect(() => {
@@ -996,7 +1015,7 @@ export function MeetingRecorder({
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {activeChannels.map((channel) => {
               const accent = CHANNEL_ACCENT[channel];
               const level = levels[channel];
@@ -1042,7 +1061,7 @@ export function MeetingRecorder({
                           void assignSpeaker(channel, customDraft[channel]);
                         }}
                         placeholder="Nombre de esta voz"
-                        className="w-full mt-3 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-xs placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
+                        className="w-full mt-3 bg-canvas border border-line rounded-lg px-3 py-2 min-h-[44px] text-fg text-base sm:text-xs placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
                       />
                     ) : (
                       <select
@@ -1064,7 +1083,7 @@ export function MeetingRecorder({
                           }
                           void assignSpeaker(channel, e.target.value);
                         }}
-                        className="w-full mt-3 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-xs focus:border-brand/50 focus:outline-none"
+                        className="field-select w-full mt-3 bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base sm:text-xs focus:border-brand/50 focus:outline-none"
                       >
                         <option value="">Sin asignar</option>
                         {namedAttendees.map((name) => (
@@ -1123,6 +1142,34 @@ export function MeetingRecorder({
 
       <PendingOfflineMeetings />
 
+      {/* Llegó preparada (p. ej. desde PIME Guard en la Mac): lo decidido a la
+          vista y la acción arriba. No arranca sola: el navegador no deja abrir
+          el audio sin un clic y la grabación saldría muda. */}
+      {preset && entry === "record" && (
+        <div className="bg-brand/[0.06] border border-brand/30 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-fg text-sm font-medium truncate">{title || "Sin título"}</p>
+            <p className="text-fg-faint text-xs mt-1">
+              {AUDIO_SOURCES.find((s) => s.key === audioSource)?.label}
+              {selectedProject ? ` · ${selectedProject.name}` : ""} · puedes ajustar todo abajo
+            </p>
+            {error && (
+              <p className="text-danger text-xs mt-2" role="alert">
+                {error}
+              </p>
+            )}
+          </div>
+          <button
+            ref={startButtonRef}
+            onClick={startRecording}
+            disabled={busy}
+            className="shrink-0 min-h-[44px] px-6 bg-brand hover:bg-brand-hi disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg transition-all"
+          >
+            {busy ? "Preparando…" : "🎙️ Iniciar grabación"}
+          </button>
+        </div>
+      )}
+
       {!online && (
         <div className="bg-warn/10 border border-warn/20 rounded-xl p-4" role="status">
           <p className="text-warn text-sm leading-relaxed">
@@ -1133,7 +1180,7 @@ export function MeetingRecorder({
       )}
 
       {/* Cómo entra la reunión — es la primera decisión, no la última */}
-      <div className="grid sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {(
           [
             {
@@ -1179,17 +1226,17 @@ export function MeetingRecorder({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Revisión de alcance — módulo de facturación"
-            className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
+            className="w-full bg-canvas border border-line rounded-lg px-3 py-2 min-h-[44px] text-fg text-base sm:text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
           />
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-fg-mute text-xs uppercase tracking-wider mb-2">Proyecto</label>
             <select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
-              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
+              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base sm:text-sm focus:border-brand/50 focus:outline-none"
             >
               <option value="">Sin proyecto</option>
               {projects.map((p) => (
@@ -1210,7 +1257,7 @@ export function MeetingRecorder({
             <select
               value={clientId}
               onChange={(e) => setClientId(e.target.value)}
-              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
+              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base sm:text-sm focus:border-brand/50 focus:outline-none"
             >
               <option value="">Sin cliente</option>
               {clients.map((c) => (
@@ -1228,7 +1275,7 @@ export function MeetingRecorder({
               type="date"
               value={meetingDate}
               onChange={(e) => setMeetingDate(e.target.value)}
-              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
+              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 min-h-[44px] text-fg text-base sm:text-sm focus:border-brand/50 focus:outline-none"
             />
           </div>
 
@@ -1239,7 +1286,7 @@ export function MeetingRecorder({
             <select
               value={audioSource}
               onChange={(e) => setAudioSource(e.target.value as AudioSource)}
-              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
+              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base sm:text-sm focus:border-brand/50 focus:outline-none"
             >
               {AUDIO_SOURCES.map((s) => (
                 <option key={s.key} value={s.key}>
@@ -1297,7 +1344,7 @@ export function MeetingRecorder({
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as "es" | "en")}
-              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
+              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base sm:text-sm focus:border-brand/50 focus:outline-none"
             >
               <option value="es">Español</option>
               <option value="en">Inglés</option>
@@ -1319,23 +1366,23 @@ export function MeetingRecorder({
         </div>
 
         {attendees.map((a, i) => (
-          <div key={i} className="flex gap-2">
+          <div key={i} className="flex flex-wrap sm:flex-nowrap gap-2">
             <input
               value={a.name}
               onChange={(e) => updateAttendee(i, { name: e.target.value })}
               placeholder="Nombre y apellido"
-              className="flex-1 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
+              className="basis-full sm:basis-auto sm:flex-1 min-w-0 bg-canvas border border-line rounded-lg px-3 py-2 min-h-[44px] text-fg text-base sm:text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
             />
             <input
               value={a.role ?? ""}
               onChange={(e) => updateAttendee(i, { role: e.target.value })}
               placeholder="Rol (opcional)"
-              className="w-36 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
+              className="basis-full sm:basis-auto sm:w-36 min-w-0 bg-canvas border border-line rounded-lg px-3 py-2 min-h-[44px] text-fg text-base sm:text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
             />
             <select
               value={a.org}
               onChange={(e) => updateAttendee(i, { org: e.target.value as AttendeeOrg })}
-              className="w-32 bg-canvas border border-line rounded-lg px-2 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
+              className="field-select flex-1 sm:flex-none sm:w-32 bg-canvas border border-line rounded-lg pl-2 pr-8 py-2 min-h-[44px] text-fg text-base sm:text-sm focus:border-brand/50 focus:outline-none"
             >
               <option value="PIME">Pime</option>
               <option value="CLIENTE">Cliente</option>
@@ -1344,7 +1391,7 @@ export function MeetingRecorder({
             <button
               type="button"
               onClick={() => setAttendees((prev) => prev.filter((_, idx) => idx !== i))}
-              className="px-3 text-fg-ghost hover:text-danger transition-colors"
+              className="min-w-[44px] min-h-[44px] px-3 text-fg-ghost hover:text-danger transition-colors"
               aria-label="Quitar asistente"
             >
               ✕
@@ -1355,7 +1402,7 @@ export function MeetingRecorder({
         <button
           type="button"
           onClick={() => setAttendees((prev) => [...prev, { name: "", org: "CLIENTE" }])}
-          className="text-brand-fg hover:text-brand-hi text-sm transition-colors"
+          className="min-h-[44px] text-brand-fg hover:text-brand-hi text-sm transition-colors"
         >
           + Agregar asistente
         </button>
@@ -1421,7 +1468,7 @@ export function MeetingRecorder({
             <select
               value={systemDeviceId}
               onChange={(e) => setSystemDeviceId(e.target.value)}
-              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
+              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base sm:text-sm focus:border-brand/50 focus:outline-none"
             >
               <option value="">Elige un dispositivo…</option>
               {devices.map((d) => (
@@ -1453,7 +1500,7 @@ export function MeetingRecorder({
             <select
               value={micDeviceId}
               onChange={(e) => setMicDeviceId(e.target.value)}
-              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
+              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base sm:text-sm focus:border-brand/50 focus:outline-none"
             >
               <option value="">Predeterminado del sistema</option>
               {devices.map((d) => (

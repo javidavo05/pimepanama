@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { serializePaymentMethod, serializeCompanyConfig } from "@/lib/serializers";
 import { ConfigForm } from "./config-form";
 import { PaymentMethodsSettings } from "@/components/empresa/payment-methods-settings";
+import Link from "next/link";
 import { ThemeToggleCards } from "@/components/empresa/theme/theme-toggle";
 
 export const metadata = { title: "Configuración — Pime Suite" };
@@ -30,6 +31,19 @@ export default async function ConfiguracionPage() {
         </p>
         <ThemeToggleCards />
       </section>
+
+      <Link
+        href="/empresa/configuracion/mac"
+        className="flex items-center justify-between gap-4 bg-panel border border-line rounded-2xl p-6 hover:border-line-mid transition-colors"
+      >
+        <div>
+          <h2 className="text-fg text-sm font-semibold">PIME Guard en la Mac</h2>
+          <p className="text-fg-dim text-xs mt-1">
+            Correos importantes y grabar reuniones desde la barra de menú.
+          </p>
+        </div>
+        <span className="text-fg-faint text-sm">→</span>
+      </Link>
 
       <ConfigForm config={serializeCompanyConfig(user.config)} />
       <PaymentMethodsSettings methods={paymentMethods.map(serializePaymentMethod)} />

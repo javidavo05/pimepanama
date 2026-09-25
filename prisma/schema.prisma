@@ -263,6 +263,7 @@ model EmpresaUser {
   meetings              Meeting[]
   pushSubscriptions     PushSubscription[]
   watchedThreads        WatchedThread[]
+  deviceTokens          DeviceToken[]
   /// PAT de GitHub cifrado (AES-256-GCM). Es del usuario, no del proyecto: un
   /// token sirve para todos sus repos.
   githubTokenEnc        String?
@@ -1005,6 +1006,21 @@ model WatchedThread {
 /// Una fila por dispositivo: el mismo usuario puede tener el iPhone, la Mac y
 /// el iPad suscritos a la vez. Se borra sola cuando el push server responde
 /// 404/410 (el usuario desinstaló el PWA o revocó el permiso).
+/// Llave de una app nativa vinculada (PIME Guard en la Mac). Solo se guarda el
+/// SHA-256: la llave en claro vive solo en la Mac.
+model DeviceToken {
+  id         String      @id @default(cuid())
+  userId     String
+  user       EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  tokenHash  String      @unique
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime    @default(now())
+
+  @@index([userId])
+}
+
 model PushSubscription {
   id         String      @id @default(cuid())
   userId     String

@@ -8,10 +8,10 @@ export const dynamic = "force-dynamic";
 export default async function NuevaReunionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ projectId?: string }>;
+  searchParams: Promise<{ projectId?: string; title?: string; source?: string }>;
 }) {
   const user = await getEmpresaUser();
-  const { projectId } = await searchParams;
+  const { projectId, title, source } = await searchParams;
 
   const [projects, clients] = await Promise.all([
     prisma.project.findMany({
@@ -33,6 +33,8 @@ export default async function NuevaReunionPage({
         clients={clients}
         creatorName={user.fullName ?? null}
         initialProjectId={projectId}
+        initialTitle={title}
+        initialSource={source}
       />
     </div>
   );
