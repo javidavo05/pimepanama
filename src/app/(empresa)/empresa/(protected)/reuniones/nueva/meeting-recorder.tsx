@@ -1061,7 +1061,7 @@ export function MeetingRecorder({
                           void assignSpeaker(channel, customDraft[channel]);
                         }}
                         placeholder="Nombre de esta voz"
-                        className="w-full mt-3 bg-canvas border border-line rounded-lg px-3 py-2 min-h-[44px] text-fg text-base sm:text-xs placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
+                        className="w-full mt-3 bg-canvas border border-line rounded-lg px-3 py-2 min-h-[44px] text-fg text-base placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
                       />
                     ) : (
                       <select
@@ -1083,7 +1083,7 @@ export function MeetingRecorder({
                           }
                           void assignSpeaker(channel, e.target.value);
                         }}
-                        className="field-select w-full mt-3 bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base sm:text-xs focus:border-brand/50 focus:outline-none"
+                        className="field-select w-full mt-3 bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base focus:border-brand/50 focus:outline-none"
                       >
                         <option value="">Sin asignar</option>
                         {namedAttendees.map((name) => (
@@ -1226,7 +1226,7 @@ export function MeetingRecorder({
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Revisión de alcance — módulo de facturación"
-            className="w-full bg-canvas border border-line rounded-lg px-3 py-2 min-h-[44px] text-fg text-base sm:text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
+            className="w-full bg-canvas border border-line rounded-lg px-3 py-2 min-h-[44px] text-fg text-base placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
           />
         </div>
 
@@ -1236,7 +1236,7 @@ export function MeetingRecorder({
             <select
               value={projectId}
               onChange={(e) => setProjectId(e.target.value)}
-              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base sm:text-sm focus:border-brand/50 focus:outline-none"
+              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base focus:border-brand/50 focus:outline-none"
             >
               <option value="">Sin proyecto</option>
               {projects.map((p) => (
@@ -1257,7 +1257,7 @@ export function MeetingRecorder({
             <select
               value={clientId}
               onChange={(e) => setClientId(e.target.value)}
-              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base sm:text-sm focus:border-brand/50 focus:outline-none"
+              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base focus:border-brand/50 focus:outline-none"
             >
               <option value="">Sin cliente</option>
               {clients.map((c) => (
@@ -1275,7 +1275,7 @@ export function MeetingRecorder({
               type="date"
               value={meetingDate}
               onChange={(e) => setMeetingDate(e.target.value)}
-              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 min-h-[44px] text-fg text-base sm:text-sm focus:border-brand/50 focus:outline-none"
+              className="w-full bg-canvas border border-line rounded-lg px-3 py-2 min-h-[44px] text-fg text-base focus:border-brand/50 focus:outline-none"
             />
           </div>
 
@@ -1286,7 +1286,7 @@ export function MeetingRecorder({
             <select
               value={audioSource}
               onChange={(e) => setAudioSource(e.target.value as AudioSource)}
-              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base sm:text-sm focus:border-brand/50 focus:outline-none"
+              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base focus:border-brand/50 focus:outline-none"
             >
               {AUDIO_SOURCES.map((s) => (
                 <option key={s.key} value={s.key}>
@@ -1344,7 +1344,7 @@ export function MeetingRecorder({
             <select
               value={language}
               onChange={(e) => setLanguage(e.target.value as "es" | "en")}
-              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base sm:text-sm focus:border-brand/50 focus:outline-none"
+              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base focus:border-brand/50 focus:outline-none"
             >
               <option value="es">Español</option>
               <option value="en">Inglés</option>
@@ -1366,23 +1366,23 @@ export function MeetingRecorder({
         </div>
 
         {attendees.map((a, i) => (
-          <div key={i} className="flex flex-wrap sm:flex-nowrap gap-2">
+          <div key={i} className="flex flex-wrap lg:flex-nowrap gap-2">
             <input
               value={a.name}
               onChange={(e) => updateAttendee(i, { name: e.target.value })}
               placeholder="Nombre y apellido"
-              className="basis-full sm:basis-auto sm:flex-1 min-w-0 bg-canvas border border-line rounded-lg px-3 py-2 min-h-[44px] text-fg text-base sm:text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
+              className="basis-full lg:basis-auto lg:flex-1 min-w-0 bg-canvas border border-line rounded-lg px-3 py-2 min-h-[44px] text-fg text-base placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
             />
             <input
               value={a.role ?? ""}
               onChange={(e) => updateAttendee(i, { role: e.target.value })}
               placeholder="Rol (opcional)"
-              className="basis-full sm:basis-auto sm:w-36 min-w-0 bg-canvas border border-line rounded-lg px-3 py-2 min-h-[44px] text-fg text-base sm:text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
+              className="basis-full lg:basis-auto lg:w-36 min-w-0 bg-canvas border border-line rounded-lg px-3 py-2 min-h-[44px] text-fg text-base placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
             />
             <select
               value={a.org}
               onChange={(e) => updateAttendee(i, { org: e.target.value as AttendeeOrg })}
-              className="field-select flex-1 sm:flex-none sm:w-32 bg-canvas border border-line rounded-lg pl-2 pr-8 py-2 min-h-[44px] text-fg text-base sm:text-sm focus:border-brand/50 focus:outline-none"
+              className="field-select flex-1 lg:flex-none lg:w-32 bg-canvas border border-line rounded-lg pl-2 pr-8 py-2 min-h-[44px] text-fg text-base focus:border-brand/50 focus:outline-none"
             >
               <option value="PIME">Pime</option>
               <option value="CLIENTE">Cliente</option>
@@ -1468,7 +1468,7 @@ export function MeetingRecorder({
             <select
               value={systemDeviceId}
               onChange={(e) => setSystemDeviceId(e.target.value)}
-              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base sm:text-sm focus:border-brand/50 focus:outline-none"
+              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base focus:border-brand/50 focus:outline-none"
             >
               <option value="">Elige un dispositivo…</option>
               {devices.map((d) => (
@@ -1500,7 +1500,7 @@ export function MeetingRecorder({
             <select
               value={micDeviceId}
               onChange={(e) => setMicDeviceId(e.target.value)}
-              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base sm:text-sm focus:border-brand/50 focus:outline-none"
+              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base focus:border-brand/50 focus:outline-none"
             >
               <option value="">Predeterminado del sistema</option>
               {devices.map((d) => (
