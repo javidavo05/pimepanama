@@ -294,7 +294,7 @@ export function ClientCombobox({
                 </p>
                 <Link
                   href={`/empresa/clientes/${selectedClientId}`}
-                  className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors"
+                  className="inline-flex items-center min-h-11 sm:min-h-8 -my-2 text-brand-fg text-xs hover:text-brand-fg transition-colors"
                   onClick={(e) => e.stopPropagation()}
                 >
                   Ver perfil →
@@ -303,14 +303,14 @@ export function ClientCombobox({
               <div className="divide-y divide-line">
                 {Object.entries(history.history).map(([type, data]) => (
                   <div key={type} className="px-4 py-2.5">
-                    <div className="flex items-center justify-between mb-1.5">
+                    <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 mb-1.5">
                       <p className="text-fg-dim text-xs flex items-center gap-1.5">
                         <span>{TYPE_ICON[type] ?? "📄"}</span>
                         <span className="font-medium">{TYPE_LABEL[type] ?? type}</span>
                         <span className="text-fg-dim">·</span>
                         <span className="text-fg-dim">{data.count}</span>
                       </p>
-                      <span className="text-fg-faint text-[10px] flex items-center gap-2">
+                      <span className="text-fg-faint text-[10px] flex flex-wrap items-center gap-x-2">
                         {data.total > 0 && (
                           <span className="text-fg-mute font-mono">
                             ${data.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}
@@ -324,10 +324,11 @@ export function ClientCombobox({
                         <Link
                           key={doc.id}
                           href={`/empresa/${TYPE_PATH[type] ?? `${type.toLowerCase()}s`}/${doc.id}`}
-                          className="flex items-center justify-between gap-2 text-[10px] hover:text-fg-dim transition-colors group"
+                          // 44 px de alto en el celular: cada documento es un enlace que se toca.
+                          className="flex items-center justify-between gap-2 min-h-11 sm:min-h-8 text-xs sm:text-[10px] hover:text-fg-dim transition-colors group"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          <span className="text-fg-dim font-mono group-hover:text-brand-fg">{doc.number ?? doc.title.slice(0, 30)}</span>
+                          <span className="min-w-0 truncate text-fg-dim font-mono group-hover:text-brand-fg">{doc.number ?? doc.title.slice(0, 30)}</span>
                           <span className="flex items-center gap-1.5 shrink-0">
                             {doc.total != null && Number(doc.total) > 0 && (
                               <span className="text-fg-mute font-mono text-[10px]">
@@ -348,7 +349,7 @@ export function ClientCombobox({
           ) : history && history.totalDocs === 0 ? (
             <div className="px-4 py-3 text-fg-faint text-xs flex items-center justify-between">
               <span>Sin documentos previos con este cliente</span>
-              <Link href={`/empresa/clientes/${selectedClientId}`} className="text-brand-fg hover:text-brand-fg transition-colors text-[10px]">
+              <Link href={`/empresa/clientes/${selectedClientId}`} className="inline-flex items-center min-h-11 sm:min-h-8 -my-2 text-brand-fg hover:text-brand-fg transition-colors text-xs">
                 Ver perfil →
               </Link>
             </div>

@@ -19,6 +19,7 @@ import {
   toDateInput,
   type Contract,
 } from "./types";
+import { fechaCorta } from "@/lib/format-datetime";
 
 interface ContractsPanelProps {
   projectId: string;
@@ -304,9 +305,9 @@ export function ContractsPanel({
                       )}
                       {(c.startsAt || c.endsAt) && (
                         <span className="text-fg-faint text-[11px]">
-                          {c.startsAt ? new Date(c.startsAt).toLocaleDateString("es-PA") : "—"}
+                          {c.startsAt ? fechaCorta(c.startsAt) : "—"}
                           {" → "}
-                          {c.endsAt ? new Date(c.endsAt).toLocaleDateString("es-PA") : "—"}
+                          {c.endsAt ? fechaCorta(c.endsAt) : "—"}
                         </span>
                       )}
                     </div>

@@ -8,6 +8,7 @@ import {
   deleteDeliverableAction,
 } from "@/app/(empresa)/empresa/actions";
 import { INPUT_CLASS, TEXTAREA_CLASS, toDateInput, type Deliverable } from "./types";
+import { fechaCorta } from "@/lib/format-datetime";
 
 interface DeliverablesPanelProps {
   projectId: string;
@@ -171,7 +172,7 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
                   <div className="flex items-center gap-2 mt-1">
                     {d.dueDate && (
                       <span className="text-fg-faint text-[11px]">
-                        {new Date(d.dueDate).toLocaleDateString("es-PA")}
+                        {fechaCorta(d.dueDate)}
                       </span>
                     )}
                     {d.source === "AI_CONTRACT" && (

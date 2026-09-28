@@ -655,9 +655,9 @@ export function FacturaBuilder({
               aria-label={isEs ? "Moneda" : "Currency"}
               className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-sand/40 transition-all"
             >
-              <option value="USD">USD — Dólar</option>
-              <option value="PAB">PAB — Balboa</option>
-              <option value="EUR">EUR — Euro</option>
+              <option value="USD">USD</option>
+              <option value="PAB">PAB</option>
+              <option value="EUR">EUR</option>
             </select>
           </div>
         </div>

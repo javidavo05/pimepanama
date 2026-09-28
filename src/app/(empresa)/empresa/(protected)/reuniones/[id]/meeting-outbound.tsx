@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { fechaCorta } from "@/lib/format-datetime";
 
 interface Draft {
   to: string;
@@ -128,7 +129,7 @@ export function MeetingOutbound({
         <h2 className="text-fg-mute text-xs uppercase tracking-wider">Cerrar la reunión</h2>
         <p className="text-fg-ghost text-[11px]">
           {minutesSentAt
-            ? `Minuta enviada el ${new Date(minutesSentAt).toLocaleDateString("es-PA")}.`
+            ? `Minuta enviada el ${fechaCorta(minutesSentAt)}.`
             : "La minuta todavía no se le envió al cliente."}
         </p>
       </div>

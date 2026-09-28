@@ -108,7 +108,7 @@ export function DesignSystemHtmlEditor({
           <button
             type="button"
             onClick={() => setEditing((e) => !e)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+            className={`inline-flex items-center justify-center min-h-11 sm:min-h-8 px-3 rounded-lg text-xs font-medium border transition-colors ${
               editing
                 ? "border-azure/40 text-sky bg-azure/10"
                 : "border-line text-fg-faint hover:text-fg-mute"
@@ -126,7 +126,7 @@ export function DesignSystemHtmlEditor({
                 setShowSource(true);
               }
             }}
-            className="px-3 py-1.5 rounded-lg text-xs font-medium border border-line text-fg-faint hover:text-fg-mute transition-colors"
+            className="inline-flex items-center justify-center min-h-11 sm:min-h-8 px-3 rounded-lg text-xs font-medium border border-line text-fg-faint hover:text-fg-mute transition-colors"
           >
             {showSource ? "Aplicar HTML" : "Ver HTML"}
           </button>

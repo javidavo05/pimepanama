@@ -7,6 +7,7 @@ import {
   MEETING_STATUS_LABEL,
 } from "@/app/(empresa)/empresa/(protected)/reuniones/status";
 import type { ProjectMeeting } from "./types";
+import { fechaCorta } from "@/lib/format-datetime";
 
 /**
  * Reuniones del proyecto: es el hilo de contexto que la IA lee en cada reunión
@@ -64,7 +65,7 @@ export function MeetingsPanel({
                 </span>
               </div>
               <p className="text-fg-ghost text-xs">
-                {new Date(m.meetingDate).toLocaleDateString("es-PA")}
+                {fechaCorta(m.meetingDate)}
                 {m.durationMs > 0 ? ` · ${formatDuration(m.durationMs)}` : ""}
                 {m.actionItemCount > 0 ? ` · ${m.actionItemCount} pendientes` : ""}
               </p>

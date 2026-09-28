@@ -7,6 +7,7 @@ import type { SerializedMeetingActionItem } from "@/lib/meetings/types";
 import { useTaskStore } from "@/components/empresa/tasks/task-store";
 import { Icon, ICON, QuickAdd, TaskListHeader, TaskRow } from "@/components/empresa/tasks/task-parts";
 import { KIND_COLOR, KIND_LABEL, PRIORITY_LABEL } from "../status";
+import { fechaDiaMes } from "@/lib/format-datetime";
 
 const KINDS = ["TECNICO", "COMERCIAL", "ADMINISTRATIVO", "DECISION", "RIESGO"] as const;
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH"] as const;
@@ -531,7 +532,7 @@ export function ActionItemsPanel({
                         {[
                           item.owner,
                           item.dueDate &&
-                            new Date(item.dueDate).toLocaleDateString("es-PA", { day: "numeric", month: "short" }),
+                            fechaDiaMes(item.dueDate),
                           item.estimateHours && `${item.estimateHours} h estimadas`,
                           item.touchpoints.length > 0 && `Toca ${item.touchpoints.join(", ")}`,
                         ]

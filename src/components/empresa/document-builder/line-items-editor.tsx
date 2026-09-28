@@ -263,7 +263,7 @@ export function LineItemsEditor({
                 onClick={() => remove(index)}
                 aria-label="Quitar línea"
                 // En el celular la × sola medía 10 px: se le da el área de un dedo.
-                className="inline-flex items-center justify-center min-h-11 min-w-11 lg:min-h-8 lg:min-w-0 rounded-lg text-fg-faint hover:text-danger transition-colors text-lg lg:text-sm lg:mt-1"
+                className="inline-flex items-center justify-center min-h-11 min-w-11 lg:min-h-8 lg:min-w-8 rounded-lg text-fg-faint hover:text-danger transition-colors text-lg lg:text-sm lg:mt-1"
               >
                 ×
               </button>

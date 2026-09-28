@@ -22,6 +22,7 @@ import {
   type Project,
 } from "./types";
 import { ActionRow, btn } from "@/components/empresa/page-header";
+import { fechaCorta } from "@/lib/format-datetime";
 
 // Acciones de texto de las tarjetas (+ agregar, editar, + Factura…): en el
 // celular crecen a 44 px de alto para el dedo; desde tablet vuelven a ser
@@ -331,7 +332,7 @@ export function ProjectDetailClient({
                       {doc.total != null && (
                         <span className="text-fg-faint text-sm font-mono">${fmtUSD(doc.total)}</span>
                       )}
-                      <span className="text-fg-faint text-[10px]">{new Date(doc.issueDate).toLocaleDateString("es-PA")}</span>
+                      <span className="text-fg-faint text-[10px]">{fechaCorta(doc.issueDate)}</span>
                     </div>
                   </Link>
                 ))}
@@ -359,7 +360,7 @@ export function ProjectDetailClient({
                       <div className="flex-1 min-w-0 basis-40">
                         <p className="text-fg-mute text-sm truncate">{sc.description}</p>
                         <p className={`text-xs mt-1 ${isOverdue ? "text-danger" : "text-fg-dim"}`}>
-                          {isOverdue ? "Vencido — " : ""}{dueDate.toLocaleDateString("es-PA")}
+                          {isOverdue ? "Vencido — " : ""}{fechaCorta(dueDate)}
                         </p>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
@@ -413,13 +414,13 @@ export function ProjectDetailClient({
               <div>
                 <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Inicio</p>
                 <p className="text-fg-dim text-sm">
-                  {project.startDate ? new Date(project.startDate).toLocaleDateString("es-PA") : "—"}
+                  {project.startDate ? fechaCorta(project.startDate) : "—"}
                 </p>
               </div>
               <div>
                 <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Fin estimado</p>
                 <p className="text-fg-dim text-sm">
-                  {project.endDate ? new Date(project.endDate).toLocaleDateString("es-PA") : "—"}
+                  {project.endDate ? fechaCorta(project.endDate) : "—"}
                 </p>
               </div>
             </div>
@@ -453,7 +454,7 @@ export function ProjectDetailClient({
                 </p>
                 <p className="text-fg-faint text-xs">
                   Total ${fmtUSD(plan.total)}
-                  {plan.firstDueDate && ` · primera cuota ${new Date(plan.firstDueDate).toLocaleDateString("es-PA")}`}
+                  {plan.firstDueDate && ` · primera cuota ${fechaCorta(plan.firstDueDate)}`}
                 </p>
               </>
             ) : (

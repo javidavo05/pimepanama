@@ -184,9 +184,9 @@ export function ContractForm({ clients, projects, mode = "create", initial, defa
             className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-azure/40 transition-all" />
         </div>
 
-        {/* Una columna en el celular: en dos, el selector de proyecto quedaba
-            angosto y cortaba el nombre. */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 [&>div]:min-w-0">
+        {/* Una columna hasta lg: en dos, el selector de proyecto quedaba angosto
+            y cortaba el nombre (teléfonos en horizontal, plegables, iPad). */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 [&>div]:min-w-0">
           <div>
             <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">Cliente</label>
             <ClientCombobox

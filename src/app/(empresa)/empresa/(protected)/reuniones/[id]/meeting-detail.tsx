@@ -22,6 +22,7 @@ import { MeetingAudioPlayer, type SeekRequest } from "./meeting-audio-player";
 import { MeetingContextPanel } from "./meeting-context-panel";
 import { MeetingOutbound } from "./meeting-outbound";
 import { MeetingTranscriptView } from "./meeting-transcript-view";
+import { fechaCorta } from "@/lib/format-datetime";
 
 type Tab =
   | "entregable"
@@ -351,7 +352,7 @@ export function MeetingDetail({
                   </button>
                 </div>
                 <p className="text-fg-dim text-sm">
-                  {new Date(meeting.meetingDate).toLocaleDateString("es-PA")}
+                  {fechaCorta(meeting.meetingDate)}
                   {meeting.durationMs > 0 ? ` · ${formatDuration(meeting.durationMs)}` : ""}
                   {project ? (
                     <>
@@ -437,10 +438,10 @@ export function MeetingDetail({
           <p className="text-danger text-xs mt-4">Último error: {meeting.errorMessage}</p>
         )}
 
-        {/* Hasta lg, cuadrícula de dos columnas iguales (el último, si queda
+        {/* Hasta xl, cuadrícula de dos columnas iguales (el último, si queda
             solo, ocupa la fila): los botones sueltos se partían en filas
             disparejas. Con pantalla ancha, fila compacta. */}
-        <div className="grid grid-cols-2 gap-2 [&>*:last-child:nth-child(odd)]:col-span-2 lg:[&>*:last-child:nth-child(odd)]:col-span-1 lg:flex lg:flex-wrap mt-6">
+        <div className="grid grid-cols-2 gap-2 [&>*:last-child:nth-child(odd)]:col-span-2 xl:[&>*:last-child:nth-child(odd)]:col-span-1 xl:flex xl:flex-wrap mt-6">
           {STAGES.map((stage) => (
             <button
               key={stage.key}
@@ -472,7 +473,7 @@ export function MeetingDetail({
             onClick={() => void deleteMeeting()}
             disabled={busy !== null}
             // Si queda solo en su fila, la grilla lo estira (ver el contenedor).
-            className="min-h-11 sm:min-h-8 min-w-0 px-3 py-2 bg-fill hover:bg-danger/10 disabled:opacity-40 border border-line hover:border-danger/25 text-fg-ghost hover:text-danger text-xs rounded-lg transition-all lg:ml-auto"
+            className="min-h-11 sm:min-h-8 min-w-0 px-3 py-2 bg-fill hover:bg-danger/10 disabled:opacity-40 border border-line hover:border-danger/25 text-fg-ghost hover:text-danger text-xs rounded-lg transition-all xl:ml-auto"
           >
             {busy === "delete" ? "Borrando…" : "Borrar reunión"}
           </button>

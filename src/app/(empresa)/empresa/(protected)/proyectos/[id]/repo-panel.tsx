@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { fechaCorta } from "@/lib/format-datetime";
 
 interface RepoState {
   owner: string | null;
@@ -178,7 +179,7 @@ export function RepoPanel({ projectId }: { projectId: string }) {
             <span className="text-fg-ghost text-xs">rama {state.branch}</span>
             {state.syncedAt && (
               <span className="text-fg-ghost text-xs">
-                · leído {new Date(state.syncedAt).toLocaleDateString("es-PA")}
+                · leído {fechaCorta(state.syncedAt)}
               </span>
             )}
           </div>
