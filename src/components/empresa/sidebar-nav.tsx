@@ -8,11 +8,7 @@ import { signOutAction } from "@/app/(empresa)/empresa/actions";
 import { NotificationBell } from "@/components/empresa/mail/notification-bell";
 import { BrandMenu } from "@/components/empresa/brand-menu";
 
-/**
- * Íconos de la navegación: una sola familia, trazo de 1.5 px sobre 24×24.
- * Antes eran emojis, que cambian de estilo según el teléfono y no combinan con
- * la barra de pestañas.
- */
+/** Íconos de la barra de pestañas del celular: trazo de 1.5 px sobre 24×24. */
 const ICONS = {
   home: "m2.25 12 8.954-8.955a1.126 1.126 0 0 1 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25",
   check: "M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
@@ -41,6 +37,7 @@ const ICONS = {
   settings:
     "M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75",
   more: "M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5",
+  close: "M6 18 18 6M6 6l12 12",
 } as const;
 
 type IconName = keyof typeof ICONS;
@@ -56,6 +53,9 @@ function NavIcon({ name, className = "w-5 h-5" }: { name: IconName; className?: 
 interface NavItem {
   href: string;
   label: string;
+  /** Ícono del menú lateral (el de siempre). */
+  emoji: string;
+  /** Ícono de la pestaña de abajo en el celular. */
   icon: IconName;
   exact?: boolean;
   /** Prefijo que marca la sección como activa, si no es el propio href. */
@@ -63,24 +63,24 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/empresa", label: "Dashboard", icon: "home", exact: true },
-  { href: "/empresa/tareas", label: "Tareas", icon: "check" },
-  { href: "/empresa/clientes", label: "Clientes", icon: "users" },
-  { href: "/empresa/leads", label: "Leads", icon: "funnel" },
-  { href: "/empresa/citas", label: "Citas", icon: "calendar" },
-  { href: "/empresa/proyectos", label: "Proyectos", icon: "folder" },
-  { href: "/empresa/contratos", label: "Contratos", icon: "contract" },
-  { href: "/empresa/cotizaciones", label: "Cotizaciones", icon: "clipboard" },
-  { href: "/empresa/facturas", label: "Facturas", icon: "invoice" },
-  { href: "/empresa/cuentas-por-cobrar", label: "Por cobrar", icon: "cash" },
-  { href: "/empresa/por-pagar", label: "Por pagar", icon: "card" },
-  { href: "/empresa/platforms", label: "Platforms", icon: "desktop" },
-  { href: "/empresa/reuniones", label: "Reuniones", icon: "mic" },
-  { href: "/empresa/bitacoras", label: "Bitácoras", icon: "pencil" },
-  { href: "/empresa/correos/hub", label: "Correos", icon: "mail", match: "/empresa/correos" },
+  { href: "/empresa", label: "Dashboard", emoji: "⬛", icon: "home", exact: true },
+  { href: "/empresa/tareas", label: "Tareas", emoji: "✅", icon: "check" },
+  { href: "/empresa/clientes", label: "Clientes", emoji: "👥", icon: "users" },
+  { href: "/empresa/leads", label: "Leads", emoji: "🎯", icon: "funnel" },
+  { href: "/empresa/citas", label: "Citas", emoji: "📅", icon: "calendar" },
+  { href: "/empresa/proyectos", label: "Proyectos", emoji: "🗂️", icon: "folder" },
+  { href: "/empresa/contratos", label: "Contratos", emoji: "📑", icon: "contract" },
+  { href: "/empresa/cotizaciones", label: "Cotizaciones", emoji: "📋", icon: "clipboard" },
+  { href: "/empresa/facturas", label: "Facturas", emoji: "📄", icon: "invoice" },
+  { href: "/empresa/cuentas-por-cobrar", label: "Por Cobrar", emoji: "💰", icon: "cash" },
+  { href: "/empresa/por-pagar", label: "Por pagar", emoji: "💸", icon: "card" },
+  { href: "/empresa/platforms", label: "Platforms", emoji: "🖥️", icon: "desktop" },
+  { href: "/empresa/reuniones", label: "Reuniones", emoji: "🎙️", icon: "mic" },
+  { href: "/empresa/bitacoras", label: "Bitácoras", emoji: "📝", icon: "pencil" },
+  { href: "/empresa/correos/hub", label: "Correos", emoji: "✉️", icon: "mail", match: "/empresa/correos" },
 ];
 
-const BOTTOM_ITEMS: NavItem[] = [{ href: "/empresa/configuracion", label: "Configuración", icon: "settings" }];
+const BOTTOM_ITEMS: NavItem[] = [{ href: "/empresa/configuracion", label: "Configuración", emoji: "⚙️", icon: "settings" }];
 
 /**
  * Pestañas de abajo en el celular: lo que se usa todos los días, a un toque.
@@ -132,8 +132,8 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
   }
 
   const linkClass = (active: boolean) =>
-    `flex items-center gap-3 px-3 min-h-11 md:min-h-10 rounded-lg text-sm transition-colors ${
-      active ? "bg-brand/10 text-brand-fg border border-brand/20" : "text-fg-faint hover:text-fg-soft hover:bg-fill border border-transparent"
+    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+      active ? "bg-brand/10 text-brand-fg border border-brand/20" : "text-fg-faint hover:text-fg-soft hover:bg-fill"
     }`;
 
   return (
@@ -181,8 +181,9 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
               moreActive ? "text-brand-fg" : "text-fg-faint hover:text-fg-soft"
             }`}
           >
-            <NavIcon name="more" className="w-6 h-6" />
-            Más
+            {/* Como el botón ☰ de antes: al abrir el menú se vuelve ✕. */}
+            <NavIcon name={open ? "close" : "more"} className="w-6 h-6" />
+            {open ? "Cerrar" : "Más"}
           </button>
         </div>
       </nav>
@@ -198,7 +199,7 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
       )}
 
       <aside
-        className={`fixed left-0 top-0 h-full w-64 md:w-60 bg-panel-2 border-r border-line flex flex-col z-50 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:pt-0 md:pb-0 transform transition-transform duration-200 ease-out ${
+        className={`fixed left-0 top-0 h-full w-60 bg-panel-2 border-r border-line flex flex-col z-50 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:pt-0 md:pb-0 transform transition-transform duration-200 ease-out ${
           open ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0`}
       >
@@ -215,7 +216,7 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
         </div>
 
         {/* Main nav */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.href}
@@ -223,14 +224,14 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
               onClick={(e) => onNavigate(e, item.href)}
               className={linkClass(isActive(item))}
             >
-              <NavIcon name={item.icon} />
+              <span className="text-base w-5 text-center">{item.emoji}</span>
               <span className="flex-1">{item.label}</span>
             </Link>
           ))}
         </nav>
 
         {/* Bottom items */}
-        <div className="px-3 py-3 border-t border-line space-y-1">
+        <div className="px-3 py-3 border-t border-line space-y-0.5">
           {BOTTOM_ITEMS.map((item) => (
             <Link
               key={item.href}
@@ -238,7 +239,7 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
               onClick={(e) => onNavigate(e, item.href)}
               className={linkClass(isActive(item))}
             >
-              <NavIcon name={item.icon} />
+              <span className="text-base w-5 text-center">{item.emoji}</span>
               {item.label}
             </Link>
           ))}
@@ -249,7 +250,7 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
             <form action={signOutAction}>
               <button
                 type="submit"
-                className="-mx-2 px-2 min-h-11 md:min-h-8 inline-flex items-center rounded-md text-fg-dim hover:text-danger text-xs transition-colors"
+                className="-mx-2 px-2 min-h-8 inline-flex items-center rounded-md text-fg-dim hover:text-danger text-xs transition-colors"
               >
                 Cerrar sesión →
               </button>
