@@ -625,7 +625,9 @@ export function FacturaBuilder({
         <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">
           {isEs ? "Detalles del documento" : "Document details"}
         </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Tres columnas solo desde lg: en tablet y teléfono en horizontal, la
+            fecha no entraba entera en un tercio del ancho. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">
               {isEs ? "Fecha de emisión" : "Issue date"}
@@ -646,7 +648,7 @@ export function FacturaBuilder({
               className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-sand/40 transition-all"
             />
           </div>
-          <div>
+          <div className="sm:col-span-2 lg:col-span-1">
             <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">
               {isEs ? "Moneda" : "Currency"}
             </label>

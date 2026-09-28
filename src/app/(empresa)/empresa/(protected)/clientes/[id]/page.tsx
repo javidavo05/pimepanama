@@ -262,7 +262,7 @@ function DocumentHistoryTable({
                 <td className="px-5 py-3">
                   <Link
                     href={`${basePath}/${doc.id}`}
-                    className="text-brand-fg hover:text-brand-fg text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all"
+                    className="inline-flex items-center min-h-8 px-2 -mx-2 whitespace-nowrap text-brand-fg hover:text-brand-fg text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all"
                   >
                     {doc.status === "PAID" && basePath.includes("facturas") ? "Ver →" : "Abrir →"}
                   </Link>
