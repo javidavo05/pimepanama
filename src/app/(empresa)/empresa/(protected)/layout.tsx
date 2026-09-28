@@ -28,13 +28,14 @@ export default async function EmpresaProtectedLayout({
         userEmail={user.email}
         companyName={user.config?.name ?? "Pime Panamá"}
         logoUrl={resolveCompanyLogoUrl(user.config?.logoUrl)}
-      />
-      {/* En el celular el contenido arranca bajo la barra de arriba (56 px más
-          la barra de estado) y termina sobre la de pestañas (64 px más la
-          barra de inicio del sistema). */}
-      <main className="pt-[calc(3.5rem+env(safe-area-inset-top))] md:pt-0 md:ml-60 min-h-screen">
-        <div className="p-4 sm:p-6 md:p-8 pb-[calc(5rem+env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] sm:pb-[calc(5rem+env(safe-area-inset-bottom))] md:p-8">{children}</div>
-      </main>
+      >
+        {/* En el celular el contenido arranca bajo la barra de arriba (56 px más
+            la barra de estado) y termina sobre la de pestañas (64 px más la
+            barra de inicio del sistema). */}
+        <main className="pt-[calc(3.5rem+env(safe-area-inset-top))] md:pt-0 md:ml-60 min-h-screen">
+          <div className="p-4 sm:p-6 md:p-8 pb-[calc(5rem+env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] sm:pb-[calc(5rem+env(safe-area-inset-bottom))] md:p-8">{children}</div>
+        </main>
+      </SidebarNav>
     </div>
   );
 }

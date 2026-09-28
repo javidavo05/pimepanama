@@ -316,3 +316,140 @@ html[data-theme="light"] {
     color: rgb(var(--c-fg-trace));
   }
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Cajón revelado — el menú del celular no se superpone: se REVELA.
+   ──────────────────────────────────────────────────────────────────────────
+   El menú está siempre debajo, quieto; lo que se mueve es la página (barra de
+   arriba, contenido y pestañas juntas): se encoge, se redondea y se aparta a
+   la derecha, y la franja que queda a la vista es el camino de vuelta.
+   Portado de ~/Documents/Websites/side_bar con los colores de la suite.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.empresa-app {
+  --cajon-sale: cubic-bezier(0.16, 1, 0.3, 1);
+  --cajon-medio: 280ms;
+  /* Cuánto se aparta la página y, a la vez, el ancho del menú: tienen que ser
+     el mismo valor o el menú queda cortado. */
+  --cajon-ancho: min(76vw, 20rem);
+  --cajon-escala: 0.88;
+  --cajon-radio: 0.875rem;
+  --cajon-sombra: 0 10px 24px -8px rgb(20 33 58 / 0.18), 0 28px 56px -24px rgb(20 33 58 / 0.3);
+}
+
+.cajon {
+  position: relative;
+  min-height: 100dvh;
+  /* `clip` y no `hidden`: la página apartada sobresale por la derecha y, sin
+     recortar, el teléfono aleja la vista para que quepa. `hidden` además
+     crearía un contenedor de desplazamiento y rompería los `sticky`. */
+  overflow-x: clip;
+}
+
+.cajon > .cajon-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  width: var(--cajon-ancho);
+  overflow: hidden;
+  /* Invisible mientras la página lo tapa; se apaga DESPUÉS de que la página
+     vuelva, para que no desaparezca a mitad del gesto. */
+  visibility: hidden;
+  transition: visibility 0s linear var(--cajon-medio);
+}
+
+.cajon[data-abierto="true"] > .cajon-menu {
+  visibility: visible;
+  transition-delay: 0s;
+}
+
+/* Se desplaza la LISTA, no el menú: así la cabecera y el botón de cerrar no se
+   van hacia arriba al bajar a las últimas secciones. */
+.cajon-lista {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Los bloques llegan escalonados al abrir. */
+.cajon[data-abierto="true"] .cajon-lista > * {
+  animation: cajon-llega var(--cajon-medio) var(--cajon-sale) both;
+  animation-delay: var(--cajon-retraso, 0ms);
+}
+
+@keyframes cajon-llega {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.cajon-lienzo {
+  position: relative;
+  min-height: 100dvh;
+  /* Opaco: si fuera transparente se vería el menú a través de la página. */
+  background-color: rgb(var(--c-canvas));
+  transform-origin: left center;
+  transition:
+    transform var(--cajon-medio) var(--cajon-sale),
+    border-radius var(--cajon-medio) var(--cajon-sale),
+    box-shadow var(--cajon-medio) var(--cajon-sale);
+}
+
+@media (max-width: 767px) {
+  /* Solo en el celular: en escritorio un z-index aquí encerraría los modales
+     de la página por debajo de la columna lateral. */
+  .cajon-lienzo {
+    z-index: 1;
+  }
+
+  .cajon[data-abierto="true"] .cajon-lienzo {
+    transform: translate3d(var(--cajon-ancho), 0, 0) scale(var(--cajon-escala));
+    border-radius: var(--cajon-radio);
+    box-shadow: var(--cajon-sombra);
+    overflow: hidden;
+  }
+}
+
+/* La franja de página visible es un botón de verdad, fuera del lienzo inerte.
+   Empieza donde termina el menú: si cubriera toda la pantalla taparía también
+   los enlaces del menú. */
+.cajon-volver {
+  position: fixed;
+  inset: 0;
+  left: var(--cajon-ancho);
+  z-index: 2;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+@media (min-width: 768px) {
+  .cajon > .cajon-menu,
+  .cajon-volver {
+    display: none;
+  }
+}
+
+/* Menos movimiento: sin escalado (lo que marea), con el desplazamiento. */
+@media (prefers-reduced-motion: reduce) {
+  .cajon-lienzo,
+  .cajon[data-abierto="true"] .cajon-lista > * {
+    transition-duration: 0.01ms;
+    animation-duration: 0.01ms;
+    animation-delay: 0ms;
+  }
+
+  @media (max-width: 767px) {
+    .cajon[data-abierto="true"] .cajon-lienzo {
+      transform: translate3d(var(--cajon-ancho), 0, 0);
+    }
+  }
+}

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { signOutAction } from "@/app/(empresa)/empresa/actions";
 import { NotificationBell } from "@/components/empresa/mail/notification-bell";
 import { BrandMenu } from "@/components/empresa/brand-menu";
@@ -60,27 +60,29 @@ interface NavItem {
   exact?: boolean;
   /** Prefijo que marca la sección como activa, si no es el propio href. */
   match?: string;
+  /** Bloque del cajón del celular. */
+  group: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/empresa", label: "Dashboard", emoji: "⬛", icon: "home", exact: true },
-  { href: "/empresa/tareas", label: "Tareas", emoji: "✅", icon: "check" },
-  { href: "/empresa/clientes", label: "Clientes", emoji: "👥", icon: "users" },
-  { href: "/empresa/leads", label: "Leads", emoji: "🎯", icon: "funnel" },
-  { href: "/empresa/citas", label: "Citas", emoji: "📅", icon: "calendar" },
-  { href: "/empresa/proyectos", label: "Proyectos", emoji: "🗂️", icon: "folder" },
-  { href: "/empresa/contratos", label: "Contratos", emoji: "📑", icon: "contract" },
-  { href: "/empresa/cotizaciones", label: "Cotizaciones", emoji: "📋", icon: "clipboard" },
-  { href: "/empresa/facturas", label: "Facturas", emoji: "📄", icon: "invoice" },
-  { href: "/empresa/cuentas-por-cobrar", label: "Por Cobrar", emoji: "💰", icon: "cash" },
-  { href: "/empresa/por-pagar", label: "Por pagar", emoji: "💸", icon: "card" },
-  { href: "/empresa/platforms", label: "Platforms", emoji: "🖥️", icon: "desktop" },
-  { href: "/empresa/reuniones", label: "Reuniones", emoji: "🎙️", icon: "mic" },
-  { href: "/empresa/bitacoras", label: "Bitácoras", emoji: "📝", icon: "pencil" },
-  { href: "/empresa/correos/hub", label: "Correos", emoji: "✉️", icon: "mail", match: "/empresa/correos" },
+  { href: "/empresa", label: "Dashboard", emoji: "⬛", icon: "home", exact: true, group: "Día a día" },
+  { href: "/empresa/tareas", label: "Tareas", emoji: "✅", icon: "check", group: "Día a día" },
+  { href: "/empresa/clientes", label: "Clientes", emoji: "👥", icon: "users", group: "Comercial" },
+  { href: "/empresa/leads", label: "Leads", emoji: "🎯", icon: "funnel", group: "Comercial" },
+  { href: "/empresa/citas", label: "Citas", emoji: "📅", icon: "calendar", group: "Día a día" },
+  { href: "/empresa/proyectos", label: "Proyectos", emoji: "🗂️", icon: "folder", group: "Comercial" },
+  { href: "/empresa/contratos", label: "Contratos", emoji: "📑", icon: "contract", group: "Comercial" },
+  { href: "/empresa/cotizaciones", label: "Cotizaciones", emoji: "📋", icon: "clipboard", group: "Documentos" },
+  { href: "/empresa/facturas", label: "Facturas", emoji: "📄", icon: "invoice", group: "Documentos" },
+  { href: "/empresa/cuentas-por-cobrar", label: "Por Cobrar", emoji: "💰", icon: "cash", group: "Finanzas" },
+  { href: "/empresa/por-pagar", label: "Por pagar", emoji: "💸", icon: "card", group: "Finanzas" },
+  { href: "/empresa/platforms", label: "Platforms", emoji: "🖥️", icon: "desktop", group: "Sistema" },
+  { href: "/empresa/reuniones", label: "Reuniones", emoji: "🎙️", icon: "mic", group: "Día a día" },
+  { href: "/empresa/bitacoras", label: "Bitácoras", emoji: "📝", icon: "pencil", group: "Documentos" },
+  { href: "/empresa/correos/hub", label: "Correos", emoji: "✉️", icon: "mail", match: "/empresa/correos", group: "Día a día" },
 ];
 
-const BOTTOM_ITEMS: NavItem[] = [{ href: "/empresa/configuracion", label: "Configuración", emoji: "⚙️", icon: "settings" }];
+const BOTTOM_ITEMS: NavItem[] = [{ href: "/empresa/configuracion", label: "Configuración", emoji: "⚙️", icon: "settings", group: "Sistema" }];
 
 /**
  * Pestañas de abajo en el celular: lo que se usa todos los días, a un toque.
@@ -89,17 +91,49 @@ const BOTTOM_ITEMS: NavItem[] = [{ href: "/empresa/configuracion", label: "Confi
 const TAB_HREFS = ["/empresa", "/empresa/tareas", "/empresa/reuniones", "/empresa/correos/hub"];
 const TAB_ITEMS = TAB_HREFS.map((href) => NAV_ITEMS.find((i) => i.href === href)!);
 
+/** Bloques del cajón en el orden en que aparecen, con Configuración al final. */
+function groupItems(items: NavItem[]) {
+  const order: string[] = [];
+  const byGroup = new Map<string, NavItem[]>();
+  for (const item of items) {
+    if (!byGroup.has(item.group)) {
+      byGroup.set(item.group, []);
+      order.push(item.group);
+    }
+    byGroup.get(item.group)!.push(item);
+  }
+  return order.map((group) => ({ group, items: byGroup.get(group)! }));
+}
+
+const DRAWER_GROUPS = groupItems([...NAV_ITEMS, ...BOTTOM_ITEMS]);
+
 interface SidebarNavProps {
   userEmail: string;
   companyName: string;
   logoUrl?: string;
+  /** Toda la página: en el celular se aparta entera para revelar el menú. */
+  children: ReactNode;
 }
 
-export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps) {
+/**
+ * Navegación de la suite.
+ *
+ * - Escritorio: la columna fija de la izquierda, como siempre.
+ * - Celular: barra de pestañas abajo y el «cajón revelado» detrás de «Más»: el
+ *   menú está siempre debajo y lo que se mueve es la página, que se encoge y se
+ *   aparta a la derecha. La franja que queda a la vista es el camino de vuelta.
+ *   Por eso este componente envuelve a TODA la página (barras incluidas): para
+ *   apartarla hay que poder transformarla entera.
+ */
+export function SidebarNav({ userEmail, companyName, logoUrl, children }: SidebarNavProps) {
   const pathname = usePathname();
   const [logoFailed, setLogoFailed] = useState(false);
   const [open, setOpen] = useState(false);
   const logoSrc = logoFailed ? "/logo-pime.png" : (logoUrl ?? "/logo-pime.png");
+  const trigger = useRef<HTMLButtonElement>(null);
+  const drawer = useRef<HTMLElement>(null);
+  const canvas = useRef<HTMLDivElement>(null);
+  const content = useRef<HTMLDivElement>(null);
 
   // La pestaña tocada se marca y el menú se cierra en el mismo toque, sin
   // esperar a que llegue la página: esperar la respuesta del servidor era lo
@@ -110,6 +144,71 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
     setOpen(false);
     setPendingHref(null);
   }, [pathname]);
+
+  /*
+   * La página se congela en su sitio mientras está apartada.
+   *
+   * Las barras de arriba y de abajo son `fixed`, y dentro de un elemento
+   * transformado `fixed` pasa a medirse contra ese elemento. Si el lienzo
+   * midiera lo que toda la página, la barra de pestañas se iría al final del
+   * documento en plena animación. Por eso, al abrir, el lienzo pasa a medir la
+   * pantalla (fixed, inset 0) y el contenido se corre hacia arriba lo que ya se
+   * había desplazado; al terminar de cerrar se devuelve todo y el scroll vuelve
+   * a donde estaba.
+   */
+  const frozenAt = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    const el = canvas.current;
+    const inner = content.current;
+    if (!el || !inner) return;
+
+    if (open) {
+      const y = window.scrollY;
+      frozenAt.current = y;
+      el.style.position = "fixed";
+      el.style.inset = "0";
+      inner.style.marginTop = `-${y}px`;
+      return;
+    }
+
+    if (frozenAt.current === null) return;
+    const y = frozenAt.current;
+    const unfreeze = () => {
+      if (frozenAt.current === null) return;
+      frozenAt.current = null;
+      el.style.position = "";
+      el.style.inset = "";
+      inner.style.marginTop = "";
+      window.scrollTo(0, y);
+    };
+    const onEnd = (e: TransitionEvent) => {
+      if (e.target === el && e.propertyName === "transform") unfreeze();
+    };
+    el.addEventListener("transitionend", onEnd);
+    // Por si la transición no corre (menos movimiento, pestaña en segundo plano).
+    const fallback = window.setTimeout(unfreeze, 400);
+    return () => {
+      el.removeEventListener("transitionend", onEnd);
+      window.clearTimeout(fallback);
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    document.addEventListener("keydown", onKey);
+    // El foco entra al menú: un lector de pantalla necesita saber que cambió la pantalla.
+    drawer.current?.focus();
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+
+  function close() {
+    setOpen(false);
+    // El foco vuelve a donde estaba: quien usa teclado no puede quedarse en la nada.
+    trigger.current?.focus({ preventScroll: true });
+  }
 
   function matches(item: NavItem, path: string) {
     if (item.exact) return path === item.href;
@@ -138,113 +237,32 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
 
   return (
     <>
-      {/* Barra superior del celular: marca y avisos. La navegación va abajo. */}
-      <div className="md:hidden fixed top-0 inset-x-0 z-40 bg-panel-2 border-b border-line pt-[env(safe-area-inset-top)] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
-        <div className="h-14 flex items-center gap-3">
-          <div className="relative w-7 h-7 rounded-md bg-brand/10 border border-brand/25 flex items-center justify-center shrink-0 overflow-hidden">
-            <Image src={logoSrc} alt={companyName} fill sizes="28px" className="object-contain p-0.5" onError={() => setLogoFailed(true)} />
-          </div>
-          <p className="text-fg text-xs font-semibold tracking-widest uppercase flex-1 truncate">{companyName}</p>
-          <NotificationBell />
-        </div>
-      </div>
-
-      {/* Barra de pestañas del celular, como en una app nativa */}
-      <nav
-        aria-label="Secciones principales"
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-panel-2 border-t border-line pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]"
-      >
-        <div className="grid grid-cols-5 h-16">
-          {TAB_ITEMS.map((item) => {
-            const active = !open && isActive(item);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={(e) => onNavigate(e, item.href)}
-                aria-current={active ? "page" : undefined}
-                className={`flex flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors ${
-                  active ? "text-brand-fg" : "text-fg-faint hover:text-fg-soft"
-                }`}
-              >
-                <NavIcon name={item.icon} className="w-6 h-6" />
-                {item.label}
-              </Link>
-            );
-          })}
-          <button
-            type="button"
-            onClick={() => setOpen((o) => !o)}
-            aria-expanded={open}
-            aria-label={open ? "Cerrar menú" : "Más secciones"}
-            className={`flex flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors ${
-              moreActive ? "text-brand-fg" : "text-fg-faint hover:text-fg-soft"
-            }`}
-          >
-            {/* Como el botón ☰ de antes: al abrir el menú se vuelve ✕. */}
-            <NavIcon name={open ? "close" : "more"} className="w-6 h-6" />
-            {open ? "Cerrar" : "Más"}
-          </button>
-        </div>
-      </nav>
-
-      {/* Backdrop */}
-      {open && (
-        <div
-          // theme-ok: velo de modal — oscurece el fondo en ambos temas a propósito
-          className="md:hidden fixed inset-0 bg-black/60 z-40"
-          onClick={() => setOpen(false)}
-          aria-hidden
-        />
-      )}
-
-      <aside
-        className={`fixed left-0 top-0 h-full w-60 bg-panel-2 border-r border-line flex flex-col z-50 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:pt-0 md:pb-0 transform transition-transform duration-200 ease-out ${
-          open ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0`}
-      >
-        {/* Brand */}
+      {/* ── Escritorio: la columna de siempre ─────────────────────────────── */}
+      <aside className="hidden md:flex fixed left-0 top-0 h-full w-60 bg-panel-2 border-r border-line flex-col z-50">
         <div className="px-4 py-6 border-b border-line">
           <div className="flex items-center gap-2">
-            <BrandMenu
-              companyName={companyName}
-              logoSrc={logoSrc}
-              onLogoError={() => setLogoFailed(true)}
-            />
+            <BrandMenu companyName={companyName} logoSrc={logoSrc} onLogoError={() => setLogoFailed(true)} />
             <NotificationBell align="left" />
           </div>
         </div>
 
-        {/* Main nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
           {NAV_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={(e) => onNavigate(e, item.href)}
-              className={linkClass(isActive(item))}
-            >
+            <Link key={item.href} href={item.href} onClick={(e) => onNavigate(e, item.href)} className={linkClass(isActive(item))}>
               <span className="text-base w-5 text-center">{item.emoji}</span>
               <span className="flex-1">{item.label}</span>
             </Link>
           ))}
         </nav>
 
-        {/* Bottom items */}
         <div className="px-3 py-3 border-t border-line space-y-0.5">
           {BOTTOM_ITEMS.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={(e) => onNavigate(e, item.href)}
-              className={linkClass(isActive(item))}
-            >
+            <Link key={item.href} href={item.href} onClick={(e) => onNavigate(e, item.href)} className={linkClass(isActive(item))}>
               <span className="text-base w-5 text-center">{item.emoji}</span>
               {item.label}
             </Link>
           ))}
 
-          {/* User + sign out */}
           <div className="mt-2 px-3 py-3 rounded-lg bg-fill border border-line">
             <p className="text-fg-dim text-xs truncate">{userEmail}</p>
             <form action={signOutAction}>
@@ -258,6 +276,132 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
           </div>
         </div>
       </aside>
+
+      {/* ── Celular: cajón revelado ───────────────────────────────────────── */}
+      <div className="cajon" data-abierto={open}>
+        {/* El menú, siempre debajo. Solo existe en el celular (ver globals.css). */}
+        <nav
+          ref={drawer}
+          tabIndex={-1}
+          aria-label="Todas las secciones"
+          aria-hidden={!open}
+          className="cajon-menu bg-panel-2 outline-none"
+        >
+          <div className="flex items-center gap-2 px-4 pb-2 pt-[max(1.25rem,env(safe-area-inset-top))]">
+            <div className="min-w-0 flex-1">
+              <BrandMenu companyName={companyName} logoSrc={logoSrc} onLogoError={() => setLogoFailed(true)} />
+            </div>
+            <button
+              type="button"
+              onClick={close}
+              aria-label="Cerrar el menú"
+              className="w-11 h-11 shrink-0 inline-flex items-center justify-center rounded-full text-fg-mute hover:text-fg hover:bg-fill"
+            >
+              <NavIcon name="close" />
+            </button>
+          </div>
+
+          <div className="cajon-lista px-2 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
+            {DRAWER_GROUPS.map((block, i) => (
+              <div
+                key={block.group}
+                className="grid gap-0.5"
+                // Los bloques entran escalonados: hay una secuencia que leer.
+                style={{ ["--cajon-retraso" as string]: `${60 + i * 45}ms` }}
+              >
+                <h2 className="px-3 pt-3 pb-1 text-sand-fg text-[11px] font-semibold uppercase tracking-[0.14em]">
+                  {block.group}
+                </h2>
+                {block.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={(e) => onNavigate(e, item.href)}
+                    aria-current={isActive(item) ? "page" : undefined}
+                    className={`flex items-center gap-3 min-h-11 px-3 rounded-lg text-sm font-medium transition-colors ${
+                      isActive(item) ? "bg-brand/10 text-brand-fg font-semibold" : "text-fg-mute hover:text-fg hover:bg-fill"
+                    }`}
+                  >
+                    <span className="text-base w-5 text-center">{item.emoji}</span>
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            ))}
+
+            <div className="mt-4 mx-1 px-3 py-3 rounded-lg bg-fill border border-line">
+              <p className="text-fg-dim text-xs truncate">{userEmail}</p>
+              <form action={signOutAction}>
+                <button
+                  type="submit"
+                  className="-mx-2 px-2 min-h-11 inline-flex items-center rounded-md text-fg-dim hover:text-danger text-xs transition-colors"
+                >
+                  Cerrar sesión →
+                </button>
+              </form>
+            </div>
+          </div>
+        </nav>
+
+        {/* La página entera: se aparta al abrir y mientras tanto es inerte. */}
+        <div ref={canvas} className="cajon-lienzo" {...(open ? { inert: true } : {})}>
+          {/* Barra superior del celular: marca y avisos. */}
+          <div className="md:hidden fixed top-0 inset-x-0 z-40 bg-panel-2 border-b border-line pt-[env(safe-area-inset-top)] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
+            <div className="h-14 flex items-center gap-3">
+              <div className="relative w-7 h-7 rounded-md bg-brand/10 border border-brand/25 flex items-center justify-center shrink-0 overflow-hidden">
+                <Image src={logoSrc} alt={companyName} fill sizes="28px" className="object-contain p-0.5" onError={() => setLogoFailed(true)} />
+              </div>
+              <p className="text-fg text-xs font-semibold tracking-widest uppercase flex-1 truncate">{companyName}</p>
+              <NotificationBell />
+            </div>
+          </div>
+
+          <div ref={content}>{children}</div>
+
+          {/* Barra de pestañas del celular, como en una app nativa */}
+          <nav
+            aria-label="Secciones principales"
+            className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-panel-2 border-t border-line pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]"
+          >
+            <div className="grid grid-cols-5 h-16">
+              {TAB_ITEMS.map((item) => {
+                const active = !open && isActive(item);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={(e) => onNavigate(e, item.href)}
+                    aria-current={active ? "page" : undefined}
+                    className={`flex flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors ${
+                      active ? "text-brand-fg" : "text-fg-faint hover:text-fg-soft"
+                    }`}
+                  >
+                    <NavIcon name={item.icon} className="w-6 h-6" />
+                    {item.label}
+                  </Link>
+                );
+              })}
+              <button
+                ref={trigger}
+                type="button"
+                onClick={() => setOpen(true)}
+                aria-expanded={open}
+                aria-label="Más secciones"
+                className={`flex flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors ${
+                  moreActive ? "text-brand-fg" : "text-fg-faint hover:text-fg-soft"
+                }`}
+              >
+                <NavIcon name="more" className="w-6 h-6" />
+                Más
+              </button>
+            </div>
+          </nav>
+        </div>
+
+        {/* La franja de página visible es el botón de vuelta; vive fuera del
+            lienzo inerte porque si no el toque no llegaría. */}
+        {open && <button type="button" onClick={close} className="cajon-volver" aria-label="Volver a la página" />}
+      </div>
     </>
   );
 }
