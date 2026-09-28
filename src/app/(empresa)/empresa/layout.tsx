@@ -1,8 +1,20 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { PwaRegister } from "@/components/empresa/pwa-register";
 import { ThemeScript } from "@/components/empresa/theme/theme-script";
 import { ThemeProvider } from "@/components/empresa/theme/theme-provider";
 import { EMPRESA_FAVICON_ICONS } from "@/lib/company-logo";
+
+/**
+ * `viewportFit: "cover"` deja que la app instalada use toda la pantalla del
+ * iPhone (con la barra de estado translúcida). Las barras fijas de la suite
+ * compensan la muesca y la barra de inicio con env(safe-area-inset-*).
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#030611",
+};
 
 /** Static metadata only — no force-dynamic here (avoids Turbopack metadata-route races on /empresa). */
 export const metadata: Metadata = {

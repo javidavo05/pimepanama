@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { tile } from "@/components/empresa/page-header";
 
 export function AccountActions({ accountId }: { accountId: string }) {
   const router = useRouter();
@@ -63,31 +64,30 @@ export function AccountActions({ accountId }: { accountId: string }) {
     router.refresh();
   }
 
+  // Celular: cinco botones iguales en dos filas (grid de 3 columnas), a lo
+  // ancho de la tarjeta. Desde tablet, una sola fila compacta.
   return (
-    <div className="flex items-center gap-2 flex-shrink-0">
+    <div className="w-full lg:w-auto space-y-2">
       {testResult && (
-        <span className={`text-xs ${testResult.startsWith("✓") ? "text-ok" : "text-danger"}`}>{testResult}</span>
+        <p className={`text-xs ${testResult.startsWith("✓") ? "text-ok" : "text-danger"}`}>{testResult}</p>
       )}
-      <button onClick={handleTest} disabled={testing}
-        className="px-3 py-1.5 text-xs bg-fill border border-line hover:bg-fill-2 disabled:opacity-40 text-fg-dim rounded-lg transition-all">
-        {testing ? "..." : "Probar"}
-      </button>
-      <button onClick={handleSync} disabled={syncing}
-        className="px-3 py-1.5 text-xs bg-fill border border-line hover:bg-fill-2 disabled:opacity-40 text-fg-dim rounded-lg transition-all">
-        {syncing ? "Sync..." : "Sincronizar"}
-      </button>
-      <button onClick={handleResyncBodies} disabled={syncing}
-        className="px-3 py-1.5 text-xs bg-warn/10 border border-warn/20 hover:bg-warn/15 disabled:opacity-40 text-warn rounded-lg transition-all">
-        Recuperar HTML
-      </button>
-      <Link href={`/empresa/correos/cuentas/${accountId}`}
-        className="px-3 py-1.5 text-xs bg-fill border border-line hover:bg-fill-2 text-fg-dim rounded-lg transition-all">
-        Editar
-      </Link>
-      <button onClick={handleDelete}
-        className="px-3 py-1.5 text-xs border border-danger/20 hover:bg-danger/10 text-danger hover:text-danger rounded-lg transition-all">
-        Eliminar
-      </button>
+      <div className="grid grid-cols-3 gap-2 lg:flex">
+        <button onClick={handleTest} disabled={testing} className={tile.neutral}>
+          {testing ? "Probando…" : "Probar"}
+        </button>
+        <button onClick={handleSync} disabled={syncing} className={tile.neutral}>
+          {syncing ? "Sincronizando…" : "Sincronizar"}
+        </button>
+        <button onClick={handleResyncBodies} disabled={syncing} title="Recuperar HTML de correos guardados como texto" className={tile.neutral}>
+          HTML
+        </button>
+        <Link href={`/empresa/correos/cuentas/${accountId}`} className={tile.neutral}>
+          Editar
+        </Link>
+        <button onClick={handleDelete} className={`${tile.danger} col-span-2`}>
+          Eliminar
+        </button>
+      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { DocumentListTable } from "@/components/empresa/document-list-table";
 import { getQuoteLinkedInvoiceId } from "@/lib/quote-to-invoice";
 import { openQuoteWhere } from "@/lib/quote-list";
+import { PageHeader, btn } from "@/components/empresa/page-header";
 
 export const metadata = { title: "Cotizaciones — Pime Suite" };
 
@@ -20,21 +21,16 @@ export default async function CotizacionesPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-fg text-2xl font-semibold tracking-tight">Cotizaciones</h1>
-          <p className="text-fg-dim text-sm mt-1">
-            {documents.length} {documents.length === 1 ? "activa" : "activas"}
-          </p>
-        </div>
-        <Link
-          href="/empresa/cotizaciones/nueva"
-          className="px-4 py-2.5 bg-sand hover:bg-sand-lt text-on-accent text-sm font-semibold rounded-lg transition-all"
-        >
-          + Nueva cotización
-        </Link>
-      </div>
-      <div className="bg-panel border border-line rounded-2xl p-6">
+      <PageHeader
+        title="Cotizaciones"
+        description={`${documents.length} ${documents.length === 1 ? "activa" : "activas"}`}
+        actions={
+          <Link href="/empresa/cotizaciones/nueva" className={btn.accent}>
+            + Nueva cotización
+          </Link>
+        }
+      />
+      <div className="md:bg-panel md:border md:border-line md:rounded-2xl md:p-6">
         <DocumentListTable
           documents={documents}
           editBasePath="/empresa/cotizaciones"

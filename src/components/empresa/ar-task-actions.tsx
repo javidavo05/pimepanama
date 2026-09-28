@@ -173,7 +173,8 @@ export function ArTaskActions({ documentId, paymentScheduleId, defaultTitle, ini
         type="button"
         onClick={() => setOpen((v) => !v)}
         title="Agregar tarea de seguimiento"
-        className="w-5 h-5 flex items-center justify-center rounded border border-line-mid text-fg-dim hover:text-brand-fg hover:border-brand/40 text-xs transition-colors"
+        aria-label="Agregar tarea de seguimiento"
+        className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg border border-line-mid text-fg-dim hover:text-brand-fg hover:border-brand/40 text-xs transition-colors"
       >
         +
       </button>

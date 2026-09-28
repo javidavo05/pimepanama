@@ -13,16 +13,17 @@ export type EmpresaUserWithConfig = EmpresaUser & {
 // y la consulta a Prisma una vez por layout y otra vez por page.
 export const getEmpresaUser = cache(async (): Promise<EmpresaUserWithConfig> => {
   const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() verifica el JWT localmente con las llaves públicas del proyecto
+  // (ES256): se ahorra el viaje a Supabase Auth en cada navegación.
+  const { data } = await supabase.auth.getClaims();
+  const claims = data?.claims;
 
-  if (!user) {
+  if (!claims?.sub) {
     redirect("/empresa/login");
   }
 
   const empresaUser = await prisma.empresaUser.findUnique({
-    where: { supabaseUid: user.id },
+    where: { supabaseUid: claims.sub },
     include: { config: true },
   });
 
@@ -30,9 +31,9 @@ export const getEmpresaUser = cache(async (): Promise<EmpresaUserWithConfig> => 
     // Authenticated with Supabase but no EmpresaUser record yet — auto-provision
     const newUser = await prisma.empresaUser.create({
       data: {
-        supabaseUid: user.id,
-        email: user.email!,
-        fullName: user.user_metadata?.full_name ?? null,
+        supabaseUid: claims.sub,
+        email: claims.email!,
+        fullName: (claims.user_metadata?.full_name as string | undefined) ?? null,
       },
       include: { config: true },
     });

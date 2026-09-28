@@ -151,7 +151,7 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
           type="button"
           disabled={busy}
           onClick={() => setShowPaste((v) => !v)}
-          className="text-fg-faint hover:text-fg-soft text-xs px-2 py-1 transition-colors"
+          className="inline-flex items-center min-h-11 sm:min-h-8 text-fg-faint hover:text-fg-soft text-xs px-2 transition-colors"
         >
           o pegar el texto
         </button>
@@ -173,7 +173,7 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
             type="button"
             disabled={busy || !pasted.trim()}
             onClick={() => void analyze({ text: pasted })}
-            className="px-3 py-1.5 rounded-lg bg-iris/15 border border-iris/30 text-iris-fg text-xs font-medium disabled:opacity-40"
+            className="inline-flex items-center justify-center min-h-11 sm:min-h-8 px-3 rounded-lg bg-iris/15 border border-iris/30 text-iris-fg text-xs font-medium disabled:opacity-40"
           >
             {busy ? "Analizando…" : "Analizar texto"}
           </button>

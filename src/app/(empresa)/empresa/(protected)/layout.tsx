@@ -29,8 +29,10 @@ export default async function EmpresaProtectedLayout({
         companyName={user.config?.name ?? "Pime Panamá"}
         logoUrl={resolveCompanyLogoUrl(user.config?.logoUrl)}
       />
-      <main className="pt-14 md:pt-0 md:ml-60 min-h-screen">
-        <div className="p-4 sm:p-6 md:p-8">{children}</div>
+      {/* La barra de arriba en el celular mide 56 px más la franja de la
+          barra de estado; el contenido arranca debajo de las dos. */}
+      <main className="pt-[calc(3.5rem+env(safe-area-inset-top))] md:pt-0 md:ml-60 min-h-screen">
+        <div className="p-4 sm:p-6 md:p-8 pb-[max(1rem,env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] sm:pb-[max(1.5rem,env(safe-area-inset-bottom))] md:p-8">{children}</div>
       </main>
     </div>
   );

@@ -21,6 +21,13 @@ import {
   fmtUSD,
   type Project,
 } from "./types";
+import { ActionRow, btn } from "@/components/empresa/page-header";
+
+// Acciones de texto de las tarjetas (+ agregar, editar, + Factura…): en el
+// celular crecen a 44 px de alto para el dedo; desde tablet vuelven a ser
+// enlaces compactos.
+const MINI_ACTION =
+  "inline-flex items-center justify-center min-h-11 sm:min-h-8 px-2 sm:px-0 text-brand-fg text-xs sm:text-[10px] hover:text-brand-fg transition-colors disabled:opacity-40";
 
 const SCHEDULE_STATUS_COLOR: Record<string, string> = {
   PENDING: "bg-info/15 text-info border-info/20",
@@ -107,10 +114,10 @@ export function ProjectDetailClient({
   return (
     <>
       {/* Header */}
-      <div className="flex items-start justify-between gap-4 mb-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
         <div className="min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-fg text-2xl font-semibold tracking-tight truncate">{project.name}</h1>
+          <div className="flex items-center gap-2 mb-1 min-w-0">
+            <h1 className="text-fg text-2xl font-semibold tracking-tight truncate min-w-0">{project.name}</h1>
             <span className={`px-2 py-1 text-xs rounded border shrink-0 ${PROJECT_STATUS_COLOR[project.status]}`}>
               {PROJECT_STATUS_LABEL[project.status]}
             </span>
@@ -124,7 +131,7 @@ export function ProjectDetailClient({
                   {i > 0 && <span className="text-fg-ghost">·</span>}
                   <Link
                     href={`/empresa/clientes/${c.id}`}
-                    className="text-fg-dim hover:text-brand-fg transition-colors"
+                    className="inline-flex items-center min-h-11 sm:min-h-8 text-fg-dim hover:text-brand-fg transition-colors"
                   >
                     {c.name}{c.company ? ` — ${c.company}` : ""}
                   </Link>
@@ -134,13 +141,11 @@ export function ProjectDetailClient({
           )}
         </div>
         {!editing && (
-          <button
-            type="button"
-            onClick={() => setEditing("form")}
-            className="px-3 min-h-9 bg-fill border border-line text-fg-dim text-xs font-medium rounded-lg hover:text-fg hover:border-line-loud transition-all shrink-0"
-          >
-            Editar proyecto
-          </button>
+          <ActionRow>
+            <button type="button" onClick={() => setEditing("form")} className={btn.secondary}>
+              Editar proyecto
+            </button>
+          </ActionRow>
         )}
       </div>
 
@@ -192,12 +197,12 @@ export function ProjectDetailClient({
           {/* Description / Scope */}
           <div className="bg-panel border border-line rounded-xl p-6 space-y-4">
             {!project.description && !project.scope ? (
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <p className="text-fg-faint text-sm">Sin descripción ni alcance.</p>
                 <button
                   type="button"
                   onClick={() => setEditing("form")}
-                  className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors"
+                  className={MINI_ACTION}
                 >
                   + agregar
                 </button>
@@ -250,13 +255,16 @@ export function ProjectDetailClient({
 
           {/* Propuesta comercial (PDF, estilo design-system) */}
           <div className="bg-panel border border-line rounded-xl overflow-hidden">
-            <div className="px-6 py-4 flex items-center justify-between">
+            {/* En el celular el título va arriba y los dos botones debajo, en
+                columnas iguales; desde tablet, todo en una fila. */}
+            <div className="px-4 sm:px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Propuesta comercial</h3>
-              <div className="flex items-center gap-2">
+              <ActionRow>
                 <button
+                  type="button"
                   onClick={handleGenerateProposal}
                   disabled={generatingProposal}
-                  className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors disabled:opacity-40"
+                  className={btn.secondary}
                 >
                   {generatingProposal ? "Generando…" : project.hasProposal ? "↻ Regenerar con IA" : "✦ Generar con IA"}
                 </button>
@@ -267,7 +275,7 @@ export function ProjectDetailClient({
                     label="Descargar"
                   />
                 )}
-              </div>
+              </ActionRow>
             </div>
             {proposalError && (
               <div className="px-6 pb-4 text-danger text-xs">{proposalError}</div>
@@ -289,15 +297,15 @@ export function ProjectDetailClient({
 
           {/* Documentos vinculados */}
           <div className="bg-panel border border-line rounded-xl overflow-hidden">
-            <div className="px-6 py-4 border-b border-line flex items-center justify-between">
+            <div className="px-4 sm:px-6 py-2 sm:py-4 border-b border-line flex items-center justify-between gap-3">
               <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Documentos</h3>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 sm:gap-3">
                 <Link href={`/empresa/cotizaciones/nueva?projectId=${project.id}${mainClient ? `&clientId=${mainClient.id}` : ""}`}
-                  className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors">
+                  className={MINI_ACTION}>
                   + Cotización
                 </Link>
                 <Link href={`/empresa/facturas/nueva?projectId=${project.id}${mainClient ? `&clientId=${mainClient.id}` : ""}`}
-                  className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors">
+                  className={MINI_ACTION}>
                   + Factura
                 </Link>
               </div>
@@ -309,8 +317,8 @@ export function ProjectDetailClient({
                 {project.documents.map((doc) => (
                   <Link key={doc.id}
                     href={`/empresa/${DOC_TYPE_PATH[doc.type] ?? "facturas"}/${doc.id}`}
-                    className="flex items-center justify-between px-6 py-3 hover:bg-fill transition-colors group">
-                    <div>
+                    className="flex items-center justify-between gap-3 px-4 sm:px-6 py-3 hover:bg-fill transition-colors group">
+                    <div className="min-w-0">
                       <span className="text-fg-mute text-sm font-mono group-hover:text-brand-fg transition-colors">
                         {doc.number ?? doc.type}
                       </span>
@@ -319,7 +327,7 @@ export function ProjectDetailClient({
                         <span className="ml-2 text-[10px] text-warn border border-warn/30 rounded px-2 py-1">⚠ Sin factura</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 shrink-0">
                       {doc.total != null && (
                         <span className="text-fg-faint text-sm font-mono">${fmtUSD(doc.total)}</span>
                       )}
@@ -334,7 +342,7 @@ export function ProjectDetailClient({
           {/* Plan de pagos */}
           {allSchedules.length > 0 && (
             <div className="bg-panel border border-line rounded-xl overflow-hidden">
-              <div className="px-6 py-4 border-b border-line flex items-center justify-between">
+              <div className="px-4 sm:px-6 py-4 border-b border-line flex items-center justify-between gap-3">
                 <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Plan de pagos</h3>
                 <div className="text-right">
                   <span className="text-sand-fg text-xs font-mono">${fmtUSD(totalPaid)}</span>
@@ -347,23 +355,24 @@ export function ProjectDetailClient({
                   const isOverdue = sc.status === "OVERDUE" && !isPaid;
                   const dueDate = new Date(sc.dueDate);
                   return (
-                    <div key={sc.id} className="flex items-center justify-between px-6 py-3">
-                      <div className="flex-1 min-w-0">
+                    <div key={sc.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 sm:px-6 py-3">
+                      <div className="flex-1 min-w-0 basis-40">
                         <p className="text-fg-mute text-sm truncate">{sc.description}</p>
                         <p className={`text-xs mt-1 ${isOverdue ? "text-danger" : "text-fg-dim"}`}>
                           {isOverdue ? "Vencido — " : ""}{dueDate.toLocaleDateString("es-PA")}
                         </p>
                       </div>
-                      <div className="flex items-center gap-3 ml-4 shrink-0">
+                      <div className="flex items-center gap-3 shrink-0">
                         <span className="text-fg-dim text-sm font-mono">${fmtUSD(sc.amount)}</span>
                         <span className={`px-2 py-1 text-[10px] rounded border ${SCHEDULE_STATUS_COLOR[isPaid ? "PAID" : sc.status]}`}>
                           {isPaid ? "Pagado" : sc.status === "OVERDUE" ? "Vencido" : sc.status === "PENDING" ? "Pendiente" : sc.status}
                         </span>
                         {!isPaid && sc.status !== "CANCELLED" && (
                           <button
+                            type="button"
                             onClick={() => handleMarkPaid(sc.id)}
                             disabled={payingId === sc.id}
-                            className="text-[10px] text-ok hover:text-ok transition-colors disabled:opacity-40">
+                            className={`${MINI_ACTION} !text-ok`}>
                             ✓ Pagado
                           </button>
                         )}
@@ -382,12 +391,12 @@ export function ProjectDetailClient({
 
           {/* Fechas y presupuesto */}
           <div className="bg-panel border border-line rounded-xl p-6 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <p className="text-fg-faint text-[10px] uppercase tracking-widest">Resumen</p>
               <button
                 type="button"
                 onClick={() => setEditing("form")}
-                className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors"
+                className={MINI_ACTION}
               >
                 editar
               </button>
@@ -425,12 +434,12 @@ export function ProjectDetailClient({
 
           {/* Financiación */}
           <div className="bg-panel border border-line rounded-xl p-6 space-y-2">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-3">
               <p className="text-fg-faint text-[10px] uppercase tracking-widest">Financiación</p>
               <button
                 type="button"
                 onClick={() => setEditing("financing")}
-                className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors"
+                className={MINI_ACTION}
               >
                 {plan ? "editar" : "+ agregar"}
               </button>

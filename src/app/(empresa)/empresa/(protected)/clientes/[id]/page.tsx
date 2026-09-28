@@ -8,6 +8,7 @@ import { buildMonthlyRevenue } from "@/lib/revenue-helpers";
 import { computeClientStats } from "@/lib/client-stats";
 import { filterPaidInvoices, effectiveInvoiceAmount } from "@/lib/invoice-revenue";
 import type { DocumentStatus } from "@prisma/client";
+import { ActionRow, btn } from "@/components/empresa/page-header";
 
 export default async function ClienteDetailPage({
   params,
@@ -45,40 +46,39 @@ export default async function ClienteDetailPage({
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center gap-2 text-sm text-fg-dim">
-        <Link href="/empresa/clientes" className="hover:text-fg-mute transition-colors">
+      <div className="flex items-center gap-2 text-sm text-fg-dim min-w-0">
+        <Link
+          href="/empresa/clientes"
+          className="inline-flex items-center min-h-11 sm:min-h-8 shrink-0 hover:text-fg-mute transition-colors"
+        >
           Clientes
         </Link>
         <span>/</span>
-        <span className="text-fg-mute">{client.name}</span>
+        <span className="text-fg-mute truncate min-w-0">{client.name}</span>
       </div>
 
-      <div className="bg-panel border border-line rounded-2xl p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-fg text-2xl font-semibold">{client.name}</h1>
+      <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6">
+        {/* En el celular los dos botones bajan debajo de los datos, en columnas
+            iguales; desde tablet quedan a la derecha. */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="text-fg text-2xl font-semibold break-words">{client.name}</h1>
             {client.company && <p className="text-fg-faint text-sm mt-1">{client.company}</p>}
-            <div className="flex flex-wrap gap-4 mt-3">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 [&>span]:break-all">
               {client.ruc && <span className="text-fg-dim text-xs font-mono">RUC: {client.ruc}</span>}
               {client.email && <span className="text-fg-dim text-xs">{client.email}</span>}
               {client.phone && <span className="text-fg-dim text-xs">{client.phone}</span>}
               {client.address && <span className="text-fg-dim text-xs">{client.address}</span>}
             </div>
           </div>
-          <div className="flex gap-2 shrink-0">
-            <Link
-              href={`/empresa/cotizaciones/nueva?clientId=${client.id}`}
-              className="px-4 py-2.5 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-all"
-            >
+          <ActionRow>
+            <Link href={`/empresa/cotizaciones/nueva?clientId=${client.id}`} className={btn.primary}>
               + Cotización
             </Link>
-            <Link
-              href={`/empresa/facturas/nueva?clientId=${client.id}`}
-              className="px-4 py-2.5 bg-sand hover:bg-sand-lt text-on-accent text-sm font-semibold rounded-lg transition-all"
-            >
+            <Link href={`/empresa/facturas/nueva?clientId=${client.id}`} className={btn.accent}>
               + Factura
             </Link>
-          </div>
+          </ActionRow>
         </div>
       </div>
 
@@ -105,16 +105,16 @@ export default async function ClienteDetailPage({
             color: "text-brand-fg",
           },
         ].map(({ label, value, mono, color }) => (
-          <div key={label} className="bg-panel border border-line rounded-xl p-4">
+          <div key={label} className="bg-panel border border-line rounded-xl p-4 min-w-0">
             <p className="text-fg-dim text-xs uppercase tracking-widest mb-2">{label}</p>
-            <p className={`text-lg font-semibold ${mono ? "font-mono" : ""} ${color ?? "text-fg"}`}>
+            <p className={`text-lg font-semibold break-words ${mono ? "font-mono" : ""} ${color ?? "text-fg"}`}>
               {value}
             </p>
           </div>
         ))}
       </div>
 
-      <div className="bg-panel border border-line rounded-xl p-4 flex items-center justify-between">
+      <div className="bg-panel border border-line rounded-xl p-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <p className="text-fg-dim text-xs uppercase tracking-widest">Neto recibido (facturas pagadas)</p>
         <p className="text-ok font-mono text-xl font-semibold">
           ${totalNet.toLocaleString("en-US", { minimumFractionDigits: 2 })}
@@ -171,12 +171,54 @@ function DocumentHistoryTable({
 }) {
   return (
     <div className="bg-panel border border-line rounded-2xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-line">
+      <div className="px-4 sm:px-5 py-4 border-b border-line">
         <h2 className="text-fg-mute text-sm font-medium uppercase tracking-widest">{title}</h2>
       </div>
       {documents.length === 0 ? (
         <div className="p-10 text-center text-fg-dim text-sm">{emptyMessage}</div>
       ) : (
+        <>
+        {/* Celular: una tarjeta por documento. Siete columnas no caben en
+            390 px y la tabla cortaba el neto por el borde. */}
+        <ul className="sm:hidden divide-y divide-line">
+          {documents.map((doc) => (
+            <li key={doc.id}>
+              <Link
+                href={`${basePath}/${doc.id}`}
+                className="block px-4 py-3 space-y-2 hover:bg-fill transition-colors"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <span className="font-mono text-fg-mute text-sm truncate min-w-0">{doc.number ?? "—"}</span>
+                  <StatusBadge status={doc.status} />
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                  <span className="text-fg-dim">
+                    {new Date(doc.issueDate).toLocaleDateString("es-PA", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                  <span className="text-right font-mono text-fg-dim text-sm">
+                    ${Number(doc.total ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                  </span>
+                  <span className="text-fg-dim truncate min-w-0">{doc.paymentMethod?.name ?? "—"}</span>
+                  <span className="text-right font-mono">
+                    {doc.netAmount ? (
+                      <span className="text-ok">
+                        Neto ${Number(doc.netAmount).toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                      </span>
+                    ) : (
+                      <span className="text-fg-faint">Neto —</span>
+                    )}
+                  </span>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+        {/* Desde tablet, la tabla; si aún no cabe, se desplaza dentro de su caja. */}
+        <div className="hidden sm:block overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-line">
@@ -229,6 +271,8 @@ function DocumentHistoryTable({
             ))}
           </tbody>
         </table>
+        </div>
+        </>
       )}
     </div>
   );

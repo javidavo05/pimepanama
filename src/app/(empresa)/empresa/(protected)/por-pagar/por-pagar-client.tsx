@@ -10,6 +10,7 @@ import {
   type LedgerEntry,
   type MonthlySummary,
 } from "@/lib/ledger";
+import { btn, seg } from "@/components/empresa/page-header";
 
 export type SerializedExpense = {
   id: string;
@@ -172,17 +173,15 @@ export function PorPagarClient({
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 border-b border-line pb-2">
+      <div className={seg.group} role="tablist" aria-label="Vista">
         {(["gastos", "libro"] as Tab[]).map((t) => (
           <button
             key={t}
             type="button"
+            role="tab"
+            aria-selected={tab === t}
             onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm rounded-lg transition-colors ${
-              tab === t
-                ? "bg-brand/10 text-brand-fg border border-brand/20"
-                : "text-fg-faint hover:text-fg-soft"
-            }`}
+            className={seg.item(tab === t)}
           >
             {t === "gastos" ? "Gastos" : "Libro"}
           </button>
@@ -191,30 +190,23 @@ export function PorPagarClient({
 
       {tab === "gastos" && (
         <>
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex gap-2 flex-wrap">
+          <div className="flex flex-col gap-3 sm:flex-row-reverse sm:items-center sm:justify-between">
+            <button type="button" onClick={() => setShowForm((v) => !v)} aria-expanded={showForm} className={btn.primary}>
+              + Gasto
+            </button>
+            <div className={seg.group} aria-label="Filtrar por estado">
               {(["ALL", "PENDING", "PAID"] as StatusFilter[]).map((f) => (
                 <button
                   key={f}
                   type="button"
+                  aria-pressed={statusFilter === f}
                   onClick={() => setStatusFilter(f)}
-                  className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
-                    statusFilter === f
-                      ? "bg-fill-3 border-line-loud text-fg"
-                      : "border-line text-fg-faint hover:text-fg-mute"
-                  }`}
+                  className={seg.item(statusFilter === f)}
                 >
                   {f === "ALL" ? "Todos" : STATUS_LABEL[f]}
                 </button>
               ))}
             </div>
-            <button
-              type="button"
-              onClick={() => setShowForm((v) => !v)}
-              className="px-4 py-2 bg-brand hover:bg-brand-hi text-on-brand text-sm font-medium rounded-lg"
-            >
-              + Gasto
-            </button>
           </div>
 
           {showForm && (

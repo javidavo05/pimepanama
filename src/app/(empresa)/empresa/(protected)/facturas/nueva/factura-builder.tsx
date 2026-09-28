@@ -12,6 +12,7 @@ import { LineItemsEditor, type DocumentFormValues } from "@/components/empresa/d
 import { AiEnhanceButton } from "@/components/empresa/document-builder/ai-enhance-button";
 import { DraftPdfPreview } from "@/components/empresa/document-builder/draft-pdf-preview";
 import { PdfDownloadButton } from "@/components/empresa/document-builder/pdf-download-button";
+import { PageHeader, ActionRow, btn } from "@/components/empresa/page-header";
 import { PaymentSelector } from "@/components/empresa/payment-selector";
 import type { Client } from "@prisma/client";
 import type { SerializedPaymentMethod, SerializedProject, SerializedContract, SerializedDocument } from "@/lib/serializers";
@@ -490,37 +491,34 @@ export function FacturaBuilder({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-fg text-2xl font-semibold tracking-tight">
-            {mode === "edit"
-              ? isEs
-                ? "Editar Factura"
-                : "Edit Invoice"
-              : isEs
-                ? "Nueva Factura"
-                : "New Invoice"}
-          </h1>
-          <p className="text-fg-dim text-sm mt-1">
-            {mode === "edit" && initialDocument?.number ? (
-              <span className="font-mono">{initialDocument.number}</span>
-            ) : isEs ? (
-              "Complete los datos para generar la factura"
-            ) : (
-              "Fill in the details to generate the invoice"
-            )}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <PdfDownloadButton
-            draftEndpoint="/api/empresa/documents/preview"
-            draftPayload={previewPayload}
-            filename={`${initialDocument?.number ?? "factura"}.pdf`}
-          />
-          <LanguageToggle value={language} onChange={(l) => setValue("language", l)} />
-        </div>
-      </div>
+      {/* Header: en el celular PDF e idioma bajan debajo del título en dos
+          columnas iguales; antes compartían fila con el título y "EN" se cortaba. */}
+      <PageHeader
+        title={mode === "edit"
+          ? isEs
+            ? "Editar Factura"
+            : "Edit Invoice"
+          : isEs
+            ? "Nueva Factura"
+            : "New Invoice"}
+        description={mode === "edit" && initialDocument?.number ? (
+          <span className="font-mono">{initialDocument.number}</span>
+        ) : isEs ? (
+          "Complete los datos para generar la factura"
+        ) : (
+          "Fill in the details to generate the invoice"
+        )}
+        actions={
+          <>
+            <PdfDownloadButton
+              draftEndpoint="/api/empresa/documents/preview"
+              draftPayload={previewPayload}
+              filename={`${initialDocument?.number ?? "factura"}.pdf`}
+            />
+            <LanguageToggle value={language} onChange={(l) => setValue("language", l)} />
+          </>
+        }
+      />
 
       {/* Client */}
       <ClientSelector register={register} setValue={setValue} watch={watch} clients={clients} lang={language} />
@@ -541,8 +539,9 @@ export function FacturaBuilder({
           <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">
             {isEs ? "Proyecto y contrato" : "Project & contract"}
           </h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
+          {/* Una columna en el celular: en dos, los selects quedaban ilegibles. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="min-w-0">
               <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
                 {isEs ? "Proyecto" : "Project"}
               </label>
@@ -558,7 +557,7 @@ export function FacturaBuilder({
                 ))}
               </select>
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
                 {isEs ? "Contrato" : "Contract"}
               </label>
@@ -589,7 +588,7 @@ export function FacturaBuilder({
 
           {/* Presupuesto del proyecto — solo informativo */}
           {selectedProject?.totalBudget != null && (
-            <div className="border-t border-line pt-4 flex items-center justify-between">
+            <div className="border-t border-line pt-4 flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-fg-faint text-xs uppercase tracking-widest font-medium">
                   {isEs ? "Presupuesto del proyecto" : "Project budget"}
@@ -703,7 +702,7 @@ export function FacturaBuilder({
                     if (!balanceDueDate) setBalanceDueDate(addDaysISO(30));
                   }
                 }}
-                className={`px-3 py-2.5 rounded-lg text-xs font-medium border transition-all ${
+                className={`min-h-11 px-3 py-2.5 rounded-lg text-xs font-medium border transition-all ${
                   collection === opt.key
                     ? "bg-brand/10 border-brand/35 text-brand-fg"
                     : "border-line text-fg-dim hover:text-fg-soft hover:border-line-loud"
@@ -770,7 +769,7 @@ export function FacturaBuilder({
                     { description: "", amount: "", dueDate: addDaysISO(30 * (rows.length + 1)) },
                   ])
                 }
-                className="text-brand-fg text-xs hover:text-sky transition-colors"
+                className="inline-flex items-center min-h-11 sm:min-h-8 text-brand-fg text-sm sm:text-xs hover:text-sky transition-colors"
               >
                 + {isEs ? "Agregar cuota" : "Add installment"}
               </button>
@@ -784,14 +783,16 @@ export function FacturaBuilder({
               </p>
             ) : (
               installments.map((row, idx) => (
-                <div key={idx} className="grid grid-cols-[1fr_120px_150px_32px] gap-2 items-center">
+                // En el celular: descripción a lo ancho y monto, fecha y × debajo.
+                // Las cuatro columnas fijas de escritorio no entraban en 360 px.
+                <div key={idx} className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_44px] sm:grid-cols-[minmax(0,1fr)_120px_150px_32px] gap-2 items-center">
                   <input
                     placeholder={isEs ? `Cuota ${idx + 1}` : `Installment ${idx + 1}`}
                     value={row.description}
                     onChange={(e) =>
                       setInstallments((rows) => rows.map((r, i) => (i === idx ? { ...r, description: e.target.value } : r)))
                     }
-                    className="bg-fill border border-line rounded-lg px-3 py-2 text-fg text-sm focus:outline-none focus:border-brand/40"
+                    className="col-span-3 sm:col-span-1 min-w-0 w-full bg-fill border border-line rounded-lg px-3 py-2 text-fg text-sm focus:outline-none focus:border-brand/40"
                   />
                   <input
                     type="number"
@@ -802,7 +803,7 @@ export function FacturaBuilder({
                     onChange={(e) =>
                       setInstallments((rows) => rows.map((r, i) => (i === idx ? { ...r, amount: e.target.value } : r)))
                     }
-                    className="bg-fill border border-line rounded-lg px-3 py-2 text-fg text-sm font-mono focus:outline-none focus:border-brand/40"
+                    className="min-w-0 w-full bg-fill border border-line rounded-lg px-3 py-2 text-fg text-sm font-mono focus:outline-none focus:border-brand/40"
                   />
                   <input
                     type="date"
@@ -810,12 +811,13 @@ export function FacturaBuilder({
                     onChange={(e) =>
                       setInstallments((rows) => rows.map((r, i) => (i === idx ? { ...r, dueDate: e.target.value } : r)))
                     }
-                    className="bg-fill border border-line rounded-lg px-3 py-2 text-fg text-sm focus:outline-none focus:border-brand/40 [color-scheme:dark]"
+                    className="min-w-0 w-full bg-fill border border-line rounded-lg px-3 py-2 text-fg text-sm focus:outline-none focus:border-brand/40 [color-scheme:dark]"
                   />
                   <button
                     type="button"
                     onClick={() => setInstallments((rows) => rows.filter((_, i) => i !== idx))}
-                    className="text-fg-ghost hover:text-danger text-sm"
+                    aria-label={isEs ? "Quitar cuota" : "Remove installment"}
+                    className="inline-flex items-center justify-center min-h-11 sm:min-h-8 text-fg-ghost hover:text-danger text-lg sm:text-sm"
                   >
                     ×
                   </button>
@@ -869,19 +871,19 @@ export function FacturaBuilder({
 
       <DraftPdfPreview endpoint="/api/empresa/documents/preview" payload={previewPayload} title={isEs ? "Vista previa del documento" : "Document preview"} />
 
-      {/* Actions */}
-      <div className="flex justify-end gap-3 pt-2">
+      {/* Actions: dos columnas iguales en el celular, la principal a la derecha. */}
+      <ActionRow className="pt-2 sm:justify-end sm:gap-3">
         <button
           type="button"
           onClick={() => router.back()}
-          className="px-4 py-2.5 text-fg-faint hover:text-fg-soft text-sm transition-colors"
+          className={btn.secondary}
         >
           {isEs ? "Cancelar" : "Cancel"}
         </button>
         <button
           type="submit"
           disabled={saving}
-          className="px-6 py-2.5 bg-sand hover:bg-sand-lt disabled:opacity-50 text-on-accent text-sm font-semibold rounded-lg transition-all"
+          className={btn.accent}
         >
           {saving
             ? isEs
@@ -895,7 +897,7 @@ export function FacturaBuilder({
                 ? "Crear factura"
                 : "Create invoice"}
         </button>
-      </div>
+      </ActionRow>
     </form>
   );
 }

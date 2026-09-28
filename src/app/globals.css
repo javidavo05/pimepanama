@@ -66,6 +66,58 @@
     background-position: right 12px center;
     background-size: 12px;
   }
+
+  /* Filas que se deslizan de lado (pastillas de cuentas, carpetas) sin barra. */
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Grilla de opciones de cantidad variable (2 columnas en el celular, 3 desde
+   tablet): el último elemento que queda solo en su fila se estira hasta el
+   borde, así ninguna fila termina más corta que las demás. */
+.grid-fill-2-3 > :last-child:nth-child(2n + 1) {
+  grid-column: span 2 / span 2;
+}
+@media (min-width: 640px) {
+  .grid-fill-2-3 > :last-child:nth-child(2n + 1) {
+    grid-column: auto;
+  }
+  .grid-fill-2-3 > :last-child:nth-child(3n + 1) {
+    grid-column: span 3 / span 3;
+  }
+  .grid-fill-2-3 > :last-child:nth-child(3n + 2) {
+    grid-column: span 2 / span 2;
+  }
+}
+
+/* iOS acerca la página al enfocar un campo con letra de menos de 16 px, y no
+   vuelve a alejarla. En la suite, en pantallas de celular, todo campo de texto
+   usa 16 px, y en cualquier pantalla táctil (plegables abiertos, tablets)
+   también; con mouse vuelve al tamaño que diga su clase. */
+@media (max-width: 767px), (pointer: coarse) {
+  .empresa-app input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  .empresa-app select,
+  .empresa-app textarea {
+    font-size: 16px;
+  }
+
+  /* Safari ignora el alto de un select nativo (queda en ~25 px, muy chico para
+     el dedo). En el celular todos los selects de la suite se dibujan con alto
+     de 44 px y su propia flecha, igual que .field-select. */
+  .empresa-app select:not([multiple]) {
+    -webkit-appearance: none;
+    appearance: none;
+    min-height: 44px;
+    padding-right: 32px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none' stroke='%23888' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 4.5 6 7.5 9 4.5'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+  }
 }
 
 /* ══════════════════════════════════════════════════════════════════════════

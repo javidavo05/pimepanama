@@ -90,7 +90,7 @@ export function CollectRow({
           setOpen((v) => !v);
         }}
         aria-expanded={open}
-        className={`shrink-0 px-3 py-1.5 rounded-lg border text-xs font-medium transition-all ${
+        className={`shrink-0 min-h-10 sm:min-h-8 px-4 sm:px-3 rounded-lg border text-sm sm:text-xs font-medium transition-all ${
           open
             ? "bg-fill-2 border-line-loud text-fg-mute"
             : "bg-ok/10 border-ok/25 text-ok hover:bg-ok/20"

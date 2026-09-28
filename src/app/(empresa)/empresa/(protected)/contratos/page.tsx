@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
+import { PageHeader, btn } from "@/components/empresa/page-header";
 
 export const metadata = { title: "Contratos — Pime Suite" };
 export const dynamic = "force-dynamic";
@@ -30,16 +31,16 @@ export default async function ContratosPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-fg text-2xl font-semibold tracking-tight">Contratos</h1>
-          <p className="text-fg-dim text-sm mt-0.5">{contracts.length} contrato{contracts.length !== 1 ? "s" : ""}</p>
-        </div>
-        <Link href="/empresa/proyectos/nuevo"
-          className="px-4 py-2 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-all">
-          + Proyecto y contrato
-        </Link>
-      </div>
+      <PageHeader
+        className="mb-6"
+        title="Contratos"
+        description={`${contracts.length} contrato${contracts.length !== 1 ? "s" : ""}`}
+        actions={
+          <Link href="/empresa/proyectos/nuevo" className={btn.primary}>
+            + Proyecto y contrato
+          </Link>
+        }
+      />
 
       {contracts.length === 0 ? (
         <div className="bg-panel border border-line rounded-2xl p-12 text-center space-y-4">
@@ -47,33 +48,32 @@ export default async function ContratosPage() {
           <p className="text-fg-dim text-sm">
             El contrato se crea junto con su proyecto, en una sola pantalla.
           </p>
-          <Link href="/empresa/proyectos/nuevo"
-            className="inline-block px-5 py-2 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-all">
+          <Link href="/empresa/proyectos/nuevo" className={btn.primary}>
             Crear proyecto y contrato
           </Link>
         </div>
       ) : (
-        <div className="grid gap-3">
+        <div className="grid grid-cols-1 gap-3">
           {contracts.map((c) => (
             <Link key={c.id} href={`/empresa/contratos/${c.id}`}
-              className="bg-panel border border-line hover:border-line-mid rounded-xl p-5 flex items-start gap-4 transition-all group">
+              className="min-w-0 bg-panel border border-line hover:border-line-mid rounded-xl p-4 sm:p-5 flex items-start gap-4 transition-all group">
               <div className="w-10 h-10 rounded-xl bg-sand/10 border border-sand/20 flex items-center justify-center text-lg shrink-0">
                 📑
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                  <h2 className="text-fg font-medium truncate group-hover:text-sand-fg transition-colors">{c.title}</h2>
-                  <span className={`px-2 py-0.5 text-[10px] rounded border ${STATUS_COLOR[c.status]}`}>
+                <div className="flex items-center gap-2 mb-1 min-w-0">
+                  <h2 className="text-fg font-medium truncate min-w-0 group-hover:text-sand-fg transition-colors">{c.title}</h2>
+                  <span className={`shrink-0 px-2 py-0.5 text-[10px] rounded border ${STATUS_COLOR[c.status]}`}>
                     {STATUS_LABEL[c.status]}
                   </span>
                 </div>
-                <div className="flex items-center gap-3 text-sm">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm min-w-0">
                   {c.client && <span className="text-fg-dim">{c.client.name}{c.client.company ? ` — ${c.client.company}` : ""}</span>}
                   {c.project && (
                     <span className="text-brand-fg text-xs">🗂️ {c.project.name}</span>
                   )}
                 </div>
-                <div className="flex items-center gap-4 mt-2">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2">
                   <span className="text-fg-faint text-xs">{c._count.documents} doc.</span>
                   {c.value != null && (
                     <span className="text-sand-fg text-xs font-mono">

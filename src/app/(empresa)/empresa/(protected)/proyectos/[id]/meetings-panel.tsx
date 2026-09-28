@@ -24,7 +24,7 @@ export function MeetingsPanel({
   return (
     <div className="bg-panel border border-line rounded-2xl p-5">
       <div className="flex items-center justify-between gap-3 mb-4">
-        <div>
+        <div className="min-w-0">
           <h2 className="text-fg font-medium">Reuniones</h2>
           <p className="text-fg-faint text-xs mt-0.5">
             {meetings.length === 0
@@ -36,7 +36,7 @@ export function MeetingsPanel({
         </div>
         <Link
           href={`/empresa/reuniones/nueva?projectId=${projectId}`}
-          className="px-3 py-1.5 bg-brand hover:bg-brand-hi text-on-brand text-xs font-semibold rounded-lg transition-all shrink-0"
+          className="inline-flex items-center justify-center min-h-11 sm:min-h-8 px-4 sm:px-3 py-1.5 bg-brand hover:bg-brand-hi text-on-brand text-sm sm:text-xs font-semibold rounded-lg transition-all shrink-0"
         >
           🎙️ Grabar
         </Link>

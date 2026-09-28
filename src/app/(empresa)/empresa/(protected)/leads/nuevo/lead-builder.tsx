@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { createLeadAction } from "@/app/(empresa)/empresa/actions";
 import type { LeadSource } from "@prisma/client";
+import { ActionRow, btn } from "@/components/empresa/page-header";
 
 interface LeadFormValues {
   name: string;
@@ -76,7 +77,7 @@ export function LeadBuilder() {
             className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 transition-all" />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">Empresa</label>
             <input {...register("company")} placeholder="Empresa S.A."
@@ -114,7 +115,7 @@ export function LeadBuilder() {
 
       <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
         <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Seguimiento</h3>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">Valor estimado (USD)</label>
             <input {...register("estimatedValue")} type="number" min="0" step="0.01" placeholder="0.00"
@@ -133,14 +134,15 @@ export function LeadBuilder() {
         </div>
       </div>
 
-      <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-fg-faint hover:text-fg-soft text-sm transition-colors">
+      {/* En el celular, Cancelar y Crear en columnas iguales a lo ancho. */}
+      <ActionRow className="pt-2 sm:justify-end">
+        <button type="button" onClick={() => router.back()} className={btn.secondary}>
           Cancelar
         </button>
-        <button type="submit" disabled={saving} className="px-6 py-2.5 bg-brand hover:bg-brand-hi disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg transition-all">
+        <button type="submit" disabled={saving} className={btn.primary}>
           {saving ? "Guardando..." : "Crear lead"}
         </button>
-      </div>
+      </ActionRow>
     </form>
   );
 }

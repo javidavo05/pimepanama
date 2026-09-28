@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { DocumentListTable } from "@/components/empresa/document-list-table";
+import { PageHeader, btn } from "@/components/empresa/page-header";
 
 export const metadata = { title: "Correos — Pime Suite" };
 export const dynamic = "force-dynamic";
@@ -20,13 +21,14 @@ export default async function CorreosPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-fg text-2xl font-semibold tracking-tight">Correos</h1>
-        <Link href="/empresa/correos/nueva"
-          className="px-4 py-2.5 bg-sand hover:bg-sand-lt text-on-accent text-sm font-semibold rounded-lg transition-all">
-          + Nuevo correo
-        </Link>
-      </div>
+      <PageHeader
+        title="Correos"
+        actions={
+          <Link href="/empresa/correos/nueva" className={btn.accent}>
+            + Nuevo correo
+          </Link>
+        }
+      />
 
       {/* Tabs */}
       <div className="flex gap-1 bg-fill rounded-xl p-1 border border-line w-fit">

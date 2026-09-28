@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { InboxList } from "@/components/empresa/mail/inbox-list";
 import { HubSyncButton } from "@/components/empresa/mail/hub-sync-button";
@@ -88,8 +87,8 @@ export function HubMailShell({
 
   return (
     <div className="w-full">
-      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-4">
+        <div className="flex items-center gap-3 flex-wrap min-w-0">
           <h1 className="text-fg text-xl font-semibold tracking-tight">
             {FOLDER_LABELS[activeFolder]}
           </h1>
@@ -111,25 +110,10 @@ export function HubMailShell({
             tone="amber"
           />
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setComposeOpen(true)}
-            className="px-4 py-2 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-all inline-flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Redactar
-          </button>
-          <Link href="/empresa/correos/cuentas" className="px-3 py-1.5 text-xs text-fg-dim hover:text-fg-mute">
-            Cuentas
-          </Link>
-          <Link href="/empresa/correos" className="px-3 py-1.5 text-xs text-fg-dim hover:text-fg-mute">
-            Archivados
-          </Link>
-          <HubSyncButton accounts={accounts.map((a) => ({ id: a.id, label: a.label }))} />
-        </div>
+        <HubSyncButton
+          accounts={accounts.map((a) => ({ id: a.id, label: a.label }))}
+          onCompose={() => setComposeOpen(true)}
+        />
       </div>
 
       <div className="md:hidden mb-3">

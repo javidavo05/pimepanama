@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { DocumentListTable } from "@/components/empresa/document-list-table";
+import { PageHeader, btn } from "@/components/empresa/page-header";
 
 export const metadata = { title: "Bitácoras — Pime Suite" };
 
@@ -14,16 +15,16 @@ export default async function BitacorasPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-fg text-2xl font-semibold tracking-tight">Bitácoras</h1>
-          <p className="text-fg-dim text-sm mt-1">{documents.length} registros</p>
-        </div>
-        <Link href="/empresa/bitacoras/nueva" className="px-4 py-2.5 bg-sand hover:bg-sand-lt text-on-accent text-sm font-semibold rounded-lg transition-all">
-          + Nueva bitácora
-        </Link>
-      </div>
-      <div className="bg-panel border border-line rounded-2xl p-6">
+      <PageHeader
+        title="Bitácoras"
+        description={`${documents.length} registros`}
+        actions={
+          <Link href="/empresa/bitacoras/nueva" className={btn.accent}>
+            + Nueva bitácora
+          </Link>
+        }
+      />
+      <div className="md:bg-panel md:border md:border-line md:rounded-2xl md:p-6">
         <DocumentListTable
           documents={documents}
           editBasePath="/empresa/bitacoras"

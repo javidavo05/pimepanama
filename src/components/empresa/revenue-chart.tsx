@@ -7,6 +7,7 @@ import {
 } from "recharts";
 import type { RevenueDataPoint, YearlyRevenuePoint } from "@/lib/revenue-helpers";
 import { useChartColors } from "./theme/use-chart-colors";
+import { seg } from "@/components/empresa/page-header";
 
 // Re-export so existing imports from this file keep working
 export type { RevenueDataPoint, YearlyRevenuePoint };
@@ -104,12 +105,11 @@ export function DashboardRevenueChart({ monthlyData, yearlyData }: DashboardReve
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6">
         <p className="text-fg-dim text-xs uppercase tracking-widest font-medium">Rendimiento económico</p>
-        <div className="flex gap-1 bg-fill rounded-lg p-0.5 border border-line">
+        <div className={seg.group} aria-label="Agrupar ingresos">
           {(["month", "year"] as const).map((v) => (
-            <button key={v} onClick={() => setView(v)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${view === v ? "bg-brand/15 text-brand-fg border border-brand/20" : "text-fg-dim hover:text-fg-dim"}`}>
+            <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)} className={seg.item(view === v)}>
               {v === "month" ? "Por mes" : "Por año"}
             </button>
           ))}

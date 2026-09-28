@@ -10,7 +10,10 @@ export default async function NotasDeVozPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      <Link href="/empresa/reuniones" className="text-fg-faint hover:text-fg-dim text-sm transition-colors">
+      <Link
+        href="/empresa/reuniones"
+        className="inline-flex items-center min-h-11 sm:min-h-8 text-fg-faint hover:text-fg-dim text-sm transition-colors"
+      >
         ← Reuniones
       </Link>
       <div className="mt-2 mb-6">

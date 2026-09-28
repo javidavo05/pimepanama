@@ -5,6 +5,7 @@ import { loadTaskWorkspace } from "@/lib/tasks";
 import { TaskWorkspace } from "@/components/empresa/tasks/task-workspace";
 import { TaskOverview } from "@/components/empresa/tasks/task-overview";
 import { ProjectsTable, type ProjectRow } from "./projects-table";
+import { PageHeader, btn } from "@/components/empresa/page-header";
 
 export const metadata = { title: "Proyectos — Pime Suite" };
 export const dynamic = "force-dynamic";
@@ -23,25 +24,20 @@ export default async function ProyectosPage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-        <div className="min-w-0">
-          <h1 className="text-fg text-2xl font-semibold tracking-tight">Proyectos</h1>
-          <p className="text-fg-dim text-sm mt-1">
-            {projectCount} proyecto{projectCount !== 1 ? "s" : ""} · {openTaskCount} tarea{openTaskCount !== 1 ? "s" : ""} pendiente{openTaskCount !== 1 ? "s" : ""}
-          </p>
-        </div>
-        <Link
-          href="/empresa/proyectos/nuevo"
-          // En la pestaña de tareas la acción principal es agregar una tarea
-          className={`px-4 min-h-11 inline-flex items-center text-sm font-semibold rounded-lg transition-colors ${
-            vista === "tareas"
-              ? "bg-fill border border-line text-fg-mute hover:text-fg hover:border-line-loud"
-              : "bg-brand hover:bg-brand-hi text-on-brand"
-          }`}
-        >
-          Crear proyecto
-        </Link>
-      </div>
+      <PageHeader
+        className="mb-6"
+        title="Proyectos"
+        description={`${projectCount} proyecto${projectCount !== 1 ? "s" : ""} · ${openTaskCount} tarea${openTaskCount !== 1 ? "s" : ""} pendiente${openTaskCount !== 1 ? "s" : ""}`}
+        actions={
+          <Link
+            href="/empresa/proyectos/nuevo"
+            // En la pestaña de tareas la acción principal es agregar una tarea
+            className={vista === "tareas" ? btn.secondary : btn.primary}
+          >
+            Crear proyecto
+          </Link>
+        }
+      />
 
       <nav aria-label="Vistas de proyectos" className="flex gap-6 border-b border-line mb-6">
         {(

@@ -3,6 +3,7 @@ import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { serializeLead } from "@/lib/serializers";
 import { LeadsView } from "./leads-view";
+import { PageHeader, btn } from "@/components/empresa/page-header";
 
 export const metadata = { title: "Leads — Pime Suite" };
 export const dynamic = "force-dynamic";
@@ -17,16 +18,16 @@ export default async function LeadsPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-fg text-2xl font-semibold tracking-tight">Leads</h1>
-          <p className="text-fg-dim text-sm mt-1">Seguimiento de posibles clientes</p>
-        </div>
-        <Link href="/empresa/leads/nuevo"
-          className="px-4 py-2 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-all">
-          + Nuevo lead
-        </Link>
-      </div>
+      <PageHeader
+        className="mb-6"
+        title="Leads"
+        description="Seguimiento de posibles clientes"
+        actions={
+          <Link href="/empresa/leads/nuevo" className={btn.primary}>
+            + Nuevo lead
+          </Link>
+        }
+      />
 
       <LeadsView leads={leads.map(serializeLead)} />
     </div>

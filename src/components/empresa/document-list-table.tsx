@@ -3,6 +3,7 @@ import type { Document } from "@prisma/client";
 import { DocumentRowActions } from "./document-row-actions";
 import { ConvertToInvoiceButton } from "./convert-to-invoice-button";
 import { docTypePillStyle } from "@/lib/empresa/doc-type-colors";
+import { tile } from "@/components/empresa/page-header";
 
 const TYPE_PATHS: Record<string, string> = {
   FACTURA: "facturas",
@@ -61,7 +62,7 @@ function ClientCell({ doc, truncate = "max-w-[200px]" }: { doc: Document; trunca
   return (
     <Link
       href={`/empresa/clientes/${doc.clientId}`}
-      className="block hover:opacity-80 transition-opacity"
+      className="block py-1 -my-1 min-h-8 hover:opacity-80 transition-opacity"
       title="Ver perfil del cliente"
     >
       {body}
@@ -151,38 +152,39 @@ export function DocumentListTable({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between gap-2 pt-1 border-t border-line">
-                <div className="flex items-center gap-2">
-                  {showType && (
-                    <span
-                      className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-medium"
-                      style={docTypePillStyle(doc.type)}
-                    >
-                      {TYPE_LABELS[doc.type]}
-                    </span>
-                  )}
-                  <span className="text-fg-dim text-[11px]">
-                    {new Date(doc.issueDate).toLocaleDateString("es-PA", { day: "2-digit", month: "short", year: "numeric" })}
+              <div className="flex items-center gap-2 pt-2 border-t border-line">
+                {showType && (
+                  <span
+                    className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium"
+                    style={docTypePillStyle(doc.type)}
+                  >
+                    {TYPE_LABELS[doc.type]}
                   </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  {doc.type === "COTIZACION" && (
-                    <ConvertToInvoiceButton
-                      quoteId={doc.id}
-                      quoteStatus={doc.status}
-                      linkedInvoiceId={linkedInvoices?.[doc.id]}
-                      variant="row"
-                    />
-                  )}
-                  <DocumentRowActions
-                    documentId={doc.id}
-                    editHref={`${basePath}/${doc.id}`}
-                    editLabel={doc.type === "FACTURA" && doc.status === "PAID" ? "Ver" : "Editar"}
-                    showDelete={showDelete}
-                    deleteRedirect={deleteRedirect ?? basePath}
-                    documentLabel={doc.number ? `${deleteLabel} ${doc.number}` : deleteLabel}
+                )}
+                <span className="text-fg-dim text-xs">
+                  {new Date(doc.issueDate).toLocaleDateString("es-PA", { day: "2-digit", month: "short", year: "numeric" })}
+                </span>
+              </div>
+
+              {/* Acciones del mismo ancho, en su propia fila */}
+              <div className={tile.row}>
+                {doc.type === "COTIZACION" && (
+                  <ConvertToInvoiceButton
+                    quoteId={doc.id}
+                    quoteStatus={doc.status}
+                    linkedInvoiceId={linkedInvoices?.[doc.id]}
+                    variant="tile"
                   />
-                </div>
+                )}
+                <DocumentRowActions
+                  documentId={doc.id}
+                  editHref={`${basePath}/${doc.id}`}
+                  editLabel={doc.type === "FACTURA" && doc.status === "PAID" ? "Ver" : "Editar"}
+                  showDelete={showDelete}
+                  deleteRedirect={deleteRedirect ?? basePath}
+                  documentLabel={doc.number ? `${deleteLabel} ${doc.number}` : deleteLabel}
+                  layout="tiles"
+                />
               </div>
             </div>
           );

@@ -51,7 +51,7 @@ function Field({
   placeholder?: string;
 }) {
   return (
-    <div>
+    <div className="min-w-0">
       <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
         {label}
       </label>
@@ -84,8 +84,9 @@ export function ClientSelector({ clients, register, setValue, watch, lang = "es"
       <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">
         {t.title}
       </h3>
-      <div className="grid grid-cols-2 gap-4">
-        <div>
+      {/* Una columna en el celular: en dos, cada campo quedaba de 38 px. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="min-w-0">
           <ClientCombobox
             clients={clients}
             value={watch("clientName") ?? ""}
@@ -110,7 +111,7 @@ export function ClientSelector({ clients, register, setValue, watch, lang = "es"
         <Field label={t.company} name="clientCompany" register={register} placeholder="Empresa S.A." />
         <Field label={t.ruc} name="clientRuc" register={register} placeholder="8-123-456" />
         <Field label={t.email} name="clientEmail" register={register} type="email" placeholder="cliente@empresa.com" />
-        <div className="col-span-2">
+        <div className="sm:col-span-2 min-w-0">
           <Field label={t.address} name="clientAddress" register={register} placeholder="Calle 50, Ciudad de Panamá" />
         </div>
       </div>

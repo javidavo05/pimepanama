@@ -7,6 +7,7 @@ import { MEETING_STATUS_COLOR, MEETING_STATUS_LABEL } from "./status";
 import { MeetingsFilters } from "./meetings-filters";
 import { DeleteMeetingButton } from "./delete-meeting-button";
 import { PendingOfflineMeetings } from "./pending-offline-meetings";
+import { PageHeader, btn } from "@/components/empresa/page-header";
 
 export const metadata = { title: "Reuniones — Pime Suite" };
 export const dynamic = "force-dynamic";
@@ -48,31 +49,28 @@ export default async function ReunionesPage({
 
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="flex items-center justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-fg text-2xl font-semibold tracking-tight">Reuniones</h1>
-          <p className="text-fg-dim text-sm mt-1">
-            {meetings.length} reunión{meetings.length !== 1 ? "es" : ""}
+      <PageHeader
+        className="mb-6"
+        title="Reuniones"
+        description={
+          <>
+            {meetings.length} {meetings.length === 1 ? "reunión" : "reuniones"}
             {pendingSync > 0 && (
               <span className="text-warn"> · {pendingSync} pendiente{pendingSync !== 1 ? "s" : ""} técnico{pendingSync !== 1 ? "s" : ""} sin pasar a tareas</span>
             )}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Link
-            href="/empresa/reuniones/notas-de-voz"
-            className="px-4 py-2 border border-line-mid hover:border-line-loud text-fg-mute hover:text-fg text-sm font-medium rounded-lg transition-all"
-          >
-            Notas de voz
-          </Link>
-          <Link
-            href="/empresa/reuniones/nueva"
-            className="px-4 py-2 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-all"
-          >
-            🎙️ Grabar reunión
-          </Link>
-        </div>
-      </div>
+          </>
+        }
+        actions={
+          <>
+            <Link href="/empresa/reuniones/notas-de-voz" className={btn.secondary}>
+              Notas de voz
+            </Link>
+            <Link href="/empresa/reuniones/nueva" className={btn.primary}>
+              🎙️ Grabar reunión
+            </Link>
+          </>
+        }
+      />
 
       <PendingOfflineMeetings />
 
@@ -101,21 +99,22 @@ export default async function ReunionesPage({
           </Link>
         </div>
       ) : (
-        <div className="grid gap-3">
+        <div className="grid grid-cols-1 gap-3">
           {meetings.map((m) => (
-            // La fila es un enlace, así que el botón de borrar va por encima y
-            // no dentro: un botón anidado en un <a> navega al pulsarlo.
-            <div key={m.id} className="relative min-w-0">
+            // El enlace y el botón de borrar van lado a lado dentro de la tarjeta:
+            // un botón anidado en un <a> navega al pulsarlo, y encimado sobre el
+            // enlace tapaba el título en el celular.
+            <div key={m.id} className="min-w-0 bg-panel border border-line hover:border-line-mid rounded-xl flex items-start transition-all">
             <Link
               href={`/empresa/reuniones/${m.id}`}
-              className="bg-panel border border-line hover:border-line-mid rounded-xl p-6 flex items-start gap-4 transition-all group"
+              className="flex-1 min-w-0 p-4 sm:p-6 pr-2 sm:pr-2 flex items-start gap-4 group"
             >
               <div className="w-10 h-10 rounded-xl bg-brand/10 border border-brand/20 flex items-center justify-center text-lg shrink-0">
                 🎙️
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <h2 className="text-fg font-medium truncate group-hover:text-brand-fg transition-colors">
+                  <h2 className="text-fg font-medium truncate min-w-0 max-w-full group-hover:text-brand-fg transition-colors">
                     {m.title}
                   </h2>
                   <span className={`px-2 py-1 text-[10px] rounded border ${MEETING_STATUS_COLOR[m.status]}`}>

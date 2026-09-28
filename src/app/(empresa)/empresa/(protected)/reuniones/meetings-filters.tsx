@@ -51,7 +51,7 @@ export function MeetingsFilters({ projects, clients }: MeetingsFiltersProps) {
   }, [q]);
 
   const selectClass =
-    "bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none";
+    "field-select w-full min-w-0 min-h-11 sm:min-h-10 bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none";
 
   return (
     <div className="space-y-2 mb-4">
@@ -59,15 +59,18 @@ export function MeetingsFilters({ projects, clients }: MeetingsFiltersProps) {
         value={q}
         onChange={(e) => setQ(e.target.value)}
         placeholder="Buscar por título o por lo que se dijo en la reunión…"
-        className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
+        className="w-full min-h-11 sm:min-h-10 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
       />
-      <div className="flex gap-2 flex-wrap">
+      {/* Filtros en columnas iguales: dos en el celular, tres desde tablet;
+          el que queda solo en su fila se estira (grid-fill-2-3). */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 grid-fill-2-3">
         <select
+          aria-label="Filtrar por proyecto"
           value={projectId}
           onChange={(e) => push({ projectId: e.target.value })}
           className={selectClass}
         >
-          <option value="">Todos los proyectos</option>
+          <option value="">Todo proyecto</option>
           {projects.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}
@@ -75,11 +78,12 @@ export function MeetingsFilters({ projects, clients }: MeetingsFiltersProps) {
           ))}
         </select>
         <select
+          aria-label="Filtrar por cliente"
           value={clientId}
           onChange={(e) => push({ clientId: e.target.value })}
           className={selectClass}
         >
-          <option value="">Todos los clientes</option>
+          <option value="">Todo cliente</option>
           {clients.map((c) => (
             <option key={c.id} value={c.id}>
               {c.name}
@@ -87,11 +91,12 @@ export function MeetingsFilters({ projects, clients }: MeetingsFiltersProps) {
           ))}
         </select>
         <select
+          aria-label="Filtrar por estado"
           value={status}
           onChange={(e) => push({ status: e.target.value })}
           className={selectClass}
         >
-          <option value="">Cualquier estado</option>
+          <option value="">Todo estado</option>
           {STATUSES.map((s) => (
             <option key={s} value={s}>
               {MEETING_STATUS_LABEL[s]}
@@ -104,7 +109,7 @@ export function MeetingsFilters({ projects, clients }: MeetingsFiltersProps) {
               setQ("");
               router.replace("/empresa/reuniones");
             }}
-            className="px-3 py-2 text-fg-faint hover:text-fg-soft text-xs transition-colors"
+            className="min-h-11 sm:min-h-10 px-3 py-2 rounded-lg border border-line text-fg-mute hover:text-fg text-sm transition-colors"
           >
             Limpiar
           </button>

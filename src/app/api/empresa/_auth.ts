@@ -25,9 +25,9 @@ export async function requireEmpresaUser(request: Request): Promise<EmpresaUserW
     }
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Verificación local del JWT (ES256); ver getEmpresaUser.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims?.sub ? { id: data.claims.sub, email: data.claims.email } : null;
 
   if (!user) {
     throw new Response(JSON.stringify({ error: "Unauthorized" }), {

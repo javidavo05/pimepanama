@@ -165,11 +165,13 @@ export function DeliverablePanel({
               Materializa el entregable sin volver a teclearlo en otro módulo. Lo que ya se creó no
               se duplica.
             </p>
-            <div className="flex flex-wrap gap-2">
+            {/* En el celular, un botón por fila a lo ancho: los tres textos son
+                largos y en fila libre quedaban de anchos distintos. */}
+            <div className="grid gap-2 sm:flex sm:flex-wrap">
               {deliverableId ? (
                 <Link
                   href={`/empresa/proyectos/${projectId}`}
-                  className="px-4 py-2 bg-ok/10 border border-ok/20 text-ok text-xs rounded-lg transition-all"
+                  className="inline-flex items-center justify-center min-h-11 sm:min-h-8 px-4 py-2 bg-ok/10 border border-ok/20 text-ok text-xs rounded-lg transition-all"
                 >
                   ✓ Entregable creado — ver proyecto
                 </Link>
@@ -177,7 +179,7 @@ export function DeliverablePanel({
                 <button
                   onClick={() => void materialize({ deliverable: true })}
                   disabled={busy}
-                  className="px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
+                  className="inline-flex items-center justify-center min-h-11 sm:min-h-8 px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
                 >
                   + Crear entregable del proyecto
                 </button>
@@ -186,7 +188,7 @@ export function DeliverablePanel({
               {proposalDraftedAt ? (
                 <Link
                   href={`/empresa/proyectos/${projectId}`}
-                  className="px-4 py-2 bg-ok/10 border border-ok/20 text-ok text-xs rounded-lg transition-all"
+                  className="inline-flex items-center justify-center min-h-11 sm:min-h-8 px-4 py-2 bg-ok/10 border border-ok/20 text-ok text-xs rounded-lg transition-all"
                 >
                   ✓ Propuesta redactada
                 </Link>
@@ -194,7 +196,7 @@ export function DeliverablePanel({
                 <button
                   onClick={() => void materialize({ proposal: true })}
                   disabled={busy}
-                  className="px-4 py-2 bg-sand/15 hover:bg-sand/25 disabled:opacity-40 border border-sand/25 text-sand-fg text-xs rounded-lg transition-all"
+                  className="inline-flex items-center justify-center min-h-11 sm:min-h-8 px-4 py-2 bg-sand/15 hover:bg-sand/25 disabled:opacity-40 border border-sand/25 text-sand-fg text-xs rounded-lg transition-all"
                 >
                   📄 Redactar propuesta comercial
                 </button>
@@ -203,7 +205,7 @@ export function DeliverablePanel({
               {contractId ? (
                 <Link
                   href={`/empresa/contratos/${contractId}`}
-                  className="px-4 py-2 bg-ok/10 border border-ok/20 text-ok text-xs rounded-lg transition-all"
+                  className="inline-flex items-center justify-center min-h-11 sm:min-h-8 px-4 py-2 bg-ok/10 border border-ok/20 text-ok text-xs rounded-lg transition-all"
                 >
                   ✓ Contrato redactado — abrir
                 </Link>
@@ -211,7 +213,7 @@ export function DeliverablePanel({
                 <button
                   onClick={() => void materialize({ contract: true })}
                   disabled={busy}
-                  className="px-4 py-2 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all"
+                  className="inline-flex items-center justify-center min-h-11 sm:min-h-8 px-4 py-2 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all"
                 >
                   📝 Redactar borrador de contrato
                 </button>

@@ -16,7 +16,7 @@ export function DashboardStatCard({
   color,
 }: DashboardStatCardProps) {
   return (
-    <div className="bg-panel border border-line rounded-2xl p-6 flex flex-col gap-4">
+    <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6 flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <p className="text-fg-faint text-xs uppercase tracking-widest font-medium">
           {label}
@@ -29,16 +29,18 @@ export function DashboardStatCard({
       <p className="text-4xl font-semibold text-fg tracking-tight">
         {count}
       </p>
-      <div className="flex gap-3">
+      {/* Dos botones del mismo ancho: antes eran dos enlaces de texto de
+          16 px de alto, difíciles de tocar y desalineados entre tarjetas. */}
+      <div className="grid grid-cols-2 gap-2">
         <Link
           href={href}
-          className="text-fg-dim hover:text-fg-mute text-xs transition-colors"
+          className="inline-flex items-center justify-center min-h-11 sm:min-h-10 px-3 rounded-lg border border-line text-fg-mute hover:text-fg hover:border-line-mid text-sm transition-colors"
         >
-          Ver todos →
+          Ver todos
         </Link>
         <Link
           href={newHref}
-          className="text-sand-fg hover:text-sand-lt text-xs font-medium transition-colors"
+          className="inline-flex items-center justify-center min-h-11 sm:min-h-10 px-3 rounded-lg border border-sand/30 bg-sand/10 text-sand-fg hover:bg-sand/15 text-sm font-medium transition-colors"
         >
           + Nuevo
         </Link>

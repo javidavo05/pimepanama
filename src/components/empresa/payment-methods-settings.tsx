@@ -8,6 +8,7 @@ import {
   deletePaymentMethodAction,
 } from "@/app/(empresa)/empresa/actions";
 import type { SerializedPaymentMethod } from "@/lib/serializers";
+import { tile } from "@/components/empresa/page-header";
 
 const BANK_TYPES = new Set(["BANK_TRANSFER", "CHECK"]);
 const CARD_TYPES = new Set(["CARD", "CASH", "OTHER"]);
@@ -123,7 +124,7 @@ function MethodRow({
   }
 
   return (
-    <div className="flex items-start justify-between gap-4 py-3 border-b border-line last:border-0">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4 py-3 border-b border-line last:border-0">
       <div className="min-w-0">
         <p className="text-fg-soft text-sm font-medium">{method.name}</p>
         <p className="text-fg-dim text-xs mt-0.5">{TYPE_LABELS[method.type] ?? method.type}</p>
@@ -139,9 +140,9 @@ function MethodRow({
           </p>
         )}
       </div>
-      <div className="flex gap-3 shrink-0">
-        <button type="button" onClick={() => setEditing(true)} className="text-fg-dim hover:text-fg-mute text-xs">Editar</button>
-        <button type="button" onClick={() => void handleDelete()} className="text-danger hover:text-danger text-xs">Eliminar</button>
+      <div className={`${tile.row} sm:shrink-0`}>
+        <button type="button" onClick={() => setEditing(true)} className={tile.neutral}>Editar</button>
+        <button type="button" onClick={() => void handleDelete()} className={tile.danger}>Eliminar</button>
       </div>
     </div>
   );
@@ -185,7 +186,7 @@ function AddBankForm({ onAdded }: { onAdded: () => void }) {
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="text-sand-fg hover:text-sand-fg text-xs font-medium">
+      <button type="button" onClick={() => setOpen(true)} className={`${tile.accent} w-full sm:w-auto`}>
         + Agregar cuenta bancaria
       </button>
     );
@@ -193,7 +194,7 @@ function AddBankForm({ onAdded }: { onAdded: () => void }) {
 
   return (
     <div className="p-4 rounded-xl bg-panel border border-sand/20 space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <FieldLabel>Etiqueta</FieldLabel>
           <input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Banco General" />
@@ -213,7 +214,7 @@ function AddBankForm({ onAdded }: { onAdded: () => void }) {
             <option className={optionCls} value="Corriente">Corriente</option>
           </select>
         </div>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <FieldLabel>Titular</FieldLabel>
           <input className={inputCls} value={form.accountHolder} onChange={(e) => setForm({ ...form, accountHolder: e.target.value })} placeholder="Pime Panamá" />
         </div>
@@ -265,7 +266,7 @@ function AddCommissionForm({ onAdded }: { onAdded: () => void }) {
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="text-sand-fg hover:text-sand-fg text-xs font-medium">
+      <button type="button" onClick={() => setOpen(true)} className={`${tile.accent} w-full sm:w-auto`}>
         + Agregar tarjeta o punto de pago
       </button>
     );
@@ -273,7 +274,7 @@ function AddCommissionForm({ onAdded }: { onAdded: () => void }) {
 
   return (
     <div className="p-4 rounded-xl bg-panel border border-sand/20 space-y-3">
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <FieldLabel>Nombre</FieldLabel>
           <input className={inputCls} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Visa, Yappy, Paguelo..." />
@@ -294,7 +295,7 @@ function AddCommissionForm({ onAdded }: { onAdded: () => void }) {
           <FieldLabel>Comisión fija (USD)</FieldLabel>
           <input className={inputCls} type="number" step="0.01" value={form.commissionFlat} onChange={(e) => setForm({ ...form, commissionFlat: parseFloat(e.target.value) || 0 })} placeholder="0.00" />
         </div>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <FieldLabel>ITBMS % sobre comisión</FieldLabel>
           <input className={inputCls} type="number" step="0.01" value={form.commissionTax} onChange={(e) => setForm({ ...form, commissionTax: parseFloat(e.target.value) || 0 })} placeholder="7" />
         </div>

@@ -108,10 +108,15 @@ export default async function ProyectoDetailPage({
   return (
     <div className="max-w-6xl mx-auto">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 mb-4 text-sm">
-        <Link href="/empresa/proyectos" className="text-fg-dim hover:text-fg-mute transition-colors">Proyectos</Link>
+      <div className="flex items-center gap-2 mb-4 text-sm min-w-0">
+        <Link
+          href="/empresa/proyectos"
+          className="inline-flex items-center min-h-11 sm:min-h-8 shrink-0 text-fg-dim hover:text-fg-mute transition-colors"
+        >
+          Proyectos
+        </Link>
         <span className="text-fg-faint">/</span>
-        <span className="text-fg-dim truncate max-w-xs">{project.name}</span>
+        <span className="text-fg-dim truncate min-w-0 max-w-xs">{project.name}</span>
       </div>
 
       <TaskWorkspace tasks={workspace.tasks} projects={workspace.projects}>

@@ -196,7 +196,7 @@ export function MailAccountForm({ mode, accountId, initial, company }: MailAccou
           <span className="text-fg-faint text-sm">SSL/TLS activo</span>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">Correo / Usuario</label>
             <input value={form.username} onChange={(e) => set("username", e.target.value)} required type="email" placeholder="usuario@empresa.com" className={inputCls} />

@@ -54,7 +54,7 @@ export function LogoUploader({ value, onChange }: LogoUploaderProps) {
   }
 
   return (
-    <div className="col-span-2">
+    <div className="sm:col-span-2">
       <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
         Logo de la empresa
       </label>

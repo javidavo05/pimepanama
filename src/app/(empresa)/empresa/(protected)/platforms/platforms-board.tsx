@@ -14,6 +14,7 @@ import {
 import { PlatformConfidentialVault } from "@/components/empresa/platform-confidential-vault";
 import { hasPlatformVault } from "@/lib/platform-vault-shared";
 import { Icon, ICON } from "@/components/empresa/tasks/task-parts";
+import { PageHeader, btn } from "@/components/empresa/page-header";
 
 export type SerializedPlatform = {
   id: string;
@@ -500,21 +501,17 @@ export function PlatformsBoard({ initialPlatforms, initialProAccounts }: Platfor
   return (
     <div>
       {/* Encabezado */}
-      <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
-        <div className="min-w-0">
-          <h1 className="text-fg text-xl font-semibold tracking-tight">Platforms</h1>
-          <p className="text-fg-faint text-sm mt-1">Accesos, cuentas de Supabase y Vercel y enlaces de cada proyecto.</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowAdd((v) => !v)}
-          aria-expanded={showAdd}
-          className="inline-flex items-center gap-2 px-4 min-h-11 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-colors"
-        >
-          <Icon d={ICON.plus} />
-          Nueva plataforma
-        </button>
-      </div>
+      <PageHeader
+        className="mb-6"
+        title="Platforms"
+        description="Accesos, cuentas de Supabase y Vercel y enlaces de cada proyecto."
+        actions={
+          <button type="button" onClick={() => setShowAdd((v) => !v)} aria-expanded={showAdd} className={btn.primary}>
+            <Icon d={ICON.plus} />
+            Nueva plataforma
+          </button>
+        }
+      />
 
       {showAdd && (
         <form

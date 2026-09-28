@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getLedgerEntries, getMonthlySummary } from "@/lib/ledger";
 import { PorPagarClient, type SerializedExpense } from "./por-pagar-client";
 import type { Expense } from "@prisma/client";
+import { PageHeader } from "@/components/empresa/page-header";
 
 export const metadata = { title: "Por pagar — Pime Suite" };
 export const dynamic = "force-dynamic";
@@ -44,12 +45,11 @@ export default async function PorPagarPage({
 
   return (
     <div className="w-full max-w-4xl">
-      <div className="mb-6">
-        <h1 className="text-fg text-xl font-semibold tracking-tight">Por pagar</h1>
-        <p className="text-fg-faint text-sm mt-1">
-          Gastos mensuales, cuentas por pagar y libro contable simplificado.
-        </p>
-      </div>
+      <PageHeader
+        className="mb-6"
+        title="Por pagar"
+        description="Gastos mensuales, cuentas por pagar y libro contable simplificado."
+      />
       <PorPagarClient
         initialExpenses={expenses.map(serializeExpense)}
         summary={summary}

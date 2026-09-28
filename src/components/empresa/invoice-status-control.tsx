@@ -120,7 +120,7 @@ export function InvoiceStatusControl({ documentId, currentStatus }: InvoiceStatu
         disabled={pending}
         aria-haspopup="menu"
         aria-expanded={open}
-        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all disabled:opacity-50 hover:brightness-125 ${CHIP[currentStatus]}`}
+        className={`inline-flex items-center gap-2 min-h-11 sm:min-h-8 px-3 rounded-lg text-xs font-medium border transition-all disabled:opacity-50 hover:brightness-125 ${CHIP[currentStatus]}`}
       >
         {pending ? "Guardando…" : LABELS[currentStatus]}
         <span className="opacity-60 text-[9px]">▼</span>
@@ -129,7 +129,7 @@ export function InvoiceStatusControl({ documentId, currentStatus }: InvoiceStatu
       {open && (
         <div
           role="menu"
-          className="absolute right-0 top-full mt-2 w-72 z-40 bg-pop border border-line-mid rounded-xl shadow-2xl p-2 space-y-0.5"
+          className="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-2rem)] z-40 bg-pop border border-line-mid rounded-xl shadow-2xl p-2 space-y-0.5"
         >
           <p className="px-3 pt-1 pb-1.5 text-fg-ghost text-[10px] uppercase tracking-widest">
             Flujo de la factura

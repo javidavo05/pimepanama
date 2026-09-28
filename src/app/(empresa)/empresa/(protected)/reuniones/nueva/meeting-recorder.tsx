@@ -935,7 +935,7 @@ export function MeetingRecorder({
 
   if (phase === "saved") {
     return (
-      <div className="bg-panel border border-line rounded-2xl p-6 sm:p-8">
+      <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6 sm:p-8">
         <h2 className="text-fg text-lg font-semibold">Reunión guardada en este equipo</h2>
         <p className="text-fg-dim text-sm mt-2 leading-relaxed">
           «{title}» · {formatClock(elapsed)} grabados. El audio está a salvo aquí y se sube y se
@@ -1005,7 +1005,7 @@ export function MeetingRecorder({
         </div>
 
         {/* Quién es cada voz */}
-        <div className="bg-panel border border-line rounded-2xl p-6">
+        <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6">
           <div className="flex items-baseline justify-between gap-3 flex-wrap mb-3">
             <h3 className="text-fg-mute text-xs uppercase tracking-wider">Voces</h3>
             <p className="text-fg-ghost text-[11px]">
@@ -1101,7 +1101,7 @@ export function MeetingRecorder({
         </div>
 
         {/* Conversación en vivo */}
-        <div className="bg-panel border border-line rounded-2xl p-6">
+        <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6">
           <div className="flex items-baseline justify-between gap-3 flex-wrap mb-3">
             <h3 className="text-fg-mute text-xs uppercase tracking-wider">Conversación en vivo</h3>
             <p className="text-fg-ghost text-[11px]">
@@ -1219,7 +1219,7 @@ export function MeetingRecorder({
         ))}
       </div>
 
-      <div className="bg-panel border border-line rounded-2xl p-6 space-y-4">
+      <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6 space-y-4">
         <div>
           <label className="block text-fg-mute text-xs uppercase tracking-wider mb-2">Título</label>
           <input
@@ -1288,13 +1288,19 @@ export function MeetingRecorder({
               onChange={(e) => setAudioSource(e.target.value as AudioSource)}
               className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base focus:border-brand/50 focus:outline-none"
             >
+              {/* Solo el nombre en la opción: con el detalle («Meet, Zoom,
+                  Teams») el texto no cabía en el celular y se cortaba. El
+                  detalle de la opción elegida va en la ayuda de abajo. */}
               {AUDIO_SOURCES.map((s) => (
                 <option key={s.key} value={s.key}>
-                  {s.label} — {s.detail}
+                  {s.label}
                 </option>
               ))}
             </select>
             <p className="text-fg-ghost text-xs mt-1">
+              <span className="text-fg-faint">
+                {AUDIO_SOURCES.find((s) => s.key === audioSource)?.detail}.
+              </span>{" "}
               Cambia cómo se separan las voces: no es lo mismo una llamada de dos personas que una
               sala con seis.
             </p>
@@ -1318,7 +1324,7 @@ export function MeetingRecorder({
                         return next.length > 0 ? next : prev;
                       })
                     }
-                    className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-all ${
+                    className={`flex-1 min-w-0 min-h-[44px] px-3 py-2 rounded-lg border text-sm transition-all ${
                       on
                         ? "border-brand/40 bg-brand/[0.08] text-brand-fg"
                         : "border-line bg-canvas text-fg-faint hover:text-fg-soft"
@@ -1356,7 +1362,7 @@ export function MeetingRecorder({
         </div>
       </div>
 
-      <div className="bg-panel border border-line rounded-2xl p-6 space-y-3">
+      <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6 space-y-3">
         <div>
           <h2 className="text-fg-mute text-xs uppercase tracking-wider">Asistentes</h2>
           <p className="text-fg-ghost text-xs mt-1">
@@ -1410,7 +1416,7 @@ export function MeetingRecorder({
 
       {/* Cómo se capta el audio — solo tiene sentido grabando en vivo */}
       {entry === "record" && (
-      <div className="bg-panel border border-line rounded-2xl p-6 space-y-3">
+      <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6 space-y-3">
         <div>
           <h2 className="text-fg-mute text-xs uppercase tracking-wider">Cómo se capta el audio</h2>
           <p className="text-fg-ghost text-xs mt-1">
@@ -1535,7 +1541,7 @@ export function MeetingRecorder({
 
       {/* El archivo — solo en el camino de subir */}
       {entry === "upload" && (
-        <div className="bg-panel border border-line rounded-2xl p-6 space-y-3">
+        <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6 space-y-3">
           <div>
             <h2 className="text-fg-mute text-xs uppercase tracking-wider">El archivo de audio</h2>
             <p className="text-fg-ghost text-xs mt-1 leading-relaxed">

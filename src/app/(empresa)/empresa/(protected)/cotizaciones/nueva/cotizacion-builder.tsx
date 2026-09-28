@@ -9,6 +9,7 @@ import { LineItemsEditor, type DocumentFormValues } from "@/components/empresa/d
 import { AiEnhanceButton } from "@/components/empresa/document-builder/ai-enhance-button";
 import { DraftPdfPreview } from "@/components/empresa/document-builder/draft-pdf-preview";
 import { PdfDownloadButton } from "@/components/empresa/document-builder/pdf-download-button";
+import { PageHeader, ActionRow, btn, seg } from "@/components/empresa/page-header";
 import { ClientCombobox } from "@/components/empresa/client-combobox";
 import { LeadCombobox } from "@/components/empresa/lead-combobox";
 import { PaymentSelector } from "@/components/empresa/payment-selector";
@@ -345,26 +346,25 @@ export function CotizacionBuilder({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-fg text-2xl font-semibold tracking-tight">
-            {mode === "edit"
-              ? (isEs ? "Editar Cotización" : "Edit Quote")
-              : (isEs ? "Nueva Cotización" : "New Quote")}
-          </h1>
-          {mode === "edit" && initialDocument?.number && (
-            <p className="text-fg-dim text-sm mt-1 font-mono">{initialDocument.number}</p>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
+      {/* Header: en el celular las acciones bajan debajo del título. PDF e idioma
+          van en dos columnas iguales; traducir (solo en inglés) ocupa la fila de
+          arriba a lo ancho, así ninguno se corta en el borde. */}
+      <PageHeader
+        title={mode === "edit"
+          ? (isEs ? "Editar Cotización" : "Edit Quote")
+          : (isEs ? "Nueva Cotización" : "New Quote")}
+        description={mode === "edit" && initialDocument?.number
+          ? <span className="font-mono">{initialDocument.number}</span>
+          : undefined}
+        actions={
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center sm:gap-3">
           {language === "en" && (
-            <div className="flex items-center gap-2">
+            <div className="col-span-2 flex items-center gap-2">
               <button
                 type="button"
                 onClick={translateAll}
                 disabled={translating}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-iris/10 border border-iris/25 text-iris-fg text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 min-h-11 sm:min-h-8 px-3 py-1.5 rounded-lg bg-iris/10 border border-iris/25 text-iris-fg text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
               >
                 {translating ? (
                   <><span className="w-2 h-2 rounded-full bg-iris animate-pulse" /> Traduciendo...</>
@@ -386,20 +386,23 @@ export function CotizacionBuilder({
           />
           <LanguageToggle value={language} onChange={(l) => setValue("language", l)} />
         </div>
-      </div>
+        }
+      />
 
       {/* Status selector */}
       <div className="bg-panel border border-line rounded-xl p-5">
         <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">
           {isEs ? "Estado de la cotización" : "Quote status"}
         </h3>
-        <div className="flex flex-wrap gap-2">
+        {/* En el celular, cuadrícula de 2×2 con celdas iguales: con flex-wrap
+            quedaban filas de anchos distintos. */}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {STATUS_OPTS.map((opt) => (
             <button
               key={opt.value}
               type="button"
               onClick={() => setValue("quoteStatus", opt.value as DocumentFormValues["quoteStatus"])}
-              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
+              className={`min-h-11 sm:min-h-8 px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
                 quoteStatus === opt.value
                   ? `${opt.color} bg-fill`
                   : "border-line text-fg-dim hover:text-fg-dim"
@@ -470,7 +473,7 @@ export function CotizacionBuilder({
           <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">
             {isEs ? "Cliente" : "Client"}
           </h3>
-          <div className="inline-flex rounded-lg border border-line overflow-hidden">
+          <div className={seg.group}>
             {([
               { value: "client" as const, label: isEs ? "Cliente" : "Client" },
               { value: "lead" as const, label: "Lead" },
@@ -484,9 +487,8 @@ export function CotizacionBuilder({
                   setValue("leadId", "");
                   setValue("saveAsNewClient", false);
                 }}
-                className={`px-3 py-1.5 text-xs font-medium transition-all ${
-                  contactMode === opt.value ? "bg-brand/10 text-brand-fg" : "text-fg-dim hover:text-fg-dim"
-                }`}
+                aria-pressed={contactMode === opt.value}
+                className={seg.item(contactMode === opt.value)}
               >
                 {opt.label}
               </button>
@@ -547,7 +549,10 @@ export function CotizacionBuilder({
               />
             </div>
           ))}
-          <div className="col-span-2">
+          {/* Dirección va al lado de Teléfono: a lo ancho dejaba a Teléfono solo en
+              su fila. Nunca col-span-2 aquí: en una columna crea una columna
+              implícita y empuja el formulario fuera de la pantalla. */}
+          <div className="min-w-0">
             <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">{isEs ? "Dirección" : "Address"}</label>
             <input
               {...register("clientAddress")}
@@ -555,7 +560,7 @@ export function CotizacionBuilder({
               className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 transition-all"
             />
           </div>
-          <div className="col-span-2 flex items-center gap-3 pt-1 hidden">
+          <div className="sm:col-span-2 flex items-center gap-3 pt-1 hidden">
             <input
               {...register("saveAsNewClient")}
               type="checkbox"
@@ -620,7 +625,7 @@ export function CotizacionBuilder({
             </h3>
             <button type="button"
               onClick={() => appendSchedule({ description: "", amount: 0, dueDate: "" })}
-              className="text-iris-fg text-xs font-medium hover:text-iris-fg transition-colors">
+              className="inline-flex items-center min-h-11 sm:min-h-8 text-iris-fg text-sm sm:text-xs font-medium hover:text-iris-fg transition-colors">
               + {isEs ? "Agregar cuota" : "Add installment"}
             </button>
           </div>
@@ -652,7 +657,8 @@ export function CotizacionBuilder({
                   </div>
                   <div className="col-span-2 flex justify-end sm:col-span-1 sm:block sm:pb-1.5">
                     <button type="button" onClick={() => removeSchedule(i)}
-                      className="text-fg-faint hover:text-danger transition-colors text-sm">×</button>
+                      aria-label={isEs ? "Quitar cuota" : "Remove installment"}
+                      className="inline-flex items-center justify-center min-h-11 min-w-11 sm:min-h-8 sm:min-w-0 text-fg-faint hover:text-danger transition-colors text-lg sm:text-sm">×</button>
                   </div>
                 </div>
               ))}
@@ -710,18 +716,20 @@ export function CotizacionBuilder({
 
       <DraftPdfPreview endpoint="/api/empresa/documents/preview" payload={previewPayload} title={isEs ? "Vista previa del documento" : "Document preview"} />
 
-      <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-fg-faint hover:text-fg-soft text-sm transition-colors">
+      {/* Cancelar y guardar en dos columnas iguales en el celular; la acción
+          principal siempre a la derecha. */}
+      <ActionRow className="pt-2 sm:justify-end sm:gap-3">
+        <button type="button" onClick={() => router.back()} className={btn.secondary}>
           {isEs ? "Cancelar" : "Cancel"}
         </button>
-        <button type="submit" disabled={saving} className="px-6 py-2.5 bg-brand hover:bg-brand-hi disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg transition-all">
+        <button type="submit" disabled={saving} className={btn.primary}>
           {saving
             ? (isEs ? "Guardando..." : "Saving...")
             : mode === "edit"
               ? (isEs ? "Guardar cambios" : "Save changes")
               : (isEs ? "Crear cotización" : "Create quote")}
         </button>
-      </div>
+      </ActionRow>
     </form>
   );
 }

@@ -68,7 +68,7 @@ export function UnreadBadge({
       onClick={toggleUnread}
       title={active ? titleOn : titleOff}
       aria-pressed={active}
-      className={`text-xs rounded-full px-2 py-0.5 font-medium transition-all ${
+      className={`inline-flex items-center min-h-8 text-xs rounded-full px-3 font-medium transition-all ${
         active ? TONES[tone].on : TONES[tone].off
       }`}
     >

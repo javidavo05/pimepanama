@@ -45,7 +45,7 @@ export function FolderSidebar({ activeFolder, counts, layout = "sidebar" }: Fold
             key={folder}
             type="button"
             onClick={() => selectFolder(folder)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs whitespace-nowrap border transition-all shrink-0 ${
+            className={`flex items-center gap-1.5 min-h-10 px-3 rounded-lg text-sm whitespace-nowrap border transition-all shrink-0 ${
               activeFolder === folder
                 ? "bg-brand/10 border-brand/25 text-brand-fg"
                 : "border-line text-fg-dim hover:text-fg-soft hover:bg-fill"

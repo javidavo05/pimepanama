@@ -140,7 +140,7 @@ export function LineItemsEditor({
     });
 
   const numInputCls =
-    "no-number-spinner bg-transparent border-b border-line pb-1 text-fg-mute text-sm text-right focus:outline-none focus:border-sand/40 w-full transition-all";
+    "no-number-spinner min-h-11 lg:min-h-8 bg-transparent border-b border-line pb-1 text-fg-mute text-sm text-right focus:outline-none focus:border-sand/40 w-full transition-all";
 
   function blockArrowIncrement(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "ArrowUp" || e.key === "ArrowDown") {
@@ -150,8 +150,8 @@ export function LineItemsEditor({
 
   return (
     <div className="bg-panel border border-line rounded-xl overflow-hidden">
-      {/* Table header (desktop only — mobile rows show inline labels instead) */}
-      <div className="hidden sm:grid grid-cols-[1fr_80px_120px_80px_80px_100px_32px] gap-2 px-4 py-3 border-b border-line bg-sand/5">
+      {/* Table header (desde lg: con el menú lateral, un plegable abierto no tiene ancho para 7 columnas) */}
+      <div className="hidden lg:grid grid-cols-[1fr_80px_120px_80px_80px_100px_32px] gap-2 px-4 py-3 border-b border-line bg-sand/5">
         {[t.description, t.qty, t.price, t.tax, t.discount, t.amount, ""].map(
           (h, i) => (
             <span
@@ -169,15 +169,15 @@ export function LineItemsEditor({
         {fields.map((field, index) => (
           <div
             key={field.id}
-            className="grid grid-cols-2 gap-3 sm:grid-cols-[1fr_80px_120px_80px_80px_100px_32px] sm:gap-2 px-4 py-3 sm:items-start"
+            className="grid grid-cols-2 gap-3 lg:grid-cols-[1fr_80px_120px_80px_80px_100px_32px] lg:gap-2 px-4 py-3 lg:items-start"
           >
             {/* Description + AI */}
-            <div className="col-span-2 sm:col-span-1 flex flex-col gap-1">
-              <span className="sm:hidden text-fg-dim text-[10px] uppercase tracking-widest">{t.description}</span>
+            <div className="col-span-2 lg:col-span-1 flex flex-col gap-1">
+              <span className="lg:hidden text-fg-dim text-[10px] uppercase tracking-widest">{t.description}</span>
               <input
                 {...register(`lineItems.${index}.description`)}
                 placeholder={language === "es" ? "Descripción del servicio" : "Service description"}
-                className="w-full bg-transparent border-b border-line pb-1 text-fg-soft text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 transition-all"
+                className="w-full min-h-11 lg:min-h-8 bg-transparent border-b border-line pb-1 text-fg-soft text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 transition-all"
               />
               <AiEnhanceButton
                 text={lineItems[index]?.description ?? ""}
@@ -193,7 +193,7 @@ export function LineItemsEditor({
 
             {/* Quantity */}
             <div className="flex flex-col gap-1">
-              <span className="sm:hidden text-fg-dim text-[10px] uppercase tracking-widest">{t.qty}</span>
+              <span className="lg:hidden text-fg-dim text-[10px] uppercase tracking-widest">{t.qty}</span>
               <input
                 {...register(`lineItems.${index}.quantity`, { valueAsNumber: true })}
                 type="number"
@@ -207,7 +207,7 @@ export function LineItemsEditor({
 
             {/* Unit price */}
             <div className="flex flex-col gap-1">
-              <span className="sm:hidden text-fg-dim text-[10px] uppercase tracking-widest">{t.price}</span>
+              <span className="lg:hidden text-fg-dim text-[10px] uppercase tracking-widest">{t.price}</span>
               <input
                 {...register(`lineItems.${index}.unitPrice`, { valueAsNumber: true })}
                 type="number"
@@ -221,7 +221,7 @@ export function LineItemsEditor({
 
             {/* Tax */}
             <div className="flex flex-col gap-1">
-              <span className="sm:hidden text-fg-dim text-[10px] uppercase tracking-widest">{t.tax}</span>
+              <span className="lg:hidden text-fg-dim text-[10px] uppercase tracking-widest">{t.tax}</span>
               <input
                 {...register(`lineItems.${index}.taxPercent`, { valueAsNumber: true })}
                 type="number"
@@ -235,7 +235,7 @@ export function LineItemsEditor({
 
             {/* Discount */}
             <div className="flex flex-col gap-1">
-              <span className="sm:hidden text-fg-dim text-[10px] uppercase tracking-widest">{t.discount}</span>
+              <span className="lg:hidden text-fg-dim text-[10px] uppercase tracking-widest">{t.discount}</span>
               <input
                 {...register(`lineItems.${index}.discount`, { valueAsNumber: true })}
                 type="number"
@@ -250,18 +250,20 @@ export function LineItemsEditor({
 
             {/* Line total */}
             <div className="flex flex-col gap-1">
-              <span className="sm:hidden text-fg-dim text-[10px] uppercase tracking-widest">{t.amount}</span>
-              <span className="text-fg-mute text-sm font-mono text-right sm:pt-1">
+              <span className="lg:hidden text-fg-dim text-[10px] uppercase tracking-widest">{t.amount}</span>
+              <span className="text-fg-mute text-sm font-mono text-right lg:pt-1">
                 {fmt(calcLineTotal(lineItems[index] ?? {}))}
               </span>
             </div>
 
             {/* Remove */}
-            <div className="flex items-center justify-end sm:block">
+            <div className="flex items-center justify-end lg:block">
               <button
                 type="button"
                 onClick={() => remove(index)}
-                className="text-fg-faint hover:text-danger transition-colors text-sm sm:mt-1"
+                aria-label="Quitar línea"
+                // En el celular la × sola medía 10 px: se le da el área de un dedo.
+                className="inline-flex items-center justify-center min-h-11 min-w-11 lg:min-h-8 lg:min-w-0 rounded-lg text-fg-faint hover:text-danger transition-colors text-lg lg:text-sm lg:mt-1"
               >
                 ×
               </button>
@@ -283,7 +285,7 @@ export function LineItemsEditor({
               discount: 0,
             })
           }
-          className="text-sand-fg hover:text-sand-fg text-xs font-medium transition-colors"
+          className="inline-flex items-center min-h-11 sm:min-h-8 text-sand-fg hover:text-sand-fg text-sm sm:text-xs font-medium transition-colors"
         >
           {t.add}
         </button>

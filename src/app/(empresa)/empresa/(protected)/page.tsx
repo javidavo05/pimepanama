@@ -82,14 +82,14 @@ export default async function EmpresaDashboardPage() {
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-fg text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="text-fg-dim text-sm mt-1">
+          <p className="text-fg-dim text-sm mt-1 break-words">
             Bienvenido, {user.fullName ?? user.email.split("@")[0]}
           </p>
         </div>
-        <div className="text-right">
+        <div className="sm:text-right">
           <p className="text-fg-dim text-xs uppercase tracking-widest">Tokens IA — {monthName}</p>
           <p className="text-sand-fg font-mono text-xl font-semibold mt-1">
             {totalTokens.toLocaleString()}
@@ -149,30 +149,30 @@ export default async function EmpresaDashboardPage() {
       </div>
 
       {/* Revenue timeline chart */}
-      <div className="bg-panel border border-line rounded-2xl p-6">
+      <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6">
         <DashboardRevenueChart monthlyData={monthlyData} yearlyData={yearlyData} />
       </div>
 
       {/* Recent documents */}
-      <div className="bg-panel border border-line rounded-2xl p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <h2 className="text-fg font-semibold">Documentos recientes</h2>
-          <div className="flex gap-4">
+          <div className="grid grid-cols-2 gap-2 sm:flex">
             {(
               [
-                ["facturas", "--c-info"],
-                ["cotizaciones", "--c-iris-fg"],
-                ["bitacoras", "--c-emerald2"],
-                ["correos", "--c-warn"],
+                ["facturas", "Factura", "--c-info"],
+                ["cotizaciones", "Cotización", "--c-iris-fg"],
+                ["bitacoras", "Bitácora", "--c-emerald2"],
+                ["correos", "Correo", "--c-warn"],
               ] as const
-            ).map(([type, color]) => (
+            ).map(([type, label, color]) => (
               <Link
                 key={type}
                 href={`/empresa/${type}/nueva`}
-                className="text-xs font-medium px-3 py-1.5 rounded-lg border transition-all hover:opacity-80"
+                className="inline-flex items-center justify-center min-h-11 sm:min-h-9 text-sm sm:text-xs font-medium px-3 rounded-lg border transition-all hover:opacity-80"
                 style={docTypeOutlineStyle(color)}
               >
-                + {type.slice(0, -1)}
+                + {label}
               </Link>
             ))}
           </div>

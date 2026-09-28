@@ -43,7 +43,8 @@ export function AiEnhanceButton({ text, language, context, onEnhanced }: AiEnhan
         onClick={enhance}
         disabled={loading || !safeText.trim()}
         title="Mejorar con IA"
-        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-iris/10 border border-iris/25 text-iris-fg text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+        // 44 px de alto en el celular para que se pueda tocar; compacto desde tablet.
+        className="inline-flex items-center justify-center gap-1.5 min-h-11 sm:min-h-8 px-3 sm:px-2.5 py-1 rounded-md bg-iris/10 border border-iris/25 text-iris-fg text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
       >
         {loading ? (
           <>

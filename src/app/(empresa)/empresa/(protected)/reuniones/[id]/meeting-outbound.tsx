@@ -123,7 +123,7 @@ export function MeetingOutbound({
   if (!hasMinutes) return null;
 
   return (
-    <div className="bg-panel border border-line rounded-2xl p-6 space-y-4">
+    <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6 space-y-4">
       <div className="flex items-baseline justify-between gap-3 flex-wrap">
         <h2 className="text-fg-mute text-xs uppercase tracking-wider">Cerrar la reunión</h2>
         <p className="text-fg-ghost text-[11px]">
@@ -133,11 +133,13 @@ export function MeetingOutbound({
         </p>
       </div>
 
-      <div className="flex flex-wrap gap-2">
+      {/* En el celular, una acción por fila a lo ancho: los dos textos son
+          largos y lado a lado quedaban de anchos distintos. */}
+      <div className="grid gap-2 sm:flex sm:flex-wrap">
         <button
           onClick={() => (draft ? setDraft(null) : void openDraft())}
           disabled={busy !== null}
-          className="px-4 py-2 bg-sand/15 hover:bg-sand/25 disabled:opacity-40 border border-sand/25 text-sand-fg text-xs rounded-lg transition-all"
+          className="min-h-11 sm:min-h-8 px-4 py-2 bg-sand/15 hover:bg-sand/25 disabled:opacity-40 border border-sand/25 text-sand-fg text-xs rounded-lg transition-all"
         >
           {busy === "draft"
             ? "Preparando…"
@@ -149,14 +151,14 @@ export function MeetingOutbound({
         </button>
 
         {nextMeetingTaskId ? (
-          <span className="px-4 py-2 bg-ok/10 border border-ok/20 text-ok text-xs rounded-lg">
+          <span className="inline-flex items-center justify-center min-h-11 sm:min-h-8 px-4 py-2 bg-ok/10 border border-ok/20 text-ok text-xs rounded-lg">
             ✓ Próxima reunión agendada en Tareas
           </span>
         ) : (
           <button
             onClick={() => setOpenNext((v) => !v)}
             disabled={busy !== null}
-            className="px-4 py-2 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all"
+            className="min-h-11 sm:min-h-8 px-4 py-2 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all"
           >
             📅 Agendar la próxima reunión
           </button>
@@ -175,19 +177,19 @@ export function MeetingOutbound({
               type="date"
               value={nextDate}
               onChange={(e) => setNextDate(e.target.value)}
-              className="bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
+              className="min-w-0 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
             />
             <input
               value={nextTitle}
               onChange={(e) => setNextTitle(e.target.value)}
               placeholder="Título (opcional)"
-              className="bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
+              className="min-w-0 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
             />
           </div>
           <button
             onClick={() => void scheduleNext()}
             disabled={busy !== null}
-            className="px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
+            className="w-full sm:w-auto min-h-11 sm:min-h-8 px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
           >
             {busy === "next" ? "Agendando…" : "Crear la tarea"}
           </button>
@@ -196,7 +198,7 @@ export function MeetingOutbound({
 
       {draft && (
         <div className="border border-line rounded-xl p-4 space-y-3">
-          <div className="grid sm:grid-cols-2 gap-3">
+          <div className="grid sm:grid-cols-2 gap-3 [&>div]:min-w-0">
             <div>
               <label className="block text-fg-mute text-xs uppercase tracking-wider mb-1.5">
                 Para{draft.clientName ? ` — ${draft.clientName}` : ""}
@@ -255,7 +257,7 @@ export function MeetingOutbound({
           <button
             onClick={() => void send()}
             disabled={busy !== null || draft.accounts.length === 0}
-            className="px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
+            className="w-full sm:w-auto min-h-11 sm:min-h-8 px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
           >
             {busy === "send" ? "Enviando…" : "Enviar minuta"}
           </button>

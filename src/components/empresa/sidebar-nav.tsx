@@ -46,32 +46,48 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
   const [open, setOpen] = useState(false);
   const logoSrc = logoFailed ? "/logo-pime.png" : (logoUrl ?? "/logo-pime.png");
 
+  // La pestaña tocada se marca y el menú se cierra en el mismo toque, sin
+  // esperar a que llegue la página: esperar la respuesta del servidor era lo
+  // que hacía sentir lenta la navegación en el celular.
+  const [pendingHref, setPendingHref] = useState<string | null>(null);
+
   useEffect(() => {
     setOpen(false);
+    setPendingHref(null);
   }, [pathname]);
 
   function isActive(href: string, exact = false) {
+    if (pendingHref) return pendingHref === href;
     if (exact) return pathname === href;
     return pathname.startsWith(href);
+  }
+
+  function onNavigate(e: React.MouseEvent, href: string) {
+    // Abrir en otra pestaña no cambia esta página: nada que marcar.
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+    setOpen(false);
+    if (href !== pathname) setPendingHref(href);
   }
 
   return (
     <>
       {/* Mobile top bar */}
-      <div className="md:hidden fixed top-0 inset-x-0 h-14 z-40 bg-panel-2 border-b border-line flex items-center gap-3 px-4">
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-label={open ? "Cerrar menú" : "Abrir menú"}
-          className="w-9 h-9 flex items-center justify-center rounded-lg text-fg-mute hover:text-fg hover:bg-fill-2 transition-all text-lg shrink-0"
-        >
-          {open ? "✕" : "☰"}
-        </button>
-        <div className="relative w-7 h-7 rounded-md bg-brand/10 border border-brand/25 flex items-center justify-center shrink-0 overflow-hidden">
-          <Image src={logoSrc} alt={companyName} fill sizes="28px" className="object-contain p-0.5" onError={() => setLogoFailed(true)} />
+      <div className="md:hidden fixed top-0 inset-x-0 z-40 bg-panel-2 border-b border-line pt-[env(safe-area-inset-top)] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))]">
+        <div className="h-14 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-label={open ? "Cerrar menú" : "Abrir menú"}
+            className="-ml-1 w-11 h-11 flex items-center justify-center rounded-lg text-fg-mute hover:text-fg hover:bg-fill-2 transition-all text-lg shrink-0"
+          >
+            {open ? "✕" : "☰"}
+          </button>
+          <div className="relative w-7 h-7 rounded-md bg-brand/10 border border-brand/25 flex items-center justify-center shrink-0 overflow-hidden">
+            <Image src={logoSrc} alt={companyName} fill sizes="28px" className="object-contain p-0.5" onError={() => setLogoFailed(true)} />
+          </div>
+          <p className="text-fg text-xs font-semibold tracking-widest uppercase flex-1 truncate">{companyName}</p>
+          <NotificationBell />
         </div>
-        <p className="text-fg text-xs font-semibold tracking-widest uppercase flex-1 truncate">{companyName}</p>
-        <NotificationBell />
       </div>
 
       {/* Backdrop */}
@@ -85,7 +101,7 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
       )}
 
       <aside
-        className={`fixed left-0 top-0 h-full w-60 bg-panel-2 border-r border-line flex flex-col z-50 transform transition-transform duration-200 ease-out ${
+        className={`fixed left-0 top-0 h-full w-60 bg-panel-2 border-r border-line flex flex-col z-50 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] md:pt-0 md:pb-0 transform transition-transform duration-200 ease-out ${
           open ? "translate-x-0" : "-translate-x-full"
         } md:translate-x-0`}
       >
@@ -107,6 +123,7 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
             <Link
               key={item.href}
               href={item.href}
+              onClick={(e) => onNavigate(e, item.href)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
                 isActive(item.href, item.exact)
                   ? "bg-brand/10 text-brand-fg border border-brand/20"
@@ -125,6 +142,7 @@ export function SidebarNav({ userEmail, companyName, logoUrl }: SidebarNavProps)
             <Link
               key={item.href}
               href={item.href}
+              onClick={(e) => onNavigate(e, item.href)}
               className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
                 isActive(item.href)
                   ? "bg-brand/10 text-brand-fg border border-brand/20"

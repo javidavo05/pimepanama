@@ -151,7 +151,8 @@ function DraftForm({
           className={INPUT}
         />
       </div>
-      <div className="flex gap-2">
+      {/* En el celular, Guardar y Cancelar en columnas iguales a lo ancho. */}
+      <div className="grid grid-cols-2 gap-2 sm:flex">
         <button
           onClick={onSave}
           disabled={saving}
@@ -453,7 +454,7 @@ export function ActionItemsPanel({
                 <button
                   type="button"
                   onClick={() => setSelected(allSelected ? [] : pending.map((i) => i.id))}
-                  className="px-3 min-h-9 text-xs text-fg-dim hover:text-fg-mute rounded-lg hover:bg-fill"
+                  className="px-3 min-h-11 sm:min-h-9 text-xs text-fg-dim hover:text-fg-mute rounded-lg hover:bg-fill"
                 >
                   {allSelected ? "Quitar selección" : "Seleccionar todos"}
                 </button>
@@ -596,7 +597,9 @@ export function ActionItemsPanel({
         {/* Barra de conversión: queda a la vista mientras se recorre la lista */}
         {pending.length > 0 && (
           <div className="sticky bottom-4 mt-4 z-10 bg-pop border border-line-mid rounded-xl p-4 shadow-2xl space-y-3">
-            <div className="flex flex-wrap items-center gap-3">
+            {/* En el celular cada control va en su fila a lo ancho; desde
+                tablet, en una sola fila. */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <button
                 onClick={() => void syncTasks()}
                 disabled={busy !== null || selectedPending.length === 0}
@@ -637,7 +640,7 @@ export function ActionItemsPanel({
                     e.preventDefault();
                     void createProject();
                   }}
-                  className="flex flex-wrap items-center gap-2 max-w-full"
+                  className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center max-w-full"
                 >
                   <input
                     autoFocus
@@ -649,12 +652,12 @@ export function ActionItemsPanel({
                     }}
                     placeholder="Nombre del proyecto"
                     aria-label="Nombre del proyecto nuevo"
-                    className="min-h-11 w-64 max-w-full bg-fill border border-line rounded-lg px-3 text-sm text-fg placeholder:text-fg-trace outline-none focus:border-brand/40"
+                    className="col-span-2 min-w-0 min-h-11 sm:w-64 max-w-full bg-fill border border-line rounded-lg px-3 text-sm text-fg placeholder:text-fg-trace outline-none focus:border-brand/40"
                   />
                   <button
                     type="submit"
                     disabled={busy !== null || !newProjectName.trim()}
-                    className="px-4 min-h-11 border border-line-mid hover:bg-fill disabled:opacity-40 text-fg text-sm font-semibold rounded-lg transition-colors"
+                    className="min-w-0 px-4 min-h-11 border border-line-mid hover:bg-fill disabled:opacity-40 text-fg text-sm font-semibold rounded-lg transition-colors"
                   >
                     {busy === "project" ? "Creando proyecto…" : "Crear proyecto"}
                   </button>
@@ -662,7 +665,7 @@ export function ActionItemsPanel({
                     type="button"
                     onClick={() => setNewProjectName(null)}
                     disabled={busy === "project"}
-                    className="px-3 min-h-11 text-sm text-fg-dim hover:text-fg-mute rounded-lg hover:bg-fill"
+                    className="min-w-0 px-3 min-h-11 text-sm text-fg-dim hover:text-fg-mute rounded-lg border border-line sm:border-0 hover:bg-fill"
                   >
                     Cancelar
                   </button>
@@ -732,7 +735,7 @@ export function ActionItemsPanel({
               project && (
                 <Link
                   href={`/empresa/proyectos/${project.id}`}
-                  className="flex items-center gap-1 px-3 min-h-9 text-xs text-fg-dim hover:text-fg-mute rounded-lg hover:bg-fill"
+                  className="flex items-center gap-1 px-3 min-h-11 sm:min-h-9 text-xs text-fg-dim hover:text-fg-mute rounded-lg hover:bg-fill"
                 >
                   Ver en el proyecto
                   <Icon d={ICON.chevronRight} className="w-3 h-3" />

@@ -66,7 +66,7 @@ export function TaskDrawer() {
         role="dialog"
         aria-modal="true"
         aria-label={`Tarea: ${task.title}`}
-        className="fixed inset-y-0 right-0 z-50 w-full sm:w-[560px] bg-panel border-l border-line shadow-2xl flex flex-col"
+        className="fixed inset-y-0 right-0 z-50 w-full sm:w-[560px] bg-panel border-l border-line shadow-2xl flex flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]"
       >
         {/* key: al cambiar de tarea (subtarea ↔ madre) el formulario arranca limpio */}
         <DrawerBody key={task.id} task={task} />

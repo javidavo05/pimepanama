@@ -102,16 +102,16 @@ export function LeadDetailClient({ lead: initialLead }: { lead: Lead }) {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div>
-        <h1 className="text-fg text-2xl font-semibold tracking-tight">{lead.name}</h1>
+      <div className="min-w-0">
+        <h1 className="text-fg text-2xl font-semibold tracking-tight break-words">{lead.name}</h1>
         {lead.company && <p className="text-fg-dim text-sm mt-0.5">{lead.company}</p>}
       </div>
 
       {(notice || lead.convertedClientId) && (
-        <div className="bg-ok/[0.08] border border-ok/20 rounded-lg px-4 py-3 flex items-center justify-between">
+        <div className="bg-ok/[0.08] border border-ok/20 rounded-lg px-4 py-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <span className="text-ok text-sm">✓ {notice ?? "Este lead ya fue convertido a cliente."}</span>
           {lead.convertedClient && (
-            <Link href={`/empresa/clientes/${lead.convertedClient.id}`} className="text-ok hover:text-ok text-xs font-medium">
+            <Link href={`/empresa/clientes/${lead.convertedClient.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-ok hover:text-ok text-xs font-medium">
               Ver perfil de cliente →
             </Link>
           )}
@@ -121,14 +121,16 @@ export function LeadDetailClient({ lead: initialLead }: { lead: Lead }) {
       {/* Status */}
       <div className="bg-panel border border-line rounded-xl p-5">
         <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">Etapa</h3>
-        <div className="flex flex-wrap gap-2">
+        {/* Cuadrícula de columnas iguales: los chips sueltos se partían en filas
+            disparejas. Dos columnas en el celular, tres desde tablet. */}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {STATUS_OPTS.map((opt) => (
             <button
               key={opt.value}
               type="button"
               disabled={savingStatus}
               onClick={() => handleStatusChange(opt.value)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all disabled:opacity-50 ${
+              className={`min-h-11 sm:min-h-8 min-w-0 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium border transition-all disabled:opacity-50 ${
                 lead.status === opt.value ? `${opt.color} bg-fill` : "border-line text-fg-dim hover:text-fg-dim"
               }`}
             >
@@ -141,14 +143,14 @@ export function LeadDetailClient({ lead: initialLead }: { lead: Lead }) {
       {/* Prioridad */}
       <div className="bg-panel border border-line rounded-xl p-5">
         <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">Prioridad</h3>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {LEAD_PRIORITIES.map((opt) => (
             <button
               key={opt.value}
               type="button"
               disabled={savingPriority}
               onClick={() => handlePriorityChange(opt.value)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all disabled:opacity-50 ${
+              className={`min-h-11 sm:min-h-8 min-w-0 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium border transition-all disabled:opacity-50 ${
                 lead.priority === opt.value
                   ? `${opt.className} bg-fill`
                   : "border-line text-fg-dim hover:text-fg-dim"
@@ -171,14 +173,14 @@ export function LeadDetailClient({ lead: initialLead }: { lead: Lead }) {
           href={`/agendar?leadId=${lead.id}${lead.email ? `&email=${encodeURIComponent(lead.email)}` : ""}${lead.name ? `&name=${encodeURIComponent(lead.name)}` : ""}`}
           target="_blank"
           rel="noreferrer"
-          className="inline-flex px-4 py-2 bg-sand/15 border border-sand/30 text-sand-fg text-sm font-medium rounded-lg hover:bg-sand/20 transition-all"
+          className="flex sm:inline-flex items-center justify-center min-h-11 sm:min-h-8 px-4 py-2 bg-sand/15 border border-sand/30 text-sand-fg text-sm font-medium rounded-lg hover:bg-sand/20 transition-all"
         >
           Abrir PimeBook →
         </a>
       </div>
 
       {/* Info */}
-      <div className="bg-panel border border-line rounded-xl p-5 grid grid-cols-2 gap-4">
+      <div className="bg-panel border border-line rounded-xl p-5 grid grid-cols-2 gap-4 [&>div]:min-w-0 [&_p]:break-words">
         {lead.email && (
           <div><p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Correo</p><p className="text-fg-mute text-sm">{lead.email}</p></div>
         )}
@@ -199,10 +201,10 @@ export function LeadDetailClient({ lead: initialLead }: { lead: Lead }) {
 
       {/* Notes */}
       <div className="bg-panel border border-line rounded-xl p-5 space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Notas</h3>
-          <button onClick={handleSaveNotes} disabled={savingNotes || notes === (lead.notes ?? "")}
-            className="text-brand-fg text-xs font-medium hover:text-brand-hi disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
+          <button type="button" onClick={handleSaveNotes} disabled={savingNotes || notes === (lead.notes ?? "")}
+            className="inline-flex items-center justify-center min-h-11 sm:min-h-8 -my-2 sm:my-0 px-2 sm:px-0 text-brand-fg text-sm sm:text-xs font-medium hover:text-brand-hi disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
             {savingNotes ? "Guardando..." : "Guardar"}
           </button>
         </div>
@@ -213,10 +215,10 @@ export function LeadDetailClient({ lead: initialLead }: { lead: Lead }) {
 
       {/* Cotizaciones */}
       <div className="bg-panel border border-line rounded-xl p-5 space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Cotizaciones</h3>
           <Link href={`/empresa/cotizaciones/nueva?leadId=${lead.id}`}
-            className="px-3 py-1.5 bg-brand/10 border border-brand/25 text-brand-fg text-xs font-medium rounded-lg hover:bg-brand/15 transition-all">
+            className="inline-flex items-center justify-center min-h-11 sm:min-h-8 px-3 py-1.5 bg-brand/10 border border-brand/25 text-brand-fg text-xs font-medium rounded-lg hover:bg-brand/15 transition-all">
             + Crear cotización
           </Link>
         </div>
@@ -226,9 +228,9 @@ export function LeadDetailClient({ lead: initialLead }: { lead: Lead }) {
           <div className="space-y-1.5">
             {lead.documents.map((doc) => (
               <Link key={doc.id} href={`/empresa/${DOC_TYPE_PATH[doc.type] ?? doc.type.toLowerCase()}/${doc.id}`}
-                className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg hover:bg-fill transition-colors group">
-                <span className="text-fg-dim text-sm group-hover:text-fg">{doc.number ?? doc.title}</span>
-                <div className="flex items-center gap-3">
+                className="flex items-center justify-between gap-2 px-3 py-2 min-h-11 sm:min-h-8 rounded-lg hover:bg-fill transition-colors group">
+                <span className="text-fg-dim text-sm group-hover:text-fg truncate min-w-0">{doc.number ?? doc.title}</span>
+                <div className="flex items-center gap-3 shrink-0">
                   {doc.total != null && <span className="text-fg-dim text-xs font-mono">${doc.total.toLocaleString("en-US", { minimumFractionDigits: 2 })}</span>}
                   <span className="px-1.5 py-0.5 rounded text-[9px] border border-line-mid text-fg-dim">{doc.status}</span>
                 </div>

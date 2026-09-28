@@ -9,6 +9,7 @@ import {
   deleteProjectAction,
 } from "@/app/(empresa)/empresa/actions";
 import { ClientCombobox } from "@/components/empresa/client-combobox";
+import { ActionRow, btn } from "@/components/empresa/page-header";
 import { FinancingPlanner } from "@/components/empresa/financing-planner";
 import { AiEnhanceButton } from "@/components/empresa/document-builder/ai-enhance-button";
 import { validatePlan, type FinancingPlan } from "@/lib/financing";
@@ -154,14 +155,15 @@ export function ProjectEditForm({
   return (
     <div ref={rootRef} className="space-y-5 mb-6 scroll-mt-6">
       <div className="bg-panel border border-brand/20 rounded-xl p-5 space-y-5">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <h2 className="text-fg-dim text-xs uppercase tracking-widest font-medium">
             Editar proyecto
           </h2>
           <button
             type="button"
             onClick={onClose}
-            className="text-fg-ghost hover:text-fg-mute text-sm transition-colors"
+            aria-label="Cerrar edición"
+            className="inline-flex items-center justify-center w-11 h-11 sm:w-8 sm:h-8 -mr-2 sm:mr-0 text-fg-ghost hover:text-fg-mute text-sm transition-colors"
           >
             ✕
           </button>
@@ -176,13 +178,15 @@ export function ProjectEditForm({
 
         <div>
           <span className={LABEL_CLASS}>Estado</span>
-          <div className="flex flex-wrap gap-2">
+          {/* En el celular, cuadrícula de dos columnas iguales en vez de chips
+              que se parten en filas disparejas. */}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             {STATUS_OPTS.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
                 onClick={() => setStatus(opt.value)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
+                className={`min-h-11 sm:min-h-8 min-w-0 px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
                   status === opt.value
                     ? `${opt.color} bg-fill`
                     : "border-line text-fg-dim hover:text-fg-dim"
@@ -212,7 +216,8 @@ export function ProjectEditForm({
                   <button
                     type="button"
                     onClick={() => setClients((list) => list.filter((x) => x.id !== c.id))}
-                    className="text-fg-ghost hover:text-danger ml-0.5"
+                    aria-label={`Quitar ${c.name}`}
+                    className="inline-flex items-center justify-center w-11 h-11 -my-3 -mr-3 sm:w-auto sm:h-auto sm:m-0 sm:ml-0.5 text-fg-ghost hover:text-danger"
                   >
                     ×
                   </button>
@@ -305,22 +310,24 @@ export function ProjectEditForm({
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-3">
+      {/* En el celular: Guardar/Cancelar arriba en columnas iguales y el
+          borrado debajo, lejos del dedo; desde tablet, una sola fila. */}
+      <div className="flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         {confirmDelete ? (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <span className="text-fg-dim text-xs">¿Eliminar el proyecto y todo lo que cuelga de él?</span>
             <button
               type="button"
               onClick={handleDelete}
               disabled={deleting}
-              className="px-3 py-1.5 rounded-lg bg-danger/15 border border-danger/30 text-danger text-xs font-medium hover:bg-danger/20 disabled:opacity-40 transition-all"
+              className="min-h-11 sm:min-h-8 px-3 py-1.5 rounded-lg bg-danger/15 border border-danger/30 text-danger text-xs font-medium hover:bg-danger/20 disabled:opacity-40 transition-all"
             >
               {deleting ? "Eliminando..." : "Sí, eliminar"}
             </button>
             <button
               type="button"
               onClick={() => setConfirmDelete(false)}
-              className="text-fg-faint hover:text-fg-soft text-xs transition-colors"
+              className="min-h-11 sm:min-h-8 px-2 text-fg-faint hover:text-fg-soft text-xs transition-colors"
             >
               Cancelar
             </button>
@@ -329,29 +336,20 @@ export function ProjectEditForm({
           <button
             type="button"
             onClick={() => setConfirmDelete(true)}
-            className="text-danger hover:text-danger text-xs transition-colors"
+            className="self-start min-h-11 sm:min-h-8 text-danger hover:text-danger text-xs transition-colors"
           >
             Eliminar proyecto
           </button>
         )}
 
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2.5 text-fg-faint hover:text-fg-soft text-sm transition-colors"
-          >
+        <ActionRow>
+          <button type="button" onClick={onClose} className={btn.secondary}>
             Cancelar
           </button>
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={saving}
-            className="px-6 py-2.5 bg-brand hover:bg-brand-hi disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg transition-all"
-          >
+          <button type="button" onClick={handleSave} disabled={saving} className={btn.primary}>
             {saving ? "Guardando..." : "Guardar cambios"}
           </button>
-        </div>
+        </ActionRow>
       </div>
     </div>
   );

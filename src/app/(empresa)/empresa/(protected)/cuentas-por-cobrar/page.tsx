@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { ArTaskActions } from "@/components/empresa/ar-task-actions";
 import { CollectRow } from "@/components/empresa/collect-row";
 import { getReceivables } from "@/lib/receivables";
+import { PageHeader, btn } from "@/components/empresa/page-header";
 
 export const metadata = { title: "Cuentas por Cobrar — Pime Suite" };
 export const dynamic = "force-dynamic";
@@ -56,18 +57,16 @@ export default async function CuentasPorCobrarPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-fg text-2xl font-semibold tracking-tight">Cuentas por cobrar</h1>
-          <p className="text-fg-dim text-sm mt-0.5">{items.length} ítem{items.length !== 1 ? "s" : ""} pendientes</p>
-        </div>
-        <Link
-          href="/empresa/facturas/nueva"
-          className="px-4 py-2.5 bg-sand hover:bg-sand-lt text-on-accent text-sm font-semibold rounded-lg transition-all"
-        >
-          + Nueva factura
-        </Link>
-      </div>
+      <PageHeader
+        className="mb-6"
+        title="Cuentas por cobrar"
+        description={`${items.length} ${items.length === 1 ? "cobro pendiente" : "cobros pendientes"}`}
+        actions={
+          <Link href="/empresa/facturas/nueva" className={btn.accent}>
+            + Nueva factura
+          </Link>
+        }
+      />
 
       {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
@@ -102,10 +101,13 @@ export default async function CuentasPorCobrarPage() {
               </div>
               <div className="divide-y divide-line">
                 {group.items.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 flex-wrap px-5 py-3">
+                  // Celular: datos y monto arriba; estado y acciones en una fila
+                  // propia debajo. Desde tablet todo va en una sola línea
+                  // (`sm:contents` disuelve el contenedor de la segunda fila).
+                  <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 px-4 sm:px-5 py-3 sm:flex sm:items-center sm:flex-wrap">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Link href={item.href} className="text-fg-mute text-sm font-mono hover:text-brand-fg transition-colors truncate">
+                        <Link href={item.href} className="inline-flex items-center min-h-8 text-fg-mute text-sm font-mono hover:text-brand-fg transition-colors">
                           {item.label}
                         </Link>
                         {item.kind === "schedule" && (
@@ -144,7 +146,8 @@ export default async function CuentasPorCobrarPage() {
                       )}
                     </div>
 
-                    <span className={`px-2 py-0.5 text-[10px] rounded border shrink-0 ${
+                    <div className="col-span-2 flex flex-wrap items-center gap-2 sm:contents">
+                    <span className={`mr-auto sm:mr-0 px-2 py-0.5 text-[10px] rounded border shrink-0 ${
                       item.status === "OVERDUE" || (item.daysLeft !== null && item.daysLeft < 0)
                         ? "bg-danger/15 text-danger border-danger/20"
                         : item.status === "PARTIALLY_PAID"
@@ -176,6 +179,7 @@ export default async function CuentasPorCobrarPage() {
                       currency={item.currency}
                       willCreateInvoice={item.willCreateInvoice}
                     />
+                    </div>
                   </div>
                 ))}
               </div>

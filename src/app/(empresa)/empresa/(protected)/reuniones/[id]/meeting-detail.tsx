@@ -289,12 +289,15 @@ export function MeetingDetail({
 
   return (
     <div className="space-y-4">
-      <Link href="/empresa/reuniones" className="text-fg-faint hover:text-fg-soft text-sm transition-colors">
+      <Link
+        href="/empresa/reuniones"
+        className="inline-flex items-center min-h-11 sm:min-h-8 text-fg-faint hover:text-fg-soft text-sm transition-colors"
+      >
         ← Reuniones
       </Link>
 
       {/* Cabecera */}
-      <div className="bg-panel border border-line rounded-2xl p-6">
+      <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="min-w-0 flex-1">
             {editingHeader ? (
@@ -304,17 +307,19 @@ export function MeetingDetail({
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
                 />
-                <div className="flex gap-2 flex-wrap">
+                {/* En el celular: la fecha a lo ancho y Guardar/Cancelar debajo en
+                    columnas iguales. */}
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                   <input
                     type="date"
                     value={meetingDate}
                     onChange={(e) => setMeetingDate(e.target.value)}
-                    className="bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
+                    className="col-span-2 min-w-0 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
                   />
                   <button
                     onClick={() => void saveHeader()}
                     disabled={busy !== null}
-                    className="px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
+                    className="min-h-11 sm:min-h-8 px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
                   >
                     {busy === "header" ? "Guardando…" : "Guardar"}
                   </button>
@@ -324,7 +329,7 @@ export function MeetingDetail({
                       setTitle(meeting.title);
                       setMeetingDate(meeting.meetingDate.slice(0, 10));
                     }}
-                    className="px-4 py-2 bg-fill hover:bg-fill-2 border border-line text-fg-mute text-xs rounded-lg transition-all"
+                    className="min-h-11 sm:min-h-8 px-4 py-2 bg-fill hover:bg-fill-2 border border-line text-fg-mute text-xs rounded-lg transition-all"
                   >
                     Cancelar
                   </button>
@@ -333,13 +338,13 @@ export function MeetingDetail({
             ) : (
               <>
                 <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <h1 className="text-fg text-xl font-semibold tracking-tight">{meeting.title}</h1>
+                  <h1 className="text-fg text-xl font-semibold tracking-tight break-words min-w-0">{meeting.title}</h1>
                   <span className={`px-2 py-1 text-[10px] rounded border ${MEETING_STATUS_COLOR[meeting.status]}`}>
                     {MEETING_STATUS_LABEL[meeting.status]}
                   </span>
                   <button
                     onClick={() => setEditingHeader(true)}
-                    className="text-fg-ghost hover:text-brand-fg text-xs transition-colors"
+                    className="inline-flex items-center justify-center w-11 h-11 -my-3 sm:w-8 sm:h-8 sm:-my-2 text-fg-ghost hover:text-brand-fg text-sm sm:text-xs transition-colors"
                     aria-label="Editar título y fecha"
                   >
                     ✎
@@ -401,7 +406,7 @@ export function MeetingDetail({
                       <button
                         onClick={() => void renameSpeaker(s.label)}
                         disabled={busy !== null}
-                        className="text-brand-fg hover:text-brand-hi transition-colors"
+                        className="inline-flex items-center justify-center w-11 h-11 -my-3 -mr-3 sm:w-auto sm:h-auto sm:m-0 text-brand-fg hover:text-brand-hi transition-colors"
                       >
                         {busy === `speaker-${s.label}` ? "…" : "✓"}
                       </button>
@@ -415,7 +420,7 @@ export function MeetingDetail({
                       </span>
                       <button
                         onClick={() => setRenaming((prev) => ({ ...prev, [s.label]: s.name ?? "" }))}
-                        className="text-fg-ghost hover:text-brand-fg transition-colors"
+                        className="inline-flex items-center justify-center w-11 h-11 -my-3 -mr-3 sm:w-auto sm:h-auto sm:m-0 text-fg-ghost hover:text-brand-fg transition-colors"
                         aria-label={`Renombrar ${s.label}`}
                       >
                         ✎
@@ -432,13 +437,16 @@ export function MeetingDetail({
           <p className="text-danger text-xs mt-4">Último error: {meeting.errorMessage}</p>
         )}
 
-        <div className="flex flex-wrap gap-2 mt-6">
+        {/* Hasta lg, cuadrícula de dos columnas iguales (el último, si queda
+            solo, ocupa la fila): los botones sueltos se partían en filas
+            disparejas. Con pantalla ancha, fila compacta. */}
+        <div className="grid grid-cols-2 gap-2 [&>*:last-child:nth-child(odd)]:col-span-2 lg:[&>*:last-child:nth-child(odd)]:col-span-1 lg:flex lg:flex-wrap mt-6">
           {STAGES.map((stage) => (
             <button
               key={stage.key}
               onClick={() => runStage(stage.key, stage.label)}
               disabled={busy !== null || meeting.segmentCount === 0}
-              className="px-3 py-2 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all"
+              className="min-h-11 sm:min-h-8 min-w-0 px-3 py-2 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all"
             >
               {busy === stage.key ? "Procesando…" : `↻ ${stage.label}`}
             </button>
@@ -447,7 +455,7 @@ export function MeetingDetail({
             <button
               onClick={emitBitacora}
               disabled={busy !== null}
-              className="px-3 py-2 bg-sand/15 hover:bg-sand/25 disabled:opacity-40 border border-sand/25 text-sand-fg text-xs rounded-lg transition-all"
+              className="min-h-11 sm:min-h-8 min-w-0 px-3 py-2 bg-sand/15 hover:bg-sand/25 disabled:opacity-40 border border-sand/25 text-sand-fg text-xs rounded-lg transition-all"
             >
               {busy === "bitacora" ? "Emitiendo…" : "📝 Emitir bitácora"}
             </button>
@@ -455,7 +463,7 @@ export function MeetingDetail({
           {meeting.bitacoraId && (
             <Link
               href={`/empresa/bitacoras/${meeting.bitacoraId}`}
-              className="px-3 py-2 bg-fill hover:bg-fill-2 border border-line text-fg-mute text-xs rounded-lg transition-all"
+              className="inline-flex items-center justify-center min-h-11 sm:min-h-8 min-w-0 px-3 py-2 bg-fill hover:bg-fill-2 border border-line text-fg-mute text-xs rounded-lg transition-all"
             >
               📝 Ver bitácora emitida
             </Link>
@@ -463,7 +471,8 @@ export function MeetingDetail({
           <button
             onClick={() => void deleteMeeting()}
             disabled={busy !== null}
-            className="px-3 py-2 bg-fill hover:bg-danger/10 disabled:opacity-40 border border-line hover:border-danger/25 text-fg-ghost hover:text-danger text-xs rounded-lg transition-all ml-auto"
+            // Si queda solo en su fila, la grilla lo estira (ver el contenedor).
+            className="min-h-11 sm:min-h-8 min-w-0 px-3 py-2 bg-fill hover:bg-danger/10 disabled:opacity-40 border border-line hover:border-danger/25 text-fg-ghost hover:text-danger text-xs rounded-lg transition-all lg:ml-auto"
           >
             {busy === "delete" ? "Borrando…" : "Borrar reunión"}
           </button>
@@ -503,7 +512,7 @@ export function MeetingDetail({
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all border ${
+            className={`min-h-11 sm:min-h-8 shrink-0 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all border ${
               tab === t.key
                 ? "bg-brand/15 border-brand/30 text-brand-fg"
                 : "bg-fill border-line text-fg-dim hover:text-fg-soft"
@@ -516,7 +525,7 @@ export function MeetingDetail({
         ))}
       </div>
 
-      <div className="bg-panel border border-line rounded-2xl p-6 space-y-6">
+      <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6 space-y-6">
         {tab === "entregable" && (
           <DeliverablePanel
             meetingId={meeting.id}
@@ -679,14 +688,14 @@ export function MeetingDetail({
         {tab === "prompt" &&
           (meeting.technicalPrompt ? (
             <>
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-fg-faint text-xs">
                   Cópialo y pégalo en Claude Code o en el ticket del desarrollador. Se sostiene solo:
                   no hace falta la transcripción.
                 </p>
                 <button
                   onClick={copyPrompt}
-                  className="px-3 py-2 bg-brand hover:bg-brand-hi text-on-brand text-xs font-semibold rounded-lg transition-all shrink-0"
+                  className="min-h-11 sm:min-h-8 px-3 py-2 bg-brand hover:bg-brand-hi text-on-brand text-xs font-semibold rounded-lg transition-all shrink-0"
                 >
                   {copied ? "✓ Copiado" : "Copiar prompt"}
                 </button>

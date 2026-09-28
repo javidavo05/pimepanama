@@ -95,11 +95,12 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
         placeholder="Detalle (opcional)"
         className={TEXTAREA_CLASS}
       />
-      <div className="flex justify-end gap-3">
+      {/* En el celular, Cancelar y Guardar en columnas iguales a lo ancho. */}
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end sm:gap-3">
         <button
           type="button"
           onClick={() => { setAdding(false); setEditingId(null); setError(null); }}
-          className="text-fg-faint hover:text-fg-soft text-xs transition-colors"
+          className="min-h-11 sm:min-h-8 rounded-lg border border-line sm:border-0 text-fg-faint hover:text-fg-soft text-sm sm:text-xs transition-colors"
         >
           Cancelar
         </button>
@@ -107,7 +108,7 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
           type="button"
           onClick={submitDraft}
           disabled={pending}
-          className="px-3 py-1.5 rounded-lg bg-brand/10 border border-brand/25 text-brand-fg text-xs font-medium hover:bg-brand/15 disabled:opacity-40 transition-all"
+          className="min-h-11 sm:min-h-8 px-3 py-1.5 rounded-lg bg-brand/10 border border-brand/25 text-brand-fg text-sm sm:text-xs font-medium hover:bg-brand/15 disabled:opacity-40 transition-all"
         >
           {pending ? "Guardando..." : editingId ? "Guardar" : "Agregar"}
         </button>
@@ -117,7 +118,7 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
 
   return (
     <div className="bg-panel border border-line rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-line flex items-center justify-between">
+      <div className="px-5 py-2 sm:py-4 border-b border-line flex items-center justify-between gap-3">
         <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Entregables</h3>
         <div className="flex items-center gap-3">
           {deliverables.length > 0 && (
@@ -126,7 +127,7 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
           <button
             type="button"
             onClick={startAdd}
-            className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors"
+            className="inline-flex items-center min-h-11 sm:min-h-8 px-2 sm:px-0 text-brand-fg text-xs sm:text-[10px] hover:text-brand-fg transition-colors"
           >
             + agregar
           </button>
@@ -151,7 +152,8 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
                   aria-label={d.completed ? "Marcar pendiente" : "Marcar completado"}
                   onClick={() => run(() => updateDeliverableAction(d.id, { completed: !d.completed }))}
                   disabled={pending}
-                  className={`mt-0.5 w-4 h-4 rounded border shrink-0 text-[10px] leading-none transition-all disabled:opacity-40 ${
+                  // El pseudo-elemento agranda el área de toque a 48 px en el celular sin mover la casilla.
+                  className={`relative before:absolute before:-inset-4 before:content-[''] sm:before:hidden mt-0.5 w-4 h-4 rounded border shrink-0 text-[10px] leading-none transition-all disabled:opacity-40 ${
                     d.completed
                       ? "bg-ok/20 border-ok/40 text-ok"
                       : "border-line-loud text-transparent hover:border-line-loud"
@@ -177,11 +179,12 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                {/* Sin hover en el celular: las acciones quedan visibles ahí. */}
+                <div className="flex items-center gap-1 sm:gap-2 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                   <button
                     type="button"
                     onClick={() => startEdit(d)}
-                    className="text-fg-faint hover:text-brand-fg text-[10px] transition-colors"
+                    className="inline-flex items-center min-h-11 sm:min-h-8 px-2 sm:px-0 text-fg-faint hover:text-brand-fg text-xs sm:text-[10px] transition-colors"
                   >
                     editar
                   </button>
@@ -189,7 +192,7 @@ export function DeliverablesPanel({ projectId, deliverables }: DeliverablesPanel
                     type="button"
                     onClick={() => run(() => deleteDeliverableAction(d.id))}
                     disabled={pending}
-                    className="text-fg-faint hover:text-danger text-[10px] transition-colors disabled:opacity-40"
+                    className="inline-flex items-center min-h-11 sm:min-h-8 px-2 sm:px-0 text-fg-faint hover:text-danger text-xs sm:text-[10px] transition-colors disabled:opacity-40"
                   >
                     eliminar
                   </button>

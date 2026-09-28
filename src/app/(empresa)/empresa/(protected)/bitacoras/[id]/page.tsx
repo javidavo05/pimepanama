@@ -6,6 +6,7 @@ import { serializeDocument } from "@/lib/serializers";
 import { BitacoraBuilder } from "../nueva/bitacora-builder";
 import { PdfDownloadButton } from "@/components/empresa/document-builder/pdf-download-button";
 import { StatusBadge } from "@/components/empresa/document-builder/status-badge";
+import { ActionRow } from "@/components/empresa/page-header";
 
 export default async function EditarBitacoraPage({
   params,
@@ -31,24 +32,27 @@ export default async function EditarBitacoraPage({
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      {/* En el celular el botón del PDF baja a su propia fila, a lo ancho. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3 min-w-0">
           <Link
             href="/empresa/bitacoras"
-            className="text-fg-dim hover:text-fg-dim text-sm transition-colors"
+            className="inline-flex items-center min-h-11 sm:min-h-8 shrink-0 text-fg-dim hover:text-fg text-sm transition-colors"
           >
             ← Bitácoras
           </Link>
           <span className="text-fg-faint">/</span>
-          <span className="text-fg-dim font-mono text-sm">
+          <span className="text-fg-dim font-mono text-sm truncate min-w-0">
             {doc.number ?? id}
           </span>
           <StatusBadge status={doc.status} />
         </div>
-        <PdfDownloadButton
-          documentId={doc.id}
-          filename={`${doc.number ?? "bitacora"}.pdf`}
-        />
+        <ActionRow>
+          <PdfDownloadButton
+            documentId={doc.id}
+            filename={`${doc.number ?? "bitacora"}.pdf`}
+          />
+        </ActionRow>
       </div>
 
       <BitacoraBuilder

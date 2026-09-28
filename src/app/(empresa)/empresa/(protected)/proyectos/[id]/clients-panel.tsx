@@ -46,13 +46,13 @@ export function ClientsPanel({ projectId, clients, allClients }: ClientsPanelPro
         empty ? "border-warn/25" : "border-line"
       }`}
     >
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <p className="text-fg-faint text-[10px] uppercase tracking-widest">
           {empty ? "⚠ Sin cliente asignado" : clients.length > 1 ? "Clientes" : "Cliente"}
         </p>
         <Link
           href="/empresa/clientes"
-          className="text-fg-ghost text-[10px] hover:text-fg-dim transition-colors"
+          className="inline-flex items-center min-h-11 sm:min-h-8 text-fg-ghost text-xs sm:text-[10px] hover:text-fg-dim transition-colors"
         >
           ver clientes →
         </Link>
@@ -83,13 +83,15 @@ export function ClientsPanel({ projectId, clients, allClients }: ClientsPanelPro
                   )}
                 </p>
               </div>
-              <div className="flex items-center gap-2 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+              {/* En pantallas táctiles no hay hover: las acciones quedan visibles
+                  en el celular y solo se esconden desde tablet. */}
+              <div className="flex items-center gap-2 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
                 {i > 0 && (
                   <button
                     type="button"
                     onClick={() => save([c.id, ...ids.filter((x) => x !== c.id)])}
                     disabled={pending}
-                    className="text-fg-ghost hover:text-sand-fg text-[10px] transition-colors disabled:opacity-40"
+                    className="inline-flex items-center min-h-11 sm:min-h-8 px-2 sm:px-0 text-fg-ghost hover:text-sand-fg text-xs sm:text-[10px] transition-colors disabled:opacity-40"
                   >
                     principal
                   </button>
@@ -100,7 +102,7 @@ export function ClientsPanel({ projectId, clients, allClients }: ClientsPanelPro
                     aria-label={`Quitar ${c.name}`}
                     onClick={() => save(ids.filter((x) => x !== c.id))}
                     disabled={pending}
-                    className="text-fg-ghost hover:text-danger text-xs transition-colors disabled:opacity-40"
+                    className="inline-flex items-center justify-center w-11 h-11 sm:w-auto sm:h-auto text-fg-ghost hover:text-danger text-xs transition-colors disabled:opacity-40"
                   >
                     ×
                   </button>
@@ -133,7 +135,7 @@ export function ClientsPanel({ projectId, clients, allClients }: ClientsPanelPro
         allClients.length === 0 && (
           <Link
             href="/empresa/clientes"
-            className="inline-block text-brand-fg text-xs hover:text-brand-fg transition-colors"
+            className="inline-flex items-center min-h-11 sm:min-h-8 text-brand-fg text-xs hover:text-brand-fg transition-colors"
           >
             + Crear un cliente primero
           </Link>

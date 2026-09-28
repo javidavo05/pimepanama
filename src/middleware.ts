@@ -34,12 +34,12 @@ export async function middleware(request: NextRequest) {
       }
     );
 
-    // MUST call getUser() on every request to keep the session refreshed
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // getClaims() refresca la sesión si venció y verifica la firma del JWT en
+    // el servidor con las llaves públicas del proyecto (ES256), sin el viaje a
+    // Supabase Auth que hacía getUser() en cada cambio de pestaña.
+    const { data } = await supabase.auth.getClaims();
 
-    if (!user) {
+    if (!data?.claims) {
       const loginUrl = new URL("/empresa/login", request.url);
       const redirectResponse = NextResponse.redirect(loginUrl);
       // Copy refreshed session cookies into the redirect so tokens survive

@@ -51,7 +51,7 @@ export function LinkContractPanel({ documentId, contracts, createHref }: LinkCon
       {contracts.length === 0 ? (
         <Link
           href={createHref}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-fill border border-line text-fg-dim text-xs hover:text-fg hover:border-line-loud transition-all"
+          className="inline-flex items-center gap-1.5 min-h-11 sm:min-h-8 px-3 py-2 rounded-lg bg-fill border border-line text-fg-dim text-xs hover:text-fg hover:border-line-loud transition-all"
         >
           + Crear contrato retroactivo
         </Link>
@@ -61,7 +61,7 @@ export function LinkContractPanel({ documentId, contracts, createHref }: LinkCon
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
             aria-label="Contrato a vincular"
-            className="flex-1 bg-fill border border-line rounded-lg px-3 py-2 text-fg text-sm focus:outline-none focus:border-brand/40 transition-all"
+            className="flex-1 min-w-0 bg-fill border border-line rounded-lg px-3 py-2 text-fg text-sm focus:outline-none focus:border-brand/40 transition-all"
           >
             <option value="">Seleccionar contrato...</option>
             {contracts.map((c) => (
@@ -73,7 +73,7 @@ export function LinkContractPanel({ documentId, contracts, createHref }: LinkCon
           <button
             onClick={handleLink}
             disabled={!selected || pending}
-            className="px-4 py-2 rounded-lg bg-brand/10 border border-brand/25 text-brand-fg text-sm font-medium hover:bg-brand/15 disabled:opacity-40 transition-all shrink-0"
+            className="min-h-11 sm:min-h-8 px-4 py-2 rounded-lg bg-brand/10 border border-brand/25 text-brand-fg text-sm font-medium hover:bg-brand/15 disabled:opacity-40 transition-all shrink-0"
           >
             {pending ? "Vinculando..." : "Vincular"}
           </button>

@@ -34,7 +34,7 @@ export function DeliverablesEditor({ items, onChange, fromDocument = 0 }: Delive
         <button
           type="button"
           onClick={() => onChange([...items, { name: "", description: "", dueDate: "" }])}
-          className="text-brand-fg text-xs hover:text-sky transition-colors shrink-0"
+          className="inline-flex items-center min-h-11 sm:min-h-8 px-2 -mx-2 text-brand-fg text-sm sm:text-xs hover:text-sky transition-colors shrink-0"
         >
           + Agregar
         </button>

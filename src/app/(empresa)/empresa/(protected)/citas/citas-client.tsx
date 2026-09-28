@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { PageHeader, btn } from "@/components/empresa/page-header";
 
 type Booking = {
   id: string;
@@ -42,28 +43,20 @@ export function CitasClient() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-fg text-2xl font-semibold">Citas</h1>
-          <p className="text-fg-faint text-sm mt-1">Reservas de PimeBook</p>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            href="/empresa/citas/config"
-            className="px-4 py-2 border border-line-mid text-fg-mute text-sm rounded-lg hover:border-line-loud"
-          >
-            Configurar
-          </Link>
-          <a
-            href="/agendar"
-            target="_blank"
-            rel="noreferrer"
-            className="px-4 py-2 bg-sand text-on-accent text-sm font-semibold rounded-lg"
-          >
-            Ver página pública
-          </a>
-        </div>
-      </div>
+      <PageHeader
+        title="Citas"
+        description="Reservas de PimeBook"
+        actions={
+          <>
+            <Link href="/empresa/citas/config" className={btn.secondary}>
+              Configurar
+            </Link>
+            <a href="/agendar" target="_blank" rel="noreferrer" className={btn.accent}>
+              Ver página pública
+            </a>
+          </>
+        }
+      />
 
       {loading ? (
         <p className="text-fg-faint text-sm">Cargando…</p>

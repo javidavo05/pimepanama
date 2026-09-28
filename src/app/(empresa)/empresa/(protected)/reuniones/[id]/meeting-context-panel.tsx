@@ -18,7 +18,7 @@ interface ClientOption {
 }
 
 const AUDIO_SOURCES = [
-  { key: "VIDEOLLAMADA", label: "Videollamada (Meet, Zoom, Teams)" },
+  { key: "VIDEOLLAMADA", label: "Videollamada" },
   { key: "LLAMADA", label: "Llamada telefónica" },
   { key: "PRESENCIAL", label: "Reunión presencial" },
   { key: "NOTA_VOZ", label: "Nota de voz" },
@@ -158,7 +158,7 @@ export function MeetingContextPanel({
     <div className="bg-panel border border-line rounded-2xl">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between gap-3 px-6 py-4 text-left"
+        className="w-full flex items-center justify-between gap-3 px-4 sm:px-6 py-4 text-left"
       >
         <span>
           <span className="text-fg-mute text-xs uppercase tracking-wider">Proyecto y contexto</span>
@@ -172,8 +172,8 @@ export function MeetingContextPanel({
       </button>
 
       {open && (
-        <div className="px-6 pb-6 space-y-4 border-t border-line pt-4">
-          <div className="grid sm:grid-cols-2 gap-4">
+        <div className="px-4 sm:px-6 pb-6 space-y-4 border-t border-line pt-4">
+          <div className="grid sm:grid-cols-2 gap-4 [&>div]:min-w-0">
             <div>
               <label className="block text-fg-mute text-xs uppercase tracking-wider mb-1.5">
                 Proyecto
@@ -251,7 +251,7 @@ export function MeetingContextPanel({
                         return next.length > 0 ? next : prev;
                       })
                     }
-                    className={`flex-1 px-3 py-2 rounded-lg border text-sm transition-all ${
+                    className={`flex-1 min-w-0 min-h-11 sm:min-h-8 px-3 py-2 rounded-lg border text-sm transition-all ${
                       on
                         ? "border-brand/40 bg-brand/[0.08] text-brand-fg"
                         : "border-line bg-canvas text-fg-faint hover:text-fg-soft"
@@ -282,18 +282,20 @@ export function MeetingContextPanel({
             />
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          {/* En el celular, Guardar y Analizar en columnas iguales; los avisos
+              debajo, a lo ancho. */}
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
             <button
               onClick={save}
               disabled={busy !== null || !dirty}
-              className="px-4 py-2 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all"
+              className="min-h-11 sm:min-h-8 min-w-0 px-4 py-2 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all"
             >
               {busy === "save" ? "Guardando…" : "Guardar"}
             </button>
             <button
               onClick={saveAndReprocess}
               disabled={busy !== null}
-              className="px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
+              className="min-h-11 sm:min-h-8 min-w-0 px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
             >
               {busy && busy !== "save"
                 ? "Analizando…"
@@ -303,11 +305,11 @@ export function MeetingContextPanel({
                   ? "Guardar y volver a analizar"
                   : "Guardar y analizar"}
             </button>
-            {saved && busy === null && <span className="text-ok text-xs">Guardado.</span>}
+            {saved && busy === null && <span className="col-span-2 text-ok text-xs">Guardado.</span>}
             {analyzed && busy === null && (
-              <span className="text-ok text-xs">Análisis listo: minutas, pendientes y prompt al día.</span>
+              <span className="col-span-2 text-ok text-xs">Análisis listo: minutas, pendientes y prompt al día.</span>
             )}
-            {error && !run && <span className="text-danger text-xs">{error}</span>}
+            {error && !run && <span className="col-span-2 text-danger text-xs">{error}</span>}
           </div>
 
           {run && (

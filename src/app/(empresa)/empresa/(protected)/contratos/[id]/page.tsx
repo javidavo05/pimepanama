@@ -6,6 +6,7 @@ import { serializeProject } from "@/lib/serializers";
 import { PdfDownloadButton } from "@/components/empresa/document-builder/pdf-download-button";
 import { ContractSigningPanel } from "@/components/pimesign/contract-signing-panel";
 import { ContractForm } from "../nuevo/contract-form";
+import { ActionRow } from "@/components/empresa/page-header";
 
 export const dynamic = "force-dynamic";
 
@@ -46,16 +47,24 @@ export default async function ContratoDetailPage({ params }: { params: Promise<{
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="flex items-center justify-between gap-2 mb-5 text-sm">
-        <div className="flex items-center gap-2">
-          <Link href="/empresa/contratos" className="text-fg-dim hover:text-fg-mute transition-colors">Contratos</Link>
+      {/* En el celular la miga va arriba y el PDF debajo, a lo ancho. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-6 text-sm">
+        <div className="flex items-center gap-2 min-w-0">
+          <Link
+            href="/empresa/contratos"
+            className="inline-flex items-center min-h-11 sm:min-h-8 shrink-0 text-fg-dim hover:text-fg-mute transition-colors"
+          >
+            Contratos
+          </Link>
           <span className="text-fg-faint">/</span>
-          <span className="text-fg-dim truncate max-w-xs">{contract.title}</span>
+          <span className="text-fg-dim truncate min-w-0 max-w-xs">{contract.title}</span>
         </div>
-        <PdfDownloadButton
-          url={`/api/empresa/contracts/${contract.id}/pdf?inline=1`}
-          filename={`Contrato-${contract.title}.pdf`}
-        />
+        <ActionRow>
+          <PdfDownloadButton
+            url={`/api/empresa/contracts/${contract.id}/pdf?inline=1`}
+            filename={`Contrato-${contract.title}.pdf`}
+          />
+        </ActionRow>
       </div>
 
       <ContractForm
@@ -81,9 +90,9 @@ export default async function ContratoDetailPage({ params }: { params: Promise<{
             {contract.documents.map((d) => (
               <Link key={d.id}
                 href={`/empresa/${d.type === "FACTURA" ? "facturas" : "cotizaciones"}/${d.id}`}
-                className="flex items-center justify-between px-5 py-3 hover:bg-fill transition-colors text-sm">
-                <span className="text-fg-dim font-mono">{d.number ?? d.type}</span>
-                <span className="text-fg-dim text-xs">{new Date(d.issueDate).toLocaleDateString("es-PA")}</span>
+                className="flex items-center justify-between gap-3 px-5 py-3 min-h-11 hover:bg-fill transition-colors text-sm">
+                <span className="text-fg-dim font-mono truncate min-w-0">{d.number ?? d.type}</span>
+                <span className="text-fg-dim text-xs shrink-0">{new Date(d.issueDate).toLocaleDateString("es-PA")}</span>
               </Link>
             ))}
           </div>

@@ -4,12 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { convertQuoteToInvoiceAction } from "@/app/(empresa)/empresa/actions";
+import { tile } from "@/components/empresa/page-header";
 
 interface ConvertToInvoiceButtonProps {
   quoteId: string;
   quoteStatus: string;
   linkedInvoiceId?: string;
-  variant?: "row" | "banner";
+  /** "tile": botón del mismo ancho que sus vecinos en las tarjetas del celular. */
+  variant?: "row" | "banner" | "tile";
 }
 
 export function ConvertToInvoiceButton({
@@ -25,7 +27,9 @@ export function ConvertToInvoiceButton({
     const linkClass =
       variant === "banner"
         ? "px-4 py-2 bg-sand hover:bg-sand-lt text-on-accent text-sm font-semibold rounded-lg transition-all"
-        : "text-sand-fg hover:text-sand-lt text-xs font-medium transition-colors";
+        : variant === "tile"
+          ? tile.accent
+          : "text-sand-fg hover:text-sand-lt text-xs font-medium transition-colors";
 
     return (
       <Link href={`/empresa/facturas/${linkedInvoiceId}`} className={linkClass}>
@@ -67,9 +71,13 @@ export function ConvertToInvoiceButton({
       type="button"
       onClick={() => void handleConvert()}
       disabled={converting}
-      className="text-sand-fg hover:text-sand-lt disabled:opacity-40 text-xs font-medium transition-colors"
+      className={
+        variant === "tile"
+          ? tile.accent
+          : "text-sand-fg hover:text-sand-lt disabled:opacity-40 text-xs font-medium transition-colors"
+      }
     >
-      {converting ? "..." : "→ Factura"}
+      {converting ? "…" : "→ Factura"}
     </button>
   );
 }

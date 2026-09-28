@@ -8,6 +8,7 @@ import {
 } from "@/app/(empresa)/empresa/actions";
 import type { SerializedCompanyConfig } from "@/lib/serializers";
 import { LogoUploader } from "@/components/empresa/logo-uploader";
+import { btn, tile } from "@/components/empresa/page-header";
 
 const initialState: CompanyConfigFormState = {};
 
@@ -17,15 +18,18 @@ function Field({
   defaultValue,
   type = "text",
   placeholder,
+  wide = false,
 }: {
   label: string;
   name: string;
   defaultValue?: string | number | null;
   type?: string;
   placeholder?: string;
+  /** A lo ancho de la grilla: para el campo que quedaría solo en su fila. */
+  wide?: boolean;
 }) {
   return (
-    <div>
+    <div className={wide ? "sm:col-span-2" : undefined}>
       <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
         {label}
       </label>
@@ -47,9 +51,9 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="px-6 py-2.5 bg-sand hover:bg-sand-lt disabled:opacity-50 text-on-accent text-sm font-semibold rounded-lg transition-all"
+      className={`${btn.accent} w-full sm:w-auto`}
     >
-      {pending ? "Guardando..." : "Guardar configuración"}
+      {pending ? "Guardando…" : "Guardar configuración"}
     </button>
   );
 }
@@ -91,11 +95,11 @@ export function ConfigForm({ config }: { config: SerializedCompanyConfig | null 
         </div>
       )}
 
-      <div className="bg-panel border border-line rounded-2xl p-6">
+      <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6">
         <h2 className="text-sand-fg text-xs uppercase tracking-widest font-medium mb-5">
           Identidad corporativa
         </h2>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field
             label="Nombre de la empresa"
             name="name"
@@ -136,6 +140,7 @@ export function ConfigForm({ config }: { config: SerializedCompanyConfig | null 
           />
           <Field
             label="Sitio web"
+            wide
             name="website"
             defaultValue={config?.website}
             placeholder="pimepanama.com"
@@ -144,11 +149,11 @@ export function ConfigForm({ config }: { config: SerializedCompanyConfig | null 
         </div>
       </div>
 
-      <div className="bg-panel border border-line rounded-2xl p-6">
+      <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6">
         <h2 className="text-sand-fg text-xs uppercase tracking-widest font-medium mb-5">
           Configuración de documentos
         </h2>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field
             label="Prefijo de facturas"
             name="invoicePrefix"
@@ -168,6 +173,7 @@ export function ConfigForm({ config }: { config: SerializedCompanyConfig | null 
           />
           <Field
             label="Tasa de ITBMS (%)"
+            wide
             name="taxRatePercent"
             defaultValue={Number(config?.taxRatePercent ?? 7)}
             type="number"
@@ -175,7 +181,7 @@ export function ConfigForm({ config }: { config: SerializedCompanyConfig | null 
         </div>
       </div>
 
-      <div className="bg-panel border border-line rounded-2xl p-6">
+      <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6">
         <h2 className="text-sand-fg text-xs uppercase tracking-widest font-medium mb-5">
           Pie de página en documentos
         </h2>
@@ -207,25 +213,21 @@ export function ConfigForm({ config }: { config: SerializedCompanyConfig | null 
         </div>
       </div>
 
-      <div className="bg-panel border border-line rounded-2xl p-6">
+      <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6">
         <h2 className="text-brand-fg text-xs uppercase tracking-widest font-medium mb-3">
           Integraciones
         </h2>
         <p className="text-fg-dim text-sm mb-4">
           PimeSign y PimeBook usan tu cuenta de correo con SMTP para notificaciones.
         </p>
-        <ul className="text-sm text-fg-dim space-y-2 list-disc pl-5">
-          <li>
-            <a href="/empresa/citas/config" className="text-brand-fg hover:underline">
-              Configurar horarios de citas (PimeBook)
-            </a>
-          </li>
-          <li>
-            <a href="/agendar" target="_blank" rel="noreferrer" className="text-brand-fg hover:underline">
-              Página pública de agendamiento
-            </a>
-          </li>
-        </ul>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <a href="/empresa/citas/config" className={tile.neutral}>
+            Horarios de citas (PimeBook)
+          </a>
+          <a href="/agendar" target="_blank" rel="noreferrer" className={tile.neutral}>
+            Página pública de agendamiento
+          </a>
+        </div>
         <p className="text-fg-ghost text-xs mt-4">
           Variables: <code className="text-fg-faint">SIGNING_TOKEN_SECRET</code>,{" "}
           <code className="text-fg-faint">BOOKING_OWNER_EMAIL</code> (opcional)

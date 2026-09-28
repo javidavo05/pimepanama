@@ -79,7 +79,7 @@ export default async function EditarCotizacionPage({
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {doc.status === "ACCEPTED" && (
-        <div className="flex items-center justify-between gap-4 bg-sand/[0.06] border border-sand/20 rounded-xl px-5 py-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 bg-sand/[0.06] border border-sand/20 rounded-xl px-4 py-4 sm:px-6">
           <div>
             <p className="text-sand-fg text-sm font-medium">
               {linkedInvoiceId ? "Factura vinculada" : "Cotización aceptada"}
@@ -154,25 +154,26 @@ export default async function EditarCotizacionPage({
       )}
 
       {/* Quick summary bar */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/empresa/cotizaciones" className="text-fg-dim hover:text-fg-dim text-sm transition-colors">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <Link
+            href="/empresa/cotizaciones"
+            className="inline-flex items-center min-h-11 sm:min-h-8 shrink-0 text-fg-dim hover:text-fg text-sm transition-colors"
+          >
             ← Cotizaciones
           </Link>
           <span className="text-fg-faint">/</span>
-          <span className="text-fg-dim font-mono text-sm">{doc.number ?? id}</span>
+          <span className="text-fg-dim font-mono text-sm truncate min-w-0">{doc.number ?? id}</span>
           <StatusBadge status={doc.status} />
         </div>
-        <div className="flex items-center gap-3">
-          {netAmount !== null && netAmount !== gross && (
-            <div className="text-right">
-              <p className="text-fg-dim text-xs">Neto recibido</p>
-              <p className="text-ok font-mono text-sm font-semibold">
-                ${netAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-              </p>
-            </div>
-          )}
-        </div>
+        {netAmount !== null && netAmount !== gross && (
+          <div className="text-right">
+            <p className="text-fg-dim text-xs">Neto recibido</p>
+            <p className="text-ok font-mono text-sm font-semibold">
+              ${netAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+            </p>
+          </div>
+        )}
       </div>
 
       <CotizacionBuilder

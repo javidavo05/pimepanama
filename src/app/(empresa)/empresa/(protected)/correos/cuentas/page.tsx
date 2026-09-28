@@ -3,6 +3,7 @@ import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { AccountActions } from "./account-actions";
 import { formatDateTimeEsPa } from "@/lib/format-datetime";
+import { PageHeader, btn } from "@/components/empresa/page-header";
 
 export const metadata = { title: "Cuentas de correo — Pime Suite" };
 export const dynamic = "force-dynamic";
@@ -17,16 +18,15 @@ export default async function CuentasPage() {
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-fg text-2xl font-semibold tracking-tight">Cuentas de correo</h1>
-          <p className="text-fg-dim text-sm mt-1">Gestiona las cuentas IMAP conectadas</p>
-        </div>
-        <Link href="/empresa/correos/cuentas/nueva"
-          className="px-4 py-2.5 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-all">
-          + Agregar cuenta
-        </Link>
-      </div>
+      <PageHeader
+        title="Cuentas de correo"
+        description="Gestiona las cuentas IMAP conectadas"
+        actions={
+          <Link href="/empresa/correos/cuentas/nueva" className={btn.primary}>
+            + Agregar cuenta
+          </Link>
+        }
+      />
 
       {accounts.length === 0 ? (
         <div className="bg-panel border border-line rounded-xl p-10 text-center">
@@ -43,12 +43,12 @@ export default async function CuentasPage() {
       ) : (
         <div className="space-y-3">
           {accounts.map((acc) => (
-            <div key={acc.id} className="bg-panel border border-line rounded-xl p-5 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
+            <div key={acc.id} className="bg-panel border border-line rounded-xl p-4 sm:p-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex items-center gap-4 min-w-0">
                 <div className={`w-2.5 h-2.5 rounded-full ${acc.active ? "bg-ok" : "bg-fill-3"}`} />
-                <div>
+                <div className="min-w-0">
                   <p className="text-fg font-medium text-sm">{acc.label}</p>
-                  <p className="text-fg-dim text-xs">{acc.username} · {acc.host}:{acc.port}</p>
+                  <p className="text-fg-dim text-xs break-all">{acc.username} · {acc.host}:{acc.port}</p>
                   {acc.lastSyncAt && (
                     <p className="text-fg-faint text-xs mt-0.5">
                       Último sync: {formatDateTimeEsPa(acc.lastSyncAt)} · {acc._count.emails} correos

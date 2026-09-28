@@ -10,6 +10,8 @@ import { DeliverablesEditor, type DeliverableDraft } from "@/components/empresa/
 import { FinancingPlanner } from "@/components/empresa/financing-planner";
 import type { FinancingPlan } from "@/lib/financing";
 import { AiEnhanceButton } from "@/components/empresa/document-builder/ai-enhance-button";
+import { LanguageToggle } from "@/components/empresa/document-builder/language-toggle";
+import { PageHeader, ActionRow, btn } from "@/components/empresa/page-header";
 import { coerceAiText } from "@/lib/ai-text";
 import type { Client } from "@prisma/client";
 
@@ -273,33 +275,26 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-3xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-fg text-2xl font-semibold tracking-tight">Nuevo proyecto</h1>
-          <p className="text-fg-faint text-sm mt-0.5">Con su contrato, en una sola pantalla.</p>
-        </div>
-        <div className="inline-flex rounded-lg border border-line overflow-hidden">
-          {(["es", "en"] as const).map((l) => (
-            <button key={l} type="button"
-              onClick={() => setValue("language", l)}
-              className={`px-4 py-1.5 text-xs font-medium uppercase tracking-widest transition-all ${language === l ? "bg-sand/10 text-sand-fg border-r border-sand/20" : "text-fg-dim hover:text-fg-dim"}`}>
-              {l}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Header: mismo encabezado y selector de idioma que el resto de los
+          documentos; en el celular el selector baja debajo del título. */}
+      <PageHeader
+        title="Nuevo proyecto"
+        description="Con su contrato, en una sola pantalla."
+        actions={<LanguageToggle value={language} onChange={(l) => setValue("language", l)} />}
+      />
 
       <ContractAnalyzer onAnalyzed={applyAnalysis} />
 
       {/* Estado */}
       <div className="bg-panel border border-line rounded-xl p-5">
         <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">Estado</h3>
-        <div className="flex flex-wrap gap-2">
+        {/* 2×2 de celdas iguales en el celular; con flex-wrap quedaban filas
+            de anchos distintos. */}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {STATUS_OPTS.map((opt) => (
             <button key={opt.value} type="button"
               onClick={() => setValue("status", opt.value as ProjectFormValues["status"])}
-              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${status === opt.value ? opt.color + " bg-fill" : "border-line text-fg-dim hover:text-fg-dim"}`}>
+              className={`min-h-11 sm:min-h-8 px-4 py-2 rounded-lg text-sm font-medium border transition-all ${status === opt.value ? opt.color + " bg-fill" : "border-line text-fg-dim hover:text-fg-dim"}`}>
               {opt.label}
             </button>
           ))}
@@ -333,14 +328,17 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
               {selectedClients.map((c, i) => (
                 <span
                   key={c.id}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-brand/10 border border-brand/25 text-brand-fg text-xs"
+                  className="inline-flex items-center gap-1.5 min-w-0 max-w-full px-2.5 py-1 rounded-lg bg-brand/10 border border-brand/25 text-brand-fg text-xs"
                 >
-                  {c.name}
+                  <span className="truncate">{c.name}</span>
                   {i === 0 && <span className="text-[9px] text-fg-faint uppercase tracking-widest">principal</span>}
                   <button
                     type="button"
                     onClick={() => setSelectedClients((list) => list.filter((x) => x.id !== c.id))}
-                    className="text-fg-ghost hover:text-danger ml-0.5"
+                    aria-label={`Quitar ${c.name}`}
+                    // Área de 40 px en el celular sin agrandar la etiqueta: los
+                    // márgenes negativos la dejan crecer hacia afuera.
+                    className="inline-flex items-center justify-center shrink-0 min-h-10 min-w-10 -my-2 -mr-2 sm:min-h-8 sm:min-w-0 sm:m-0 sm:ml-0.5 text-fg-ghost hover:text-danger"
                   >
                     ×
                   </button>
@@ -363,7 +361,7 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
               {isEs ? "Fecha inicio" : "Start date"}
@@ -392,25 +390,27 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
 
       {/* Dictado por voz + IA */}
       <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
-        <div className="flex items-center justify-between">
+        {/* En el celular los botones bajan debajo del título en dos columnas
+            iguales; en una sola fila con el título se salían de la pantalla. */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">
             {isEs ? "Notas / Dictado" : "Notes / Dictation"}
           </h3>
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
             {recording ? (
               <button type="button" onClick={stopRecording}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-danger/15 border border-danger/30 text-danger text-xs font-medium hover:bg-danger/20 transition-all">
+                className="inline-flex items-center justify-center gap-1.5 min-h-11 sm:min-h-8 px-3 py-1.5 rounded-lg bg-danger/15 border border-danger/30 text-danger text-xs font-medium hover:bg-danger/20 transition-all">
                 <span className="w-2 h-2 rounded-full bg-danger animate-pulse" />
                 {isEs ? "Detener" : "Stop"}
               </button>
             ) : (
               <button type="button" onClick={startRecording} disabled={transcribing}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-fill border border-line text-fg-dim text-xs font-medium hover:text-fg hover:border-line-loud disabled:opacity-40 transition-all">
+                className="inline-flex items-center justify-center gap-1.5 min-h-11 sm:min-h-8 px-3 py-1.5 rounded-lg bg-fill border border-line text-fg-dim text-xs font-medium hover:text-fg hover:border-line-loud disabled:opacity-40 transition-all">
                 🎤 {transcribing ? (isEs ? "Transcribiendo..." : "Transcribing...") : (isEs ? "Grabar voz" : "Record voice")}
               </button>
             )}
             <button type="button" onClick={expandWithAI} disabled={expanding || !String(rawNotes ?? "").trim()}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-iris/10 border border-iris/25 text-iris-fg text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+              className="inline-flex items-center justify-center gap-1.5 min-h-11 sm:min-h-8 px-3 py-1.5 rounded-lg text-center bg-iris/10 border border-iris/25 text-iris-fg text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
               {expanding ? <><span className="w-1.5 h-1.5 rounded-full bg-iris animate-pulse" /> {isEs ? "Generando..." : "Generating..."}</> : "✦ " + (isEs ? "Generar proyecto con IA" : "Generate project with AI")}
             </button>
           </div>
@@ -471,7 +471,7 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
                 : "Created together with the project and linked to it. Picking it on an invoice fills in the amount."}
             </p>
           </div>
-          <label className="flex items-center gap-2 cursor-pointer shrink-0">
+          <label className="flex items-center gap-2 min-h-11 sm:min-h-8 cursor-pointer shrink-0">
             <input
               type="checkbox"
               checked={withContract}
@@ -514,7 +514,7 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
                   {isEs ? "Vigente desde" : "Starts"}
@@ -592,20 +592,19 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
         </div>
       )}
 
-      {/* Actions */}
-      <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-fg-faint hover:text-fg-soft text-sm transition-colors">
+      {/* Actions: dos columnas iguales en el celular, la principal a la derecha. */}
+      <ActionRow className="pt-2 sm:justify-end sm:gap-3">
+        <button type="button" onClick={() => router.back()} className={btn.secondary}>
           {isEs ? "Cancelar" : "Cancel"}
         </button>
-        <button type="submit" disabled={saving}
-          className="px-6 py-2.5 bg-brand hover:bg-brand-hi disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg transition-all">
+        <button type="submit" disabled={saving} className={btn.primary}>
           {saving
             ? (isEs ? "Guardando..." : "Saving...")
             : withContract
               ? (isEs ? "Crear proyecto y contrato" : "Create project & contract")
               : (isEs ? "Crear proyecto" : "Create project")}
         </button>
-      </div>
+      </ActionRow>
     </form>
   );
 }

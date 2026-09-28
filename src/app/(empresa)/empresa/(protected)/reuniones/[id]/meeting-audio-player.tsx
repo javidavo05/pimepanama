@@ -163,8 +163,8 @@ export function MeetingAudioPlayer({ meetingId, durationMs, seek }: MeetingAudio
 
   if (!loaded) {
     return (
-      <div className="bg-panel border border-line rounded-2xl px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
-        <div>
+      <div className="bg-panel border border-line rounded-2xl px-4 sm:px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="min-w-0">
           <p className="text-fg-mute text-xs uppercase tracking-wider">Audio de la reunión</p>
           <p className="text-fg-ghost text-xs mt-0.5">
             {error ?? "Escucha la grabación y salta al minuto de cualquier turno."}
@@ -173,7 +173,7 @@ export function MeetingAudioPlayer({ meetingId, durationMs, seek }: MeetingAudio
         <button
           onClick={() => void load()}
           disabled={loading}
-          className="px-4 py-2 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all shrink-0"
+          className="min-h-11 sm:min-h-8 px-4 py-2 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all shrink-0"
         >
           {loading ? "Cargando…" : "▶ Cargar audio"}
         </button>
@@ -184,17 +184,17 @@ export function MeetingAudioPlayer({ meetingId, durationMs, seek }: MeetingAudio
   const total = Math.max(durationMs, track[track.length - 1]?.offsetMs ?? 0);
 
   return (
-    <div className="bg-panel border border-line rounded-2xl px-6 py-4 space-y-3">
+    <div className="bg-panel border border-line rounded-2xl px-4 sm:px-6 py-4 space-y-3">
       <div className="flex items-center gap-4 flex-wrap">
         <button
           onClick={toggle}
-          className="w-10 h-10 rounded-full bg-brand hover:bg-brand-hi text-on-brand flex items-center justify-center transition-all shrink-0"
+          className="w-11 h-11 sm:w-10 sm:h-10 rounded-full bg-brand hover:bg-brand-hi text-on-brand flex items-center justify-center transition-all shrink-0"
           aria-label={playing ? "Pausar" : "Reproducir"}
         >
           {playing ? "❚❚" : "▶"}
         </button>
 
-        <div className="flex-1 min-w-[200px]">
+        <div className="flex-1 min-w-0 basis-48">
           <input
             type="range"
             min={0}

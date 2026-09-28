@@ -8,6 +8,7 @@ import { ClientCombobox } from "@/components/empresa/client-combobox";
 import { PaymentSelector } from "@/components/empresa/payment-selector";
 import { createDocumentAction, createClientAction } from "@/app/(empresa)/empresa/actions";
 import { calcCommission, fmtUSD } from "@/lib/commission";
+import { ActionRow, btn } from "@/components/empresa/page-header";
 
 interface ImportarFormProps {
   clients: Client[];
@@ -126,15 +127,16 @@ export function ImportarCotizacionForm({ clients, paymentMethods }: ImportarForm
         <input ref={fileRef} type="file" accept="application/pdf" className="hidden"
           onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)} />
         {pdfFile ? (
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-brand-fg text-sm font-medium">📄 {pdfFile.name}</span>
-            <button type="button" onClick={() => setPdfFile(null)} className="text-fg-dim hover:text-danger text-xs transition-colors">✕</button>
+          <div className="flex items-center justify-center gap-3 min-w-0">
+            <span className="text-brand-fg text-sm font-medium truncate min-w-0">📄 {pdfFile.name}</span>
+            <button type="button" onClick={() => setPdfFile(null)} aria-label="Quitar PDF"
+              className="inline-flex items-center justify-center shrink-0 min-h-11 min-w-11 sm:min-h-8 sm:min-w-0 text-fg-dim hover:text-danger text-sm sm:text-xs transition-colors">✕</button>
           </div>
         ) : (
           <div>
             <p className="text-fg-dim text-sm mb-2">PDF de la cotización original (opcional)</p>
             <button type="button" onClick={() => fileRef.current?.click()}
-              className="px-4 py-2 bg-fill border border-line rounded-lg text-fg-dim text-sm hover:text-fg-soft transition-all">
+              className="min-h-11 sm:min-h-8 px-4 py-2 bg-fill border border-line rounded-lg text-fg-dim text-sm hover:text-fg-soft transition-all">
               Seleccionar PDF
             </button>
             <p className="text-fg-faint text-xs mt-2">Se sube a Cloudflare R2 y queda guardado en el historial</p>
@@ -145,8 +147,9 @@ export function ImportarCotizacionForm({ clients, paymentMethods }: ImportarForm
       {/* Client */}
       <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
         <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Cliente</h3>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
+        {/* Una columna en el celular: en dos, cada campo quedaba de 38 px. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="min-w-0">
             <ClientCombobox
               clients={clients}
               value={clientName}
@@ -182,7 +185,7 @@ export function ImportarCotizacionForm({ clients, paymentMethods }: ImportarForm
       {/* Meta */}
       <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
         <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Datos de la cotización</h3>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <label className="block text-fg-dim text-xs uppercase tracking-widest mb-1.5">Fecha de emisión</label>
             <input type="date" value={issueDate} onChange={(e) => setIssueDate(e.target.value)} className={inputCls} />
@@ -209,10 +212,11 @@ export function ImportarCotizacionForm({ clients, paymentMethods }: ImportarForm
       {/* Status */}
       <div className="bg-panel border border-line rounded-xl p-5">
         <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-4">Estado final</h3>
-        <div className="flex flex-wrap gap-2">
+        {/* 2×2 de celdas iguales en el celular en vez de filas desparejas. */}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {STATUS_OPTS.map((opt) => (
             <button key={opt.value} type="button" onClick={() => setStatus(opt.value)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
+              className={`min-h-11 sm:min-h-8 px-4 py-2 rounded-lg text-sm font-medium border transition-all ${
                 status === opt.value
                   ? "border-brand/40 bg-brand/10 text-brand-fg"
                   : "border-line text-fg-dim hover:text-fg-dim"
@@ -239,12 +243,13 @@ export function ImportarCotizacionForm({ clients, paymentMethods }: ImportarForm
         </div>
       )}
 
-      <div className="flex justify-end gap-3">
-        <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-fg-dim hover:text-fg-mute text-sm transition-colors">Cancelar</button>
-        <button type="submit" disabled={saving || uploading} className="px-6 py-2.5 bg-brand hover:bg-brand-hi disabled:opacity-50 text-on-brand text-sm font-semibold rounded-lg transition-all">
+      {/* Dos columnas iguales en el celular; la acción principal a la derecha. */}
+      <ActionRow className="sm:justify-end sm:gap-3">
+        <button type="button" onClick={() => router.back()} className={btn.secondary}>Cancelar</button>
+        <button type="submit" disabled={saving || uploading} className={btn.primary}>
           {uploading ? "Subiendo PDF..." : saving ? "Guardando..." : "Importar cotización"}
         </button>
-      </div>
+      </ActionRow>
     </form>
   );
 }

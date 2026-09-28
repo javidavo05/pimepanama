@@ -369,11 +369,12 @@ export function InboxList({
         )}
       </div>
 
-      {/* Account filter pills */}
+      {/* Pastillas de cuentas. En el celular van en una sola fila que se
+          desliza, en vez de tres renglones de pastillas de distinto largo. */}
       {showAccountPills && accounts.length > 0 && (
-        <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-line flex-wrap">
+        <div className="flex items-center gap-2 px-4 py-2.5 border-b border-line overflow-x-auto scrollbar-none">
           <button onClick={() => setSelectedAccount(null)}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs transition-all ${selectedAccount === null ? "bg-fill-2 text-fg font-medium" : "text-fg-dim hover:text-fg-mute hover:bg-fill"}`}>
+            className={`flex items-center gap-1.5 shrink-0 whitespace-nowrap min-h-10 sm:min-h-8 px-3 rounded-lg text-sm sm:text-xs transition-all ${selectedAccount === null ? "bg-fill-2 text-fg font-medium" : "text-fg-dim hover:text-fg-mute hover:bg-fill"}`}>
             Todos
             <span className={`text-[10px] px-1 rounded-full ${selectedAccount === null ? "bg-fill-3 text-fg-mute" : "bg-fill-2 text-fg-dim"}`}>{countAll}</span>
             {unreadAll > 0 && <span className="w-1.5 h-1.5 rounded-full bg-brand" />}
@@ -384,7 +385,7 @@ export function InboxList({
             const active = selectedAccount === acc.id;
             return (
               <button key={acc.id} onClick={() => setSelectedAccount(active ? null : acc.id)}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs transition-all ${active ? acc.activeBg + " font-medium" : "text-fg-dim hover:text-fg-mute hover:bg-fill"}`}>
+                className={`flex items-center gap-1.5 shrink-0 whitespace-nowrap min-h-10 sm:min-h-8 px-3 rounded-lg text-sm sm:text-xs transition-all ${active ? acc.activeBg + " font-medium" : "text-fg-dim hover:text-fg-mute hover:bg-fill"}`}>
                 <span className={`w-2 h-2 rounded-full ${acc.dotColor}`} />
                 <span className={active ? acc.badgeText : ""}>{acc.label}</span>
                 <span className={`text-[10px] px-1 rounded-full ${active ? acc.badgeBg : "bg-fill-2 text-fg-dim"}`}>{cnt}</span>
@@ -573,7 +574,8 @@ export function InboxList({
 
                 {/* Star */}
                 <button onClick={(e) => handleStar(e, email.id, email.isStarred)}
-                  className={`self-center ml-2 flex-none transition-all ${email.isStarred ? "text-warn" : "text-fg-faint opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:text-warn"}`}>
+                  aria-label={email.isStarred ? "Quitar de destacados" : "Destacar"}
+                  className={`self-center flex-none w-10 h-10 inline-flex items-center justify-center rounded-lg transition-all ${email.isStarred ? "text-warn" : "text-fg-faint opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:text-warn"}`}>
                   <svg className="w-4 h-4" fill={email.isStarred ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
                   </svg>

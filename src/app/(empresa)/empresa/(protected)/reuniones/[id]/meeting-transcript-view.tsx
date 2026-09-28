@@ -57,7 +57,7 @@ export function MeetingTranscriptView({ segments, fallback, onSeek }: MeetingTra
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Buscar en la transcripción…"
-          className="flex-1 min-w-[200px] bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
+          className="flex-1 min-w-0 basis-48 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
         />
         <span className="text-fg-ghost text-xs shrink-0">
           {term
@@ -79,11 +79,11 @@ export function MeetingTranscriptView({ segments, fallback, onSeek }: MeetingTra
         <div className="space-y-3 max-h-[70vh] overflow-y-auto">
           {visible.map((turn, i) => (
             <div key={`${turn.start}-${i}`} className="flex gap-3">
-              <div className="w-32 shrink-0 text-right">
+              <div className="w-20 sm:w-32 shrink-0 text-right">
                 <p className="text-brand-fg text-xs font-medium truncate">{turn.speaker}</p>
                 <button
                   onClick={() => onSeek(turn.start)}
-                  className="text-fg-ghost hover:text-brand-fg text-[10px] font-mono transition-colors"
+                  className="inline-flex items-center min-h-11 sm:min-h-8 text-fg-ghost hover:text-brand-fg text-[10px] font-mono transition-colors"
                   title="Escuchar desde aquí"
                 >
                   ▸ {formatTimestamp(turn.start)}

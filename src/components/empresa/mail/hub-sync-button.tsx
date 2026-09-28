@@ -1,14 +1,39 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ActionRow, btn, tile } from "@/components/empresa/page-header";
 
 interface HubSyncButtonProps {
   accounts: { id: string; label: string }[];
+  onCompose: () => void;
 }
 
-export function HubSyncButton({ accounts }: HubSyncButtonProps) {
+const SYNC_ICON =
+  "M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15";
+
+function Spinner() {
+  return <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" aria-hidden />;
+}
+
+function SyncIcon() {
+  return (
+    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+      <path strokeLinecap="round" strokeLinejoin="round" d={SYNC_ICON} />
+    </svg>
+  );
+}
+
+/**
+ * Acciones de la bandeja: Redactar, Sincronizar y «Más». Antes eran hasta diez
+ * botones de tamaños y colores distintos en la cabecera; en el celular ocupaban
+ * media pantalla. Las herramientas de mantenimiento (recuperar enviados,
+ * sincronizar una cuenta, recuperar HTML) viven ahora dentro de «Más».
+ */
+export function HubSyncButton({ accounts, onCompose }: HubSyncButtonProps) {
   const router = useRouter();
+  const [toolsOpen, setToolsOpen] = useState(false);
   const [syncing, setSyncing] = useState<string | null>(null); // accountId being synced
   const [results, setResults] = useState<Record<string, string>>({});
 
@@ -112,82 +137,112 @@ export function HubSyncButton({ accounts }: HubSyncButtonProps) {
     }
   }
 
-  if (accounts.length === 0) return null;
+  const lastResult = Object.entries(results).find(([key, value]) => key !== "backfill" && value)?.[1];
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <button
-        type="button"
-        onClick={backfillSent}
-        disabled={syncing !== null}
-        title="Importar historial de enviados desde el servidor de correo (últimos 90 días)"
-        className="flex items-center gap-2 px-3 py-2 text-xs bg-emerald2/10 border border-emerald2/20 hover:bg-emerald2/15 disabled:opacity-40 text-ok rounded-lg transition-all"
-      >
-        {syncing === "backfill" ? (
-          <span className="w-3 h-3 border border-emerald2/30 border-t-emerald-400 rounded-full animate-spin" />
-        ) : (
-          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+    <div className="relative w-full sm:w-auto">
+      <ActionRow>
+        <button type="button" onClick={onCompose} className={btn.primary}>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
           </svg>
-        )}
-        {results.backfill ? (
-          <span className={results.backfill.startsWith("Error") ? "text-danger" : "text-ok"}>
-            {results.backfill}
-          </span>
-        ) : (
-          "Recuperar enviados"
-        )}
-      </button>
-      {accounts.length > 1 && (
-        <button
-          onClick={syncAll}
-          disabled={syncing !== null}
-          className="flex items-center gap-2 px-3 py-2 text-xs bg-fill border border-line hover:bg-fill-2 disabled:opacity-40 text-fg-dim rounded-lg transition-all"
-        >
-          {syncing ? (
-            <span className="w-3 h-3 border border-line-loud border-t-fg-dim rounded-full animate-spin" />
-          ) : (
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          )}
-          Sincronizar todo
+          Redactar
         </button>
-      )}
-
-      {accounts.map((acc) => (
-        <div key={acc.id} className="flex items-center gap-1">
-          <button
-            onClick={() => syncAccount(acc.id)}
-            disabled={syncing !== null}
-            className="flex items-center gap-2 px-3 py-2 text-xs bg-brand/[0.06] border border-brand/20 hover:bg-brand/[0.12] disabled:opacity-40 text-brand-fg rounded-lg transition-all"
-          >
-            {syncing === acc.id ? (
-              <span className="w-3 h-3 border border-brand/30 border-t-[#1AA7F0] rounded-full animate-spin" />
-            ) : (
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            )}
-            {results[acc.id] ? (
-              <span className={results[acc.id].startsWith("Error") ? "text-danger" : "text-ok"}>
-                {results[acc.id]}
-              </span>
-            ) : (
-              acc.label
-            )}
-          </button>
+        {accounts.length > 0 && (
           <button
             type="button"
-            onClick={() => resyncBodiesOnly(acc.id)}
+            onClick={syncAll}
             disabled={syncing !== null}
-            title="Recuperar HTML de correos guardados como texto"
-            className="px-2 py-2 text-[10px] bg-warn/10 border border-warn/20 hover:bg-warn/15 disabled:opacity-40 text-warn rounded-lg transition-all"
+            title={lastResult || "Bajar los correos nuevos de todas las cuentas"}
+            className={btn.secondary}
           >
-            HTML
+            {syncing && syncing !== "backfill" ? <Spinner /> : <SyncIcon />}
+            {syncing && syncing !== "backfill" ? "Sincronizando" : "Sincronizar"}
           </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setToolsOpen((v) => !v)}
+          aria-expanded={toolsOpen}
+          aria-controls="hub-mail-tools"
+          className={btn.secondary}
+        >
+          Más
+          <svg className={`w-4 h-4 transition-transform ${toolsOpen ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </ActionRow>
+
+      {toolsOpen && (
+        <div
+          id="hub-mail-tools"
+          className="mt-2 sm:absolute sm:right-0 sm:top-full sm:z-30 sm:w-96 bg-pop border border-line-mid rounded-xl shadow-2xl p-3 space-y-3"
+        >
+          <div className="grid grid-cols-2 gap-2">
+            <Link href="/empresa/correos/cuentas" className={tile.neutral}>
+              Cuentas
+            </Link>
+            <Link href="/empresa/correos" className={tile.neutral}>
+              Archivados
+            </Link>
+          </div>
+
+          {accounts.length > 0 && (
+            <>
+              <button
+                type="button"
+                onClick={backfillSent}
+                disabled={syncing !== null}
+                title="Importar historial de enviados desde el servidor de correo (últimos 90 días)"
+                className={`${tile.neutral} w-full`}
+              >
+                {syncing === "backfill" ? <Spinner /> : null}
+                {results.backfill ? (
+                  <span className={results.backfill.startsWith("Error") ? "text-danger" : "text-ok"}>{results.backfill}</span>
+                ) : (
+                  "Recuperar enviados (90 días)"
+                )}
+              </button>
+
+              <div className="space-y-2">
+                <p className="text-fg-faint text-xs uppercase tracking-widest font-medium">Por cuenta</p>
+                {accounts.map((acc) => (
+                  <div key={acc.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                    <button
+                      type="button"
+                      onClick={() => syncAccount(acc.id)}
+                      disabled={syncing !== null}
+                      className={`${tile.neutral} justify-start min-w-0`}
+                    >
+                      {syncing === acc.id ? <Spinner /> : <SyncIcon />}
+                      <span className="truncate">
+                        {results[acc.id] ? (
+                          <span className={results[acc.id].startsWith("Error") ? "text-danger" : "text-ok"}>
+                            {acc.label}: {results[acc.id]}
+                          </span>
+                        ) : (
+                          acc.label
+                        )}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => resyncBodiesOnly(acc.id)}
+                      disabled={syncing !== null}
+                      title="Recuperar HTML de correos guardados como texto"
+                      aria-label={`Recuperar HTML de ${acc.label}`}
+                      className={tile.neutral}
+                    >
+                      HTML
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
-      ))}
+      )}
     </div>
   );
 }

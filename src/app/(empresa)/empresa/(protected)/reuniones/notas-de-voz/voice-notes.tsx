@@ -199,7 +199,7 @@ function NoteCard({ note, onRetry }: { note: Note; onRetry: () => void }) {
   }
 
   return (
-    <article className="bg-panel border border-line rounded-2xl p-6 min-w-0">
+    <article className="bg-panel border border-line rounded-2xl p-4 sm:p-6 min-w-0">
       <header className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <h2 className="text-fg text-sm font-medium break-words">{note.file.name}</h2>
@@ -214,7 +214,7 @@ function NoteCard({ note, onRetry }: { note: Note; onRetry: () => void }) {
         {note.status === "done" && note.result.text && (
           <button
             onClick={() => copy("all", asPlainText(note.result))}
-            className="shrink-0 px-3 py-2 border border-line-mid hover:border-line-loud text-fg-mute hover:text-fg text-xs font-medium rounded-lg transition-colors"
+            className="shrink-0 min-h-11 sm:min-h-8 px-3 py-2 border border-line-mid hover:border-line-loud text-fg-mute hover:text-fg text-xs font-medium rounded-lg transition-colors"
           >
             {copied === "all" ? "Copiado" : "Copiar todo"}
           </button>
@@ -234,7 +234,7 @@ function NoteCard({ note, onRetry }: { note: Note; onRetry: () => void }) {
           <p className="text-danger text-sm">{note.error}</p>
           <button
             onClick={onRetry}
-            className="shrink-0 px-3 py-2 border border-danger/30 text-danger text-xs font-medium rounded-lg hover:bg-danger/10 transition-colors"
+            className="shrink-0 min-h-11 sm:min-h-8 px-3 py-2 border border-danger/30 text-danger text-xs font-medium rounded-lg hover:bg-danger/10 transition-colors"
           >
             Reintentar
           </button>
@@ -283,7 +283,7 @@ function NoteCard({ note, onRetry }: { note: Note; onRetry: () => void }) {
               <h3 className="text-fg-mute text-xs uppercase tracking-wider">Transcripción</h3>
               <button
                 onClick={() => copy("text", note.result.text)}
-                className="text-fg-faint hover:text-fg text-xs font-medium transition-colors"
+                className="inline-flex items-center min-h-11 sm:min-h-8 -my-3 sm:my-0 text-fg-faint hover:text-fg text-xs font-medium transition-colors"
               >
                 {copied === "text" ? "Copiado" : "Copiar texto"}
               </button>
@@ -297,7 +297,7 @@ function NoteCard({ note, onRetry }: { note: Note; onRetry: () => void }) {
             <div>
               <button
                 onClick={() => setShowDetails((v) => !v)}
-                className="text-fg-faint hover:text-fg-dim text-xs transition-colors"
+                className="inline-flex items-center min-h-11 sm:min-h-8 text-left text-fg-faint hover:text-fg-dim text-xs transition-colors"
               >
                 {showDetails ? "Ocultar" : "Ver"} {note.result.corrections.length} corrección
                 {note.result.corrections.length !== 1 ? "es" : ""} de vocabulario

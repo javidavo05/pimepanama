@@ -142,18 +142,18 @@ export function RepoPanel({ projectId }: { projectId: string }) {
             No hay token de GitHub guardado. Sin él solo se pueden leer repositorios públicos.
           </p>
           {showToken ? (
-            <div className="flex gap-2 flex-wrap">
+            <div className="grid gap-2 sm:flex sm:flex-wrap">
               <input
                 type="password"
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 placeholder="ghp_… (token con lectura de repositorios)"
-                className="flex-1 min-w-[220px] bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
+                className="min-w-0 sm:flex-1 sm:min-w-[220px] bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
               />
               <button
                 onClick={() => void saveToken()}
                 disabled={busy !== null || !token.trim()}
-                className="px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
+                className="min-h-11 sm:min-h-8 px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
               >
                 {busy === "token" ? "Comprobando…" : "Guardar token"}
               </button>
@@ -161,7 +161,7 @@ export function RepoPanel({ projectId }: { projectId: string }) {
           ) : (
             <button
               onClick={() => setShowToken(true)}
-              className="text-brand-fg hover:text-brand-hi text-xs transition-colors"
+              className="inline-flex items-center min-h-11 sm:min-h-8 text-brand-fg hover:text-brand-hi text-xs transition-colors"
             >
               + Añadir token de GitHub
             </button>
@@ -215,41 +215,42 @@ export function RepoPanel({ projectId }: { projectId: string }) {
             </p>
           )}
 
-          <div className="flex flex-wrap gap-2 pt-1">
+          {/* En el celular, dos columnas iguales; desde tablet, botones compactos. */}
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap pt-1">
             <button
               onClick={() => void connect()}
               disabled={busy !== null}
-              className="px-3 py-1.5 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all"
+              className="min-h-11 sm:min-h-8 min-w-0 px-3 py-1.5 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all"
             >
               {busy === "connect" ? "Leyendo…" : "↻ Volver a leer el código"}
             </button>
             <button
               onClick={() => void disconnect()}
               disabled={busy !== null}
-              className="px-3 py-1.5 bg-fill hover:bg-danger/10 disabled:opacity-40 border border-line hover:border-danger/25 text-fg-ghost hover:text-danger text-xs rounded-lg transition-all"
+              className="min-h-11 sm:min-h-8 min-w-0 px-3 py-1.5 bg-fill hover:bg-danger/10 disabled:opacity-40 border border-line hover:border-danger/25 text-fg-ghost hover:text-danger text-xs rounded-lg transition-all"
             >
               Desconectar
             </button>
           </div>
         </div>
       ) : (
-        <div className="flex gap-2 flex-wrap">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="javidavo05/pimepanama o la URL de GitHub"
-            className="flex-1 min-w-[220px] bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
+            className="col-span-2 min-w-0 sm:flex-1 sm:min-w-[220px] bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
           />
           <input
             value={branch}
             onChange={(e) => setBranch(e.target.value)}
             placeholder="rama (opcional)"
-            className="w-32 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
+            className="min-w-0 sm:w-32 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
           />
           <button
             onClick={() => void connect()}
             disabled={busy !== null || !input.trim()}
-            className="px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
+            className="min-h-11 sm:min-h-8 px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
           >
             {busy === "connect" ? "Leyendo…" : "Conectar"}
           </button>

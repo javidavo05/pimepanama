@@ -43,7 +43,7 @@ export function DeleteMeetingButton({ id, title }: { id: string; title: string }
       disabled={busy}
       title={error ? "No se pudo borrar" : "Borrar reunión"}
       aria-label={`Borrar ${title}`}
-      className={`absolute right-12 top-5 z-10 w-7 h-7 rounded-lg border flex items-center justify-center text-xs transition-all ${
+      className={`shrink-0 mt-3 mr-3 sm:mt-5 sm:mr-5 w-10 h-10 rounded-lg border flex items-center justify-center text-xs transition-all ${
         error
           ? "border-danger/30 text-danger"
           : "border-line text-fg-ghost hover:text-danger hover:border-danger/25 hover:bg-danger/10"

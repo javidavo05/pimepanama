@@ -16,6 +16,7 @@ import { DocumentAuditHistory } from "@/components/empresa/document-audit-histor
 import { computeQuoteBalance } from "@/lib/quote-balance";
 import { QuoteBalanceBanner } from "@/components/empresa/quote-balance-banner";
 import { FacturaBuilder } from "../nueva/factura-builder";
+import { ActionRow, btn } from "@/components/empresa/page-header";
 
 function money(currency: string, n: number) {
   return `${currency} ${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -112,7 +113,7 @@ export default async function FacturaDetailPage({
         <div className="flex items-center gap-3">
           <Link
             href={`/empresa/facturas/${doc.id}`}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-fill hover:bg-fill-2 border border-line text-fg-dim hover:text-fg text-sm transition-all"
+            className="inline-flex items-center gap-2 min-h-11 sm:min-h-8 px-3 rounded-lg bg-fill hover:bg-fill-2 border border-line text-fg-dim hover:text-fg text-sm transition-all"
           >
             ← Volver a la factura
           </Link>
@@ -135,13 +136,21 @@ export default async function FacturaDetailPage({
     <div className="max-w-3xl mx-auto space-y-5 pb-10">
       {/* Barra de acciones — todo lo importante arriba y siempre a la vista */}
       <div className="sticky top-16 md:top-4 z-30 bg-pop/95 backdrop-blur-md border border-line rounded-xl px-4 py-3 shadow-lg shadow-black/40">
-        <div className="flex items-center gap-3 flex-wrap">
-          <Link href="/empresa/facturas" className="text-fg-faint hover:text-fg-soft text-sm transition-colors">
-            ← Facturas
-          </Link>
-          <h1 className="text-fg text-lg font-semibold tracking-tight font-mono">{doc.number ?? "Factura"}</h1>
-
-          <InvoiceStatusControl documentId={doc.id} currentStatus={doc.status} />
+        {/* En el celular: identidad de la factura arriba y las acciones debajo
+            en columnas iguales; desde tablet, todo en una sola fila. */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="flex items-center gap-3 min-w-0">
+            <Link
+              href="/empresa/facturas"
+              className="inline-flex items-center min-h-11 sm:min-h-8 shrink-0 text-fg-faint hover:text-fg-soft text-sm transition-colors"
+            >
+              ← Facturas
+            </Link>
+            <h1 className="text-fg text-lg font-semibold tracking-tight font-mono truncate min-w-0">{doc.number ?? "Factura"}</h1>
+            <div className="ml-auto sm:ml-0 shrink-0">
+              <InvoiceStatusControl documentId={doc.id} currentStatus={doc.status} />
+            </div>
+          </div>
 
           {canCollect && (
             <CollectRow
@@ -154,16 +163,12 @@ export default async function FacturaDetailPage({
             />
           )}
 
-          <div className="flex items-center gap-2 ml-auto">
-            <Link
-              href={`/empresa/facturas/${doc.id}?editar=1`}
-              className="px-3 py-2 rounded-lg bg-fill hover:bg-fill-2 border border-line text-fg-dim hover:text-fg text-sm transition-all"
-            >
+          <ActionRow className="sm:ml-auto">
+            <Link href={`/empresa/facturas/${doc.id}?editar=1`} className={btn.secondary}>
               ✎ Editar
             </Link>
             <PdfDownloadButton documentId={doc.id} filename={`${doc.number ?? "factura"}.pdf`} />
-          </div>
-
+          </ActionRow>
         </div>
       </div>
 
@@ -323,7 +328,7 @@ export default async function FacturaDetailPage({
               />
             )}
             {!doc.leadId && (
-              <div className="bg-fill border border-line rounded-xl p-4 flex items-center justify-between gap-4">
+              <div className="bg-fill border border-line rounded-xl p-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
                 <p className="text-fg-dim text-xs">Sin lead vinculado — útil para el historial del pipeline de CRM.</p>
                 <CreateRetroactiveLeadButton documentId={doc.id} />
               </div>

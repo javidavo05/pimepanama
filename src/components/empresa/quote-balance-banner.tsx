@@ -30,7 +30,7 @@ export function QuoteBalanceBanner({ balance, quoteNumber, invoiceNumber }: Quot
       </div>
       <Link
         href="/empresa/cuentas-por-cobrar"
-        className="shrink-0 px-3 py-2 rounded-lg bg-warn/10 border border-warn/25 text-warn-soft text-xs font-medium hover:bg-warn/15 transition-all text-center"
+        className="shrink-0 inline-flex items-center justify-center min-h-11 sm:min-h-8 px-3 py-2 rounded-lg bg-warn/10 border border-warn/25 text-warn-soft text-xs font-medium hover:bg-warn/15 transition-all text-center"
       >
         Ver en cuentas por cobrar →
       </Link>

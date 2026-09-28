@@ -82,14 +82,15 @@ export function MeetingAskPanel({ meetingId, hasTranscript, onSeek }: MeetingAsk
         dice en vez de completarlo.
       </p>
 
+      {/* En el celular, una sugerencia por fila a lo ancho, todas iguales. */}
       {history.length === 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="grid gap-2 sm:flex sm:flex-wrap">
           {SUGGESTIONS.map((s) => (
             <button
               key={s}
               onClick={() => void ask(s)}
               disabled={busy}
-              className="px-3 py-1.5 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-dim text-xs rounded-lg transition-all"
+              className="min-h-11 sm:min-h-8 px-3 py-1.5 text-left sm:text-center bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-dim text-xs rounded-lg transition-all"
             >
               {s}
             </button>
@@ -108,7 +109,7 @@ export function MeetingAskPanel({ meetingId, hasTranscript, onSeek }: MeetingAsk
                   <div key={j} className="text-xs">
                     <button
                       onClick={() => onSeek(c.startMs)}
-                      className="text-brand-fg hover:text-brand-fg font-mono transition-colors"
+                      className="inline-flex items-center min-h-11 sm:min-h-8 text-brand-fg hover:text-brand-fg font-mono transition-colors"
                       title="Escuchar este momento"
                     >
                       ▸ {formatTimestamp(c.startMs)}
@@ -131,12 +132,12 @@ export function MeetingAskPanel({ meetingId, hasTranscript, onSeek }: MeetingAsk
             if (e.key === "Enter") void ask(question);
           }}
           placeholder="¿Qué quieres saber de esta reunión?"
-          className="flex-1 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
+          className="flex-1 min-w-0 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
         />
         <button
           onClick={() => void ask(question)}
           disabled={busy || !question.trim()}
-          className="px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all shrink-0"
+          className="min-h-11 sm:min-h-8 px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all shrink-0"
         >
           {busy ? "Buscando…" : "Preguntar"}
         </button>

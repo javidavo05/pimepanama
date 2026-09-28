@@ -69,13 +69,13 @@ export function PaymentSelector({
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 grid-fill-2-3">
         {methods.map((m) => (
           <button
             key={m.id}
             type="button"
             onClick={() => handleClick(m.id)}
-            className={`px-3 py-2.5 rounded-lg text-sm text-left transition-all border ${
+            className={`min-h-11 px-3 py-2.5 rounded-lg text-sm text-left transition-all border ${
               isSelected(m.id)
                 ? "bg-brand/10 border-brand/40 text-brand-fg"
                 : "border-line text-fg-faint hover:text-fg-soft hover:border-line-loud"

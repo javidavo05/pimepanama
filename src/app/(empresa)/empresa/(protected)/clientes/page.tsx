@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { computeClientStats } from "@/lib/client-stats";
+import { PageHeader, btn } from "@/components/empresa/page-header";
 
 export const metadata = { title: "Clientes — Pime Suite" };
 
@@ -28,23 +29,22 @@ export default async function ClientesPage() {
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-fg text-2xl font-semibold tracking-tight">Clientes</h1>
-          <p className="text-fg-dim text-sm mt-1">
+      <PageHeader
+        title="Clientes"
+        description={
+          <>
             {clients.length} clientes · Ingresos (facturas pagadas):{" "}
             <span className="text-brand-fg font-mono">
               ${totalGross.toLocaleString("en-US", { minimumFractionDigits: 2 })}
             </span>
-          </p>
-        </div>
-        <Link
-          href="/empresa/cotizaciones/importar"
-          className="px-4 py-2.5 bg-fill hover:bg-fill-2 border border-line text-fg-mute text-sm rounded-lg transition-all"
-        >
-          ↑ Importar cotización antigua
-        </Link>
-      </div>
+          </>
+        }
+        actions={
+          <Link href="/empresa/cotizaciones/importar" className={btn.secondary}>
+            ↑ Importar cotización antigua
+          </Link>
+        }
+      />
 
       {clients.length === 0 ? (
         <div className="bg-panel border border-line rounded-2xl p-16 text-center">

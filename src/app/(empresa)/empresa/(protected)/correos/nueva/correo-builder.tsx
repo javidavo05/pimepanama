@@ -7,6 +7,7 @@ import { createDocumentAction } from "@/app/(empresa)/empresa/actions";
 import { LanguageToggle } from "@/components/empresa/document-builder/language-toggle";
 import { AiEnhanceButton } from "@/components/empresa/document-builder/ai-enhance-button";
 import { DraftPdfPreview } from "@/components/empresa/document-builder/draft-pdf-preview";
+import { PageHeader, ActionRow, btn } from "@/components/empresa/page-header";
 import type { DocumentFormValues } from "@/components/empresa/document-builder/line-items-editor";
 
 const EMAIL_TYPES_ES = [
@@ -96,30 +97,28 @@ export function CorreoBuilder() {
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-fg text-2xl font-semibold tracking-tight">
-            {isEs ? "Nuevo Correo" : "New Email"}
-          </h1>
-          <p className="text-fg-dim text-sm mt-1">
-            {isEs ? "Redacción corporativa asistida por IA" : "AI-assisted corporate email"}
-          </p>
-        </div>
-        <LanguageToggle value={language} onChange={(l) => setValue("language", l)} />
-      </div>
+      {/* En el celular el selector de idioma baja debajo del título, a lo ancho. */}
+      <PageHeader
+        title={isEs ? "Nuevo Correo" : "New Email"}
+        description={isEs ? "Redacción corporativa asistida por IA" : "AI-assisted corporate email"}
+        actions={<LanguageToggle value={language} onChange={(l) => setValue("language", l)} />}
+      />
 
       {/* Email type */}
       <div className="bg-panel border border-line rounded-xl p-5">
         <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-3">
           {isEs ? "Tipo de correo" : "Email type"}
         </h3>
-        <div className="flex flex-wrap gap-2">
+        {/* Cuadrícula de columnas iguales (dos en el celular, cuatro desde
+            tablet); si la cantidad es impar, el último ocupa dos columnas en vez
+            de quedar suelto. */}
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {emailTypes.map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => setEmailType(t)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+              className={`min-h-11 sm:min-h-8 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all [&:nth-child(odd):last-child]:col-span-2 ${
                 emailType === t
                   ? "bg-sand/10 border-sand/30 text-sand-fg"
                   : "border-line text-fg-faint hover:text-fg-mute hover:border-line-loud"
@@ -136,19 +135,21 @@ export function CorreoBuilder() {
         <h3 className="text-sand-fg text-xs uppercase tracking-widest font-medium mb-3">
           ✦ {isEs ? "Componer con IA" : "Compose with AI"}
         </h3>
-        <div className="flex gap-3">
+        {/* En el celular: la instrucción a lo ancho y debajo tono y "Generar" en
+            dos columnas iguales. En una sola fila se salía 125 px por la derecha. */}
+        <div className="grid grid-cols-2 gap-3 sm:flex">
           <input
             value={intent}
             onChange={(e) => setIntent(e.target.value)}
             placeholder={isEs
               ? "Ej: seguimiento después de propuesta enviada la semana pasada"
               : "E.g.: follow-up after proposal sent last week"}
-            className="flex-1 bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 transition-all"
+            className="col-span-2 min-w-0 sm:flex-1 bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 transition-all"
           />
           <select
             {...register("tone")}
             aria-label={isEs ? "Tono" : "Tone"}
-            className="bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-sand/40 transition-all"
+            className="min-w-0 w-full sm:w-auto bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-sand/40 transition-all"
           >
             <option value="formal">{isEs ? "Formal" : "Formal"}</option>
             <option value="friendly">{isEs ? "Amigable" : "Friendly"}</option>
@@ -157,7 +158,7 @@ export function CorreoBuilder() {
             type="button"
             onClick={composeWithAI}
             disabled={composing || !intent.trim()}
-            className="px-4 py-2.5 bg-sand hover:bg-sand-lt disabled:opacity-40 text-on-accent text-sm font-semibold rounded-lg transition-all whitespace-nowrap"
+            className={btn.accent}
           >
             {composing ? (isEs ? "Componiendo..." : "Composing...") : (isEs ? "Generar" : "Generate")}
           </button>
@@ -166,14 +167,15 @@ export function CorreoBuilder() {
 
       {/* Recipients */}
       <div className="bg-panel border border-line rounded-xl p-5">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
+        {/* Una columna en el celular: en dos, cada campo quedaba de 38 px. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="min-w-0">
             <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">
               {isEs ? "Para" : "To"}
             </label>
             <input {...register("toEmail")} type="email" placeholder="destinatario@empresa.com" className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-sand/40 transition-all" />
           </div>
-          <div>
+          <div className="min-w-0">
             <label className="block text-fg-faint text-xs uppercase tracking-widest mb-1.5">
               {isEs ? "Copia (CC)" : "Copy (CC)"}
             </label>
@@ -211,14 +213,15 @@ export function CorreoBuilder() {
 
       <DraftPdfPreview endpoint="/api/empresa/documents/preview" payload={previewPayload} title={isEs ? "Vista previa del documento" : "Document preview"} />
 
-      <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-fg-faint hover:text-fg-soft text-sm transition-colors">
+      {/* Dos columnas iguales en el celular; la acción principal a la derecha. */}
+      <ActionRow className="pt-2 sm:justify-end sm:gap-3">
+        <button type="button" onClick={() => router.back()} className={btn.secondary}>
           {isEs ? "Cancelar" : "Cancel"}
         </button>
-        <button type="submit" disabled={saving} className="px-6 py-2.5 bg-sand hover:bg-sand-lt disabled:opacity-50 text-on-accent text-sm font-semibold rounded-lg transition-all">
+        <button type="submit" disabled={saving} className={btn.accent}>
           {saving ? (isEs ? "Guardando..." : "Saving...") : (isEs ? "Guardar correo" : "Save email")}
         </button>
-      </div>
+      </ActionRow>
     </form>
   );
 }

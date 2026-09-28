@@ -7,6 +7,7 @@ import { createDocumentAction, createClientAction, updateDocumentAction } from "
 import { LanguageToggle } from "@/components/empresa/document-builder/language-toggle";
 import { AiEnhanceButton } from "@/components/empresa/document-builder/ai-enhance-button";
 import { DraftPdfPreview } from "@/components/empresa/document-builder/draft-pdf-preview";
+import { PageHeader, ActionRow, btn } from "@/components/empresa/page-header";
 import { ClientCombobox } from "@/components/empresa/client-combobox";
 import {
   clientAttendeesFromProfile,
@@ -225,29 +226,24 @@ export function BitacoraBuilder({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-fg text-2xl font-semibold tracking-tight">
-            {mode === "edit"
-              ? isEs
-                ? "Editar Bitácora"
-                : "Edit Log"
-              : isEs
-                ? "Nueva Bitácora"
-                : "New Log"}
-          </h1>
-          <p className="text-fg-dim text-sm mt-1">
-            {mode === "edit" && initialDocument?.number ? (
-              <span className="font-mono">{initialDocument.number}</span>
-            ) : isEs ? (
-              "Registro de reunión o actividad"
-            ) : (
-              "Meeting or activity log"
-            )}
-          </p>
-        </div>
-        <LanguageToggle value={language} onChange={(l) => setValue("language", l)} />
-      </div>
+      {/* En el celular el selector de idioma baja debajo del título, a lo ancho. */}
+      <PageHeader
+        title={mode === "edit"
+          ? isEs
+            ? "Editar Bitácora"
+            : "Edit Log"
+          : isEs
+            ? "Nueva Bitácora"
+            : "New Log"}
+        description={mode === "edit" && initialDocument?.number ? (
+          <span className="font-mono">{initialDocument.number}</span>
+        ) : isEs ? (
+          "Registro de reunión o actividad"
+        ) : (
+          "Meeting or activity log"
+        )}
+        actions={<LanguageToggle value={language} onChange={(l) => setValue("language", l)} />}
+      />
 
       {/* Meeting info */}
       <div className="bg-panel border border-line rounded-xl p-5">
@@ -267,7 +263,8 @@ export function BitacoraBuilder({
             </label>
             <input {...register("meetingDate")} type="date" className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg text-sm focus:outline-none focus:border-sand/40 transition-all" />
           </div>
-          <div>
+          {/* Tercer campo de una grilla de dos: a lo ancho, para no quedar suelto. */}
+          <div className="sm:col-span-2">
             <ClientCombobox
               clients={clients}
               value={watch("clientName") ?? ""}
@@ -347,7 +344,7 @@ export function BitacoraBuilder({
               type="button"
               onClick={recording ? stopRecording : startRecording}
               disabled={transcribing}
-              className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
+              className={`inline-flex items-center justify-center gap-2 min-h-11 sm:min-h-8 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all ${
                 recording
                   ? "bg-danger/10 border-danger/30 text-danger animate-pulse"
                   : "bg-fill border-line text-fg-dim hover:text-fg-soft"
@@ -373,7 +370,7 @@ export function BitacoraBuilder({
             type="button"
             onClick={restructureWithAI}
             disabled={!rawNotes?.trim() || restructuring}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-sand/10 border border-sand/20 text-sand-fg text-xs font-semibold rounded-lg hover:bg-sand/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 min-h-11 sm:min-h-8 px-4 py-2 bg-sand/10 border border-sand/20 text-sand-fg text-xs font-semibold rounded-lg hover:bg-sand/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
             {restructuring ? (
               <><span className="w-3 h-3 border-2 border-sand/30 border-t-[#C8A96E] rounded-full animate-spin" /> {isEs ? "Restructurando..." : "Restructuring..."}</>
@@ -418,11 +415,12 @@ export function BitacoraBuilder({
 
       <DraftPdfPreview endpoint="/api/empresa/documents/preview" payload={previewPayload} title={isEs ? "Vista previa del documento" : "Document preview"} />
 
-      <div className="flex justify-end gap-3 pt-2">
-        <button type="button" onClick={() => router.back()} className="px-4 py-2.5 text-fg-faint hover:text-fg-soft text-sm transition-colors">
+      {/* Dos columnas iguales en el celular; la acción principal a la derecha. */}
+      <ActionRow className="pt-2 sm:justify-end sm:gap-3">
+        <button type="button" onClick={() => router.back()} className={btn.secondary}>
           {isEs ? "Cancelar" : "Cancel"}
         </button>
-        <button type="submit" disabled={saving} className="px-6 py-2.5 bg-sand hover:bg-sand-lt disabled:opacity-50 text-on-accent text-sm font-semibold rounded-lg transition-all">
+        <button type="submit" disabled={saving} className={btn.accent}>
           {saving
             ? isEs
               ? "Guardando..."
@@ -435,7 +433,7 @@ export function BitacoraBuilder({
                 ? "Crear bitácora"
                 : "Create log"}
         </button>
-      </div>
+      </ActionRow>
     </form>
   );
 }

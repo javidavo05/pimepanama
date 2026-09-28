@@ -235,11 +235,12 @@ export function ContractsPanel({
         />
       </div>
 
-      <div className="flex justify-end gap-3">
+      {/* En el celular, Cancelar y Crear en columnas iguales a lo ancho. */}
+      <div className="grid grid-cols-2 gap-2 sm:flex sm:justify-end sm:gap-3">
         <button
           type="button"
           onClick={() => { setCreating(false); setEditingId(null); setError(null); }}
-          className="text-fg-faint hover:text-fg-soft text-xs transition-colors"
+          className="min-h-11 sm:min-h-8 rounded-lg border border-line sm:border-0 text-fg-faint hover:text-fg-soft text-sm sm:text-xs transition-colors"
         >
           Cancelar
         </button>
@@ -247,7 +248,7 @@ export function ContractsPanel({
           type="button"
           onClick={submitDraft}
           disabled={pending}
-          className="px-4 py-2 rounded-lg bg-brand/10 border border-brand/25 text-brand-fg text-xs font-medium hover:bg-brand/15 disabled:opacity-40 transition-all"
+          className="min-h-11 sm:min-h-8 min-w-0 px-4 py-2 rounded-lg bg-brand/10 border border-brand/25 text-brand-fg text-sm sm:text-xs font-medium hover:bg-brand/15 disabled:opacity-40 transition-all"
         >
           {pending ? "Guardando..." : editingId ? "Guardar contrato" : "Crear contrato"}
         </button>
@@ -257,12 +258,12 @@ export function ContractsPanel({
 
   return (
     <div className="bg-panel border border-line rounded-xl overflow-hidden">
-      <div className="px-5 py-4 border-b border-line flex items-center justify-between">
+      <div className="px-5 py-2 sm:py-4 border-b border-line flex items-center justify-between gap-3">
         <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Contratos</h3>
         <button
           type="button"
           onClick={startCreate}
-          className="text-brand-fg text-[10px] hover:text-brand-fg transition-colors"
+          className="inline-flex items-center min-h-11 sm:min-h-8 px-2 sm:px-0 text-xs sm:text-[10px] text-brand-fg hover:text-brand-fg transition-colors"
         >
           + agregar
         </button>
@@ -283,10 +284,10 @@ export function ContractsPanel({
               <div key={c.id} className="px-5 py-3 group">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                       <Link
                         href={`/empresa/contratos/${c.id}`}
-                        className="text-fg-soft text-sm hover:text-brand-fg transition-colors truncate"
+                        className="text-fg-soft text-sm hover:text-brand-fg transition-colors truncate min-w-0"
                       >
                         {c.title}
                       </Link>
@@ -297,7 +298,7 @@ export function ContractsPanel({
                         <span className="text-ok text-[10px] shrink-0">✓ firmado</span>
                       )}
                     </div>
-                    <div className="flex items-center gap-3 mt-1">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1">
                       {c.value != null && (
                         <span className="text-sand-fg text-xs font-mono">${fmtUSD(c.value)}</span>
                       )}
@@ -314,17 +315,17 @@ export function ContractsPanel({
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-1 sm:gap-2 shrink-0 -my-2 sm:my-0">
                     <button
                       type="button"
                       onClick={() => startEdit(c)}
-                      className="text-fg-faint hover:text-brand-fg text-[10px] transition-colors"
+                      className="inline-flex items-center min-h-11 sm:min-h-8 px-2 sm:px-0 text-xs sm:text-[10px] text-fg-faint hover:text-brand-fg transition-colors"
                     >
                       editar
                     </button>
                     <Link
                       href={`/empresa/contratos/${c.id}`}
-                      className="text-fg-faint hover:text-fg-soft text-[10px] transition-colors"
+                      className="inline-flex items-center min-h-11 sm:min-h-8 px-2 sm:px-0 text-xs sm:text-[10px] text-fg-faint hover:text-fg-soft transition-colors"
                     >
                       abrir →
                     </Link>
@@ -332,20 +333,20 @@ export function ContractsPanel({
                 </div>
 
                 {confirmDeleteId === c.id ? (
-                  <div className="flex items-center gap-2 mt-2">
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
                     <span className="text-fg-dim text-[11px]">¿Eliminar este contrato?</span>
                     <button
                       type="button"
                       onClick={() => run(() => deleteContractAction(c.id), () => setConfirmDeleteId(null))}
                       disabled={pending}
-                      className="text-danger text-[10px] hover:underline disabled:opacity-40"
+                      className="inline-flex items-center min-h-11 sm:min-h-8 px-2 sm:px-0 text-xs sm:text-[10px] text-danger hover:underline disabled:opacity-40"
                     >
                       sí, eliminar
                     </button>
                     <button
                       type="button"
                       onClick={() => setConfirmDeleteId(null)}
-                      className="text-fg-faint text-[10px] hover:text-fg-mute"
+                      className="inline-flex items-center min-h-11 sm:min-h-8 px-2 sm:px-0 text-xs sm:text-[10px] text-fg-faint hover:text-fg-mute"
                     >
                       cancelar
                     </button>
@@ -354,7 +355,8 @@ export function ContractsPanel({
                   <button
                     type="button"
                     onClick={() => setConfirmDeleteId(c.id)}
-                    className="text-fg-ghost hover:text-danger text-[10px] mt-1 transition-colors opacity-0 group-hover:opacity-100"
+                    // Sin hover en el celular: ahí queda visible y con alto de dedo.
+                    className="inline-flex items-center min-h-11 sm:min-h-8 text-xs sm:text-[10px] text-fg-ghost hover:text-danger sm:mt-1 transition-colors sm:opacity-0 sm:group-hover:opacity-100"
                   >
                     eliminar
                   </button>

@@ -9,11 +9,12 @@ import { priorityRank, LEAD_PRIORITIES } from "@/components/empresa/lead-priorit
 import { LEAD_STATUSES } from "@/components/empresa/lead-status";
 import { LeadsTable, LeadsCardList } from "./leads-table";
 import { LeadsKanban } from "./leads-kanban";
+import { seg } from "@/components/empresa/page-header";
 
 type Vista = "tabla" | "tablero";
 
 const SELECT =
-  "rounded-lg border border-line bg-panel px-3 py-2 text-sm text-fg-mute outline-none transition-colors hover:border-line-mid focus:border-brand/50";
+  "field-select w-full min-w-0 min-h-11 sm:min-h-10 lg:w-auto rounded-lg border border-line bg-panel pl-3 pr-8 py-2 text-sm text-fg-mute outline-none transition-colors hover:border-line-mid focus:border-brand/50";
 
 export function LeadsView({ leads: initialLeads }: { leads: SerializedLead[] }) {
   const [leads, setLeads] = useState(initialLeads);
@@ -99,14 +100,16 @@ export function LeadsView({ leads: initialLeads }: { leads: SerializedLead[] }) 
       )}
 
       {/* Barra de control */}
-      <div className="flex flex-wrap items-center gap-2">
+      {/* En el celular: buscador a lo ancho, los dos filtros en columnas iguales
+          y el selector de vista debajo, también a lo ancho. */}
+      <div className="grid grid-cols-2 gap-2 lg:flex lg:flex-wrap lg:items-center">
         <input
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Buscar por nombre, empresa, correo o teléfono"
           aria-label="Buscar prospectos"
-          className="min-w-[220px] flex-1 rounded-lg border border-line bg-panel px-4 py-2 text-sm text-fg placeholder-fg-trace outline-none transition-colors focus:border-brand/50"
+          className="col-span-2 min-h-11 sm:min-h-10 lg:min-w-[220px] lg:flex-1 rounded-lg border border-line bg-panel px-4 py-2 text-sm text-fg placeholder-fg-trace outline-none transition-colors focus:border-brand/50"
         />
 
         <select
@@ -115,7 +118,7 @@ export function LeadsView({ leads: initialLeads }: { leads: SerializedLead[] }) 
           aria-label="Filtrar por prioridad"
           className={SELECT}
         >
-          <option value="TODAS">Toda prioridad{altas ? ` · ${altas} alta${altas > 1 ? "s" : ""}` : ""}</option>
+          <option value="TODAS">Toda prioridad</option>
           {LEAD_PRIORITIES.map((p) => (
             <option key={p.value} value={p.value}>
               Prioridad {p.label.toLowerCase()}
@@ -137,15 +140,14 @@ export function LeadsView({ leads: initialLeads }: { leads: SerializedLead[] }) 
           ))}
         </select>
 
-        <div className="flex rounded-lg border border-line p-1">
+        <div className={`${seg.group} col-span-2`} aria-label="Vista">
           {(["tabla", "tablero"] as Vista[]).map((v) => (
             <button
               key={v}
               type="button"
+              aria-pressed={vista === v}
               onClick={() => setVista(v)}
-              className={`rounded px-3 py-1 text-xs font-medium capitalize transition-colors ${
-                vista === v ? "bg-fill-2 text-fg-soft" : "text-fg-faint hover:text-fg-mute"
-              }`}
+              className={`${seg.item(vista === v)} capitalize`}
             >
               {v}
             </button>
@@ -157,6 +159,8 @@ export function LeadsView({ leads: initialLeads }: { leads: SerializedLead[] }) 
         {filtrados.length === leads.length
           ? `${leads.length} prospecto${leads.length === 1 ? "" : "s"}`
           : `${filtrados.length} de ${leads.length}`}
+        {/* El conteo de prioridad alta vivía dentro del select y no entraba en el celular. */}
+        {altas > 0 && ` · ${altas} de prioridad alta`}
       </p>
 
       {filtrados.length === 0 ? (
@@ -178,10 +182,12 @@ export function LeadsView({ leads: initialLeads }: { leads: SerializedLead[] }) 
         <LeadsKanban leads={filtrados} onStatusChange={handleStatusChange} />
       ) : (
         <>
-          <div className="hidden md:block">
+          {/* La tabla necesita 880 px más el menú lateral: debajo de xl
+              (plegables abiertos, teléfonos en horizontal) van tarjetas. */}
+          <div className="hidden xl:block">
             <LeadsTable leads={filtrados} onStatusChange={handleStatusChange} savingId={savingId} />
           </div>
-          <div className="md:hidden">
+          <div className="xl:hidden">
             <LeadsCardList leads={filtrados} />
           </div>
         </>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { btn } from "@/components/empresa/page-header";
 
 interface PdfDownloadButtonProps {
   documentId?: string;
@@ -59,7 +60,9 @@ export function PdfDownloadButton({
       type="button"
       onClick={download}
       disabled={loading}
-      className="inline-flex items-center gap-2 px-4 py-2.5 bg-sand hover:bg-sand-lt disabled:opacity-50 text-on-accent text-sm font-semibold rounded-lg transition-all"
+      // Mismo botón que el resto de la suite: 44 px en el celular y a lo ancho de
+      // su columna cuando va dentro de un ActionRow.
+      className={btn.accent}
     >
       {loading ? (
         <>

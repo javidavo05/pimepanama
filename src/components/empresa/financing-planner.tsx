@@ -49,7 +49,7 @@ export function FinancingPlanner({
             {hint ?? "Divide el pago en un abono inicial más cuotas. Cada cuota aparece en Cuentas por Cobrar en su fecha."}
           </p>
         </div>
-        <label className="flex items-center gap-2 cursor-pointer shrink-0">
+        <label className="flex items-center gap-2 min-h-11 sm:min-h-8 -my-3 sm:my-0 cursor-pointer shrink-0">
           <input
             type="checkbox"
             checked={enabled}
