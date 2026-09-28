@@ -25,6 +25,9 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
   },
   icons: EMPRESA_FAVICON_ICONS,
+  // Next solo emite `mobile-web-app-capable`; Safari en iPhone todavía mira la
+  // etiqueta con prefijo para abrir la app instalada sin la barra del navegador.
+  other: { "apple-mobile-web-app-capable": "yes" },
 };
 
 export default function EmpresaLayout({

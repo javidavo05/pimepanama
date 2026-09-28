@@ -4,7 +4,7 @@
   "short_name": "Pime Suite",
   "description": "Panel interno de Pime Panamá — clientes, cotizaciones, facturas y CRM",
   "start_url": "/empresa",
-  "scope": "/empresa",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#030611",
   "theme_color": "#030611",

@@ -3,9 +3,10 @@
 import { useEffect } from "react";
 
 /**
- * El alcance es "/empresa" sin barra final, igual que en el manifest: con
- * "/empresa/" el dashboard (/empresa) quedaba fuera y la app instalada lo abría
- * con la barra del navegador arriba.
+ * Alcance del service worker: "/empresa" sin barra final, para que también
+ * atienda el dashboard (/empresa). El alcance de la app instalada lo fija el
+ * manifest ("/", todo el dominio), así ninguna página propia —PDF, agendar,
+ * firmar— se abre con la barra del navegador arriba.
  */
 const SCOPE = "/empresa";
 const OLD_SCOPE = "/empresa/";
