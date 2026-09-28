@@ -51,7 +51,7 @@ export function MeetingsFilters({ projects, clients }: MeetingsFiltersProps) {
   }, [q]);
 
   const selectClass =
-    "field-select w-full min-w-0 min-h-11 sm:min-h-10 bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none";
+    "field-select w-full min-w-0 lg:w-auto min-h-11 sm:min-h-10 bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none";
 
   return (
     <div className="space-y-2 mb-4">
@@ -61,9 +61,9 @@ export function MeetingsFilters({ projects, clients }: MeetingsFiltersProps) {
         placeholder="Buscar por título o por lo que se dijo en la reunión…"
         className="w-full min-h-11 sm:min-h-10 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
       />
-      {/* Filtros en columnas iguales: dos en el celular, tres desde tablet;
-          el que queda solo en su fila se estira (grid-fill-2-3). */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 grid-fill-2-3">
+      {/* Filtros en columnas iguales de dos; el que queda solo en su fila se
+          estira. Desde lg (con espacio de sobra) van en una fila. */}
+      <div className="grid grid-cols-2 gap-2 [&>*:last-child:nth-child(odd)]:col-span-2 lg:flex lg:flex-wrap">
         <select
           aria-label="Filtrar por proyecto"
           value={projectId}

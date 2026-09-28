@@ -92,7 +92,9 @@ export function TaskOverview({ defaultGroupBy = "project" }: { defaultGroupBy?: 
   return (
     <div>
       {/* Agregar tarea: una sola entrada, con el proyecto a la vista */}
-      <div className="bg-panel border border-line rounded-xl p-2 mb-6 flex flex-col sm:flex-row gap-2">
+      {/* En fila solo desde lg: con el menú lateral, en tablet el campo quedaba
+          de menos de 120 px al lado del proyecto y el botón. */}
+      <div className="bg-panel border border-line rounded-xl p-2 mb-6 flex flex-col lg:flex-row gap-2">
         <input
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}

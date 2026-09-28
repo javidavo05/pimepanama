@@ -14,7 +14,7 @@ import { seg } from "@/components/empresa/page-header";
 type Vista = "tabla" | "tablero";
 
 const SELECT =
-  "field-select w-full min-w-0 min-h-11 sm:min-h-10 lg:w-auto rounded-lg border border-line bg-panel pl-3 pr-8 py-2 text-sm text-fg-mute outline-none transition-colors hover:border-line-mid focus:border-brand/50";
+  "field-select w-full min-w-0 min-h-11 sm:min-h-10 xl:w-auto rounded-lg border border-line bg-panel pl-3 pr-8 py-2 text-sm text-fg-mute outline-none transition-colors hover:border-line-mid focus:border-brand/50";
 
 export function LeadsView({ leads: initialLeads }: { leads: SerializedLead[] }) {
   const [leads, setLeads] = useState(initialLeads);
@@ -100,16 +100,16 @@ export function LeadsView({ leads: initialLeads }: { leads: SerializedLead[] }) 
       )}
 
       {/* Barra de control */}
-      {/* En el celular: buscador a lo ancho, los dos filtros en columnas iguales
+      {/* Hasta xl: buscador a lo ancho, los dos filtros en columnas iguales
           y el selector de vista debajo, también a lo ancho. */}
-      <div className="grid grid-cols-2 gap-2 lg:flex lg:flex-wrap lg:items-center">
+      <div className="grid grid-cols-2 gap-2 xl:flex xl:flex-wrap xl:items-center">
         <input
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Buscar por nombre, empresa, correo o teléfono"
           aria-label="Buscar prospectos"
-          className="col-span-2 min-h-11 sm:min-h-10 lg:min-w-[220px] lg:flex-1 rounded-lg border border-line bg-panel px-4 py-2 text-sm text-fg placeholder-fg-trace outline-none transition-colors focus:border-brand/50"
+          className="col-span-2 min-h-11 sm:min-h-10 xl:min-w-[220px] xl:flex-1 rounded-lg border border-line bg-panel px-4 py-2 text-sm text-fg placeholder-fg-trace outline-none transition-colors focus:border-brand/50"
         />
 
         <select

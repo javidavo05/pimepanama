@@ -65,7 +65,7 @@ export function ProjectsTable({ rows }: { rows: ProjectRow[] }) {
         </div>
       ) : (
         <div className="bg-panel border border-line rounded-xl overflow-hidden">
-          <div className="hidden lg:grid grid-cols-[minmax(0,1fr)_112px_160px_minmax(0,220px)_96px] gap-4 px-4 py-2 border-b border-line text-[11px] uppercase tracking-wider text-fg-faint">
+          <div className="hidden xl:grid grid-cols-[minmax(0,1fr)_112px_160px_minmax(0,220px)_96px] gap-4 px-4 py-2 border-b border-line text-[11px] uppercase tracking-wider text-fg-faint">
             <span>Proyecto</span>
             <span>Estado</span>
             <span>Avance</span>
@@ -79,10 +79,10 @@ export function ProjectsTable({ rows }: { rows: ProjectRow[] }) {
               <Link
                 key={r.id}
                 href={`/empresa/proyectos/${r.id}`}
-                className="group grid grid-cols-[auto_minmax(0,1fr)] lg:grid-cols-[minmax(0,1fr)_112px_160px_minmax(0,220px)_96px] gap-x-3 lg:gap-4 gap-y-2 items-center px-4 py-3 border-b border-line last:border-b-0 hover:bg-fill transition-colors"
+                className="group grid grid-cols-[auto_minmax(0,1fr)] xl:grid-cols-[minmax(0,1fr)_112px_160px_minmax(0,220px)_96px] gap-x-3 xl:gap-4 gap-y-2 items-center px-4 py-3 border-b border-line last:border-b-0 hover:bg-fill transition-colors"
               >
                 {/* Proyecto */}
-                <div className="col-span-2 lg:col-span-1 flex items-center gap-3 min-w-0">
+                <div className="col-span-2 xl:col-span-1 flex items-center gap-3 min-w-0">
                   <span className="w-9 h-9 rounded-lg bg-brand/10 border border-brand/20 text-brand-fg text-xs font-semibold flex items-center justify-center shrink-0">
                     {initials(r.name)}
                   </span>
@@ -95,7 +95,7 @@ export function ProjectsTable({ rows }: { rows: ProjectRow[] }) {
                 </div>
 
                 {/* Estado */}
-                <div className="col-start-1 lg:col-start-auto">
+                <div className="col-start-1 xl:col-start-auto">
                   <span className={`inline-block px-2 py-1 text-[11px] leading-none rounded border ${PROJECT_STATUS_COLOR[r.status]}`}>
                     {PROJECT_STATUS_LABEL[r.status]}
                   </span>
@@ -118,19 +118,19 @@ export function ProjectsTable({ rows }: { rows: ProjectRow[] }) {
                 </div>
 
                 {/* Próxima entrega */}
-                <div className="col-span-2 lg:col-span-1 min-w-0">
+                <div className="col-span-2 xl:col-span-1 min-w-0">
                   {r.next && due ? (
                     <p className="text-xs truncate">
                       <span className={due.tone}>{due.label}</span>
                       <span className="text-fg-dim"> · {r.next.title}</span>
                     </p>
                   ) : (
-                    <p className="text-xs text-fg-faint hidden lg:block">—</p>
+                    <p className="text-xs text-fg-faint hidden xl:block">—</p>
                   )}
                 </div>
 
                 {/* Fin */}
-                <p className="hidden lg:block text-xs text-fg-dim">
+                <p className="hidden xl:block text-xs text-fg-dim">
                   {r.endDate
                     ? new Date(r.endDate).toLocaleDateString("es-PA", { day: "numeric", month: "short", year: "2-digit", timeZone: "UTC" })
                     : "—"}
