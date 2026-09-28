@@ -71,8 +71,8 @@ function fmtDate(iso: string) {
   if (diff < 86400000) return `hace ${Math.floor(diff / 3600000)}h`;
   const now = new Date();
   if (now.getFullYear() === d.getFullYear())
-    return d.toLocaleDateString("es-PA", { month: "short", day: "numeric" });
-  return d.toLocaleDateString("es-PA", { year: "2-digit", month: "short", day: "numeric" });
+    return d.toLocaleDateString("es-PA", { month: "short", day: "numeric", timeZone: "America/Panama" });
+  return d.toLocaleDateString("es-PA", { year: "2-digit", month: "short", day: "numeric", timeZone: "America/Panama" });
 }
 
 function displayAddress(raw: string): string {
@@ -522,7 +522,9 @@ export function InboxList({
                           </button>
                         )}
                       </div>
-                      <span className="text-fg-faint text-xs shrink-0">{fmtDate(email.receivedAt)}</span>
+                      {/* «hace 3h» depende del reloj y Safari abrevia los meses distinto que
+                          el servidor: el texto puede cambiar al hidratar y no es un error. */}
+                      <span className="text-fg-faint text-xs shrink-0" suppressHydrationWarning>{fmtDate(email.receivedAt)}</span>
                     </div>
                     <p className={`text-xs truncate mb-1 ${!email.isRead ? "text-fg-soft" : "text-fg-faint"}`}>
                       {email.subject ?? "(Sin asunto)"}
