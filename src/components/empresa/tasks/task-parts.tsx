@@ -354,7 +354,7 @@ export function TaskToast() {
 
   if (!notice) return null;
   return (
-    <div className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-[60] flex justify-center pointer-events-none">
+    <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom))] md:bottom-6 inset-x-4 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 z-[60] flex justify-center pointer-events-none">
       <div
         key={notice.id}
         role={notice.tone === "error" ? "alert" : "status"}

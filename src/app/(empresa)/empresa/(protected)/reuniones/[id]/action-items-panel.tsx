@@ -597,7 +597,7 @@ export function ActionItemsPanel({
 
         {/* Barra de conversión: queda a la vista mientras se recorre la lista */}
         {pending.length > 0 && (
-          <div className="sticky bottom-4 mt-4 z-10 bg-pop border border-line-mid rounded-xl p-4 shadow-2xl space-y-3">
+          <div className="sticky bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-4 mt-4 z-10 bg-pop border border-line-mid rounded-xl p-4 shadow-2xl space-y-3">
             {/* En el celular cada control va en su fila a lo ancho; desde
                 tablet, en una sola fila. */}
             <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">

@@ -27,6 +27,19 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    // Un solo dominio: la app instalada (PWA) vive en pimepanama.com. Si alguien
+    // la instalaba desde www, cualquier enlace a pimepanama.com salía de la app
+    // y Android/iOS le ponían encima la barra del navegador.
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "www.pimepanama.com" }],
+        destination: "https://pimepanama.com/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     // HSTS solo en producción: en dev Chrome cachea la política para
     // "localhost" y fuerza https://, que no existe en el servidor local.
