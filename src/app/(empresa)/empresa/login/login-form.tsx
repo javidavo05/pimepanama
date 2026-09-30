@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { FingerprintIcon } from "@/components/empresa/fingerprint-icon";
+import { biometricLabel, loginWithPasskey, passkeysSupported } from "@/lib/passkeys-client";
 
 export function EmpresaLoginForm() {
   const router = useRouter();
@@ -10,6 +12,26 @@ export function EmpresaLoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // La huella solo aparece donde el navegador la soporta; se decide al montar
+  // porque depende del dispositivo, no de la sesión.
+  const [bioLabel, setBioLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (passkeysSupported()) setBioLabel(biometricLabel());
+  }, []);
+
+  async function handlePasskey() {
+    setError(null);
+    setLoading(true);
+    const result = await loginWithPasskey();
+    if (!result.ok) {
+      if (result.error) setError(result.error);
+      setLoading(false);
+      return;
+    }
+    router.push("/empresa");
+    router.refresh();
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -34,6 +56,25 @@ export function EmpresaLoginForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {bioLabel && (
+        <div className="space-y-4">
+          <button
+            type="button"
+            onClick={() => void handlePasskey()}
+            disabled={loading}
+            className="w-full inline-flex items-center justify-center gap-2 bg-fill border border-line-mid hover:border-sand/50 disabled:opacity-50 disabled:cursor-not-allowed text-fg font-medium text-sm py-3 rounded-lg transition-all"
+          >
+            <FingerprintIcon className="w-5 h-5" />
+            Entrar con {bioLabel}
+          </button>
+          <div className="flex items-center gap-3" aria-hidden="true">
+            <span className="h-px flex-1 bg-line" />
+            <span className="text-fg-faint text-xs">o con tu correo</span>
+            <span className="h-px flex-1 bg-line" />
+          </div>
+        </div>
+      )}
+
       <div>
         <label className="block text-fg-dim text-xs font-medium uppercase tracking-widest mb-2">
           Correo corporativo

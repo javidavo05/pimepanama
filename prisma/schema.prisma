@@ -264,6 +264,7 @@ model EmpresaUser {
   pushSubscriptions     PushSubscription[]
   watchedThreads        WatchedThread[]
   deviceTokens          DeviceToken[]
+  passkeys              Passkey[]
   /// PAT de GitHub cifrado (AES-256-GCM). Es del usuario, no del proyecto: un
   /// token sirve para todos sus repos.
   githubTokenEnc        String?
@@ -1017,6 +1018,24 @@ model DeviceToken {
   lastUsedAt DateTime?
   revokedAt  DateTime?
   createdAt  DateTime    @default(now())
+
+  @@index([userId])
+}
+
+/// Llave de acceso WebAuthn (Touch ID, Face ID, huella). Solo la llave pública.
+/// vaultAccess: también abre la información confidencial de Platforms.
+model Passkey {
+  id           String      @id @default(cuid())
+  userId       String
+  user         EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  credentialId String      @unique
+  publicKey    String
+  counter      Int         @default(0)
+  transports   String[]    @default([])
+  name         String
+  vaultAccess  Boolean     @default(false)
+  lastUsedAt   DateTime?
+  createdAt    DateTime    @default(now())
 
   @@index([userId])
 }

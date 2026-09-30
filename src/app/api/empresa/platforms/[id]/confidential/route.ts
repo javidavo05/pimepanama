@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { verifyMasterPassword } from "@/lib/platform-vault-master";
+import { issueVaultToken, verifyVaultToken } from "@/lib/passkeys";
 import {
   decryptPlatformVault,
   encryptPlatformVault,
@@ -9,6 +10,14 @@ import {
 } from "@/lib/platform-vault-crypto";
 
 export const runtime = "nodejs";
+
+/** Contraseña madre o vaultToken (huella o desbloqueo reciente). */
+function canOpenVault(body: { password?: unknown; vaultToken?: unknown }, userId: string): boolean {
+  if (typeof body.vaultToken === "string" && body.vaultToken) {
+    return verifyVaultToken(body.vaultToken, userId);
+  }
+  return verifyMasterPassword(String(body.password ?? ""));
+}
 
 async function loadPlatform(id: string, userId: string) {
   return prisma.platform.findFirst({ where: { id, userId } });
@@ -25,18 +34,17 @@ export async function POST(
     if (!platform) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const body = await request.json();
-    const password = String(body.password ?? "");
-    if (!verifyMasterPassword(password)) {
+    if (!canOpenVault(body, user.id)) {
       return NextResponse.json({ error: "Contraseña incorrecta" }, { status: 403 });
     }
 
     if (!hasPlatformVault(platform.confidentialVault)) {
-      return NextResponse.json({ content: "" });
+      return NextResponse.json({ content: "", vaultToken: issueVaultToken(user.id) });
     }
 
     try {
       const content = decryptPlatformVault(platform.confidentialVault!);
-      return NextResponse.json({ content });
+      return NextResponse.json({ content, vaultToken: issueVaultToken(user.id) });
     } catch {
       return NextResponse.json({ error: "No se pudo descifrar" }, { status: 500 });
     }
@@ -57,10 +65,9 @@ export async function PUT(
     if (!platform) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const body = await request.json();
-    const password = String(body.password ?? "");
     const content = String(body.content ?? "");
 
-    if (!verifyMasterPassword(password)) {
+    if (!canOpenVault(body, user.id)) {
       return NextResponse.json({ error: "Contraseña incorrecta" }, { status: 403 });
     }
 
@@ -77,6 +84,7 @@ export async function PUT(
     return NextResponse.json({
       id: updated.id,
       hasConfidential: true,
+      vaultToken: issueVaultToken(user.id),
     });
   } catch (err) {
     if (err instanceof Response) return err;
@@ -95,8 +103,7 @@ export async function DELETE(
     if (!platform) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const body = await request.json();
-    const password = String(body.password ?? "");
-    if (!verifyMasterPassword(password)) {
+    if (!canOpenVault(body, user.id)) {
       return NextResponse.json({ error: "Contraseña incorrecta" }, { status: 403 });
     }
 

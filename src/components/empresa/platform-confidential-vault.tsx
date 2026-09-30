@@ -1,6 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { FingerprintIcon } from "@/components/empresa/fingerprint-icon";
+import {
+  biometricLabel,
+  listPasskeys,
+  passkeysSupported,
+  registerPasskey,
+  unlockVaultWithPasskey,
+} from "@/lib/passkeys-client";
 
 interface PlatformConfidentialVaultProps {
   platformId: string;
@@ -9,6 +17,11 @@ interface PlatformConfidentialVaultProps {
 }
 
 type Mode = "locked" | "unlocked" | "setup";
+
+/** Qué hace la huella en este dispositivo para la bóveda. */
+type Biometric = "unavailable" | "offer" | "ready" | "just-enabled";
+
+type VaultAuth = { password: string } | { vaultToken: string };
 
 export function PlatformConfidentialVault({
   platformId,
@@ -21,19 +34,37 @@ export function PlatformConfidentialVault({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [composing, setComposing] = useState(false);
-  const sessionPasswordRef = useRef<string | null>(null);
+  // Permiso de 15 minutos que da el servidor al desbloquear (con contraseña o
+  // huella). Reemplaza a la contraseña madre para guardar o eliminar.
+  const vaultTokenRef = useRef<string | null>(null);
+  const [biometric, setBiometric] = useState<Biometric>("unavailable");
+  const [bioLabel, setBioLabel] = useState("huella");
+  const [usedPassword, setUsedPassword] = useState(false);
+
+  useEffect(() => {
+    if (!passkeysSupported()) return;
+    setBioLabel(biometricLabel());
+    let cancelled = false;
+    void listPasskeys().then((list) => {
+      if (cancelled || !list) return;
+      setBiometric(list.some((p) => p.vaultAccess) ? "ready" : "offer");
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!hasVault) {
       setMode("setup");
       setContent("");
-      sessionPasswordRef.current = null;
+      vaultTokenRef.current = null;
     } else if (mode === "setup") {
       setMode("locked");
     }
   }, [hasVault, mode]);
 
-  async function saveWithPassword(pw: string): Promise<boolean> {
+  async function save(auth: VaultAuth): Promise<boolean> {
     if (!String(content).trim()) {
       setError("Escribe la información antes de guardar.");
       return false;
@@ -44,13 +75,18 @@ export function PlatformConfidentialVault({
       const res = await fetch(`/api/empresa/platforms/${platformId}/confidential`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pw, content }),
+        body: JSON.stringify({ ...auth, content }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error === "Contraseña incorrecta" ? "Contraseña incorrecta." : "No se pudo guardar.");
+        if ("vaultToken" in auth && res.status === 403) {
+          setError("Pasaron 15 minutos: vuelve a desbloquear para guardar.");
+        } else {
+          setError(data.error === "Contraseña incorrecta" ? "Contraseña incorrecta." : "No se pudo guardar.");
+        }
         return false;
       }
+      if (typeof data.vaultToken === "string") vaultTokenRef.current = data.vaultToken;
       onUpdated(true);
       return true;
     } catch {
@@ -61,15 +97,14 @@ export function PlatformConfidentialVault({
     }
   }
 
-  async function handleUnlock() {
-    if (!password) return;
+  async function openVault(auth: VaultAuth) {
     setBusy(true);
     setError(null);
     try {
       const res = await fetch(`/api/empresa/platforms/${platformId}/confidential`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify(auth),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -77,7 +112,8 @@ export function PlatformConfidentialVault({
         return;
       }
       setContent(typeof data.content === "string" ? data.content : "");
-      sessionPasswordRef.current = password;
+      vaultTokenRef.current = typeof data.vaultToken === "string" ? data.vaultToken : null;
+      setUsedPassword("password" in auth);
       setPassword("");
       setMode("unlocked");
     } catch {
@@ -87,28 +123,56 @@ export function PlatformConfidentialVault({
     }
   }
 
+  async function handleUnlock() {
+    if (!password) return;
+    await openVault({ password });
+  }
+
+  async function handleBiometricUnlock() {
+    setBusy(true);
+    setError(null);
+    const result = await unlockVaultWithPasskey();
+    setBusy(false);
+    if (!result.ok) {
+      if (result.error) setError(result.error);
+      return;
+    }
+    await openVault({ vaultToken: result.vaultToken });
+  }
+
+  async function handleEnableBiometric() {
+    const token = vaultTokenRef.current;
+    if (!token) return;
+    setBusy(true);
+    setError(null);
+    const result = await registerPasskey(token);
+    setBusy(false);
+    if (result.ok) setBiometric("just-enabled");
+    else if (result.error) setError(result.error);
+  }
+
   async function handleCreate() {
-    const ok = await saveWithPassword(password);
+    const ok = await save({ password });
     if (ok) {
-      sessionPasswordRef.current = password;
+      setUsedPassword(true);
       setPassword("");
       setMode("unlocked");
     }
   }
 
   async function handleSaveUnlocked() {
-    const pw = sessionPasswordRef.current;
-    if (!pw) {
+    const token = vaultTokenRef.current;
+    if (!token) {
       setError("Vuelve a desbloquear para guardar cambios.");
       return;
     }
-    await saveWithPassword(pw);
+    await save({ vaultToken: token });
   }
 
   async function handleRemove() {
-    const pw = sessionPasswordRef.current ?? password;
-    if (!pw) {
-      setError("Ingresa la contraseña madre para eliminar.");
+    const token = vaultTokenRef.current;
+    if (!token) {
+      setError("Vuelve a desbloquear para eliminar.");
       return;
     }
     if (!window.confirm("¿Eliminar toda la información confidencial de esta plataforma?")) return;
@@ -118,7 +182,7 @@ export function PlatformConfidentialVault({
       const res = await fetch(`/api/empresa/platforms/${platformId}/confidential`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: pw }),
+        body: JSON.stringify({ vaultToken: token }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -128,7 +192,7 @@ export function PlatformConfidentialVault({
       onUpdated(false);
       setContent("");
       setPassword("");
-      sessionPasswordRef.current = null;
+      vaultTokenRef.current = null;
       setMode("setup");
     } catch {
       setError("Error de conexión.");
@@ -140,9 +204,10 @@ export function PlatformConfidentialVault({
   function lock() {
     setContent("");
     setPassword("");
-    sessionPasswordRef.current = null;
+    vaultTokenRef.current = null;
     setError(null);
     setComposing(false);
+    if (biometric === "just-enabled") setBiometric("ready");
     setMode(hasVault ? "locked" : "setup");
   }
 
@@ -224,6 +289,21 @@ export function PlatformConfidentialVault({
         </div>
       )}
 
+      {mode === "locked" && biometric === "ready" && (
+        <div className="space-y-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void handleBiometricUnlock()}
+            className="w-full inline-flex items-center justify-center gap-2 px-4 min-h-11 bg-fill-2 hover:bg-fill-3 border border-line-mid text-fg text-sm font-medium rounded-lg disabled:opacity-50"
+          >
+            <FingerprintIcon />
+            {busy ? "Verificando…" : `Desbloquear con ${bioLabel}`}
+          </button>
+          <p className="text-xs text-fg-faint text-center">o con la contraseña madre</p>
+        </div>
+      )}
+
       {mode === "locked" && (
         <form
           onSubmit={(e) => {
@@ -244,7 +324,11 @@ export function PlatformConfidentialVault({
           <button
             type="submit"
             disabled={busy || !password}
-            className="shrink-0 px-4 min-h-11 bg-fill-2 hover:bg-fill-3 border border-line-mid text-fg text-sm font-medium rounded-lg disabled:opacity-50"
+            className={
+              biometric === "ready"
+                ? "shrink-0 px-4 min-h-11 border border-line-mid text-fg-soft hover:text-fg text-sm rounded-lg disabled:opacity-50"
+                : "shrink-0 px-4 min-h-11 bg-fill-2 hover:bg-fill-3 border border-line-mid text-fg text-sm font-medium rounded-lg disabled:opacity-50"
+            }
           >
             {busy ? "Verificando…" : "Desbloquear"}
           </button>
@@ -285,6 +369,25 @@ export function PlatformConfidentialVault({
               Eliminar
             </button>
           </div>
+          {usedPassword && (biometric === "offer" || biometric === "ready") && (
+            <div className="flex flex-wrap items-center justify-between gap-2 border-t border-line pt-3">
+              <p className="text-xs text-fg-faint">Ábrela con {bioLabel} la próxima vez, sin escribir la contraseña.</p>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void handleEnableBiometric()}
+                className="inline-flex items-center gap-2 px-3 min-h-11 text-fg-soft hover:text-fg text-sm rounded-lg disabled:opacity-50"
+              >
+                <FingerprintIcon />
+                Activar {bioLabel}
+              </button>
+            </div>
+          )}
+          {biometric === "just-enabled" && (
+            <p role="status" className="text-xs text-fg-faint border-t border-line pt-3">
+              Listo. La próxima vez desbloquea con {bioLabel} en este dispositivo.
+            </p>
+          )}
         </div>
       )}
 

@@ -5,6 +5,7 @@ import { ConfigForm } from "./config-form";
 import { PaymentMethodsSettings } from "@/components/empresa/payment-methods-settings";
 import Link from "next/link";
 import { ThemeToggleCards } from "@/components/empresa/theme/theme-toggle";
+import { PasskeysSettings } from "@/components/empresa/passkeys-settings";
 
 export const metadata = { title: "Configuración — Pime Suite" };
 
@@ -31,6 +32,8 @@ export default async function ConfiguracionPage() {
         </p>
         <ThemeToggleCards />
       </section>
+
+      <PasskeysSettings />
 
       <Link
         href="/empresa/configuracion/mac"
