@@ -40,6 +40,9 @@ export function PlatformConfidentialVault({
   const [biometric, setBiometric] = useState<Biometric>("unavailable");
   const [bioLabel, setBioLabel] = useState("huella");
   const [usedPassword, setUsedPassword] = useState(false);
+  // Marcado por defecto: quien escribe la contraseña en un dispositivo con
+  // huella casi siempre quiere no volver a escribirla.
+  const [enableOnUnlock, setEnableOnUnlock] = useState(true);
 
   useEffect(() => {
     if (!passkeysSupported()) return;
@@ -97,7 +100,7 @@ export function PlatformConfidentialVault({
     }
   }
 
-  async function openVault(auth: VaultAuth) {
+  async function openVault(auth: VaultAuth): Promise<boolean> {
     setBusy(true);
     setError(null);
     try {
@@ -109,15 +112,17 @@ export function PlatformConfidentialVault({
       const data = await res.json();
       if (!res.ok) {
         setError(data.error === "Contraseña incorrecta" ? "Contraseña incorrecta." : "No se pudo desbloquear.");
-        return;
+        return false;
       }
       setContent(typeof data.content === "string" ? data.content : "");
       vaultTokenRef.current = typeof data.vaultToken === "string" ? data.vaultToken : null;
       setUsedPassword("password" in auth);
       setPassword("");
       setMode("unlocked");
+      return true;
     } catch {
       setError("Error de conexión.");
+      return false;
     } finally {
       setBusy(false);
     }
@@ -125,7 +130,10 @@ export function PlatformConfidentialVault({
 
   async function handleUnlock() {
     if (!password) return;
-    await openVault({ password });
+    const ok = await openVault({ password });
+    // Si el sistema no deja pedir la huella aquí (Safari exige un toque
+    // directo), queda el botón «Activar» dentro de la bóveda abierta.
+    if (ok && biometric === "offer" && enableOnUnlock) await handleEnableBiometric();
   }
 
   async function handleBiometricUnlock() {
@@ -310,28 +318,41 @@ export function PlatformConfidentialVault({
             e.preventDefault();
             void handleUnlock();
           }}
-          className="flex flex-col sm:flex-row gap-2"
+          className="space-y-2"
         >
-          <label htmlFor={`vault-unlock-${platformId}`} className="sr-only">Contraseña madre</label>
-          <input
-            id={`vault-unlock-${platformId}`}
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Contraseña madre"
-            className={inputCls}
-          />
-          <button
-            type="submit"
-            disabled={busy || !password}
-            className={
-              biometric === "ready"
-                ? "shrink-0 px-4 min-h-11 border border-line-mid text-fg-soft hover:text-fg text-sm rounded-lg disabled:opacity-50"
-                : "shrink-0 px-4 min-h-11 bg-fill-2 hover:bg-fill-3 border border-line-mid text-fg text-sm font-medium rounded-lg disabled:opacity-50"
-            }
-          >
-            {busy ? "Verificando…" : "Desbloquear"}
-          </button>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <label htmlFor={`vault-unlock-${platformId}`} className="sr-only">Contraseña madre</label>
+            <input
+              id={`vault-unlock-${platformId}`}
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Contraseña madre"
+              className={inputCls}
+            />
+            <button
+              type="submit"
+              disabled={busy || !password}
+              className={
+                biometric === "ready"
+                  ? "shrink-0 px-4 min-h-11 border border-line-mid text-fg-soft hover:text-fg text-sm rounded-lg disabled:opacity-50"
+                  : "shrink-0 px-4 min-h-11 bg-fill-2 hover:bg-fill-3 border border-line-mid text-fg text-sm font-medium rounded-lg disabled:opacity-50"
+              }
+            >
+              {busy ? "Verificando…" : "Desbloquear"}
+            </button>
+          </div>
+          {biometric === "offer" && (
+            <label className="flex items-center gap-2 min-h-11 text-xs text-fg-dim cursor-pointer">
+              <input
+                type="checkbox"
+                checked={enableOnUnlock}
+                onChange={(e) => setEnableOnUnlock(e.target.checked)}
+                className="w-4 h-4 accent-current"
+              />
+              La próxima vez, desbloquear con {bioLabel}
+            </label>
+          )}
         </form>
       )}
 
