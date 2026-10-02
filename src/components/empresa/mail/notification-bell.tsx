@@ -34,11 +34,11 @@ function splitPriority(title: string) {
 // La campana se monta dos veces (columna de escritorio y barra del celular, una
 // oculta por CSS) y antes cada una consultaba cada minuto, también con la
 // pestaña en segundo plano: ~2.900 funciones al día por pestaña abierta. Los
-// avisos nacen del cron mail-watch (cada 10 min) y los urgentes llegan además
-// por push, así que basta con consultar cada 5 min mientras la pestaña se ve,
-// y al volver a ella si lo último tiene más de un minuto.
-const POLL_MS = 5 * 60_000;
-const STALE_MS = 60_000;
+// avisos nacen del cron mail-watch (cada 30 min) y los urgentes llegan además
+// por push, así que se consulta cada 30 min mientras la pestaña se ve, al volver
+// a ella si lo último es igual de viejo, y a demanda al abrir la campana.
+const POLL_MS = 30 * 60_000;
+const STALE_MS = POLL_MS;
 
 type BellSnapshot = { unread: number; notifications: Notification[] };
 
@@ -114,7 +114,10 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
     e.preventDefault();
     e.stopPropagation();
     setOpen((v) => !v);
-    if (!open && unread > 0) {
+    if (open) return;
+    // A demanda: abrir la campana trae lo último, sin esperar al próximo sondeo.
+    await fetchNotifications();
+    if (snapshot.unread > 0) {
       await fetch("/api/empresa/mail/notifications", { method: "PATCH" });
       publish({ unread: 0, notifications: snapshot.notifications.map((x) => ({ ...x, read: true })) });
     }

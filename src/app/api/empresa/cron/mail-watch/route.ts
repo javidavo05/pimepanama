@@ -15,7 +15,7 @@ const LOOKBACK_MS = 2 * 24 * 60 * 60 * 1000;
  * dispara el sync. Los UIDs ya guardados se descartan antes de bajarlos, así
  * que la IA solo corre sobre correo realmente nuevo.
  *
- * Lo llama pg_cron desde Supabase cada 10 minutos (migración 0032): el plan
+ * Lo llama pg_cron desde Supabase cada 30 minutos (migraciones 0032 y 0037): el plan
  * Hobby de Vercel solo permite crons diarios.
  */
 async function run(req: NextRequest) {

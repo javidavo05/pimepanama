@@ -49,3 +49,4 @@ Todas las migraciones se corren manualmente en **Supabase → SQL Editor**.
 | 0034 | `0034_platform_accounts.sql` | PlatformAccount — plan (FREE/PRO) de cada cuenta de Supabase/Vercel usada en Platforms; una cuenta Pro no tiene el límite de 2 proyectos | 2026-09-23 | ✅ Aplicado |
 | 0035 | `0035_device_tokens.sql` | DeviceToken — llave de dispositivo (solo el SHA-256) para que PIME Guard, la barra de menú de la Mac, lea correo y reuniones sin la cookie del navegador; se vincula desde /empresa/configuracion/mac | 2026-09-25 | ✅ Aplicado |
 | 0036 | `0036_passkeys.sql` | Passkey — llaves de acceso WebAuthn: entrar con Touch ID / Face ID / huella y, si vaultAccess, abrir la información confidencial de Platforms sin escribir la contraseña madre | 2026-09-30 | ✅ Aplicado |
+| 0037 | `0037_mail_watch_every_30_min.sql` | Job `mail-watch` de pg_cron de cada 10 a cada 30 min: 48 funciones de Vercel al día en vez de 144; lo urgente se trae a demanda | 2026-10-02 | ✅ Aplicado |

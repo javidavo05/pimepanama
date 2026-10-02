@@ -21,7 +21,7 @@ const EMAIL_SELECT = {
 /**
  * Resumen de la bandeja para la barra de menú de la Mac: primero lo marcado
  * como importante (conversaciones vigiladas y destacados), después lo que falta
- * leer. Los correos los baja el cron mail-watch cada 10 minutos.
+ * leer. Los correos los baja el cron mail-watch cada 30 minutos.
  */
 export const GET = withEmpresaRoute(async (request) => {
   const user = await requireDeviceUser(request);
