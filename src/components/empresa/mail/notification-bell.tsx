@@ -30,27 +30,76 @@ function splitPriority(title: string) {
   return { tag: null, text: title };
 }
 
-export function NotificationBell({ align = "right" }: { align?: "left" | "right" }) {
-  const [open, setOpen] = useState(false);
-  const [unread, setUnread] = useState(0);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const ref = useRef<HTMLDivElement>(null);
+// ── Un solo sondeo por pestaña ──────────────────────────────────────────────
+// La campana se monta dos veces (columna de escritorio y barra del celular, una
+// oculta por CSS) y antes cada una consultaba cada minuto, también con la
+// pestaña en segundo plano: ~2.900 funciones al día por pestaña abierta. Los
+// avisos nacen del cron mail-watch (cada 10 min) y los urgentes llegan además
+// por push, así que basta con consultar cada 5 min mientras la pestaña se ve,
+// y al volver a ella si lo último tiene más de un minuto.
+const POLL_MS = 5 * 60_000;
+const STALE_MS = 60_000;
 
-  async function fetchNotifications() {
+type BellSnapshot = { unread: number; notifications: Notification[] };
+
+let snapshot: BellSnapshot = { unread: 0, notifications: [] };
+let lastFetch = 0;
+let inflight: Promise<void> | null = null;
+let timer: ReturnType<typeof setInterval> | null = null;
+const listeners = new Set<(s: BellSnapshot) => void>();
+
+function publish(next: BellSnapshot) {
+  snapshot = next;
+  listeners.forEach((l) => l(next));
+}
+
+function fetchNotifications() {
+  if (inflight) return inflight;
+  lastFetch = Date.now();
+  inflight = (async () => {
     try {
       const res = await fetch("/api/empresa/mail/notifications");
       if (!res.ok) return;
       const data = await res.json();
-      setUnread(data.unreadCount ?? 0);
-      setNotifications(data.notifications ?? []);
-    } catch { /* silent */ }
-  }
+      publish({ unread: data.unreadCount ?? 0, notifications: data.notifications ?? [] });
+    } catch { /* silent */ } finally {
+      inflight = null;
+    }
+  })();
+  return inflight;
+}
 
-  useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 60_000);
-    return () => clearInterval(interval);
-  }, []);
+function refreshIfStale() {
+  if (document.visibilityState === "visible" && Date.now() - lastFetch > STALE_MS) {
+    void fetchNotifications();
+  }
+}
+
+function subscribe(listener: (s: BellSnapshot) => void) {
+  listeners.add(listener);
+  if (listeners.size === 1) {
+    if (Date.now() - lastFetch > STALE_MS) void fetchNotifications();
+    timer = setInterval(() => {
+      if (document.visibilityState === "visible") void fetchNotifications();
+    }, POLL_MS);
+    document.addEventListener("visibilitychange", refreshIfStale);
+  }
+  return () => {
+    listeners.delete(listener);
+    if (listeners.size === 0) {
+      if (timer) clearInterval(timer);
+      timer = null;
+      document.removeEventListener("visibilitychange", refreshIfStale);
+    }
+  };
+}
+
+export function NotificationBell({ align = "right" }: { align?: "left" | "right" }) {
+  const [open, setOpen] = useState(false);
+  const [{ unread, notifications }, setSnapshot] = useState<BellSnapshot>(snapshot);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => subscribe(setSnapshot), []);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -67,8 +116,7 @@ export function NotificationBell({ align = "right" }: { align?: "left" | "right"
     setOpen((v) => !v);
     if (!open && unread > 0) {
       await fetch("/api/empresa/mail/notifications", { method: "PATCH" });
-      setUnread(0);
-      setNotifications((n) => n.map((x) => ({ ...x, read: true })));
+      publish({ unread: 0, notifications: snapshot.notifications.map((x) => ({ ...x, read: true })) });
     }
   }
 
