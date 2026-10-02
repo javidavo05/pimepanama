@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatDuration, formatTimestamp } from "@/lib/meetings/transcript";

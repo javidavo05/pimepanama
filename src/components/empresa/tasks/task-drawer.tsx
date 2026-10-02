@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import { useEffect, useRef, useState } from "react";
 import type { TaskPriority } from "@prisma/client";
 import { taskLocalDate } from "./date-utils";

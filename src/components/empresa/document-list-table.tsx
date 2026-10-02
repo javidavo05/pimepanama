@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import type { Document } from "@prisma/client";
 import { DocumentRowActions } from "./document-row-actions";
 import { ConvertToInvoiceButton } from "./convert-to-invoice-button";

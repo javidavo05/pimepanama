@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import { formatDuration } from "@/lib/meetings/transcript";
 import {
   MEETING_STATUS_COLOR,

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import { updateDocumentAction } from "@/app/(empresa)/empresa/actions";
 
 interface ContractOption {

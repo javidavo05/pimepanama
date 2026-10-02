@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import { linkDocumentsAction } from "@/app/(empresa)/empresa/actions";
 
 interface Factura {

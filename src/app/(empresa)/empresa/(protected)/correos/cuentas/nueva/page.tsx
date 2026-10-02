@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { MailAccountForm } from "@/components/empresa/mail/mail-account-form";
 

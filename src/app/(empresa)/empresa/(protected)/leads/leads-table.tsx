@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import type { SerializedLead } from "@/lib/serializers";
 import type { LeadStatus } from "@prisma/client";
 import { LeadPriorityBadge } from "@/components/empresa/lead-priority-badge";

@@ -11,7 +11,7 @@ import { DocumentAuditHistory } from "@/components/empresa/document-audit-histor
 import { getQuoteLinkedInvoiceId } from "@/lib/quote-to-invoice";
 import { computeQuoteBalance, syncQuoteInvoiceBalance } from "@/lib/quote-balance";
 import { QuoteBalanceBanner } from "@/components/empresa/quote-balance-banner";
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 
 export default async function EditarCotizacionPage({
   params,

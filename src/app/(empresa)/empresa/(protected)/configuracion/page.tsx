@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { serializePaymentMethod, serializeCompanyConfig } from "@/lib/serializers";
 import { ConfigForm } from "./config-form";
 import { PaymentMethodsSettings } from "@/components/empresa/payment-methods-settings";
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import { ThemeToggleCards } from "@/components/empresa/theme/theme-toggle";
 import { PasskeysSettings } from "@/components/empresa/passkeys-settings";
 

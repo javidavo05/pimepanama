@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
@@ -370,6 +370,8 @@ export function SidebarNav({ userEmail, companyName, logoUrl, children }: Sideba
                   <Link
                     key={item.href}
                     href={item.href}
+                    // Las cuatro pestañas de todos los días sí se precargan.
+                    prefetch={null}
                     onClick={(e) => onNavigate(e, item.href)}
                     aria-current={active ? "page" : undefined}
                     className={`flex flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors ${

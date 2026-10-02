@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import { notFound } from "next/navigation";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";

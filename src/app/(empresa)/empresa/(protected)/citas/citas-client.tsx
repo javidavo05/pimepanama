@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import { PageHeader, btn } from "@/components/empresa/page-header";
 
 type Booking = {

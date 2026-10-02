@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import type { Client } from "@prisma/client";
 import { markSchedulePaidAction } from "@/app/(empresa)/empresa/actions";
 import { PdfDownloadButton } from "@/components/empresa/document-builder/pdf-download-button";

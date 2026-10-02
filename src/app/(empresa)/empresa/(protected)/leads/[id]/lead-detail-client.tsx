@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import { useRouter } from "next/navigation";
 import { updateLeadStatusAction, updateLeadAction } from "@/app/(empresa)/empresa/actions";
 import type { LeadStatus, LeadPriority } from "@prisma/client";

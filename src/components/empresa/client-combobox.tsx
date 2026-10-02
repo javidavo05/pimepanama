@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useId, useCallback } from "react";
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import type { Client } from "@prisma/client";
 
 interface ClientHistory {

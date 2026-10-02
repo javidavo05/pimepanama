@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 
 export interface PipelineStep {
   id?: string | null;

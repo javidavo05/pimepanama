@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { AutoSyncOnMount } from "@/components/empresa/mail/auto-sync-on-mount";

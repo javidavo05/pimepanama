@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { convertQuoteToInvoiceAction } from "@/app/(empresa)/empresa/actions";

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { DeliverableKind, TechnicalDeliverable } from "@/lib/meetings/types";

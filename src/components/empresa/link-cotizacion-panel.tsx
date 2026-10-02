@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { linkDocumentsAction } from "@/app/(empresa)/empresa/actions";
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 
 interface Cotizacion {
   id: string;

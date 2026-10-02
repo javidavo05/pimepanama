@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import { formatDateTimeEsPa } from "@/lib/format-datetime";
 import { PushToggle } from "@/components/empresa/push-toggle";
 

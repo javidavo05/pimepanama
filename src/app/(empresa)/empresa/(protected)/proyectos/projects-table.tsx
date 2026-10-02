@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import { useState } from "react";
 import { dueInfo, Segmented } from "@/components/empresa/tasks/task-parts";
 import { PROJECT_STATUS_COLOR, PROJECT_STATUS_LABEL } from "./[id]/types";

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import type { QuoteBalanceState } from "@/lib/quote-balance";
 
 function fmt(n: number) {

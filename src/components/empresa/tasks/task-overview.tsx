@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import { useEffect, useState } from "react";
 import { daysDiff, taskLocalDate } from "./date-utils";
 import { byOrder, useTaskStore, visibleTasks } from "./task-store";

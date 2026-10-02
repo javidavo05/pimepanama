@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useTransition } from "react";
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import { useRouter, usePathname } from "next/navigation";
 import { MailDeliveryStatusBadge } from "@/components/empresa/mail/mail-delivery-status";
 

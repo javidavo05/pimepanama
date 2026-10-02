@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/empresa/link";
 import { formatEmailReceivedAt } from "@/lib/format-datetime";
 import { MailDeliveryStatusBadge } from "@/components/empresa/mail/mail-delivery-status";
 
