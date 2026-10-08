@@ -1,0 +1,3 @@
+.home-skel { display: grid; }
+.skel { min-height: 100svh; display: grid; align-content: center; gap: var(--s-3); border-bottom: var(--border); scroll-margin-top: 72px; }
+.skel:first-child { padding-top: var(--s-24); }

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import "./globals.css";
+import "../globals.css";
 import { Reveal } from "@/components/motion/reveal";
 
 export const metadata: Metadata = {

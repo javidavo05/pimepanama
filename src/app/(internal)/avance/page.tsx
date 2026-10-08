@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { ETIQUETA_ESTADO, PASOS } from "../../../content/avance";
+import { ETIQUETA_ESTADO, PASOS } from "../../../../content/avance";
 import "./avance.css";
 
 export const metadata: Metadata = { title: "Avance · Pime v2", robots: { index: false } };
