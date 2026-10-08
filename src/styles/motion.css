@@ -31,6 +31,8 @@ html[data-reveal-ready] [data-reveal="lines"]:not([data-inview]) .line > span { 
 /* eager: por encima del pliegue, arranca en el primer paint sin esperar JS (≤ 600 ms + stagger) */
 .lines.eager .line > span { animation: line-in var(--dur-slow) var(--ease-out) both; animation-delay: calc(var(--i, 0) * var(--stagger)); }
 .eager .draw, .draw.eager { animation: draw-in var(--dur-reveal) var(--ease-draw) both; animation-delay: var(--delay, 0ms); transform-origin: left center; }
+.eager-slide { animation: slide-in var(--dur-slow) var(--ease-out) both; animation-delay: var(--delay, 0ms); }
+@keyframes slide-in { from { transform: translate3d(0, var(--rise), 0); } to { transform: none; } }
 .eager-rise { animation: rise-in var(--dur-slow) var(--ease-out) both; animation-delay: var(--delay, 0ms); }
 @keyframes line-in { from { transform: translate3d(0, 110%, 0); } to { transform: none; } }
 @keyframes draw-in { from { transform: scaleX(0); } to { transform: scaleX(1); } }
@@ -71,7 +73,7 @@ html[data-reveal-ready] [data-reveal="count"]:not([data-inview]) .digit > span {
 @keyframes fade-up { from { opacity: 0; transform: translate3d(0, var(--rise), 0); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) {
   .lines .line > span { transform: none !important; transition: opacity var(--dur-base); animation: none; }
-  .eager .draw, .draw.eager, .eager-rise { animation: none; }
+  .eager .draw, .draw.eager, .eager-rise, .eager-slide { animation: none; }
   .marquee-track { animation: none; }
   [data-scroll="fade-up"] { animation: none; }
 }

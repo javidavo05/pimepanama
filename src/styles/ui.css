@@ -47,6 +47,7 @@
 
 .link { color: var(--accent); font-weight: var(--w-semibold); }
 .link:hover { color: var(--accent-ink); }
+.link.tap { display: inline-flex; align-items: center; min-height: 44px; }
 
 .card { position: relative; background: var(--surface-2); border: var(--border); border-radius: var(--r-md); padding: var(--s-6); display: grid; gap: var(--s-3); align-content: start; min-width: 0; transition: border-color var(--dur-fast); }
 .card:hover { border-color: var(--line-strong); }
