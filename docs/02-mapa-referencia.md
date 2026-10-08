@@ -30,7 +30,8 @@ Ningún componente existe sin una fila aquí. Cada fila dice qué elemento de la
 | `Avance` (tablero) | Índice de la propuesta: filas numeradas con subtítulo y dato a la derecha | `avance` — filas en orden |
 | `Sistema` (/avance/sistema) | Página de "Arquitectura": eyebrow + título + grillas de tarjetas con chips | `sistema` — demos vivas |
 | `Nav` (paso 3) | `.doc-header`: ícono 16 px + PIME, sección actual a la derecha, línea abajo | `nav` |
-| `Hero` (paso 4) | Portada: barra superior de 5 mm, eyebrow, H1 33 pt, línea de acento, bajada, tres metadatos | `hero` |
+| `Hero` (paso 4) | Portada: barra superior de 5 mm, eyebrow numerado, H1 Manrope 800 a escala de póster, bajada, tres metadatos en filas con separador | `hero` — barra que se dibuja, titular por líneas, bajada y metadatos en orden |
+| `HeroWindow` (paso 4) | Las páginas interiores de la propuesta: cabecera de documento, índice (menú lateral), bloque de cifras (KPI), tabla limpia con pills de fase, tarjetas de panel, aviso oscuro | `hero` — se arma por capas, se endereza con el scroll (scroll-timeline), parallax de 3 planos, estados que avanzan solos |
 | `Proof` (paso 5) | Bloque oscuro de cifras + fila de pills (recorrido) como marquee | `count`, `marquee` |
 | `Capabilities` (paso 6) | Página "El sistema en detalle": tabla de módulos con pills de fase | `sticky-morph` |
 | `FeaturedWork` (paso 7) | Tarjetas de fase independientes en fila | `pin-scroll`, `tilt`, `spotlight` |

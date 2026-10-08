@@ -53,6 +53,7 @@
   --text-3xl: 56px;
   --text-4xl: 80px;
   --text-display: clamp(38px, 1.6rem + 2.6vw, 64px);
+  --text-hero: clamp(38px, 1rem + 6.4vw, 112px);
   --text-wordmark: clamp(96px, 22vw, 360px);
   --leading-tight: 1.05;
   --leading-snug: 1.15;
