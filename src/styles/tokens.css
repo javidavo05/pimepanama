@@ -1,0 +1,57 @@
+/* Tokens de Pime v2 — versión inicial (paso 1). Se completan y documentan en el paso 2
+   (docs/01-referencia.md). Fuente: /Users/javiervallejo/Documents/Websites/design-system.
+   Nota: el azul #0586FE, el púrpura #552EFF y su gradiente están PROHIBIDOS por mandato.
+   El acento provisional sale del color de solape de los dos triángulos del logo. */
+:root {
+  /* Color — neutros de la referencia */
+  --ink: #0B0D14;
+  --ink-soft: #1B1F2B;
+  --slate: #4B5468;
+  --slate-light: #8A93A6;
+  --line: #E7E9EF;
+  --paper: #FCFCFD;
+  --panel: #F5F6F9;
+  --white: #FFFFFF;
+  /* Acento provisional (solape del logo). Pendiente de decisión de Javier. */
+  --accent: #2306D4;
+  --accent-ink: #15037F;
+  --accent-soft: #E9E6FB;
+  --on-accent: #FFFFFF;
+  /* Estados */
+  --ok: #176B45; --ok-soft: #DDF1E6;
+  --run: #8A4B00; --run-soft: #FBE9D0;
+  --bad: #A52A22; --bad-soft: #F8DCD9;
+
+  /* Tipografía */
+  --font-display: "Manrope", "Manrope Fallback", system-ui, sans-serif;
+  --font-body: "Inter", "Inter Fallback", system-ui, sans-serif;
+  --text-xs: 12px; --text-sm: 14px; --text-md: 16px; --text-lg: 20px;
+  --text-xl: 28px; --text-2xl: 40px; --text-3xl: 56px; --text-4xl: 80px;
+  --leading-tight: 1.05; --leading-snug: 1.2; --leading-body: 1.6;
+  --tracking-display: -0.02em; --tracking-eyebrow: 0.14em;
+
+  /* Espacio — escala fija */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-6: 24px; --s-8: 32px; --s-12: 48px;
+  --s-16: 64px; --s-24: 96px; --s-32: 128px;
+
+  /* Radios y bordes */
+  --r-sm: 8px; --r-md: 10px; --r-lg: 12px; --r-pill: 999px;
+  --border: 1px solid var(--line);
+
+  /* Capas */
+  --z-nav: 50; --z-overlay: 100; --z-cursor: 200;
+
+  /* Movimiento */
+  --dur-fast: 160ms; --dur-base: 280ms; --dur-slow: 600ms; --dur-reveal: 900ms;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
+  --stagger: 70ms; --rise: 24px;
+
+  /* Anchos */
+  --bp-sm: 640px; --bp-md: 768px; --bp-lg: 1024px; --bp-xl: 1280px;
+  --container: 1200px; --gutter: 16px;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-fast: 1ms; --dur-base: 120ms; --dur-slow: 160ms; --dur-reveal: 160ms; --stagger: 0ms; --rise: 0px; }
+}
