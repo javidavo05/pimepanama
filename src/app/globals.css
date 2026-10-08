@@ -1,5 +1,6 @@
-@import "tailwindcss";
 @import "../styles/tokens.css";
+@import "../styles/ui.css";
+@import "../styles/motion.css";
 
 @font-face {
   font-family: "Manrope"; font-style: normal; font-weight: 200 800; font-display: swap;
@@ -16,12 +17,11 @@
   font-family: "Inter Fallback"; src: local("Arial"); size-adjust: 107%; ascent-override: 90%; descent-override: 22%; line-gap-override: 0%;
 }
 
-@theme inline {
-  --font-sans: var(--font-body);
-  --font-display: var(--font-display);
-}
-
-* { box-sizing: border-box; }
+*, *::before, *::after { box-sizing: border-box; }
+img, svg, video { display: block; max-width: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+ul, ol { margin: 0; padding: 0; }
+table { border-collapse: collapse; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0; background: var(--paper); color: var(--ink);

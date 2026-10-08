@@ -1,57 +1,189 @@
-/* Tokens de Pime v2 — versión inicial (paso 1). Se completan y documentan en el paso 2
-   (docs/01-referencia.md). Fuente: /Users/javiervallejo/Documents/Websites/design-system.
-   Nota: el azul #0586FE, el púrpura #552EFF y su gradiente están PROHIBIDOS por mandato.
-   El acento provisional sale del color de solape de los dos triángulos del logo. */
+/* Tokens de Pime v2. Fuente: docs/01-referencia.md.
+   Prohibidos por mandato: #0586FE, #552EFF y cualquier gradiente azul→púrpura. */
 :root {
-  /* Color — neutros de la referencia */
+  /* ---------- Color: neutros de la referencia ---------- */
   --ink: #0B0D14;
   --ink-soft: #1B1F2B;
   --slate: #4B5468;
-  --slate-light: #8A93A6;
+  --slate-light: #667087; /* ref. #8A93A6, oscurecido a 4.8:1 sobre papel para AA */
   --line: #E7E9EF;
+  --line-strong: #C9CFDA;
   --paper: #FCFCFD;
   --panel: #F5F6F9;
   --white: #FFFFFF;
-  /* Acento provisional (solape del logo). Pendiente de decisión de Javier. */
+
+  /* ---------- Color: acento (solape del logo) ---------- */
   --accent: #2306D4;
   --accent-ink: #15037F;
   --accent-soft: #E9E6FB;
+  --accent-on-dark: #8E7BFF;
   --on-accent: #FFFFFF;
-  /* Estados */
+
+  /* ---------- Color: estados ---------- */
   --ok: #176B45; --ok-soft: #DDF1E6;
   --run: #8A4B00; --run-soft: #FBE9D0;
   --bad: #A52A22; --bad-soft: #F8DCD9;
 
-  /* Tipografía */
+  /* ---------- Color: roles semánticos ---------- */
+  --bg: var(--paper);
+  --surface: var(--white);
+  --surface-2: var(--panel);
+  --fg: var(--ink);
+  --fg-2: var(--slate);
+  --fg-3: var(--slate-light);
+  --border: 1px solid var(--line);
+  --border-strong: 1.4px solid var(--ink);
+
+  /* Bloques oscuros (cifras, footer): se aplican con [data-theme="ink"] */
+  --ink-bg: var(--ink);
+  --ink-fg: #FFFFFF;
+  --ink-fg-2: rgba(255, 255, 255, 0.72);
+  --ink-fg-3: rgba(255, 255, 255, 0.56);
+  --ink-line: rgba(255, 255, 255, 0.12);
+
+  /* ---------- Tipografía ---------- */
   --font-display: "Manrope", "Manrope Fallback", system-ui, sans-serif;
   --font-body: "Inter", "Inter Fallback", system-ui, sans-serif;
-  --text-xs: 12px; --text-sm: 14px; --text-md: 16px; --text-lg: 20px;
-  --text-xl: 28px; --text-2xl: 40px; --text-3xl: 56px; --text-4xl: 80px;
-  --leading-tight: 1.05; --leading-snug: 1.2; --leading-body: 1.6;
-  --tracking-display: -0.02em; --tracking-eyebrow: 0.14em;
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-md: 16px;
+  --text-lg: 20px;
+  --text-xl: 28px;
+  --text-2xl: 40px;
+  --text-3xl: 56px;
+  --text-4xl: 80px;
+  --text-display: clamp(44px, 2.4rem + 3.2vw, 80px);
+  --text-wordmark: clamp(96px, 22vw, 360px);
+  --leading-tight: 1.05;
+  --leading-snug: 1.15;
+  --leading-normal: 1.3;
+  --leading-body: 1.6;
+  --leading-loose: 1.7;
+  --tracking-display: -0.02em;
+  --tracking-tight: -0.01em;
+  --tracking-eyebrow: 0.14em;
+  --tracking-caps: 0.06em;
+  --tracking-pill: 0.04em;
+  --w-display: 800;
+  --w-title: 700;
+  --w-body: 400;
+  --w-medium: 500;
+  --w-semibold: 600;
+  --w-label: 700;
+  --measure: 60ch;
 
-  /* Espacio — escala fija */
-  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-6: 24px; --s-8: 32px; --s-12: 48px;
-  --s-16: 64px; --s-24: 96px; --s-32: 128px;
+  /* ---------- Espacio (escala fija) ---------- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-12: 48px;
+  --s-16: 64px;
+  --s-24: 96px;
+  --s-32: 128px;
+  --gutter: 16px;
+  --wrap-max: 1200px;
+  --wrap-narrow: 760px;
+  --section-y: var(--s-24);
 
-  /* Radios y bordes */
-  --r-sm: 8px; --r-md: 10px; --r-lg: 12px; --r-pill: 999px;
-  --border: 1px solid var(--line);
+  /* ---------- Radios ---------- */
+  --r-sm: 8px;
+  --r-md: 10px;
+  --r-lg: 12px;
+  --r-pill: 999px;
+  --r-round: 50%;
 
-  /* Capas */
-  --z-nav: 50; --z-overlay: 100; --z-cursor: 200;
+  /* ---------- Líneas y sombras ---------- */
+  --hair: 1px;
+  --rule: 1.4px;
+  --shadow-float: 0 24px 64px rgba(11, 13, 20, 0.16);
+  --shadow-none: none;
 
-  /* Movimiento */
-  --dur-fast: 160ms; --dur-base: 280ms; --dur-slow: 600ms; --dur-reveal: 900ms;
+  /* ---------- Capas ---------- */
+  --z-base: 0;
+  --z-sticky: 10;
+  --z-nav: 50;
+  --z-overlay: 100;
+  --z-palette: 150;
+  --z-cursor: 200;
+
+  /* ---------- Breakpoints (solo referencia; en CSS van como números) ---------- */
+  --bp-sm: 640px;
+  --bp-md: 768px;
+  --bp-lg: 1024px;
+  --bp-xl: 1280px;
+
+  /* ---------- Movimiento ---------- */
+  --dur-fast: 160ms;     /* interacción: hover, foco, toque */
+  --dur-base: 280ms;     /* cambios de estado, pills, menús */
+  --dur-slow: 600ms;     /* revelados de entrada */
+  --dur-reveal: 900ms;   /* trazos largos, contadores */
+  --dur-marquee: 40s;    /* marquee de clientes */
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
-  --ease-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
-  --stagger: 70ms; --rise: 24px;
+  --ease-draw: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-press: cubic-bezier(0.2, 0, 0, 1);
+  --stagger: 70ms;       /* entre líneas de titular: 60–90 ms */
+  --stagger-row: 50ms;   /* entre filas de lista */
+  --rise: 24px;          /* desplazamiento de entrada */
+  --rise-sm: 8px;        /* desplazamiento de hover */
+  --press: 0.97;         /* escala al tocar */
+  --magnet: 0.35;        /* fuerza del botón magnético (0–1) */
+  --tilt: 6deg;          /* inclinación 3D máxima de tarjetas */
+  --parallax-1: 0.02;    /* planos del hero */
+  --parallax-2: 0.05;
+  --parallax-3: 0.09;
+}
 
-  /* Anchos */
-  --bp-sm: 640px; --bp-md: 768px; --bp-lg: 1024px; --bp-xl: 1280px;
-  --container: 1200px; --gutter: 16px;
+@media (min-width: 768px) {
+  :root { --gutter: 32px; }
 }
+@media (min-width: 1024px) {
+  :root { --gutter: 48px; --section-y: var(--s-32); }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  :root { --dur-fast: 1ms; --dur-base: 120ms; --dur-slow: 160ms; --dur-reveal: 160ms; --stagger: 0ms; --rise: 0px; }
+  :root {
+    --dur-fast: 1ms;
+    --dur-base: 160ms;
+    --dur-slow: 160ms;
+    --dur-reveal: 160ms;
+    --stagger: 0ms;
+    --stagger-row: 0ms;
+    --rise: 0px;
+    --rise-sm: 0px;
+    --press: 1;
+    --magnet: 0;
+    --tilt: 0deg;
+    --parallax-1: 0; --parallax-2: 0; --parallax-3: 0;
+  }
 }
+
+/* Bloque oscuro: invierte los roles sin cambiar los tokens base */
+[data-theme="ink"] {
+  --bg: var(--ink-bg);
+  --surface: #141825;
+  --surface-2: #1B2030;
+  --fg: var(--ink-fg);
+  --fg-2: var(--ink-fg-2);
+  --fg-3: var(--ink-fg-3);
+  --line: var(--ink-line);
+  --line-strong: rgba(255, 255, 255, 0.24);
+  --border: 1px solid var(--ink-line);
+  --border-strong: 1.4px solid rgba(255, 255, 255, 0.6);
+  --accent: var(--accent-on-dark);
+  --accent-ink: #B7ABFF;
+  --accent-soft: rgba(142, 123, 255, 0.16);
+  color-scheme: dark;
+}
+
+/* Simulación de prefers-reduced-motion desde /avance/sistema */
+:root[data-reduced-motion] {
+  --dur-fast: 1ms; --dur-base: 160ms; --dur-slow: 160ms; --dur-reveal: 160ms;
+  --stagger: 0ms; --stagger-row: 0ms; --rise: 0px; --rise-sm: 0px; --press: 1; --magnet: 0; --tilt: 0deg;
+  --parallax-1: 0; --parallax-2: 0; --parallax-3: 0;
+}
+:root[data-reduced-motion] .lines .line > span { transform: none !important; }
+:root[data-reduced-motion] .marquee-track { animation: none; }

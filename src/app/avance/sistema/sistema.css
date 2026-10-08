@@ -1,0 +1,53 @@
+.sys { display: grid; gap: var(--s-24); padding-block: var(--s-12) var(--s-24); }
+.sys-head { display: grid; gap: var(--s-4); }
+.sys-sec { display: grid; gap: var(--s-8); }
+.sys-sec > header { display: grid; gap: var(--s-3); }
+.sys-grid { display: grid; gap: var(--s-4); grid-template-columns: 1fr; }
+@media (min-width: 640px) { .sys-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .sys-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } .sys-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.sys-ref { display: grid; gap: var(--s-3); padding-left: var(--s-4); margin: 0; font-size: var(--text-md); line-height: var(--leading-body); color: var(--fg-2); max-width: 70ch; }
+.sys-ref li::marker { color: var(--accent); }
+
+/* Paleta */
+.swatches { display: grid; gap: var(--s-3); grid-template-columns: repeat(auto-fill, minmax(min(100%, 200px), 1fr)); }
+.sw { display: grid; gap: var(--s-2); border: var(--border); border-radius: var(--r-md); overflow: hidden; background: var(--surface); min-width: 0; }
+.sw .chip { height: 80px; background: var(--c); }
+.sw .in { display: grid; gap: var(--s-1); padding: var(--s-3) var(--s-4) var(--s-4); }
+.sw .k { font-family: var(--font-display); font-weight: var(--w-title); font-size: var(--text-sm); }
+.sw .hex { font-size: var(--text-xs); color: var(--fg-3); font-variant-numeric: tabular-nums; text-transform: uppercase; }
+.sw .r { font-size: var(--text-xs); color: var(--fg-2); overflow-wrap: anywhere; }
+.sw .cr { display: flex; gap: var(--s-2); flex-wrap: wrap; }
+.banned { display: grid; gap: var(--s-2); padding: var(--s-4); border: 1.4px dashed var(--bad); border-radius: var(--r-md); color: var(--bad); font-size: var(--text-sm); max-width: 70ch; }
+
+/* Tipografía */
+.spec { display: grid; gap: var(--s-2); padding: var(--s-6) 0; border-bottom: var(--border); min-width: 0; }
+.spec .sample { overflow-wrap: anywhere; }
+.spec .meta { display: flex; gap: var(--s-4); flex-wrap: wrap; }
+
+/* Espacio */
+.space { display: grid; gap: var(--s-3); }
+.space li { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: var(--s-3); align-items: center; font-size: var(--text-sm); }
+.space i { display: block; height: 16px; width: var(--w); background: var(--accent); border-radius: 2px; max-width: 100%; }
+.radii { display: flex; gap: var(--s-4); flex-wrap: wrap; }
+.radii div { width: 72px; height: 72px; border: var(--border-strong); border-radius: var(--r); display: grid; place-items: center; font-size: var(--text-xs); font-weight: var(--w-label); }
+
+/* Componentes */
+.row { display: flex; gap: var(--s-3); flex-wrap: wrap; align-items: center; }
+.stack { display: grid; gap: var(--s-4); }
+.ink-block { padding: var(--s-8); border-radius: var(--r-lg); background: var(--bg); color: var(--fg); display: grid; gap: var(--s-6); }
+.ink-block.full { padding: var(--s-12) var(--s-6); }
+
+/* Movimiento */
+.demo { display: grid; gap: var(--s-4); border: var(--border); border-radius: var(--r-md); padding: var(--s-6); background: var(--surface); min-width: 0; align-content: start; }
+.demo-stage { display: grid; gap: var(--s-3); min-height: 120px; align-content: center; justify-items: start; overflow: hidden; }
+.demo-head { display: grid; gap: var(--s-1); }
+.demo-head .t-3 { font-size: var(--text-md); }
+.demo-head .hint { font-size: var(--text-sm); }
+.motion-table td code { font-size: var(--text-xs); background: var(--surface-2); padding: 2px 6px; border-radius: 4px; }
+.mini-journey { display: flex; gap: var(--s-2); }
+.mini-journey .pill { transition: background var(--dur-base) var(--ease-out), color var(--dur-base) var(--ease-out); }
+.logo-row { display: flex; align-items: center; gap: var(--s-3); }
+.logo-row img { width: 24px; height: 30px; }
+.logo-row .wm { font-family: var(--font-display); font-weight: var(--w-display); font-size: var(--text-lg); letter-spacing: var(--tracking-tight); }
+.logo-mono { filter: grayscale(1) brightness(0.2); }
+[data-theme="ink"] .logo-mono { filter: grayscale(1) brightness(10); }

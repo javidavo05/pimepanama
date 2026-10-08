@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { ETIQUETA_ESTADO, PASOS } from "../../../content/avance";
 import "./avance.css";
@@ -13,7 +14,7 @@ export default function Avance() {
     <main className="av" data-motion="avance">
       <header className="av-head">
         <div className="av-brand">
-          <img src="/brand/logo_icon.png" alt="" width={16} height={20} />
+          <Image src="/brand/logo_icon.png" alt="" width={16} height={20} />
           PIME
         </div>
         <div className="av-eyebrow">Sitio nuevo · tablero de avance</div>
@@ -29,8 +30,8 @@ export default function Avance() {
       </header>
 
       <ol className="av-list">
-        {PASOS.map((p) => (
-          <li key={p.n} className="av-row" data-estado={p.estado} id={`paso-${p.n}`}>
+        {PASOS.map((p, i) => (
+          <li key={p.n} className="av-row" data-estado={p.estado} id={`paso-${p.n}`} style={{ "--i": Math.min(i, 8) } as React.CSSProperties}>
             <div className="av-n">{String(p.n).padStart(2, "0")}</div>
             <div className="av-body">
               <div className="av-top">
@@ -65,10 +66,10 @@ export default function Avance() {
                     <div className="av-k">Capturas 375 y 1440</div>
                     <div className="av-shots">
                       <div className="av-shot">
-                        {p.capturas?.w375 ? <img src={p.capturas.w375} alt={`${p.titulo} a 375 px`} /> : <span>Sin captura 375</span>}
+                        {p.capturas?.w375 ? <Image src={p.capturas.w375} alt={`${p.titulo} a 375 px`} fill sizes="96px" style={{ objectFit: "cover", objectPosition: "top" }} /> : <span>Sin captura 375</span>}
                       </div>
                       <div className="av-shot wide">
-                        {p.capturas?.w1440 ? <img src={p.capturas.w1440} alt={`${p.titulo} a 1440 px`} /> : <span>Sin captura 1440</span>}
+                        {p.capturas?.w1440 ? <Image src={p.capturas.w1440} alt={`${p.titulo} a 1440 px`} fill sizes="(min-width: 1024px) 480px, 100vw" style={{ objectFit: "cover", objectPosition: "top" }} /> : <span>Sin captura 1440</span>}
                       </div>
                     </div>
                     <div className="av-k">Notas</div>

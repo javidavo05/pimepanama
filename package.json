@@ -6,21 +6,24 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:motion": "tsx scripts/check-motion.ts",
+    "start:prod": "next start -p 3001"
   },
   "dependencies": {
+    "motion": "^14.0.0",
     "next": "16.4.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
   "devDependencies": {
-    "@tailwindcss/turbopack": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
-    "tailwindcss": "^4",
+    "lighthouse": "^13.5.0",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }
