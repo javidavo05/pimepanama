@@ -1,3 +1,4 @@
+// motion: none — réplica estática del tablero real con datos de muestra; se captura a imagen (scripts/capture-cases.mjs).
 // Svitzer: analítica de muestras de aceite. No hay repo del sistema en esta máquina, así que esta pantalla
 // sigue la descripción del mandato (lectura de reportes con IA, límites por motor, alertas, historial por
 // embarcación). Datos de muestra inventados.

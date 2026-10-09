@@ -1,24 +1,15 @@
-// Tableros de los sistemas del portfolio. Cada uno es una réplica estática (1280×800) del dashboard real del
-// sistema con DATOS DE MUESTRA; se escala dentro de la tarjeta. Las tarjetas no son funcionales.
-import CaseSvitzer from "./svitzer";
-import CaseUapaSuite from "./uapa-suite";
-import CaseAcademyx from "./academyx";
-import CaseBnbRealEstate from "./bnb-real-estate";
-import CaseSmartChurch from "./smart-church";
-import CaseJohnHenry from "./john-henry";
-import { Shot } from "./shot";
+// motion: none — imagen estática del tablero; la tarjeta que la contiene declara su movimiento.
+// Los tableros son réplicas (HTML/CSS, en este directorio) del dashboard real de cada sistema con DATOS DE
+// MUESTRA, capturadas a imagen con scripts/capture-cases.mjs desde /avance/casos. Las tarjetas no son funcionales.
+import Image from "next/image";
 
-const CASES: Record<string, React.ReactNode> = {
-  svitzer: <CaseSvitzer />,
-  "uapa-suite": <CaseUapaSuite />,
-  academyx: <CaseAcademyx />,
-  "bnb-real-estate": <CaseBnbRealEstate />,
-  "smart-church": <CaseSmartChurch />,
-  "john-henry": <CaseJohnHenry />,
-};
-
-export const TIENE_TABLERO = (slug: string) => slug in CASES;
+const CON_TABLERO = ["svitzer", "uapa-suite", "academyx", "bnb-real-estate", "smart-church", "john-henry"];
+export const TIENE_TABLERO = (slug: string) => CON_TABLERO.includes(slug);
 
 export function CaseShot({ slug, label }: { slug: string; label: string }) {
-  return <Shot label={label}>{CASES[slug]}</Shot>;
+  return (
+    <div className="shot">
+      <Image src={`/cases/${slug}.webp`} alt={label} width={2560} height={1600} sizes="(min-width: 1024px) 440px, (min-width: 640px) 50vw, 100vw" loading="lazy" style={{ width: "100%", height: "auto" }} />
+    </div>
+  );
 }

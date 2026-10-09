@@ -1,3 +1,4 @@
+// motion: none — réplica estática del tablero real con datos de muestra; se captura a imagen (scripts/capture-cases.mjs).
 import "./uapa-suite.css";
 
 type Seccion = {

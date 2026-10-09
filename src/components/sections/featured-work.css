@@ -42,8 +42,8 @@
 .fw-card { padding: 0; overflow: hidden; height: 100%; }
 .fw-link { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100%; text-decoration: none; color: inherit; }
 .fw-visual { background: var(--panel); border-bottom: var(--border); padding: var(--s-3); display: grid; }
-.shot { position: relative; width: 100%; overflow: hidden; border-radius: var(--r-sm); border: var(--border); background: var(--surface); }
-.shot-in { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.shot { position: relative; width: 100%; overflow: hidden; border-radius: var(--r-sm); border: var(--border); background: var(--surface); aspect-ratio: 16 / 10; }
+.shot img { display: block; }
 .fw-body { display: grid; gap: var(--s-2); padding: var(--s-6); align-content: start; }
 .fw-top { display: flex; justify-content: space-between; align-items: center; gap: var(--s-2); min-height: 28px; flex-wrap: wrap; }
 .fw-top .pill { white-space: normal; text-align: right; line-height: 1.3; padding-block: 3px; }
