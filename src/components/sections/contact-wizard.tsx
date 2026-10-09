@@ -160,9 +160,11 @@ export function ContactWizard({ lang, industrias }: { lang: Lang; industrias: st
             </div>
             <div className="cw-nav">
               {paso > 0 ? <button type="button" className="btn secondary" onClick={() => ir(paso - 1)}>{t.botones.atras}</button> : <span className="meta cw-paso">{paso + 1} / {t.pasos.length}</span>}
+              {/* Claves distintas: si React reutilizara el mismo <button>, el clic en «Continuar» del paso 3 terminaría
+                  como envío del formulario (la acción por defecto se evalúa cuando el botón ya es type=submit). */}
               {paso < 3
-                ? <button type="button" className="btn primary" onClick={() => ir(paso + 1)}>{t.botones.seguir} <span aria-hidden="true">→</span></button>
-                : <button type="submit" className="btn accent" disabled={estado === "enviando"}>{estado === "enviando" ? t.botones.enviando : estado === "error" ? t.error.reintentar : t.botones.enviar}</button>}
+                ? <button key="seguir" type="button" className="btn primary" onClick={(e) => { e.preventDefault(); ir(paso + 1); }}>{t.botones.seguir} <span aria-hidden="true">→</span></button>
+                : <button key="enviar" type="submit" className="btn accent" disabled={estado === "enviando"}>{estado === "enviando" ? t.botones.enviando : estado === "error" ? t.error.reintentar : t.botones.enviar}</button>}
             </div>
           </form>
         )}
