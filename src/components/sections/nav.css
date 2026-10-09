@@ -14,7 +14,6 @@ html[data-menu-open] { overflow: hidden; }
 .nav-brand img { width: 16px; height: 20px; }
 
 .nav-links { position: relative; display: none; justify-content: center; gap: var(--s-4); min-width: 0; }
-@media (min-width: 1500px) { .nav-links { gap: var(--s-6); } }
 .nav-links a { position: relative; display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--s-1); font-size: var(--text-sm); font-weight: var(--w-medium); color: var(--fg-2); text-decoration: none; transition: color var(--dur-fast); }
 .nav-links a:hover, .nav-links a[aria-current] { color: var(--fg); }
 .nav-ind { position: absolute; left: 0; bottom: 8px; height: 2px; width: 1px; background: var(--accent); border-radius: 2px; opacity: var(--ind-o, 0); transform: translate3d(var(--ind-x, 0px), 0, 0) scaleX(var(--ind-w, 1)); transform-origin: left center; transition: transform var(--dur-base) var(--ease-out), opacity var(--dur-base); }
@@ -26,7 +25,7 @@ html[data-menu-open] { overflow: hidden; }
 .nav-tag { display: none; position: relative; overflow: hidden; min-width: 96px; text-align: right; height: 16px; line-height: 16px; }
 .nav-tag-in { display: block; animation: tag-in var(--dur-base) var(--ease-out) both; }
 @keyframes tag-in { from { opacity: 0; transform: translate3d(0, 8px, 0); } to { opacity: 1; transform: none; } }
-@media (min-width: 1500px) { .nav-tag { display: block; } }
+/* La etiqueta de sección a la derecha no cabe con siete enlaces: el contenedor tope de 1200 px no crece. Queda oculta. */
 .nav-lang { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; font-size: var(--text-xs); font-weight: var(--w-label); letter-spacing: var(--tracking-caps); color: var(--fg-2); text-decoration: none; border-radius: var(--r-sm); transition: color var(--dur-fast), background var(--dur-fast); }
 .nav-lang:hover { color: var(--fg); background: var(--panel); }
 .nav-theme { display: none; }

@@ -34,4 +34,4 @@
 .cp-btn:hover { color: var(--fg); background: var(--panel); }
 .cp-btn svg { width: 18px; height: 18px; }
 .cp-btn-l { display: none; } .cp-kbd { display: none; }
-@media (min-width: 1500px) { .cp-btn-l, .cp-kbd { display: inline; } }
+/* Solo lupa: la etiqueta «Buscar ⌘K» no cabe en la barra con siete enlaces. */
