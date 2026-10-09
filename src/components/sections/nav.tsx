@@ -17,6 +17,8 @@ export function Nav({ lang }: { lang: Lang }) {
   const pathname = usePathname();
   const home = `/${lang}`;
   const onHome = pathname === home;
+  const otro = lang === "es" ? "en" : "es";
+  const hrefIdioma = pathname.replace(/^\/(es|en)(?=\/|$)/, `/${otro}`) || `/${otro}`; // misma página en el otro idioma
   const [hidden, setHidden] = useState(false);
   const [compact, setCompact] = useState(false);
   const [open, setOpen] = useState(false);
@@ -103,7 +105,7 @@ export function Nav({ lang }: { lang: Lang }) {
           <span className="nav-tag caps" aria-hidden="true"><span key={tag} className="nav-tag-in">{tag}</span></span>
           <PaletteButton lang={lang} />
           <span className="nav-theme"><ThemeToggle lang={lang} compact /></span>
-          <Link href={n.idioma.href} className="nav-lang" hrefLang={lang === "es" ? "en" : "es"} title={n.idioma.title}>{n.idioma.label}</Link>
+          <Link href={hrefIdioma} className="nav-lang" hrefLang={otro} title={n.idioma.title}>{n.idioma.label}</Link>
           <Button href={n.cta.href} size="sm" className="nav-cta">{n.cta.label}</Button>
           <button type="button" className="nav-burger" aria-expanded={open} aria-controls="nav-menu" aria-label={open ? n.cerrar : n.abrir} onClick={() => setOpen((v) => !v)}>
             <span /><span />
@@ -123,7 +125,7 @@ export function Nav({ lang }: { lang: Lang }) {
         <div className="nav-menu-foot">
           <div className="nav-menu-actions">
             <ThemeToggle lang={lang} />
-            <Link href={n.idioma.href} className="nav-lang" title={n.idioma.title}>{n.idioma.label}</Link>
+            <Link href={hrefIdioma} className="nav-lang" title={n.idioma.title}>{n.idioma.label}</Link>
             <Button href={n.cta.href} arrow>{n.cta.label}</Button>
           </div>
         </div>
