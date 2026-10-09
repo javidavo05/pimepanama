@@ -423,3 +423,46 @@ export const CONTACTO: Record<Lang, {
     val: { nombre: "Write your name.", correo: "Check the email: we reply there." },
   },
 };
+
+/** Propuesta preliminar que se arma en vivo a la derecha del wizard. Listas de alcance por tipo de proyecto:
+ *  descripciones del negocio, no cifras ni plazos. */
+export const CONTACTO_PREVIEW: Record<Lang, {
+  eyebrow: string; titulo: string; sub: string; campos: { proyecto: string; industria: string; plazo: string; intencion: string };
+  incluye: string; alcance: Record<string, string[]>; fases: string; faseItems: string[]; pie: string[]; recibida: string;
+  confianza: { anios: string; proyectos: string; garantia: string };
+}> = {
+  es: {
+    eyebrow: "Propuesta preliminar", titulo: "Se arma con sus respuestas", sub: "Así empieza el documento que recibirá.",
+    campos: { proyecto: "Proyecto", industria: "Industria", plazo: "Plazo", intencion: "Siguiente paso" },
+    incluye: "Alcance habitual",
+    alcance: {
+      erp: ["Operación diaria y órdenes", "Inventario y compras", "Cobros, facturación y saldos", "Reportes para dirección"],
+      crm: ["Clientes y contactos", "Seguimiento y tareas", "Cotizaciones y cierre", "Campañas y mensajes"],
+      saas: ["Varias empresas o sedes", "Planes, cobro y acceso", "Panel por cliente", "Consola de administración"],
+      portal: ["Acceso para clientes", "Consultas y documentos", "Pagos o reservas en línea", "Avisos automáticos"],
+      ia: ["Lectura de documentos", "Clasificación y alertas", "Respuestas asistidas", "Integraciones"],
+      "no-se": ["Diagnóstico de la operación", "Mapa de procesos y datos", "Propuesta por fases", "Prioridad por urgencia"],
+    },
+    fases: "Fases independientes", faseItems: ["Núcleo", "Ampliación", "Integraciones"],
+    pie: ["Precio cerrado por fase", "Garantía de tres meses", "Código y datos suyos"],
+    recibida: "Recibida",
+    confianza: { anios: "años construyendo sistemas", proyectos: "sistemas entregados", garantia: "meses de garantía" },
+  },
+  en: {
+    eyebrow: "Preliminary proposal", titulo: "Built from your answers", sub: "This is how the document you'll receive begins.",
+    campos: { proyecto: "Project", industria: "Industry", plazo: "Timing", intencion: "Next step" },
+    incluye: "Usual scope",
+    alcance: {
+      erp: ["Daily operation and orders", "Inventory and purchasing", "Billing, invoices and balances", "Management reports"],
+      crm: ["Customers and contacts", "Follow-up and tasks", "Quotes and closing", "Campaigns and messages"],
+      saas: ["Several companies or branches", "Plans, billing and access", "Per-customer panel", "Admin console"],
+      portal: ["Customer access", "Queries and documents", "Online payments or bookings", "Automatic notices"],
+      ia: ["Document reading", "Classification and alerts", "Assisted replies", "Integrations"],
+      "no-se": ["Operation diagnosis", "Process and data map", "Proposal in phases", "Priority by urgency"],
+    },
+    fases: "Independent phases", faseItems: ["Core", "Expansion", "Integrations"],
+    pie: ["Fixed price per phase", "Three-month warranty", "Your code and data"],
+    recibida: "Received",
+    confianza: { anios: "years building systems", proyectos: "systems delivered", garantia: "months of warranty" },
+  },
+};
