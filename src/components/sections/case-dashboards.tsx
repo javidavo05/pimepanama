@@ -50,7 +50,7 @@ function Svitzer({ lang }: { lang: Lang }) {
         <div className="hw-card"><span className="hw-kpi-k">{es ? "Alertas abiertas" : "Open alerts"}</span>
           <ul className="cd-list">{[["Delta 7", es ? "Fe por encima del límite" : "Fe above limit", "bad"], ["Orion 2", es ? "Viscosidad baja" : "Low viscosity", "run"], ["Pacífico 4", es ? "Agua en aceite" : "Water in oil", "run"]].map(([a, b, c]) => <li key={a}><b>{a}</b><span>{b}</span><Pill variant={c as "bad"}>{c === "bad" ? (es ? "Crítica" : "Critical") : (es ? "Revisar" : "Review")}</Pill></li>)}</ul></div>
       </div>
-      <Table cols={[es ? "Embarcación" : "Vessel", "Motor", "Fe", "Cu", "Visc.", es ? "Estado" : "Status"]} rows={[["Delta 7", "BB", "21", "4", "14.1", { t: es ? "Crítica" : "Critical", tono: "bad" }], ["Orion 2", "EB", "9", "3", "11.8", { t: es ? "Revisar" : "Review", tono: "run" }], ["Atlas 1", "BB", "7", "2", "14.6", { t: "OK", tono: "ok" }], ["Pacífico 4", "EB", "12", "5", "13.9", { t: es ? "Revisar" : "Review", tono: "run" }]]} />
+      <Table cols={[es ? "Embarcación" : "Vessel", "Motor", "Fe", "Cu", "Visc.", es ? "Estado" : "Status"]} rows={[["Delta 7", "BB", "21", "4", "14.1", { t: es ? "Crítica" : "Critical", tono: "bad" }], ["Orion 2", "EB", "9", "3", "11.8", { t: es ? "Revisar" : "Review", tono: "run" }], ["Atlas 1", "BB", "7", "2", "14.6", { t: "OK", tono: "ok" }]]} />
     </Frame>
   );
 }
@@ -61,11 +61,11 @@ function Uapa({ lang }: { lang: Lang }) {
   return (
     <Frame app="Suite UAP" modulo={es ? "Actas y juntas" : "Minutes and boards"} menu={[es ? "Secretaría" : "Secretariat", es ? "Propiedades" : "Properties", es ? "Actas" : "Minutes", es ? "Juntas" : "Boards", es ? "Obreros" : "Workers", es ? "Asistente IA" : "AI assistant"]} activo={2} lang={lang} user="SG">
       <Kpis items={[[es ? "Iglesias" : "Churches", "184"], [es ? "Actas firmadas" : "Signed minutes", "96 %"], [es ? "Juntas este mes" : "Boards this month", "11"]]} />
+      <Table cols={[es ? "Acta" : "Minutes", es ? "Campo" : "Field", es ? "Fecha" : "Date", es ? "Firma" : "Signature"]} rows={[[es ? "Junta directiva 09-2026" : "Board 09-2026", es ? "Metropolitano" : "Metropolitan", "28 sep", { t: es ? "Firmada" : "Signed", tono: "ok" }], [es ? "Comisión de propiedades" : "Property committee", "Chiriquí", "2 oct", { t: es ? "Pendiente" : "Pending", tono: "run" }], [es ? "Presupuesto 2027" : "Budget 2027", es ? "Unión" : "Union", "8 oct", { t: es ? "Borrador" : "Draft", tono: "ghost" }]]} />
       <div className="cd-two">
-        <Table cols={[es ? "Acta" : "Minutes", es ? "Campo" : "Field", es ? "Fecha" : "Date", es ? "Firma" : "Signature"]} rows={[[es ? "Junta directiva 09-2026" : "Board 09-2026", es ? "Metropolitano" : "Metropolitan", "28 sep", { t: es ? "Firmada" : "Signed", tono: "ok" }], [es ? "Comisión de propiedades" : "Property committee", "Chiriquí", "2 oct", { t: es ? "Pendiente" : "Pending", tono: "run" }], [es ? "Nombramientos" : "Appointments", es ? "Central" : "Central", "6 oct", { t: es ? "Firmada" : "Signed", tono: "ok" }], [es ? "Presupuesto 2027" : "Budget 2027", es ? "Unión" : "Union", "8 oct", { t: es ? "Borrador" : "Draft", tono: "ghost" }]]} />
         <div className="hw-card"><span className="hw-kpi-k">{es ? "Asistente · «¿Cuándo se aprobó el templo de David?»" : "Assistant · “When was the David temple approved?”"}</span><p className="cd-answer">{es ? "El 14 de marzo de 2024, en la junta 03-2024, punto 7. Fuente: acta firmada." : "On March 14, 2024, board 03-2024, item 7. Source: signed minutes."}</p><span className="hw-sub">{es ? "Cita la fuente en el archivo con OCR" : "Cites the source in the OCR archive"}</span></div>
-      </div>
       <div className="hw-card"><span className="hw-kpi-k">{es ? "Calendario de juntas · octubre" : "Board calendar · October"}</span><Calendar dias={[0, 0, 2, 0, 0, 0, 0, 1, 0, 0, 3, 0, 0, 0, 0, 2, 0, 0, 1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0]} diasCorto={es ? ["L", "M", "X", "J", "V", "S", "D"] : ["M", "T", "W", "T", "F", "S", "S"]} id="ua-c" unidad={es ? "juntas" : "boards"} /></div>
+      </div>
     </Frame>
   );
 }
@@ -76,11 +76,11 @@ function Academyx({ lang }: { lang: Lang }) {
   return (
     <Frame app="Academyx" modulo={es ? "Academia Norte · Matrícula" : "North Academy · Enrollment"} menu={[es ? "Matrícula" : "Enrollment", es ? "Jugadores" : "Players", es ? "Familias" : "Families", es ? "Cobros" : "Billing", es ? "Torneos" : "Tournaments", es ? "Correos" : "Email"]} activo={0} lang={lang} user="AN">
       <Kpis items={[[es ? "Jugadores activos" : "Active players", "236"], [es ? "Cobrado octubre" : "Collected October", "US$ 14 920"], [es ? "Morosidad" : "Overdue", "4 %"]]} />
+      <Table cols={[es ? "Jugador" : "Player", es ? "Categoría" : "Category", es ? "Familia" : "Family", es ? "Cobro" : "Billing"]} rows={[["Mateo R.", "Sub-12", "Rodríguez", { t: es ? "Al día" : "Paid", tono: "ok" }], ["Diego C.", "Sub-14", "Castillo", { t: es ? "Vence 15 oct" : "Due Oct 15", tono: "run" }], ["Valeria P.", "Sub-8", "Pérez", { t: es ? "Pendiente" : "Pending", tono: "ghost" }]]} />
       <div className="cd-two">
-        <Table cols={[es ? "Jugador" : "Player", es ? "Categoría" : "Category", es ? "Familia" : "Family", es ? "Cobro" : "Billing"]} rows={[["Mateo R.", "Sub-12", "Rodríguez", { t: es ? "Al día" : "Paid", tono: "ok" }], ["Sofía M.", "Sub-10", "Mendoza", { t: es ? "Al día" : "Paid", tono: "ok" }], ["Diego C.", "Sub-14", "Castillo", { t: es ? "Vence 15 oct" : "Due Oct 15", tono: "run" }], ["Valeria P.", "Sub-8", "Pérez", { t: es ? "Pendiente" : "Pending", tono: "ghost" }]]} />
         <div className="hw-card"><span className="hw-kpi-k">{es ? "Asistencia por categoría · semana" : "Attendance by category · week"}</span><Heat filas={["Sub-8", "Sub-10", "Sub-12", "Sub-14"]} cols={es ? ["L", "M", "X", "J", "V"] : ["M", "T", "W", "T", "F"]} datos={[[18, 20, 17, 21, 19], [24, 22, 25, 23, 26], [30, 28, 31, 29, 33], [22, 24, 21, 25, 23]]} id="ax-h" unidad={es ? "asistentes" : "attendees"} /></div>
+        <div className="hw-card"><span className="hw-kpi-k">{es ? "Cobros por medio de pago" : "Payments by method"}</span><HBars items={[{ label: "Yappy", valor: 6240 }, { label: "PagueloFácil", valor: 4810 }, { label: "Stripe", valor: 2390 }, { label: es ? "Efectivo" : "Cash", valor: 1480 }]} unidad="US$" id="ax-b" /></div>
       </div>
-      <div className="hw-card"><span className="hw-kpi-k">{es ? "Cobros por medio de pago" : "Payments by method"}</span><HBars items={[{ label: "Yappy", valor: 6240 }, { label: "PagueloFácil", valor: 4810 }, { label: "Stripe", valor: 2390 }, { label: es ? "Efectivo" : "Cash", valor: 1480 }]} unidad="US$" id="ax-b" /></div>
     </Frame>
   );
 }
@@ -125,13 +125,13 @@ function JohnHenry({ lang }: { lang: Lang }) {
   return (
     <Frame app="John Henry" modulo={es ? "Pedidos · Sede Panamá" : "Orders · Panama branch"} menu={[es ? "Citas" : "Appointments", es ? "Clientes" : "Clients", es ? "Pedidos" : "Orders", es ? "Telas" : "Fabrics", es ? "Modelos" : "Models", es ? "Finanzas" : "Finance", es ? "Sedes" : "Branches"]} activo={2} lang={lang} user="JH">
       <Kpis items={[[es ? "Pedidos en taller" : "Orders in workshop", "14"], [es ? "Citas esta semana" : "Appointments this week", "9"], [es ? "Ventas octubre" : "October sales", "US$ 31 600"]]} />
+      <Table cols={[es ? "Pedido" : "Order", es ? "Prenda" : "Garment", es ? "Tela" : "Fabric", es ? "Etapa" : "Stage"]} rows={[["#2041", es ? "Traje 2 piezas" : "2-piece suit", "Loro Piana 110s", { t: es ? "Corte" : "Cutting", tono: "run" }], ["#2044", es ? "Esmoquin" : "Tuxedo", "Vitale Barberis", { t: es ? "Prueba" : "Fitting", tono: "run" }], ["#2039", es ? "Camisa" : "Shirt", "Thomas Mason", { t: es ? "Entregado" : "Delivered", tono: "ok" }]]} />
       <div className="cd-two">
-        <Table cols={[es ? "Pedido" : "Order", es ? "Prenda" : "Garment", es ? "Tela" : "Fabric", es ? "Etapa" : "Stage"]} rows={[["#2041", es ? "Traje 2 piezas" : "2-piece suit", "Loro Piana 110s", { t: es ? "Corte" : "Cutting", tono: "run" }], ["#2044", es ? "Esmoquin" : "Tuxedo", "Vitale Barberis", { t: es ? "Prueba" : "Fitting", tono: "run" }], ["#2039", es ? "Camisa" : "Shirt", "Thomas Mason", { t: es ? "Entregado" : "Delivered", tono: "ok" }], ["#2046", es ? "Abrigo" : "Overcoat", "Cashmere", { t: es ? "Medidas" : "Measuring", tono: "ghost" }]]} />
         <div className="hw-card cd-measures"><span className="hw-kpi-k">{es ? "Medidas · cliente #118" : "Measurements · client #118"}</span>
           <svg viewBox="0 0 80 120" className="cd-mannequin" aria-hidden="true"><path d="M40 6a8 8 0 1 0 0 16a8 8 0 1 0 0-16zM26 26h28l10 40h-9l-3-22v70h-8V74h-8v40h-8V44l-3 22h-9z" /></svg>
           <ul className="cd-list tight">{[[es ? "Pecho" : "Chest", "102 cm"], [es ? "Cintura" : "Waist", "88 cm"], [es ? "Largo saco" : "Jacket length", "74 cm"], [es ? "Manga" : "Sleeve", "63 cm"]].map(([k, v]) => <li key={k}><span>{k}</span><b className="num">{v}</b></li>)}</ul></div>
+        <div className="hw-card"><span className="hw-kpi-k">{es ? "Ventas por sede · US$ miles" : "Sales by branch · US$ thousands"}</span><HBars items={[{ label: "Panamá", valor: 31.6 }, { label: "Bogotá", valor: 27.2 }, { label: "Medellín", valor: 18.9 }]} unidad="US$ miles" id="jh-b" /></div>
       </div>
-      <div className="hw-card"><span className="hw-kpi-k">{es ? "Ventas por sede · US$ miles" : "Sales by branch · US$ thousands"}</span><HBars items={[{ label: "Panamá", valor: 31.6 }, { label: "Bogotá", valor: 27.2 }, { label: "Medellín", valor: 18.9 }]} unidad="US$ miles" id="jh-b" /></div>
     </Frame>
   );
 }

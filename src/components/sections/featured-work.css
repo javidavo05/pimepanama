@@ -22,8 +22,8 @@
 @supports (animation-timeline: view()) {
   @media (min-width: 1024px) {
     .fw { height: calc(var(--n) * 60vh + 100vh); view-timeline-name: --fw; view-timeline-axis: block; }
-    .fw-pin { position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding-top: calc(72px + var(--s-4)); padding-bottom: var(--s-6); gap: var(--s-6); align-content: start; overflow: hidden; }
-    .fw-head { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: end; gap: var(--s-8); }
+    .fw-pin { position: sticky; top: 0; height: 100vh; box-sizing: border-box; padding-top: calc(72px + var(--s-3)); padding-bottom: var(--s-4); gap: var(--s-4); align-content: start; overflow: hidden; }
+    .fw-head { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: end; gap: var(--s-6); }
     .fw-head-l .t-1 { font-size: 28px; }
     .fw-head-l { gap: var(--s-2); }
     .fw-foot { display: none; }
@@ -43,7 +43,7 @@
 /* ---------- Tarjeta ---------- */
 .fw-card { padding: 0; overflow: hidden; height: 100%; }
 .fw-link { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100%; text-decoration: none; color: inherit; }
-@media (min-width: 1024px) { .fw-link { grid-template-rows: none; grid-template-columns: minmax(0, 5fr) minmax(0, 3fr); } .fw-visual { border-bottom: 0; border-right: var(--border); } .fw-body { padding: var(--s-4) var(--s-6); gap: var(--s-1); } .fw-ps dd, .fw-r { font-size: var(--text-xs); } .fw-t { font-size: var(--text-md); } }
+@media (min-width: 1024px) { .fw-link { grid-template-rows: none; grid-template-columns: minmax(0, 5fr) minmax(0, 3fr); } .fw-visual { border-bottom: 0; border-right: var(--border); } .fw-body { padding: var(--s-3) var(--s-4); gap: var(--s-1); } .fw-ps dd, .fw-r { font-size: var(--text-xs); } .fw-t { font-size: var(--text-md); } .fw-mods .pill { min-height: 20px; font-size: 10px; padding: 0 var(--s-2); } .fw-top { min-height: 24px; } }
 .fw-visual { min-height: 240px; background: var(--panel); border-bottom: var(--border); padding: var(--s-4); display: grid; align-content: start; }
 .fw-body { display: grid; gap: var(--s-2); padding: var(--s-6); align-content: start; }
 .fw-top { display: flex; justify-content: space-between; align-items: center; gap: var(--s-2); min-height: 28px; flex-wrap: wrap; }
