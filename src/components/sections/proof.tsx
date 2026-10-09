@@ -68,7 +68,7 @@ export function Proof({ lang }: { lang: Lang }) {
           {autorizados.map((x) => (
             <span className="proof-logo" key={x.nombre} title={x.sistema}>
               {x.logo ? (
-                <Image src={x.logo} alt={x.nombre} height={40} width={Math.round(40 * (x.ancho ?? 2))} unoptimized={x.logo.endsWith(".svg")} />
+                <Image src={x.logo} alt={x.nombre} height={40} width={Math.round(40 * (x.ancho ?? 2))} style={{ width: "auto" }} unoptimized={x.logo.endsWith(".svg")} />
               ) : (
                 <span className="proof-wordmark">{x.nombre}</span>
               )}

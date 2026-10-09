@@ -18,6 +18,10 @@ export type Caso = {
   publicable: boolean;
   destacado?: boolean;
   logo?: string;
+  /** Enlace público VERIFICADO con una petición real (2026-10-09). null = sin enlace confirmado: no se muestra. */
+  urlPublica?: string | null;
+  /** Por qué no hay enlace público, cuando urlPublica es null. */
+  urlNota?: { es: string; en: string };
 };
 
 export const CASOS: Caso[] = [
@@ -30,6 +34,7 @@ export const CASOS: Caso[] = [
     modulos: { es: ["Carga de reportes", "Extracción con IA", "Límites por motor", "Alertas", "Historial por embarcación"], en: ["Report upload", "AI extraction", "Limits per engine", "Alerts", "History per vessel"] },
     stack: ["Next.js", "Supabase", "OpenAI"], visual: "analitica",
     estado: { es: "En producción", en: "In production" }, publicable: true, destacado: true, logo: "/logos/svitzer.svg",
+    urlPublica: null, urlNota: { es: "Sistema interno del cliente: sin enlace público.", en: "Client internal system: no public link." },
   },
   {
     slug: "uapa-suite", nombre: "Suite institucional", cliente: "Unión Adventista Panameña",
@@ -40,6 +45,7 @@ export const CASOS: Caso[] = [
     modulos: { es: ["Acceso único", "Secretaría", "Propiedades", "Obreros y vacaciones", "Actas", "Asistente con IA", "Visitas pastorales"], en: ["Single sign-on", "Secretariat", "Properties", "Workers and leave", "Minutes", "AI assistant", "Pastoral visits"] },
     stack: ["Next.js 16", "Supabase", "OCR + OpenAI", "Capacitor", "Twilio"], visual: "documentos",
     estado: { es: "En producción", en: "In production" }, publicable: true, destacado: true, logo: "/logos/adventista.png",
+    urlPublica: null, urlNota: { es: "Sistema institucional con acceso por cuenta: sin enlace público confirmado.", en: "Institutional system with account access: no confirmed public link." },
   },
   {
     slug: "academyx", nombre: "Academyx", cliente: "Academyx",
@@ -50,6 +56,7 @@ export const CASOS: Caso[] = [
     modulos: { es: ["Matrícula", "Jugadores", "Familias", "Cobros", "Torneos", "Correos", "Profesores", "Super-admin"], en: ["Enrollment", "Players", "Families", "Billing", "Tournaments", "Email", "Teachers", "Super-admin"] },
     stack: ["Next.js 15", "Supabase", "Upstash Redis", "Cloudflare R2", "PagueloFácil", "Yappy", "Stripe", "Brevo", "WhatsApp"], visual: "tenants",
     estado: { es: "En producción", en: "In production" }, publicable: true, destacado: true, logo: "/logos/academyx.svg",
+    urlPublica: "https://www.academyxcrm.com",
   },
   {
     slug: "bnb-real-estate", nombre: "CMS inmobiliario", cliente: "B&B Real Estate",
@@ -60,6 +67,7 @@ export const CASOS: Caso[] = [
     modulos: { es: ["Propiedades", "Proyectos", "Leads", "Campañas", "Documentos", "Traducciones", "Sincronización Wasi", "Analítica"], en: ["Properties", "Projects", "Leads", "Campaigns", "Documents", "Translations", "Wasi sync", "Analytics"] },
     stack: ["Next.js 15", "Supabase", "Cloudflare R2", "API Wasi", "react-pdf", "Vercel Cron"], visual: "catalogo",
     estado: { es: "En producción", en: "In production" }, publicable: true, destacado: true, logo: "/logos/bb-real-estate.png",
+    urlPublica: null, urlNota: { es: "Dominio por confirmar: bbrealestate.com.pa no resuelve.", en: "Domain to be confirmed: bbrealestate.com.pa does not resolve." },
   },
   {
     slug: "holo-realty", nombre: "Gestión de propiedades", cliente: "HOLO Realty",
@@ -80,6 +88,7 @@ export const CASOS: Caso[] = [
     modulos: { es: ["Ministerios", "Roster", "Calendario", "Visitas", "Citas pastorales", "Junta", "Alabanza", "Tesorería"], en: ["Ministries", "Roster", "Calendar", "Visits", "Pastoral appointments", "Board", "Worship", "Treasury"] },
     stack: ["Next.js 16", "Supabase Realtime", "Cloudflare R2", "Google Calendar", "Brevo", "PWA"], visual: "calendario",
     estado: { es: "En producción", en: "In production" }, publicable: true, destacado: true, logo: "/logos/revive.png",
+    urlPublica: "https://www.revivepanama.com",
   },
   {
     slug: "john-henry", nombre: "CMS y CRM de sastrería", cliente: "John Henry",
@@ -90,6 +99,7 @@ export const CASOS: Caso[] = [
     modulos: { es: ["Citas", "Clientes", "Pedidos", "Telas", "Modelos de prenda", "Finanzas", "Correos", "Sedes"], en: ["Appointments", "Clients", "Orders", "Fabrics", "Garment models", "Finance", "Email", "Branches"] },
     stack: ["Next.js 16", "Supabase", "Cloudflare R2", "Google Calendar", "Three.js", "Turnstile"], visual: "catalogo",
     estado: { es: "En producción", en: "In production" }, publicable: true, destacado: true, logo: "/logos/john-henry.svg",
+    urlPublica: "https://www.johnhenryoficial.com",
   },
   {
     slug: "medsuite", nombre: "MedSuite", cliente: "MedSuite",

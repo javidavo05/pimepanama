@@ -7,14 +7,14 @@ import Image from "next/image";
 import { Eyebrow, LetterChip, Lines, Pill } from "@/components/ui/primitives";
 import { TiltCard } from "@/components/ui/tilt-card";
 import { TextLink } from "@/components/ui/text-link";
-import { CaseDashboard } from "./case-dashboards";
+import { CaseShot } from "@/components/cases";
 import { DESTACADOS, type Caso } from "../../../content/portfolio";
 import type { Lang } from "../../../content/site";
 import "./featured-work.css";
 
 const COPY = {
-  es: { eyebrow: "04 · Trabajo", titulo: ["Sistemas que hoy", "operan empresas reales"], bajada: "Seis casos en producción, cada uno con su tablero recreado con datos de muestra. Cada tarjeta abre el caso completo.", ver: "Ver el caso", todos: "Ver todo el portfolio", hint: "Bajá para recorrerlos" },
-  en: { eyebrow: "04 · Work", titulo: ["Systems that run", "real companies today"], bajada: "Six cases in production, each with its dashboard recreated with sample data. Each card opens the full case.", ver: "View case", todos: "See the whole portfolio", hint: "Scroll to browse" },
+  es: { eyebrow: "04 · Trabajo", titulo: ["Sistemas que hoy", "operan empresas reales"], bajada: "Seis casos en producción, cada uno con su tablero real recreado con datos de muestra. Cada tarjeta abre la ficha del sistema y su enlace público.", ver: "Ver el caso", todos: "Ver todo el portfolio", hint: "Bajá para recorrerlos" },
+  en: { eyebrow: "04 · Work", titulo: ["Systems that run", "real companies today"], bajada: "Six cases in production, each with its real dashboard recreated with sample data. Each card opens the system's page and public link.", ver: "View case", todos: "See the whole portfolio", hint: "Scroll to browse" },
 };
 
 function Card({ c, lang, i, n }: { c: Caso; lang: Lang; i: number; n: number }) {
@@ -23,22 +23,17 @@ function Card({ c, lang, i, n }: { c: Caso; lang: Lang; i: number; n: number }) 
     <TiltCard className="fw-card" style={{ "--i": i, "--n": n } as React.CSSProperties}>
       <Link href={`/${lang}/portfolio/${c.slug}`} className="fw-link" data-motion="tilt">
         <div className="fw-visual" style={{ viewTransitionName: `caso-${c.slug}` } as React.CSSProperties}>
-          <CaseDashboard slug={c.slug} lang={lang} nombre={c.nombre} modulos={c.modulos[lang]} />
+          <CaseShot slug={c.slug} label={`${c.nombre} · ${lang === "es" ? "tablero con datos de muestra" : "dashboard with sample data"}`} />
         </div>
         <div className="fw-body">
           <div className="fw-top">
-            {c.logo ? <Image src={c.logo} alt="" width={64} height={24} className="fw-logo" unoptimized={c.logo.endsWith(".svg")} /> : <LetterChip>{c.cliente.slice(0, 2).toUpperCase()}</LetterChip>}
+            {c.logo ? <Image src={c.logo} alt="" width={64} height={24} className="fw-logo" style={{ width: "auto" }} unoptimized={c.logo.endsWith(".svg")} /> : <LetterChip>{c.cliente.slice(0, 2).toUpperCase()}</LetterChip>}
             <Pill variant="ghost">{c.tipo[lang]}</Pill>
           </div>
           <h3 className="fw-t">{c.nombre}</h3>
           <p className="fw-c">{c.cliente} · {c.industria[lang]} · {c.estado[lang]}</p>
           <p className="fw-r">{c.resumen[lang]}</p>
-          <dl className="fw-ps">
-            <div><dt className="caps">{lang === "es" ? "Problema" : "Problem"}</dt><dd>{c.problema[lang]}</dd></div>
-            <div><dt className="caps">{lang === "es" ? "Solución" : "Solution"}</dt><dd>{c.solucion[lang]}</dd></div>
-          </dl>
-          <div className="fw-mods">{c.modulos[lang].map((m) => <Pill key={m} variant="ghost">{m}</Pill>)}</div>
-          <p className="fw-stack"><span className="caps">Stack</span> {c.stack.join(" · ")}</p>
+          <p className="fw-stack"><span className="caps">{lang === "es" ? "Módulos" : "Modules"}</span> {c.modulos[lang].slice(0, 5).join(" · ")}</p>
           <span className="fw-cta">{t.ver} <span className="arrow" aria-hidden="true">→</span></span>
         </div>
       </Link>

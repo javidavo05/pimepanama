@@ -1,0 +1,27 @@
+.case-svitzer { --c-bg: #F4F6F8; --c-side: #0B2A4A; --c-side-on: #103A64; --c-accent: #00A3E0; --c-ink: #0F1B2D; --c-mute: #5F6B7A; --c-line: #E1E6EC; --c-crit: #D64545; --c-warn: #E0A100; --c-ok: #1E9E5A;
+  width: 1280px; height: 800px; overflow: hidden; display: grid; grid-template-columns: 220px minmax(0, 1fr); background: var(--c-bg); color: var(--c-ink); font-family: var(--font-body); font-size: 13px; }
+.case-svitzer .sv-side { background: var(--c-side); color: #fff; padding: 20px 14px; display: grid; gap: 4px; align-content: start; }
+.case-svitzer .sv-logo { font-family: var(--font-display); font-weight: 800; font-size: 20px; letter-spacing: -0.02em; padding: 6px 10px 22px; }
+.case-svitzer .sv-nav { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; color: rgba(255,255,255,0.72); font-weight: 500; }
+.case-svitzer .sv-nav i { width: 16px; height: 16px; border: 1.5px solid currentColor; border-radius: 4px; }
+.case-svitzer .sv-nav.on { background: var(--c-side-on); color: #fff; }
+.case-svitzer .sv-main { padding: 24px 28px; display: grid; gap: 18px; align-content: start; min-width: 0; }
+.case-svitzer .sv-top { display: flex; justify-content: space-between; align-items: flex-end; }
+.case-svitzer h1 { font-family: var(--font-display); font-weight: 800; font-size: 24px; margin: 0; letter-spacing: -0.02em; }
+.case-svitzer .sv-top p { margin: 4px 0 0; color: var(--c-mute); }
+.case-svitzer .sv-actions { display: flex; gap: 8px; }
+.case-svitzer .sv-btn { display: inline-flex; align-items: center; height: 36px; padding: 0 14px; border-radius: 8px; background: var(--c-accent); color: #fff; font-weight: 600; }
+.case-svitzer .sv-btn.ghost { background: #fff; color: var(--c-ink); border: 1px solid var(--c-line); }
+.case-svitzer .sv-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.case-svitzer .sv-kpi { background: #fff; border: 1px solid var(--c-line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 4px; }
+.case-svitzer .sv-kpi span { color: var(--c-mute); font-size: 12px; } .case-svitzer .sv-kpi b { font-family: var(--font-display); font-size: 26px; font-weight: 800; } .case-svitzer .sv-kpi small { color: var(--c-mute); font-size: 11px; }
+.case-svitzer .sv-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: 14px; }
+.case-svitzer .sv-card { background: #fff; border: 1px solid var(--c-line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.case-svitzer .sv-card-h { display: flex; justify-content: space-between; align-items: baseline; } .case-svitzer .sv-card-h span { color: var(--c-mute); font-size: 12px; }
+.case-svitzer .sv-chart svg { width: 100%; height: 200px; }
+.case-svitzer .sv-grid-l { stroke: var(--c-line); } .case-svitzer .sv-limit { stroke: var(--c-crit); stroke-dasharray: 4 4; } .case-svitzer .sv-line { fill: none; stroke: var(--c-accent); stroke-width: 2.5; } .case-svitzer .sv-dot { fill: #fff; stroke: var(--c-accent); stroke-width: 2; } .case-svitzer .sv-lab { font-size: 11px; fill: var(--c-mute); }
+.case-svitzer .sv-alert { display: grid; grid-template-columns: 10px 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--c-line); }
+.case-svitzer .sv-alert i { width: 10px; height: 10px; border-radius: 50%; } .case-svitzer .sv-alert i.crit { background: var(--c-crit); } .case-svitzer .sv-alert i.warn { background: var(--c-warn); }
+.case-svitzer .sv-alert b { display: block; font-size: 13px; } .case-svitzer .sv-alert span { color: var(--c-mute); font-size: 12px; } .case-svitzer .sv-alert em { font-style: normal; font-size: 12px; color: var(--c-mute); }
+.case-svitzer table { width: 100%; border-collapse: collapse; } .case-svitzer th { text-align: left; font-size: 11px; color: var(--c-mute); text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 8px; border-bottom: 1px solid var(--c-line); } .case-svitzer td { padding: 9px 8px; border-bottom: 1px solid var(--c-line); font-size: 13px; }
+.case-svitzer .sv-pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; } .case-svitzer .sv-pill.crit { background: #FBE3E3; color: var(--c-crit); } .case-svitzer .sv-pill.warn { background: #FFF2CC; color: #8A6400; } .case-svitzer .sv-pill.ok { background: #DDF3E6; color: var(--c-ok); }

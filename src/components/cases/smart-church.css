@@ -1,0 +1,353 @@
+.case-smart-church {
+  --c-amber: #ffbd59;
+  --c-amber-wash: #fff3de;
+  --c-ink-50: #faf8f5;
+  --c-ink-100: #f2efea;
+  --c-ink-200: #e5e1da;
+  --c-ink-400: #a8a199;
+  --c-ink-500: #6f6961;
+  --c-ink-600: #565049;
+  --c-ink-700: #3a3530;
+  --c-ink-950: #040404;
+  --c-cream: #fffcf7;
+  --c-cream-dim: #faf6ef;
+  --c-red: #b91c1c;
+  width: 1280px;
+  height: 800px;
+  overflow: hidden;
+  display: flex;
+  background: var(--c-cream);
+  color: var(--c-ink-950);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.4;
+  box-sizing: border-box;
+}
+.case-smart-church *,
+.case-smart-church *::before,
+.case-smart-church *::after {
+  box-sizing: border-box;
+}
+.case-smart-church p,
+.case-smart-church h1,
+.case-smart-church h2,
+.case-smart-church ul {
+  margin: 0;
+  padding: 0;
+}
+.case-smart-church .sc-side {
+  width: 240px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  background: var(--c-cream-dim);
+  border-right: 1px solid var(--c-ink-200);
+}
+.case-smart-church .sc-brand {
+  display: flex;
+  align-items: baseline;
+  padding: 0 12px;
+  height: 32px;
+  margin-bottom: 8px;
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.case-smart-church .sc-brand-mark {
+  background: var(--c-amber);
+  color: var(--c-ink-950);
+  padding: 4px 3px 3px;
+}
+.case-smart-church .sc-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  margin-bottom: 8px;
+  padding: 0 12px;
+  border: 1px solid var(--c-ink-200);
+  border-radius: 8px;
+  background: var(--c-cream);
+  color: var(--c-ink-500);
+  font-size: 13px;
+}
+.case-smart-church .sc-search kbd {
+  margin-left: auto;
+  font-family: inherit;
+  font-size: 10px;
+  color: var(--c-ink-400);
+}
+.case-smart-church .sc-ico {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.case-smart-church .sc-nav {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.case-smart-church .sc-group-sep {
+  margin-top: 4px;
+  padding-top: 2px;
+  border-top: 1px solid var(--c-ink-200);
+}
+.case-smart-church .sc-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 22px;
+  padding: 0 12px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--c-ink-500);
+}
+.case-smart-church .sc-chev {
+  width: 12px;
+  height: 12px;
+  transform: rotate(180deg);
+}
+.case-smart-church .sc-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--c-ink-600);
+}
+.case-smart-church .sc-item-on {
+  background: var(--c-ink-950);
+  color: var(--c-cream);
+}
+.case-smart-church .sc-item-label {
+  flex: 1;
+  white-space: nowrap;
+}
+.case-smart-church .sc-badge {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--c-amber);
+  color: var(--c-ink-950);
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+}
+.case-smart-church .sc-sub {
+  margin-left: 16px;
+  padding-left: 4px;
+  border-left: 1px solid var(--c-ink-200);
+}
+.case-smart-church .sc-subitem {
+  height: 24px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: var(--c-ink-500);
+}
+.case-smart-church .sc-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding: 12px 4px 0;
+  border-top: 1px solid var(--c-ink-200);
+}
+.case-smart-church .sc-foot-name {
+  font-size: 13px;
+  font-weight: 500;
+}
+.case-smart-church .sc-foot-role,
+.case-smart-church .sc-foot-out {
+  font-size: 12px;
+  color: var(--c-ink-500);
+}
+.case-smart-church .sc-main {
+  flex: 1;
+  min-width: 0;
+  padding: 20px 40px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.case-smart-church .sc-head h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.case-smart-church .sc-head p {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--c-ink-600);
+}
+.case-smart-church .sc-turn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: var(--c-amber-wash);
+  box-shadow: 0 1px 2px rgb(64 40 8 / 0.04), 0 2px 8px rgb(64 40 8 / 0.04);
+}
+.case-smart-church .sc-eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-ink-500);
+}
+.case-smart-church .sc-turn-date {
+  margin-top: 4px;
+  font-size: 18px;
+  font-weight: 600;
+}
+.case-smart-church .sc-turn-sub {
+  font-size: 14px;
+  color: var(--c-ink-700);
+}
+.case-smart-church .sc-btn {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.case-smart-church .sc-btn-1 {
+  background: var(--c-ink-950);
+  color: var(--c-cream);
+}
+.case-smart-church .sc-btn-2 {
+  background: var(--c-cream);
+  color: var(--c-ink-950);
+  border: 1px solid var(--c-ink-200);
+}
+.case-smart-church .sc-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+.case-smart-church .sc-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  border: 1px solid var(--c-ink-200);
+  border-radius: 16px;
+  background: var(--c-cream);
+}
+.case-smart-church .sc-stat-hot {
+  border-color: transparent;
+  background: var(--c-amber);
+  color: var(--c-ink-950);
+}
+.case-smart-church .sc-stat-label,
+.case-smart-church .sc-stat-hint {
+  font-size: 12px;
+  opacity: 0.75;
+}
+.case-smart-church .sc-stat-label {
+  font-weight: 500;
+  min-height: 18px;
+}
+.case-smart-church .sc-stat-value {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.case-smart-church .sc-card {
+  padding: 12px 24px;
+  border: 1px solid var(--c-ink-200);
+  border-radius: 16px;
+  background: var(--c-cream);
+}
+.case-smart-church .sc-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.case-smart-church .sc-card-top-c {
+  align-items: center;
+  margin-bottom: 8px;
+}
+.case-smart-church h2 {
+  font-size: 16px;
+  font-weight: 600;
+}
+.case-smart-church .sc-muted {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--c-ink-600);
+}
+.case-smart-church .sc-body {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--c-ink-700);
+}
+.case-smart-church .sc-warn {
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--c-red);
+}
+.case-smart-church .sc-link {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--c-ink-600);
+}
+.case-smart-church .sc-week {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+.case-smart-church .sc-week li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px;
+  font-size: 14px;
+}
+.case-smart-church .sc-week-t {
+  font-weight: 500;
+}
+.case-smart-church .sc-week-w {
+  color: var(--c-ink-500);
+}
+.case-smart-church .sc-h2 {
+  margin-bottom: 8px;
+}
+.case-smart-church .sc-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.case-smart-church .sc-action {
+  padding: 8px 16px;
+  border: 1px solid var(--c-ink-200);
+  border-radius: 16px;
+  background: var(--c-cream);
+}
+.case-smart-church .sc-action-t {
+  font-weight: 500;
+}
+.case-smart-church .sc-action-d {
+  font-size: 13px;
+  color: var(--c-ink-500);
+}
