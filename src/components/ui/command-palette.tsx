@@ -72,6 +72,7 @@ export function CommandPalette({ lang }: { lang: Lang }) {
             <div className="cp-group" key={g}>
               <span className="cp-group-t caps">{g}</span>
               {lista.map(({ r, i }) => (
+                // eslint-disable-next-line react-hooks/refs -- `ir` solo toca el <dialog> dentro del manejador de clic, no en el render
                 <button type="button" key={r.id} id={`cp-${r.id}`} role="option" aria-selected={sel === i} data-i={i} className={`cp-item ${sel === i ? "on" : ""}`} style={{ "--i": i } as React.CSSProperties} onMouseEnter={() => setSel(i)} onClick={() => ir(r.href)}>
                   <span className="cp-chip">{r.chip}</span>
                   <span className="cp-body"><span className="cp-t">{r.titulo}</span>{r.detalle && <span className="cp-d">{r.detalle}</span>}</span>
