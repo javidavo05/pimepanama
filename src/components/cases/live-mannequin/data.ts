@@ -28,7 +28,6 @@ export const FIELD_CONFIG: Record<string, FieldConfig> = {
 export const CHIP_FIELDS = [
   "chest",
   "waist",
-  "hip",
   "shoulder_width",
   "sleeve_length",
   "back_length",

@@ -1,0 +1,42 @@
+.pr { padding: var(--section-y) 0; overflow-x: clip; }
+.pr-in { display: grid; gap: var(--s-12); min-width: 0; }
+.pr-head { display: grid; gap: var(--s-4); justify-items: start; }
+/* Pasos: columna de chips + línea a la izquierda, texto a la derecha */
+.pr-steps { list-style: none; position: relative; display: grid; gap: var(--s-8); padding-left: 56px; margin: 0; }
+.pr-line { position: absolute; left: 19px; top: 20px; bottom: 20px; width: 2px; height: calc(100% - 40px); overflow: visible; }
+.pr-line-bg { stroke: var(--line-strong); stroke-width: 2; }
+.pr-line-fg { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 1; stroke-dashoffset: 0; }
+.pr-step { position: relative; display: grid; gap: var(--s-3); min-width: 0; }
+.pr-chip { position: absolute; left: -56px; top: 0; width: 40px; height: 40px; display: grid; place-items: center; background: var(--bg); border-radius: var(--r-round); }
+.pr-dot { display: none; }
+.pr-body { display: grid; gap: var(--s-2); justify-items: start; padding-top: var(--s-2); }
+.pr-t { font-family: var(--font-display); font-weight: var(--w-display); font-size: var(--text-xl); letter-spacing: var(--tracking-tight); line-height: var(--leading-snug); }
+.pr-x { color: var(--fg-2); font-size: var(--text-md); line-height: var(--leading-body); max-width: var(--measure); }
+@media (min-width: 1024px) {
+  .pr-steps { padding-left: 0; gap: 0; }
+  .pr-line { left: calc(50% - 1px); }
+  .pr-step { grid-template-columns: minmax(0, 1fr) 80px minmax(0, 1fr); align-items: start; padding: var(--s-6) 0; }
+  .pr-chip { position: static; width: 80px; height: 40px; grid-column: 2; }
+  .pr-body { grid-column: 3; padding-top: 0; }
+  .pr-step:nth-child(odd) .pr-body { grid-column: 1; grid-row: 1; justify-items: end; text-align: right; }
+  .pr-step:nth-child(odd) .pr-x { text-align: right; }
+}
+/* Cierre: precio y garantía en el único bloque oscuro de la sección */
+.pr-close { display: grid; gap: var(--s-6); padding: var(--s-8); border-radius: var(--r-lg); background: var(--bg); color: var(--fg); }
+@media (min-width: 768px) { .pr-close { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: var(--s-12); } .pr-cta { grid-column: 1 / -1; } }
+.pr-card { display: grid; gap: var(--s-4); align-content: start; justify-items: start; min-width: 0; }
+.pr-card-x { color: var(--fg-2); line-height: var(--leading-body); max-width: 44ch; }
+.pr-pills { list-style: none; display: flex; flex-wrap: wrap; gap: var(--s-2); margin: 0; padding: 0; }
+.pr-cta { display: flex; }
+
+/* La línea se dibuja con el scroll y cada paso se enciende al cruzarla */
+@supports (animation-timeline: view()) {
+  .pr-steps { view-timeline-name: --pr; view-timeline-axis: block; }
+  .pr-line-fg { stroke-dashoffset: 1; animation: pr-draw linear both; animation-timeline: --pr; animation-range: entry 35% exit 65%; }
+  .pr-step .num-chip, .pr-step .pr-t { animation: pr-on linear both; animation-timeline: view(); animation-range: entry 45% entry 70%; }
+  .pr-step .num-chip { animation-name: pr-on-chip; }
+}
+@keyframes pr-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes pr-on { from { color: var(--fg-3); } to { color: var(--fg); } }
+@keyframes pr-on-chip { from { opacity: 0.45; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .pr-line-fg { animation: none; stroke-dashoffset: 0; } .pr-step .num-chip, .pr-step .pr-t { animation: none; } }

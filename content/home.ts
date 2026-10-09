@@ -277,3 +277,47 @@ export const CAPACIDADES: Record<Lang, { eyebrow: string; titulo: string[]; baja
     ],
   },
 };
+
+/** Proceso (paso 8). Origen: "Cómo comenzamos" (pasos en círculos) y la tarjeta de fase de la propuesta.
+ *  Precio llave en mano y garantía post-entrega salen de SITE.cifras; no hay plazos inventados. */
+export const PROCESO: Record<Lang, {
+  eyebrow: string; titulo: string[]; bajada: string;
+  pasos: { titulo: string; texto: string; marca: string }[];
+  cierre: { titulo: string; texto: string; pills: string[] }[];
+  cta: { href: string; label: string };
+}> = {
+  es: {
+    eyebrow: "05 · Proceso",
+    titulo: ["Un precio cerrado,", "fases que se entregan solas"],
+    bajada: "Así trabajamos cada sistema: primero entendemos la operación, después fijamos el precio y recién entonces programamos. Cada fase se usa desde que se entrega.",
+    pasos: [
+      { titulo: "Conversación inicial", texto: "Una reunión para entender cómo opera hoy su empresa: qué se hace en hojas de cálculo, qué se repite a mano, dónde se pierde información.", marca: "Sin costo" },
+      { titulo: "Propuesta con precio cerrado", texto: "Un documento con el alcance por módulo, el precio de cada fase y lo que incluye. Las fases son independientes: usted decide cuáles y en qué orden.", marca: "Llave en mano" },
+      { titulo: "Diseño de pantallas", texto: "Antes de programar, las pantallas del sistema se diseñan y se aprueban con quienes lo van a usar todos los días.", marca: "Aprobación suya" },
+      { titulo: "Construcción por fases", texto: "Cada fase se programa, se prueba con sus datos reales y se entrega funcionando. No hay que esperar al final para empezar a usar el sistema.", marca: "Entregas que se usan" },
+      { titulo: "Entrega, capacitación y garantía", texto: "Capacitamos al equipo, dejamos el sistema en su propio dominio y respondemos por él durante la garantía. El código y los datos son suyos.", marca: "3 meses de garantía" },
+    ],
+    cierre: [
+      { titulo: "Precio llave en mano", texto: "El precio de cada fase se fija en la propuesta y no cambia durante el proyecto. Incluye diseño, programación, pruebas, puesta en marcha y capacitación.", pills: ["Sin licencias ajenas", "Sin cobros por usuario", "Fases independientes"] },
+      { titulo: "Garantía de tres meses", texto: "Después de entregar, cualquier error se corrige sin costo durante tres meses. Después, usted elige si quiere soporte continuo.", pills: ["Correcciones incluidas", "Código y datos suyos", "Soporte opcional"] },
+    ],
+    cta: { href: "/es/contacto", label: "Pedir una propuesta" },
+  },
+  en: {
+    eyebrow: "05 · Process",
+    titulo: ["A fixed price,", "phases that deliver themselves"],
+    bajada: "This is how we build every system: first we understand the operation, then we fix the price, and only then we code. Each phase is in use from the day it ships.",
+    pasos: [
+      { titulo: "First conversation", texto: "One meeting to understand how your company runs today: what lives in spreadsheets, what is repeated by hand, where information gets lost.", marca: "Free" },
+      { titulo: "Proposal with a fixed price", texto: "A document with the scope per module, the price of each phase and what it includes. Phases are independent: you choose which ones and in what order.", marca: "Turnkey" },
+      { titulo: "Screen design", texto: "Before coding, the system's screens are designed and approved with the people who will use them every day.", marca: "Your approval" },
+      { titulo: "Build in phases", texto: "Each phase is coded, tested with your real data and delivered working. You don't wait until the end to start using the system.", marca: "Deliveries you use" },
+      { titulo: "Handover, training and warranty", texto: "We train the team, leave the system on your own domain and stand behind it during the warranty. The code and the data are yours.", marca: "3-month warranty" },
+    ],
+    cierre: [
+      { titulo: "Turnkey price", texto: "The price of each phase is set in the proposal and does not change during the project. It covers design, coding, testing, launch and training.", pills: ["No third-party licenses", "No per-user fees", "Independent phases"] },
+      { titulo: "Three-month warranty", texto: "After delivery, any defect is fixed at no cost for three months. After that, you decide whether you want ongoing support.", pills: ["Fixes included", "Your code and data", "Optional support"] },
+    ],
+    cta: { href: "/en/contact", label: "Request a proposal" },
+  },
+};

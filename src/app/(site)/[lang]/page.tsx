@@ -2,6 +2,7 @@ import { Hero } from "@/components/sections/hero";
 import { Proof } from "@/components/sections/proof";
 import { Capabilities } from "@/components/sections/capabilities";
 import { FeaturedWork } from "@/components/sections/featured-work";
+import { Process } from "@/components/sections/process";
 import { NAV, type Lang } from "../../../../content/site";
 import "./home.css";
 
@@ -11,7 +12,7 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
   const { lang } = await params;
   const n = NAV[lang];
   const placeholders = [
-    ...n.secciones.filter((s) => s.id !== "capacidades" && s.id !== "trabajo").map((s, i) => ({ id: s.id, t: `${s.label}: ${lang === "es" ? "paso" : "step"} ${7 + i}` })),
+    ...n.secciones.filter((s) => s.id !== "capacidades" && s.id !== "trabajo" && s.id !== "proceso").map((s, i) => ({ id: s.id, t: `${s.label}: ${lang === "es" ? "paso" : "step"} ${7 + i}` })),
     { id: "contacto", t: lang === "es" ? "Cierre y contacto: paso 9" : "Closing and contact: step 9" },
   ];
   return (
@@ -20,6 +21,7 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
       <Proof lang={lang} />
       <Capabilities lang={lang} />
       <FeaturedWork lang={lang} />
+      <Process lang={lang} />
       {placeholders.map((p) => (
         <section key={p.id} id={p.id} className="skel wrap" aria-label={p.t}>
           <span className="caps">{p.id}</span>
