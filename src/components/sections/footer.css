@@ -1,0 +1,21 @@
+.ft { background: var(--bg); color: var(--fg); padding: 0 0 var(--s-6); overflow: clip; }
+.ft-in { display: grid; gap: var(--s-12); min-width: 0; padding-top: var(--s-8); }
+.ft-top { display: grid; gap: var(--s-8); }
+.ft-brand { display: inline-flex; align-items: center; gap: var(--s-2); text-decoration: none; color: inherit; font-family: var(--font-display); font-weight: var(--w-display); font-size: var(--text-md); letter-spacing: var(--tracking-tight); min-height: 44px; }
+.ft-brand img { height: 20px; width: auto; }
+.ft-cols { display: grid; gap: var(--s-8); }
+@media (min-width: 640px) { .ft-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .ft-top { grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); align-items: start; } }
+.ft-col { display: grid; gap: var(--s-3); align-content: start; min-width: 0; }
+.ft-col .caps { color: var(--fg-3); }
+.ft-col ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-1); }
+.ft-col .link { color: var(--fg-2); } .ft-col .link:hover { color: var(--fg); }
+/* Wordmark gigante: una máscara de la altura de la palabra; la palabra sube desde abajo con el scroll */
+.ft-mark { overflow: hidden; line-height: 0.8; padding-top: var(--s-4); }
+.ft-word { display: block; font-family: var(--font-display); font-weight: var(--w-display); font-size: clamp(96px, 24vw, 360px); letter-spacing: -0.05em; line-height: 0.8; color: var(--fg); white-space: nowrap; transform-origin: left bottom; }
+@supports (animation-timeline: view()) {
+  .ft-word[data-reveal] { opacity: 1 !important; transform: none !important; transition: none !important; animation: ft-rise linear both; animation-timeline: view(); animation-range: entry 0% entry 100%; }
+}
+@keyframes ft-rise { from { transform: translateY(100%); } to { transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .ft-word[data-reveal] { animation: none; transform: none; } }
+.ft-bottom { display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--s-2) var(--s-6); padding-top: var(--s-6); border-top: 1px solid var(--line); }

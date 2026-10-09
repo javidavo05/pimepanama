@@ -8,7 +8,7 @@ import { Closing } from "@/components/sections/closing";
 import type { Lang } from "../../../../content/site";
 import "./home.css";
 
-/* La home, sección por sección. El footer con wordmark gigante es el paso siguiente. */
+/* La home, sección por sección. El footer vive en el layout. */
 export default async function Home({ params }: { params: Promise<{ lang: Lang }> }) {
   const { lang } = await params;
   return (

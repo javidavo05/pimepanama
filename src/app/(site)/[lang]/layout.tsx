@@ -4,6 +4,7 @@ import Script from "next/script";
 import "../../globals.css";
 import { Reveal } from "@/components/motion/reveal";
 import { Nav } from "@/components/sections/nav";
+import { Footer } from "@/components/sections/footer";
 import { LANGS, type Lang } from "../../../../content/site";
 
 export const metadata: Metadata = {
@@ -28,6 +29,7 @@ export default async function SiteLayout({ children, params }: { children: React
       <body>
         <Nav lang={lang as Lang} />
         {children}
+        <Footer lang={lang as Lang} />
         <Reveal />
       </body>
     </html>
