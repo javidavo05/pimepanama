@@ -2,7 +2,11 @@
 .pg-filters { display: grid; gap: var(--s-4); padding: var(--s-4) 0; border-top: var(--border); border-bottom: var(--border); }
 .pg-group { display: grid; gap: var(--s-2); }
 .pg-label { color: var(--fg-3); }
-.pg-pills { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+/* Teléfono y tableta: una sola fila que se desliza (filas envueltas de pills terminan desparejas); escritorio: envuelve */
+.pg-pills { display: flex; flex-wrap: nowrap; gap: var(--s-2); overflow-x: auto; scrollbar-width: none; margin-inline: calc(-1 * var(--gutter)); padding-inline: var(--gutter); padding-block: 2px; scroll-snap-type: x proximity; -webkit-overflow-scrolling: touch; }
+.pg-pills::-webkit-scrollbar { display: none; }
+.pg-pills > * { flex: none; scroll-snap-align: start; }
+@media (min-width: 1024px) { .pg-pills { flex-wrap: wrap; overflow: visible; margin-inline: 0; padding-inline: 0; } }
 .pg-pill { display: inline-flex; align-items: center; gap: var(--s-2); min-height: 36px; padding: 0 var(--s-3); border-radius: var(--r-pill); border: var(--border); background: var(--surface); color: var(--fg-2); font-family: var(--font-body); font-size: var(--text-sm); font-weight: var(--w-semibold); cursor: pointer; transition: background var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out), border-color var(--dur-fast) var(--ease-out); }
 .pg-pill .num { color: var(--fg-3); font-weight: 400; font-variant-numeric: tabular-nums; }
 .pg-pill:hover { border-color: var(--fg-3); color: var(--fg); }
