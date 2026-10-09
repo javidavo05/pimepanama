@@ -1,4 +1,4 @@
-.cl { background: var(--bg); color: var(--fg); padding: var(--section-y) 0; overflow-x: clip; }
+.cl { background: var(--bg); color: var(--fg); padding: var(--section-y) 0 var(--s-16); overflow-x: clip; }
 .cl-in { display: grid; gap: var(--s-12); min-width: 0; }
 .cl-head { display: grid; gap: var(--s-4); justify-items: start; }
 .cl-head .lead { color: var(--fg-2); }
@@ -12,6 +12,4 @@
 .cl-step { display: grid; gap: var(--s-3); justify-items: start; padding-top: var(--s-6); border-top: 1px solid var(--line); min-width: 0; }
 .cl-st { font-family: var(--font-display); font-weight: var(--w-display); font-size: var(--text-lg); letter-spacing: var(--tracking-tight); line-height: var(--leading-snug); }
 .cl-sx { color: var(--fg-2); font-size: var(--text-md); line-height: var(--leading-body); }
-.cl-sign { display: grid; gap: var(--s-1); justify-items: start; padding-top: var(--s-8); border-top: 1px solid var(--line); }
-.cl-sign b { font-family: var(--font-display); font-weight: var(--w-display); font-size: var(--text-lg); letter-spacing: var(--tracking-tight); }
-@media (min-width: 1024px) { .cl-in { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: var(--s-12); align-items: start; } .cl-steps { grid-column: 2; grid-row: 1; grid-template-columns: 1fr; gap: var(--s-6); } .cl-head { grid-column: 1; grid-row: 1; } .cl-sign { grid-column: 1 / -1; } }
+@media (min-width: 1024px) { .cl-in { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); column-gap: var(--s-12); align-items: start; } .cl-steps { grid-column: 2; grid-row: 1; grid-template-columns: 1fr; gap: var(--s-6); } .cl-head { grid-column: 1; grid-row: 1; } }

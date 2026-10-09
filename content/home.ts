@@ -362,7 +362,7 @@ export const CIERRE: Record<Lang, { eyebrow: string; titulo: string[]; bajada: s
 };
 
 /** Footer (paso 10). Origen: cabecera y pie de documento de la propuesta + wordmark "PIME" en Manrope 800. */
-export const FOOTER: Record<Lang, { secciones: string; paginas: string; contacto: string; llamar: string; idioma: { href: string; label: string }; derechos: string; hecho: string }> = {
-  es: { secciones: "En esta página", paginas: "Páginas", contacto: "Contacto", llamar: "Llamar", idioma: { href: "/en", label: "English" }, derechos: "Todos los derechos reservados.", hecho: "Hecho en Panamá." },
-  en: { secciones: "On this page", paginas: "Pages", contacto: "Contact", llamar: "Call", idioma: { href: "/es", label: "Español" }, derechos: "All rights reserved.", hecho: "Made in Panama." },
+export const FOOTER: Record<Lang, { lema: string; secciones: string; paginas: string; contacto: string; idioma: { href: string; label: string }; derechos: string; hecho: string; gracias: string }> = {
+  es: { lema: "ERP y CRM a medida, construidos desde cero en Panamá.", secciones: "Inicio", paginas: "Páginas", contacto: "Contacto", idioma: { href: "/en", label: "English" }, derechos: "Todos los derechos reservados", hecho: "Panamá", gracias: "Gracias por la confianza." },
+  en: { lema: "Custom ERP and CRM, built from scratch in Panama.", secciones: "Home", paginas: "Pages", contacto: "Contact", idioma: { href: "/es", label: "Español" }, derechos: "All rights reserved", hecho: "Panama", gracias: "Thank you for your trust." },
 };

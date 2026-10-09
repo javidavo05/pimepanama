@@ -1,5 +1,5 @@
 // Cierre y contacto. Origen: la página de cierre de la propuesta (único fondo oscuro, pasos numerados en
-// círculos outline, nombre + dominio + "Gracias por la confianza"). Botón magnético y teléfono directo.
+// círculos outline). El nombre, el dominio y el "Gracias por la confianza" viven en el footer, justo debajo.
 import { Eyebrow, Lines, NumChip } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
 import { CIERRE } from "../../../content/home";
@@ -29,7 +29,6 @@ export function Closing({ lang }: { lang: Lang }) {
             </li>
           ))}
         </ol>
-        <p className="cl-sign" data-reveal="rise"><b>{SITE.nombre}</b><span className="meta">{SITE.dominio}</span><span className="meta">{t.gracias}</span></p>
       </div>
     </section>
   );
