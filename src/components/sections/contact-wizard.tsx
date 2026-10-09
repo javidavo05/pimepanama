@@ -113,9 +113,9 @@ export function ContactWizard({ lang, industrias }: { lang: Lang; industrias: st
               <Lines as="h1" className="t-1" lines={[t.titulo]} eager />
               <p className="lead eager-rise" style={{ "--delay": "200ms" } as React.CSSProperties}>{t.bajada}</p>
             </header>
-            <div className="cw-progress eager-rise" style={{ "--delay": "300ms" } as React.CSSProperties} role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)} aria-label={t.pasos[paso]}>
+            <div className="cw-progress eager-rise" style={{ "--delay": "300ms" } as React.CSSProperties}>
               <ol className="cw-steps">{t.pasos.map((p, i) => <li key={p} className={i < paso ? "done" : i === paso ? "on" : ""}><button type="button" onClick={() => i < paso && ir(i)} disabled={i > paso}><span className="cw-step-n">{i < paso ? "✓" : i + 1}</span><span className="cw-step-l">{p}</span></button></li>)}</ol>
-              <span className="cw-bar"><i style={{ "--p": `${pct}%` } as React.CSSProperties} /></span>
+              <span className="cw-bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(pct)} aria-label={t.pasos[paso]}><i style={{ "--p": `${pct}%` } as React.CSSProperties} /></span>
             </div>
             <div className="cw-panel" ref={panel} key={paso} data-dir={dir}>
               {paso === 0 && (

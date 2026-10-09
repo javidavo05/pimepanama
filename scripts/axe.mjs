@@ -9,7 +9,9 @@ const RUTAS = ["/es", "/es/portfolio", "/es/portfolio/misaza", "/es/servicios", 
 const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: 1280, height: 900 } }); let total = 0;
 for (const r of RUTAS) {
   const p = await ctx.newPage();
-  await p.goto(BASE + r, { waitUntil: "networkidle" }); await p.addStyleTag({ content: "[data-reveal]{opacity:1!important;transform:none!important}" });
+  await p.goto(BASE + r, { waitUntil: "networkidle" });
+  // Sin animaciones en curso: axe mide el color en el instante y una entrada a media opacidad da falsos contrastes
+  await p.addStyleTag({ content: "*,*::before,*::after{animation:none!important;transition:none!important} [data-reveal]{opacity:1!important;transform:none!important;clip-path:none!important}" }); await p.waitForTimeout(400);
   const res = await new AxeBuilder({ page: p }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
   const graves = res.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
   total += graves.length;
