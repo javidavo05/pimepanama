@@ -99,9 +99,10 @@ export function Heat({ filas, cols, datos, id, unidad }: { filas: string[]; cols
       <span />{cols.map((c) => <span key={c} className="ch-lab-t">{c}</span>)}
       {filas.map((f, i) => (
         [<span key={`l${i}`} className="ch-heat-l">{f}</span>, ...datos[i].map((v, j) => (
-          <span key={`${i}-${j}`} className="ch-cell" style={{ "--t": (v - min) / r, "--i": i * cols.length + j } as React.CSSProperties} title={`${f} · ${cols[j]}: ${v}`}><b>{v}</b></span>
+          <span key={`${i}-${j}`} className="ch-cell" style={{ "--t": (v - min) / r, "--i": i * cols.length + j } as React.CSSProperties} title={`${f} · ${cols[j]}: ${v}`} />
         ))]
       ))}
+      <span className="ch-heat-scale" aria-hidden="true"><i /><span>{min}</span><em /><span>{max}</span></span>
     </div>
   );
 }

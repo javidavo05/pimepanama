@@ -248,3 +248,32 @@ export const HOME: Record<Lang, {
     },
   },
 };
+
+/** Capacidades: lo que construimos, con una escena de producto por capacidad. */
+export type Capacidad = { id: string; n: string; titulo: string; apoyo: string; modulos: string[] };
+export const CAPACIDADES: Record<Lang, { eyebrow: string; titulo: string[]; bajada: string; items: Capacidad[] }> = {
+  es: {
+    eyebrow: "03 · Capacidades",
+    titulo: ["Un sistema para cada", "parte de la operación"],
+    bajada: "Cinco tipos de sistema que ya entregamos en producción. Cada uno se diseña desde cero para su empresa.",
+    items: [
+      { id: "erp", n: "01", titulo: "ERP y sistemas internos", apoyo: "Operaciones, inventario, cobros y reportes en un solo lugar, con permisos por rol.", modulos: ["Operaciones", "Inventario", "Cobros", "Reportes", "Roles"] },
+      { id: "crm", n: "02", titulo: "CRM y ventas", apoyo: "Del prospecto al cliente: embudo, seguimiento, propuestas y cotizaciones con historial.", modulos: ["Embudo", "Seguimiento", "Cotizaciones", "Historial"] },
+      { id: "saas", n: "03", titulo: "SaaS multi-tenant y white-label", apoyo: "Una plataforma, muchas empresas: cada una con su marca, sus datos aislados y su plan.", modulos: ["Tenants", "Marca propia", "Planes", "Facturación"] },
+      { id: "portal", n: "04", titulo: "Portales, CMS y apps de clientes", apoyo: "Lo que ve el público: catálogo, reservas, citas y contenido que su equipo edita sin programar.", modulos: ["Catálogo", "Reservas", "Citas", "Editor"] },
+      { id: "ia", n: "05", titulo: "Integraciones y automatización con IA", apoyo: "Conectamos con Wasi, Google Workspace, WhatsApp y bancos, y automatizamos lo repetitivo con IA.", modulos: ["APIs", "Google Workspace", "WhatsApp", "Modelos de IA"] },
+    ],
+  },
+  en: {
+    eyebrow: "03 · Capabilities",
+    titulo: ["One system for every", "part of the operation"],
+    bajada: "Five kinds of system we have already delivered to production. Each one is designed from scratch for your company.",
+    items: [
+      { id: "erp", n: "01", titulo: "ERP and internal systems", apoyo: "Operations, inventory, billing and reports in one place, with role-based permissions.", modulos: ["Operations", "Inventory", "Billing", "Reports", "Roles"] },
+      { id: "crm", n: "02", titulo: "CRM and sales", apoyo: "From prospect to client: funnel, follow-up, proposals and quotes with history.", modulos: ["Funnel", "Follow-up", "Quotes", "History"] },
+      { id: "saas", n: "03", titulo: "Multi-tenant and white-label SaaS", apoyo: "One platform, many companies: each with its brand, isolated data and plan.", modulos: ["Tenants", "Own brand", "Plans", "Billing"] },
+      { id: "portal", n: "04", titulo: "Portals, CMS and client apps", apoyo: "What the public sees: catalog, bookings, appointments and content your team edits without code.", modulos: ["Catalog", "Bookings", "Appointments", "Editor"] },
+      { id: "ia", n: "05", titulo: "Integrations and AI automation", apoyo: "We connect Wasi, Google Workspace, WhatsApp and banks, and automate the repetitive with AI.", modulos: ["APIs", "Google Workspace", "WhatsApp", "AI models"] },
+    ],
+  },
+};

@@ -169,8 +169,10 @@
 .ch-heat { display: grid; grid-template-columns: 88px repeat(var(--cols), minmax(0, 1fr)); gap: 3px; align-items: center; }
 .ch-heat-l { font-size: 11px; color: var(--fg-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: var(--s-1); }
 .ch-cell { display: grid; place-items: center; height: 28px; border-radius: 4px; background: color-mix(in oklab, var(--accent) calc(var(--t) * 85% + 8%), var(--paper)); animation: ch-fade 400ms var(--ease-out) both; animation-delay: calc(100ms + var(--i, 0) * 15ms); }
-.ch-cell b { font-size: 10px; font-weight: 600; color: var(--ink); }
-.ch-cell[style*="--t: 1"] b, .ch-cell[style*="--t: 0.9"] b, .ch-cell[style*="--t: 0.8"] b, .ch-cell[style*="--t: 0.7"] b, .ch-cell[style*="--t: 0.6"] b { color: var(--white); }
+.ch-cell:hover { outline: 2px solid var(--ink); outline-offset: -2px; }
+.ch-heat-scale { grid-column: 1 / -1; display: flex; align-items: center; gap: var(--s-2); font-size: 10px; color: var(--fg-3); margin-top: var(--s-1); }
+.ch-heat-scale em { flex: 1; height: 6px; border-radius: 3px; background: linear-gradient(90deg, color-mix(in oklab, var(--accent) 8%, var(--paper)), var(--accent)); }
+.ch-heat-scale i { display: none; }
 
 /* 4. Documentos */
 .hv-do { grid-template-columns: minmax(0, 1fr); }
