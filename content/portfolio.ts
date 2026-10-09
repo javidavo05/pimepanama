@@ -43,7 +43,7 @@ export const CASOS: Caso[] = [
     problema: { es: "Enseñar geografía a estudiantes que se aburren con los mapas de papel.", en: "Teaching geography to students who get bored with paper maps." }, solucion: { es: "Un juego de geografía mundial que se vende a colegios: cada clase es una expedición, el estudiante sube de nivel, sella países en su pasaporte y compite en una liga.", en: "A world geography game sold to schools: every class is an expedition, students level up, stamp countries in their passport and compete in a league." },
     modulos: { es: ["Perfil del estudiante", "Camino de la GeoGuía", "Pasaporte de sellos", "Liga de exploradores", "Panel de colegios", "Facturación", "CMS"], en: ["Student profile", "GeoGuide path", "Stamp passport", "Explorers league", "Schools panel", "Billing", "CMS"] },
     stack: ["Next.js 16", "React 19", "Tailwind 4", "Supabase", "Cloudflare R2", "MailerSend", "Turnstile", "i18n es/en"], visual: "mapa",
-    estado: { es: "En producción", en: "In production" }, publicable: true, destacado: true,
+    estado: { es: "En producción", en: "In production" }, publicable: true, destacado: true, logo: "/logos/geogenius.png",
     urlPublica: "https://www.geogenius.online",
   },
   {
@@ -75,7 +75,7 @@ export const CASOS: Caso[] = [
     problema: { es: "Sin documentar.", en: "Not documented." }, solucion: { es: "Una consola en su propio dominio y con base de datos propia que opera las instituciones por el MCP de control; el estado de cada institución se replica por eventos firmados.", en: "A console on its own domain and database that operates institutions through the control MCP; each institution's state is replicated by signed events." },
     modulos: { es: ["Instituciones", "Facturación de plataforma", "Cumplimiento", "Alertas", "Eventos firmados", "Cliente MCP"], en: ["Institutions", "Platform billing", "Compliance", "Alerts", "Signed events", "MCP client"] },
     stack: ["Next.js 16", "Supabase propio", "MCP de control", "Eventos firmados (HMAC)", "Monorepo pnpm + Turbo"], visual: "control",
-    estado: { es: "En producción", en: "In production" }, publicable: true, destacado: true,
+    estado: { es: "En producción", en: "In production" }, publicable: true, destacado: true, logo: "/logos/godmode.png",
     urlPublica: "https://academyx-godmode.vercel.app", urlNota: { es: "Consola privada: el enlace abre el inicio de sesión.", en: "Private console: the link opens the sign-in." },
   },
   {
