@@ -73,7 +73,7 @@ export const CASOS: Caso[] = [
   },
   {
     slug: "smart-church", nombre: "Smart Church", cliente: "Revive",
-    industria: { es: "Iglesias", en: "Churches" }, tipo: { es: "Management y CMS white-label", en: "White-label management and CMS" },
+    industria: { es: "Iglesias", en: "Churches" }, tipo: { es: "Gestión y CMS white-label", en: "White-label management and CMS" },
     resumen: { es: "La operación completa de una iglesia: ministerios, calendario, visitas, junta, alabanza y tesorería, más su sitio público.", en: "A church's whole operation: ministries, calendar, visits, board, worship and treasury, plus its public site." },
     problema: { es: "La operación de la iglesia vive en la memoria de tres personas y en chats que se pierden.", en: "The church's operation lives in three people's memory and in chats that get lost." },
     solucion: { es: "Un registro consultable, auditable y automático, más un sitio público editable. White-label por instancia con Google Calendar.", en: "A searchable, auditable, automatic record plus an editable public site. White-label per instance with Google Calendar." },
@@ -93,7 +93,7 @@ export const CASOS: Caso[] = [
   },
   {
     slug: "medsuite", nombre: "MedSuite", cliente: "MedSuite",
-    industria: { es: "Salud", en: "Health" }, tipo: { es: "Gestión de clínicas white-label", en: "White-label clinic management" },
+    industria: { es: "Salud", en: "Health" }, tipo: { es: "Clínicas white-label", en: "White-label clinics" },
     resumen: { es: "Citas, doctores, pacientes y expedientes en PDF para clínicas: una instalación por clínica, configurada en un archivo.", en: "Appointments, doctors, patients and PDF records for clinics: one deployment per clinic, configured in a single file." },
     problema: { es: "Sin documentar.", en: "Not documented." },
     solucion: { es: "Clonar el repositorio, editar un archivo de configuración y desplegar una clínica nueva en unos 25 minutos, con recordatorios por WhatsApp y correo.", en: "Clone the repository, edit one configuration file and deploy a new clinic in about 25 minutes, with WhatsApp and email reminders." },

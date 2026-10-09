@@ -1,5 +1,6 @@
 /* ---------- Carril fijado ---------- */
-.fw { position: relative; }
+.fw { position: relative; min-width: 0; overflow-x: clip; }
+.fw-pin, .fw-head, .fw-head-l, .fw-head-r, .fw-rail, .fw-rail > li, .fw-card, .fw-link, .fw-visual, .fw-body, .fw-top, .fw-foot { min-width: 0; }
 .fw-pin { display: grid; gap: var(--s-8); padding: var(--section-y) 0 var(--s-12); }
 .fw-head { display: grid; gap: var(--s-6); }
 .fw-head-l { display: grid; gap: var(--s-4); justify-items: start; }
@@ -38,7 +39,8 @@
 .fw-link { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100%; text-decoration: none; color: inherit; }
 .fw-visual { min-height: 240px; background: var(--panel); border-bottom: var(--border); padding: var(--s-4); display: grid; }
 .fw-body { display: grid; gap: var(--s-2); padding: var(--s-6); align-content: start; }
-.fw-top { display: flex; justify-content: space-between; align-items: center; gap: var(--s-2); min-height: 28px; }
+.fw-top { display: flex; justify-content: space-between; align-items: center; gap: var(--s-2); min-height: 28px; flex-wrap: wrap; }
+.fw-top .pill { white-space: normal; text-align: right; line-height: 1.3; padding-block: 3px; }
 .fw-logo { height: 24px; width: auto; max-width: 96px; object-fit: contain; filter: brightness(0); }
 :root[data-theme="dark"] .fw-logo { filter: brightness(0) invert(1); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .fw-logo { filter: brightness(0) invert(1); } }
