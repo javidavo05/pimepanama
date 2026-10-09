@@ -118,7 +118,7 @@
 .cs-reply { margin-top: auto; display: grid; gap: var(--s-1); padding: var(--s-3); border-radius: var(--r-sm); background: var(--surface); border: var(--border); }
 .cs-reply[data-listo] { border-color: var(--accent); }
 .cs-reply .small { color: var(--fg); }
-.cs-msg { font-size: var(--text-sm); color: var(--fg); padding: var(--s-3); border-left: 2px solid var(--accent); background: var(--surface); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.cs-msg { font-size: var(--text-sm); color: var(--fg); padding: var(--s-3); background: var(--surface); border: var(--border); border-radius: var(--r-sm); font-style: italic; }
 .cs-steps { list-style: none; display: grid; gap: var(--s-2); position: relative; }
 .cs-steps::before { content: ""; position: absolute; left: 11px; top: 12px; bottom: 12px; width: 2px; background: var(--line); }
 .cs-steps li { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: var(--s-2); align-items: center; min-height: 32px; position: relative; color: var(--fg-3); transition: color var(--dur-base); }
