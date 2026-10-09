@@ -1,9 +1,10 @@
 // Cierre y contacto. Origen: la página de cierre de la propuesta (único fondo oscuro, pasos numerados en
-// círculos outline). El nombre, el dominio y el "Gracias por la confianza" viven en el footer, justo debajo.
+// círculos outline). Un solo trabajo: el titular y el botón de propuesta. El teléfono vive solo en el footer,
+// justo debajo, para no repetirlo (Javier, 2026-10-09).
 import { Eyebrow, Lines, NumChip } from "@/components/ui/primitives";
 import { Button } from "@/components/ui/button";
 import { CIERRE } from "../../../content/home";
-import { SITE, type Lang } from "../../../content/site";
+import type { Lang } from "../../../content/site";
 import "./closing.css";
 
 export function Closing({ lang }: { lang: Lang }) {
@@ -18,7 +19,6 @@ export function Closing({ lang }: { lang: Lang }) {
           <p className="lead" data-reveal="rise" style={{ "--delay": "200ms" } as React.CSSProperties}>{t.bajada}</p>
           <div className="cl-actions" data-reveal="rise" style={{ "--delay": "300ms" } as React.CSSProperties}>
             <Button href={t.cta.href} variant="accent" arrow>{t.cta.label}</Button>
-            <a href={`tel:${SITE.telefonoE164}`} className="cl-tel tap"><span className="meta">{t.llamar}</span><b className="num">{SITE.telefono}</b><span className="meta">{t.horario}</span></a>
           </div>
         </header>
         <ol className="cl-steps">

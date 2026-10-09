@@ -63,7 +63,8 @@ export function FooterIndice({ lang }: { lang: Lang }) {
   );
 }
 
-/** B · Teléfono protagonista: el número en tipografía de titular, con WhatsApp y propuesta. Oscuro, compacto. */
+/** B · Teléfono protagonista: el número en tipografía de titular y WhatsApp. Oscuro, compacto. El botón de
+ *  propuesta vive solo en el cierre, justo arriba, para no repetirlo. */
 export function FooterTelefono({ lang }: { lang: Lang }) {
   const t = T[lang]; const n = NAV[lang]; const home = `/${lang}`;
   const wa = `https://wa.me/${SITE.telefonoE164.replace("+", "")}`;
@@ -78,7 +79,6 @@ export function FooterTelefono({ lang }: { lang: Lang }) {
           </div>
           <div className="fv-b-actions">
             <Button href={wa} variant="accent">WhatsApp</Button>
-            <Button href={n.cta.href} variant="secondary" arrow>{t.b.prop}</Button>
           </div>
         </div>
         <nav className="fv-b-nav" aria-label="Footer">
