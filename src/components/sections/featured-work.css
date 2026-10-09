@@ -5,10 +5,15 @@
 .fw-head-l { display: grid; gap: var(--s-4); justify-items: start; }
 .fw-head-r { display: grid; gap: var(--s-4); justify-items: start; align-content: end; }
 @media (min-width: 1024px) { .fw-head { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); align-items: end; } }
-.fw-rail-outer { overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
-.fw-rail-outer::-webkit-scrollbar { display: none; }
-.fw-rail { list-style: none; display: flex; gap: var(--s-6); width: max-content; min-width: 100%; padding-block: var(--s-2); }
-.fw-rail > li { scroll-snap-align: start; flex: none; width: min(420px, 82vw); }
+/* Teléfono y tableta: lista vertical, sin carril que recorte tarjetas */
+.fw-rail { list-style: none; display: grid; gap: var(--s-6); padding-block: var(--s-2); }
+@media (min-width: 640px) and (max-width: 1023px) { .fw-rail { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) {
+  .fw-rail-outer { overflow-x: auto; overflow-y: hidden; scroll-snap-type: x mandatory; scrollbar-width: none; }
+  .fw-rail-outer::-webkit-scrollbar { display: none; }
+  .fw-rail { display: flex; width: max-content; min-width: 100%; }
+  .fw-rail > li { scroll-snap-align: start; flex: none; width: 440px; }
+}
 .fw-foot { display: flex; justify-content: space-between; gap: var(--s-4); }
 .fw-hint { display: none; }
 

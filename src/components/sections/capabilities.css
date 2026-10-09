@@ -98,7 +98,7 @@
 .cs-blocks { display: grid; gap: var(--s-2); }
 .cs-block { border: 1px dashed var(--line-strong); border-radius: var(--r-sm); padding: var(--s-2); display: grid; gap: var(--s-2); background: var(--surface); animation: rise-in 300ms var(--ease-out) both; }
 .cs-block-h { display: flex; justify-content: space-between; align-items: center; font-weight: var(--w-medium); }
-.cs-x { width: 28px; height: 28px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--fg-2); font-size: 16px; cursor: pointer; }
+.cs-x { width: 32px; height: 32px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--fg-2); font-size: 16px; cursor: pointer; }
 .cs-x:hover { background: var(--panel); color: var(--fg); }
 .cs-block-art { display: grid; gap: 6px; }
 .cs-block-art i, .cs-block-art b, .cs-block-art em { display: block; border-radius: 3px; background: var(--line); }
