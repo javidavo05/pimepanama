@@ -34,7 +34,7 @@ export function CaseContent({ caso: c, lang, as: H = "h1", titleId, compact }: {
         </div>
       </header>
       <figure className="cd-shot" {...reveal} style={compact ? undefined : ({ viewTransitionName: `caso-${c.slug}` } as React.CSSProperties)}>
-        <CaseShot slug={c.slug} label={`${c.nombre} · ${t.tablero}`} />
+        <CaseShot slug={c.slug} label={`${c.nombre} · ${t.tablero}`} grande />
         <figcaption className="meta">{t.nota}</figcaption>
       </figure>
       <div className="cd-body">

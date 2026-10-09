@@ -13,3 +13,4 @@ await p.addStyleTag({ content: "nextjs-portal{display:none!important}" });
 await p.waitForTimeout(800);
 for (const s of SLUGS) { const el = await p.$(`#${s} > div`); await el.screenshot({ path: `public/cases/${s}.png` }); console.log("ok", s); }
 await b.close();
+// Después: convertir a WebP con calidad 92 (Pillow) y subir CASES_V en content/cases-version.ts.
