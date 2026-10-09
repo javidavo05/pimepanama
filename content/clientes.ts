@@ -9,12 +9,11 @@ export const CLIENTES: Cliente[] = [
   { nombre: "B&B Real Estate", sistema: "CMS inmobiliario con sincronización Wasi", autorizado: true, logo: "/logos/bb-real-estate.png", ancho: 1.62 },
   { nombre: "HOLO Realty", sistema: "Gestión de propiedades con API Wasi", autorizado: true, logo: "/logos/holo-realty.png", ancho: 3.1 },
   { nombre: "Academyx", sistema: "CRM SaaS multi-tenant para academias", autorizado: true, logo: "/logos/academyx.svg", ancho: 1.42 },
-  { nombre: "Suarez Academy", sistema: "Academia de fútbol sobre Academyx", autorizado: true, logo: "/logos/suarez-academy.png", ancho: 1.16 },
   { nombre: "Revive", sistema: "Smart Church: management y CMS white-label", autorizado: true, logo: "/logos/revive.png", ancho: 4.4 },
   { nombre: "John Henry", sistema: "CMS y CRM de sastrería de lujo", autorizado: true, logo: "/logos/john-henry.svg", ancho: 1.12 },
   { nombre: "Misaza Designs", sistema: "Sitio y plataforma serverless", autorizado: true, logo: "/logos/misaza.svg", ancho: 1 },
   { nombre: "MedSuite", sistema: "Gestión de clínicas white-label", autorizado: true },
-  { nombre: "Sembradores", sistema: "Gestión de iglesias multi-tenant", autorizado: true },
+  { nombre: "Sembradores", sistema: "Gestión de iglesias multi-tenant", autorizado: false },
   { nombre: "Wedding CMS", sistema: "Invitaciones y eventos SaaS", autorizado: false },
 ];
 

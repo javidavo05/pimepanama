@@ -119,7 +119,7 @@ export const PASOS: Paso[] = [
       "Es el único bloque oscuro de la home fuera del footer, como el bloque de cifras clave de la propuesta.",
       "Bajá hasta la sección: el titular entra por líneas y los dígitos ruedan desde 0 hasta 7+, 30+ y 3. Volvé a subir y bajar para repetirlo no hace falta: cuenta una sola vez.",
       "La cinta de abajo avanza sola, se pausa al pasar el cursor y acelera cuando hacés scroll rápido. Con movimiento reducido queda quieta y envuelve.",
-      "Cinta «Confían en Pime» con los logos en blanco: Svitzer (tomado de su sitio), Iglesia Adventista del Séptimo Día, B&B Real Estate, HOLO Realty, Academyx, Suarez Academy, Revive (Smart Church), John Henry, Misaza; MedSuite y Sembradores van como wordmark porque no tienen logo en esta máquina. Debajo, una segunda cinta con los tipos de sistema construidos.",
+      "Cinta «Confían en Pime» con los logos en blanco: Svitzer (tomado de su sitio), Iglesia Adventista del Séptimo Día, B&B Real Estate, HOLO Realty, Academyx, Revive (Smart Church), John Henry, Misaza; MedSuite va como wordmark. Javier pidió quitar Sembradores y Suarez Academy. Debajo, una segunda cinta con los tipos de sistema construidos.",
       "El monto desarrollado no aparece hasta que lo confirmes: la cifra está preparada en content/site.ts.",
     ],
     capturas: { w375: "/avance/paso-05-375.png", w1440: "/avance/paso-05-1440.png" },
