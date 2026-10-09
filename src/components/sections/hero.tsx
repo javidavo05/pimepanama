@@ -1,11 +1,10 @@
 // Hero. Concepto: la pantalla es el producto. Titular editorial a todo el ancho (portada de la
-// propuesta llevada a escala de póster) y debajo una pantalla completa de un sistema de Pime,
-// construida en HTML/CSS/SVG, en perspectiva, que se arma sola y se endereza con el scroll.
+// propuesta llevada a escala de póster) y debajo un panel funcional de un sistema de Pime construido
+// en HTML/CSS/SVG: se arma al cargar y después solo se mueve cuando la persona lo usa.
 // Todo el texto se pinta en el primer frame; el titular se revela por línea con CSS puro (≤ 600 ms).
 import { Button } from "@/components/ui/button";
 import { TextLink } from "@/components/ui/text-link";
 import { Eyebrow, Lines } from "@/components/ui/primitives";
-import { Parallax } from "@/components/motion/parallax";
 import { HeroWindow } from "./hero-window";
 import { HOME } from "../../../content/home";
 import type { Lang } from "../../../content/site";
@@ -42,9 +41,9 @@ export function Hero({ lang }: { lang: Lang }) {
       </div>
       <div className="hero-stage-outer">
         <div className="wrap">
-          <Parallax className="hero-stage">
+          <div className="hero-stage">
             <HeroWindow lang={lang} />
-          </Parallax>
+          </div>
         </div>
       </div>
     </section>
