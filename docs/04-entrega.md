@@ -40,6 +40,12 @@ proyectos no pueden servir el mismo dominio, así que para que pimepanama.com mu
 5. Comprobar: https://pimepanama.com/es, /en, una ficha, el wizard con un lead de prueba (`[prueba]`), el sitemap
    y las redirecciones 301 del sitemap viejo (en `next.config.ts`).
 
+## Ajustes hechos en el proyecto Vercel
+
+- Preset de framework: venía como «Other» (servía solo `public/`, todo daba 404); se fijó **Next.js**.
+- Protección de acceso (Vercel Authentication) venía activa para todos los despliegues; se quitó para que la URL de producción sea pública.
+- Lighthouse móvil sobre el sitio en vivo: 99 / 100 / 100, LCP 1,9 s.
+
 ## Puerta final (resultado)
 
 - `scripts/check-motion.ts`: 39 componentes declaran su movimiento. OK.

@@ -7,6 +7,8 @@
 .hero-index { display: none; font-variant-numeric: tabular-nums; white-space: nowrap; }
 @media (min-width: 640px) { .hero-index { display: inline; } }
 .t-hero { font-family: var(--font-display); font-weight: var(--w-display); font-size: var(--text-hero); line-height: 0.98; letter-spacing: -0.035em; max-width: 100%; }
+/* Teléfono: cada línea del titular cabe entera («construido desde cero» no suelta la última palabra) */
+@media (max-width: 480px) { .t-hero { font-size: min(var(--text-hero), 8.6vw); } }
 .hero-row3 { display: grid; gap: var(--s-6); align-items: end; }
 .hero-copy { display: grid; gap: var(--s-6); justify-items: start; }
 .hero-copy .lead { max-width: 44ch; }

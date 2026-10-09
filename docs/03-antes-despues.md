@@ -6,12 +6,12 @@ https://pimepanama.com en producción, una sola corrida. El "después" es el bui
 
 | | Antes (sitio actual) | Después (pime-v2) |
 |---|---|---|
-| Rendimiento móvil (home) | 88 | 95 |
+| Rendimiento móvil (home) | 88 | 95 en build local · **99 en vivo** (https://pime-v2.vercel.app, CDN de Vercel) |
 | Rendimiento escritorio (home) | — | 100 |
 | Accesibilidad | 100 | 100 |
 | Buenas prácticas | 100 | 100 |
 | SEO | 100 | 69 · por el `noindex` hasta el corte de dominio; sube al quitarlo |
-| LCP móvil (home) | 3,7 s | 2,0 s |
+| LCP móvil (home) | 3,7 s | 2,0 s en local · 1,9 s en vivo |
 | TBT móvil | 60 ms | 50 ms |
 | CLS | 0,032 | 0 |
 | JavaScript de la home | 196 KB | el runtime de Next; la librería 3D del maniquí solo se descarga al abrir John Henry |
