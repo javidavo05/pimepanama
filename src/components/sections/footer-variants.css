@@ -3,7 +3,7 @@
 .fv-brand { display: inline-flex; align-items: center; gap: var(--s-2); font-family: var(--font-display); font-weight: var(--w-display); font-size: var(--text-md); letter-spacing: var(--tracking-tight); color: inherit; }
 .fv-brand img { height: 20px; width: auto; }
 .fv-legal { display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--s-1) var(--s-6); padding-top: var(--s-4); border-top: 1px solid var(--line); font-size: var(--text-xs); color: var(--fg-3); }
-.fv-lang { color: var(--fg-2); font-weight: var(--w-semibold); text-decoration: none; min-height: 24px; display: inline-flex; align-items: center; }
+.fv-lang { color: var(--fg-2); font-weight: var(--w-semibold); text-decoration: none; min-height: 44px; padding: 0 var(--s-2); margin: -10px calc(-1 * var(--s-2)); display: inline-flex; align-items: center; }
 .fv-link { display: inline-flex; align-items: center; min-height: 40px; font-size: var(--text-sm); color: var(--fg-2); text-decoration: none; transition: color var(--dur-fast) var(--ease-out); }
 .fv-link:hover { color: var(--fg); }
 .fv-tel { display: grid; gap: 2px; text-decoration: none; color: inherit; min-height: 48px; align-content: center; }
