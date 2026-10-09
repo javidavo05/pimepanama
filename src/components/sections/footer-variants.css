@@ -21,7 +21,7 @@
 @media (min-width: 1024px) { .fv-a .fv-in { grid-template-columns: minmax(0, 8fr) minmax(0, 4fr); column-gap: var(--s-12); } .fv-a-head, .fv-legal { grid-column: 1 / -1; } .fv-a-rows { grid-column: 1; } .fv-a-side { grid-column: 2; flex-direction: column; align-items: flex-start; justify-content: flex-start; padding-top: var(--s-3); } .fv-a-rows { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--s-8); } .fv-a-rows li:nth-child(-n+4) .fv-a-row { } }
 
 /* B · teléfono */
-.fv-b { background: var(--bg); }
+.fv-b { background: var(--bg); border-top: 1px solid var(--line); padding-top: var(--s-12); }
 .fv-b-main { display: grid; gap: var(--s-6); }
 @media (min-width: 1024px) { .fv-b-main { grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: var(--s-12); } }
 .fv-b-text { display: grid; gap: var(--s-2); justify-items: start; }
