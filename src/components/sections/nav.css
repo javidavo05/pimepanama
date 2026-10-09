@@ -26,6 +26,8 @@ html[data-menu-open] { overflow: hidden; }
 @media (min-width: 1280px) { .nav-tag { display: block; } }
 .nav-lang { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; font-size: var(--text-xs); font-weight: var(--w-label); letter-spacing: var(--tracking-caps); color: var(--fg-2); text-decoration: none; border-radius: var(--r-sm); transition: color var(--dur-fast), background var(--dur-fast); }
 .nav-lang:hover { color: var(--fg); background: var(--panel); }
+.nav-theme { display: none; }
+@media (min-width: 1024px) { .nav-theme { display: inline-flex; } }
 .nav-cta { display: none; }
 @media (min-width: 768px) { .nav-cta { display: inline-flex; } }
 

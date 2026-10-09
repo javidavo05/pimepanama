@@ -18,6 +18,8 @@
   --accent-soft: #E9E6FB;
   --accent-on-dark: #8E7BFF;
   --on-accent: #FFFFFF;
+  --accent-2: #8E7BFF;   /* segundo paso secuencial (gráficas) */
+  --accent-3: #CFC8F6;   /* tercer paso secuencial (gráficas) */
 
   /* ---------- Color: estados ---------- */
   --ok: #176B45; --ok-soft: #DDF1E6;
@@ -138,6 +140,72 @@
   --parallax-3: 0.09;
 }
 
+/* ---------- Tema oscuro: sigue al sistema, o se fuerza con data-theme ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+  --bg: #0B0D14;
+  --surface: #11141D;
+  --surface-2: #171B26;
+  --paper: #0B0D14;
+  --panel: #171B26;
+  --white: #0B0D14;        /* inverso: lo que era blanco sobre tinta ahora es tinta sobre claro */
+  --ink: #F2F3F7;          /* la "tinta" pasa a ser clara: botones, pills y chips la usan de fondo */
+  --ink-soft: #D9DCE5;
+  --slate: #AEB4C2;
+  --slate-light: #7C8496;
+  --line: #242A38;
+  --line-strong: #363D4E;
+  --fg: #F2F3F7;
+  --fg-2: #AEB4C2;
+  --fg-3: #7C8496;
+  --border: 1px solid #242A38;
+  --border-strong: 1.4px solid #F2F3F7;
+  --accent: #8E7BFF;
+  --accent-ink: #B7ABFF;
+  --accent-soft: rgba(142, 123, 255, 0.16);
+  --accent-on-dark: #B7ABFF;
+  --on-accent: #0B0D14;
+  --accent-2: #B7ABFF;
+  --accent-3: #D9D3FF;
+  --ok: #5BCF93; --ok-soft: rgba(91, 207, 147, 0.16);
+  --run: #F0B45B; --run-soft: rgba(240, 180, 91, 0.16);
+  --bad: #FF8A80; --bad-soft: rgba(255, 138, 128, 0.16);
+  --shadow-float: 0 24px 64px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B0D14;
+  --surface: #11141D;
+  --surface-2: #171B26;
+  --paper: #0B0D14;
+  --panel: #171B26;
+  --white: #0B0D14;        /* inverso: lo que era blanco sobre tinta ahora es tinta sobre claro */
+  --ink: #F2F3F7;          /* la "tinta" pasa a ser clara: botones, pills y chips la usan de fondo */
+  --ink-soft: #D9DCE5;
+  --slate: #AEB4C2;
+  --slate-light: #7C8496;
+  --line: #242A38;
+  --line-strong: #363D4E;
+  --fg: #F2F3F7;
+  --fg-2: #AEB4C2;
+  --fg-3: #7C8496;
+  --border: 1px solid #242A38;
+  --border-strong: 1.4px solid #F2F3F7;
+  --accent: #8E7BFF;
+  --accent-ink: #B7ABFF;
+  --accent-soft: rgba(142, 123, 255, 0.16);
+  --accent-on-dark: #B7ABFF;
+  --on-accent: #0B0D14;
+  --accent-2: #B7ABFF;
+  --accent-3: #D9D3FF;
+  --ok: #5BCF93; --ok-soft: rgba(91, 207, 147, 0.16);
+  --run: #F0B45B; --run-soft: rgba(240, 180, 91, 0.16);
+  --bad: #FF8A80; --bad-soft: rgba(255, 138, 128, 0.16);
+  --shadow-float: 0 24px 64px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
+}
+
 @media (min-width: 768px) {
   :root { --gutter: 32px; }
 }
@@ -164,21 +232,29 @@
 
 /* Bloque oscuro: invierte los roles sin cambiar los tokens base */
 [data-theme="ink"] {
-  --bg: var(--ink-bg);
+  --bg: #0B0D14;
   --surface: #141825;
   --surface-2: #1B2030;
-  --fg: var(--ink-fg);
-  --fg-2: var(--ink-fg-2);
-  --fg-3: var(--ink-fg-3);
-  --line: var(--ink-line);
+  --paper: #0B0D14;
+  --panel: #1B2030;
+  --fg: #FFFFFF;
+  --fg-2: rgba(255, 255, 255, 0.72);
+  --fg-3: rgba(255, 255, 255, 0.56);
+  --ink: #FFFFFF;
+  --white: #0B0D14;
+  --line: rgba(255, 255, 255, 0.12);
   --line-strong: rgba(255, 255, 255, 0.24);
-  --border: 1px solid var(--ink-line);
+  --border: 1px solid rgba(255, 255, 255, 0.12);
   --border-strong: 1.4px solid rgba(255, 255, 255, 0.6);
-  --accent: var(--accent-on-dark);
+  --accent: #8E7BFF;
   --accent-ink: #B7ABFF;
   --accent-soft: rgba(142, 123, 255, 0.16);
+  --on-accent: #0B0D14;
   color-scheme: dark;
 }
+/* En tema oscuro el bloque de tinta se distingue por un tono más profundo y sus líneas */
+:root[data-theme="dark"] [data-theme="ink"] { --bg: #06080E; --paper: #06080E; border-block: 1px solid #242A38; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) [data-theme="ink"] { --bg: #06080E; --paper: #06080E; border-block: 1px solid #242A38; } }
 
 /* Simulación de prefers-reduced-motion desde /avance/sistema */
 :root[data-reduced-motion] {

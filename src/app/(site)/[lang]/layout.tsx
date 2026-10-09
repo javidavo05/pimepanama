@@ -19,9 +19,10 @@ export default async function SiteLayout({ children, params }: { children: React
   const { lang } = await params;
   if (!LANGS.includes(lang as Lang)) notFound();
   return (
-    <html lang={lang}>
+    <html lang={lang} suppressHydrationWarning>
       <head>
         <link rel="preload" href="/fonts/manrope-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        <script dangerouslySetInnerHTML={{ __html: "try{var t=localStorage.getItem('tema');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}" }} />
       </head>
       <body>
         <Nav lang={lang as Lang} />

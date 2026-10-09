@@ -7,6 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { NAV, type Lang } from "../../../content/site";
 import "./nav.css";
 
@@ -98,6 +99,7 @@ export function Nav({ lang }: { lang: Lang }) {
 
         <div className="nav-right">
           <span className="nav-tag caps" aria-hidden="true"><span key={tag} className="nav-tag-in">{tag}</span></span>
+          <span className="nav-theme"><ThemeToggle lang={lang} compact /></span>
           <Link href={n.idioma.href} className="nav-lang" hrefLang={lang === "es" ? "en" : "es"} title={n.idioma.title}>{n.idioma.label}</Link>
           <Button href={n.cta.href} size="sm" className="nav-cta">{n.cta.label}</Button>
           <button type="button" className="nav-burger" aria-expanded={open} aria-controls="nav-menu" aria-label={open ? n.cerrar : n.abrir} onClick={() => setOpen((v) => !v)}>
@@ -118,6 +120,7 @@ export function Nav({ lang }: { lang: Lang }) {
         <div className="nav-menu-foot">
           <a href="tel:+50764795352" className="nav-menu-tel">{n.telefono}</a>
           <div className="nav-menu-actions">
+            <ThemeToggle lang={lang} />
             <Link href={n.idioma.href} className="nav-lang" title={n.idioma.title}>{n.idioma.label}</Link>
             <Button href={n.cta.href} arrow>{n.cta.label}</Button>
           </div>

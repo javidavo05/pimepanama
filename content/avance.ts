@@ -58,6 +58,7 @@ export const PASOS: Paso[] = [
     lighthouseMovil: 97,
     notas: [
       "docs/01-referencia.md, docs/02-mapa-referencia.md, src/styles/tokens.css y scripts/check-motion.ts quedaron escritos. Tailwind se quitó: sus utilidades chocaban con las clases del sistema y no se usaba.",
+      "2026-10-09, pedido de Javier: versión oscura del sitio. Sigue al sistema (prefers-color-scheme) y se puede forzar con el selector Auto · Claro · Oscuro de la navegación (y del menú móvil). Se guarda en el navegador y se aplica antes del primer paint. Los bloques de tinta siguen siendo oscuros en ambos temas; en tema oscuro llevan un tono más profundo y líneas.",
       "Lighthouse móvil (mediana de 5 corridas, build local en :3001): rendimiento 97, accesibilidad 100, buenas prácticas 100. SEO 63 porque la página lleva noindex a propósito. Escritorio: 100/100/100. El LCP observado es de 41 ms; el simulado (2.0–2.6 s) es un artefacto del modelo de Lighthouse que cuenta los 153 KB de runtime de Next como dependencia. Se ataca en el paso del hero con el analizador de bundle.",
       "El gris de metadatos de la referencia (#8A93A6) daba 3.0:1 de contraste; se oscureció a #667087 (4.8:1) para cumplir AA.",
       "Aprobado por Javier el 2026-10-08 desde el artifact.",
@@ -137,7 +138,7 @@ export const PASOS: Paso[] = [
     n: 6,
     titulo: "Capacidades",
     descripcion: "Sección sticky: la capacidad activa cambia con el scroll y la pantalla de la derecha se transforma con una escena distinta por capacidad.",
-    estado: "en_revision",
+    estado: "aprobado",
     ruta: "/es#capacidades",
     revisar: [
       "Cinco capacidades: ERP y sistemas internos, CRM y ventas, SaaS multi-tenant y white-label, portales y CMS, integraciones y automatización con IA. Vienen de la página «El sistema en detalle» de la propuesta.",
@@ -153,6 +154,7 @@ export const PASOS: Paso[] = [
       "Teléfonos (quick, 6 modelos actuales, motores reales de Safari y Chrome): 0 graves tras subir los títulos de capacidad a 44 px de alto. Primera corrida: clase «caps» chocaba con la utilidad de mayúsculas del sistema y toda la sección salía en mayúsculas grises; se renombró.",
       "El mapa de calor ya no lleva números dentro de las celdas (fallaban contraste a 10 px): los valores van en el título de cada celda y en el aria-label, con una escala de intensidad debajo.",
       "Nota de Javier (2026-10-08): «la imagen del sistema se ve vacía abajo e incompleta; deben estar completos y todos funcionales». Se rehicieron las cinco escenas; la activa define la altura de la pantalla fija.",
+      "Aprobado por Javier el 2026-10-09 desde el artifact.",
     ],
     actualizado: "2026-10-09",
   },
