@@ -6,6 +6,21 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   experimental: { inlineCss: true },
+  // Solo cambia el front end (Javier, 2026-10-10): el CMS sigue en el proyecto anterior de Vercel. Desde
+  // pimepanama.com, todo lo que es del CMS se reenvía allá sin que el navegador lo note: panel /empresa, admin,
+  // firmas y agenda de clientes, y la API (menos /api/leads, que es de este sitio y a su vez llama al CMS).
+  // Los recursos /_next que este sitio no tiene (los del CMS) también se reenvían, en último lugar.
+  async rewrites() {
+    const CMS = process.env.CMS_ORIGIN ?? "https://pimepanama-wt62.vercel.app";
+    const prefijos = ["empresa", "admin", "firmar", "agendar", "resume", "api"];
+    return {
+      afterFiles: prefijos.flatMap((p) => [
+        { source: `/${p}`, destination: `${CMS}/${p}` },
+        { source: `/${p}/:path*`, destination: `${CMS}/${p}/:path*` },
+      ]),
+      fallback: [{ source: "/_next/:path*", destination: `${CMS}/_next/:path*` }],
+    };
+  },
   // Redirecciones 301 desde el sitemap del sitio anterior (docs/00-mandato.md, anexo). Las rutas que ya no
   // existen van a la página equivalente; las demos y los casos no publicables, al portfolio.
   async redirects() {

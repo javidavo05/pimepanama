@@ -14,8 +14,7 @@ const META = {
   en: { titulo: "Pime Panamá · Custom ERP and CRM", descripcion: "We design and code custom ERP, CRM and platforms from scratch for companies in Panama, with a fixed price per phase and a three-month warranty." },
 } as const;
 
-/** Metadatos por idioma: título, descripción, hreflang (es, en, x-default) y Open Graph con su imagen. Sigue en
- *  noindex hasta la entrega (la puerta final lo quita junto con las redirecciones 301). */
+/** Metadatos por idioma: título, descripción, hreflang (es, en, x-default) y Open Graph con su imagen. */
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
   const l = (LANGS.includes(lang as Lang) ? lang : "es") as Lang;
@@ -27,7 +26,7 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
     alternates: { canonical: `/${l}`, languages: { es: "/es", en: "/en", "x-default": "/es" } },
     openGraph: { type: "website", siteName: "Pime Panamá", locale: l === "es" ? "es_PA" : "en_US", alternateLocale: l === "es" ? ["en_US"] : ["es_PA"], url: `/${l}`, title: m.titulo, description: m.descripcion },
     twitter: { card: "summary_large_image" },
-    robots: { index: false, follow: false },
+    robots: { index: true, follow: true },
   };
 }
 
