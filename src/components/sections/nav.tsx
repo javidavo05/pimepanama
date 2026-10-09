@@ -24,9 +24,10 @@ export function Nav({ lang }: { lang: Lang }) {
   const linksRef = useRef<HTMLElement>(null);
   const lastY = useRef(0);
 
+  // Barra de escritorio: las páginas siempre (Portfolio, Servicios, Empresa); las secciones de la home solo en la home.
   const items = [
-    ...n.secciones.map((s) => ({ key: s.id, href: `${home}#${s.id}`, label: s.label })),
-    ...n.paginas.slice(0, 1).map((p) => ({ key: p.href, href: p.href, label: p.label })),
+    ...(onHome ? n.secciones.map((s) => ({ key: s.id, href: `${home}#${s.id}`, label: s.label, sec: true })) : []),
+    ...n.paginas.map((p) => ({ key: p.href, href: p.href, label: p.label, sec: false })),
   ];
 
   // Scroll: dirección, compactación y sección activa (sin IntersectionObserver: un solo listener con rAF).
@@ -93,7 +94,7 @@ export function Nav({ lang }: { lang: Lang }) {
 
         <nav className="nav-links" aria-label={lang === "es" ? "Secciones" : "Sections"} ref={linksRef}>
           {items.map((i) => (
-            <Link key={i.key} href={i.href} data-key={i.key} aria-current={activeKey === i.key ? "true" : undefined}>{i.label}</Link>
+            <Link key={i.key} href={i.href} data-key={i.key} data-sec={i.sec || undefined} aria-current={activeKey === i.key ? "true" : undefined}>{i.label}</Link>
           ))}
           <span className="nav-ind" aria-hidden="true" />
         </nav>
