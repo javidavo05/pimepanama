@@ -361,8 +361,9 @@ export const CIERRE: Record<Lang, { eyebrow: string; titulo: string[]; bajada: s
   },
 };
 
-/** Footer (paso 10). Origen: cabecera y pie de documento de la propuesta + wordmark "PIME" en Manrope 800. */
-export const FOOTER: Record<Lang, { lema: string; secciones: string; paginas: string; contacto: string; idioma: { href: string; label: string }; derechos: string; hecho: string; gracias: string }> = {
-  es: { lema: "ERP y CRM a medida, construidos desde cero en Panamá.", secciones: "Inicio", paginas: "Páginas", contacto: "Contacto", idioma: { href: "/en", label: "English" }, derechos: "Todos los derechos reservados", hecho: "Panamá", gracias: "Gracias por la confianza." },
-  en: { lema: "Custom ERP and CRM, built from scratch in Panama.", secciones: "Home", paginas: "Pages", contacto: "Contact", idioma: { href: "/es", label: "Español" }, derechos: "All rights reserved", hecho: "Panama", gracias: "Thank you for your trust." },
+/** Footer (paso 10, v3). Javier descartó el wordmark gigante (2026-10-09: «el logo de pime es enorme, no llama a la
+ *  acción»): el footer es una llamada a la acción clara más la navegación compacta y la línea legal. */
+export const FOOTER: Record<Lang, { titulo: string; texto: string; cta: { href: string; label: string }; llamar: string; lema: string; nav: string; idioma: { href: string; label: string }; derechos: string; lugar: string }> = {
+  es: { titulo: "¿Empezamos por la fase que más le urge?", texto: "Una conversación sin costo, una propuesta con precio cerrado y la primera fase en uso desde que se entrega.", cta: { href: "/es/contacto", label: "Pedir una propuesta" }, llamar: "Llamar al 6479-5352", lema: "ERP y CRM a medida, desde cero.", nav: "Navegación", idioma: { href: "/en", label: "English" }, derechos: "Todos los derechos reservados", lugar: "Panamá" },
+  en: { titulo: "Shall we start with the phase you need most?", texto: "A free conversation, a fixed-price proposal and the first phase in use from the day it ships.", cta: { href: "/en/contacto", label: "Request a proposal" }, llamar: "Call 6479-5352", lema: "Custom ERP and CRM, from scratch.", nav: "Navigation", idioma: { href: "/es", label: "Español" }, derechos: "All rights reserved", lugar: "Panama" },
 };
