@@ -12,3 +12,10 @@ Este es el sitio NUEVO de pimepanama.com. El mandato completo está en `docs/00-
 - Subagentes: solo Opus. Sin Docker.
 - Git siempre por `pime-git` (`pime-git commit`, `pime-git push`), perfil `pime`. Nunca `git push` directo. Nunca desplegar sin que Javier lo pida.
 - Aprobación paso por paso: construir solo la parte en curso, actualizar `content/avance.ts` y `/avance`, y esperar "aprobado".
+
+## Leads (contacto)
+
+- El sitio **no publica teléfono ni correo** (decisión de Javier, 2026-10-09). Toda llamada a la acción lleva al wizard de `/[lang]/contacto`.
+- El wizard envía a `/api/leads`, que reenvía al sistema de leads del CMS de la empresa (`LEADS_API_URL`, por defecto `https://pimepanama.com/api/contact`, el mismo endpoint que alimenta `/empresa/leads`).
+- En local, `.env.local` lleva `LEADS_DRY_RUN=1`: no se crean leads reales, solo se registran en consola. No quitarlo para probar.
+- Pendiente de decisión: dónde vivirá el CMS cuando este sitio reemplace a pimepanama.com (pregunta q25 del artifact).

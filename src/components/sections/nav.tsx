@@ -118,7 +118,6 @@ export function Nav({ lang }: { lang: Lang }) {
           ))}
         </ul>
         <div className="nav-menu-foot">
-          <a href="tel:+50764795352" className="nav-menu-tel">{n.telefono}</a>
           <div className="nav-menu-actions">
             <ThemeToggle lang={lang} />
             <Link href={n.idioma.href} className="nav-lang" title={n.idioma.title}>{n.idioma.label}</Link>

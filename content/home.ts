@@ -323,14 +323,14 @@ export const PROCESO: Record<Lang, {
 };
 
 /** Industrias (paso 9). Las industrias y los sistemas salen de content/portfolio.ts: nada inventado. */
-export const INDUSTRIAS_SEC: Record<Lang, { eyebrow: string; titulo: string[]; bajada: string; sistemas: (n: number) => string; ver: string }> = {
-  es: { eyebrow: "06 · Industrias", titulo: ["Operaciones distintas,", "el mismo rigor"], bajada: "Cada industria tiene su propia forma de cobrar, de atender y de rendir cuentas. Estos son los sectores donde ya hay un sistema de Pime en producción.", sistemas: (n) => (n === 1 ? "1 sistema" : `${n} sistemas`), ver: "Ver los casos" },
-  en: { eyebrow: "06 · Industries", titulo: ["Different operations,", "the same rigor"], bajada: "Every industry has its own way of billing, serving and reporting. These are the sectors where a Pime system is already in production.", sistemas: (n) => (n === 1 ? "1 system" : `${n} systems`), ver: "See the cases" },
+export const INDUSTRIAS_SEC: Record<Lang, { eyebrow: string; titulo: string[]; bajada: string; sistemas: (n: number) => string; ver: string; cta: { href: string; label: string } }> = {
+  es: { eyebrow: "06 · Industrias", titulo: ["Operaciones distintas,", "el mismo rigor"], bajada: "Cada industria tiene su propia forma de cobrar, de atender y de rendir cuentas. Estos son los sectores donde ya hay un sistema de Pime en producción.", sistemas: (n) => (n === 1 ? "1 sistema" : `${n} sistemas`), ver: "Ver los casos", cta: { href: "/es/contacto", label: "Pedir una propuesta para mi industria" } },
+  en: { eyebrow: "06 · Industries", titulo: ["Different operations,", "the same rigor"], bajada: "Every industry has its own way of billing, serving and reporting. These are the sectors where a Pime system is already in production.", sistemas: (n) => (n === 1 ? "1 system" : `${n} systems`), ver: "See the cases", cta: { href: "/en/contacto", label: "Request a proposal for my industry" } },
 };
 
 /** Cierre y contacto (paso 9). Origen: la página de cierre de la propuesta (único fondo oscuro, pasos
  *  numerados en círculos, nombre y dominio). Teléfono de SITE. */
-export const CIERRE: Record<Lang, { eyebrow: string; titulo: string[]; bajada: string; pasos: { titulo: string; texto: string }[]; cta: { href: string; label: string }; llamar: string; horario: string; gracias: string }> = {
+export const CIERRE: Record<Lang, { eyebrow: string; titulo: string[]; bajada: string; pasos: { titulo: string; texto: string }[]; cta: { href: string; label: string }; gracias: string }> = {
   es: {
     eyebrow: "07 · Hablemos",
     titulo: ["Cuéntenos cómo opera", "hoy su empresa"],
@@ -341,8 +341,6 @@ export const CIERRE: Record<Lang, { eyebrow: string; titulo: string[]; bajada: s
       { titulo: "Empiece por lo urgente", texto: "La primera fase se usa desde que se entrega." },
     ],
     cta: { href: "/es/contacto", label: "Pedir una propuesta" },
-    llamar: "Llamar al",
-    horario: "Panamá",
     gracias: "Gracias por la confianza.",
   },
   en: {
@@ -355,15 +353,73 @@ export const CIERRE: Record<Lang, { eyebrow: string; titulo: string[]; bajada: s
       { titulo: "Start with what's urgent", texto: "The first phase is in use from the day it ships." },
     ],
     cta: { href: "/en/contacto", label: "Request a proposal" },
-    llamar: "Call",
-    horario: "Panama",
     gracias: "Thank you for your trust.",
   },
 };
 
-/** Footer (paso 10, v3). Javier descartó el wordmark gigante (2026-10-09: «el logo de pime es enorme, no llama a la
- *  acción»): el footer es una llamada a la acción clara más la navegación compacta y la línea legal. */
-export const FOOTER: Record<Lang, { titulo: string; texto: string; cta: { href: string; label: string }; llamar: string; lema: string; nav: string; idioma: { href: string; label: string }; derechos: string; lugar: string }> = {
-  es: { titulo: "¿Empezamos por la fase que más le urge?", texto: "Una conversación sin costo, una propuesta con precio cerrado y la primera fase en uso desde que se entrega.", cta: { href: "/es/contacto", label: "Pedir una propuesta" }, llamar: "Llamar al 6479-5352", lema: "ERP y CRM a medida, desde cero.", nav: "Navegación", idioma: { href: "/en", label: "English" }, derechos: "Todos los derechos reservados", lugar: "Panamá" },
-  en: { titulo: "Shall we start with the phase you need most?", texto: "A free conversation, a fixed-price proposal and the first phase in use from the day it ships.", cta: { href: "/en/contacto", label: "Request a proposal" }, llamar: "Call 6479-5352", lema: "Custom ERP and CRM, from scratch.", nav: "Navigation", idioma: { href: "/es", label: "Español" }, derechos: "All rights reserved", lugar: "Panama" },
+/** Footer. Elegido por Javier el 2026-10-09 entre tres direcciones; después pidió quitar el teléfono: todo
+ *  contacto entra al sistema de leads del CMS, así que el footer cierra con dos llamadas a la acción. */
+export const FOOTER: Record<Lang, { eyebrow: string; titulo: string; texto: string; cta: { href: string; label: string }; cta2: { href: string; label: string }; nav: string; idioma: { href: string; label: string }; derechos: string; lugar: string }> = {
+  es: { eyebrow: "Hablemos hoy", titulo: "Pida una propuesta", texto: "Cuéntenos su operación en cuatro pasos y recibe una propuesta con precio cerrado por fase.", cta: { href: "/es/contacto", label: "Pedir una propuesta" }, cta2: { href: "/es/contacto?intencion=conversacion", label: "Agendar una conversación" }, nav: "Navegación", idioma: { href: "/en", label: "English" }, derechos: "Todos los derechos reservados", lugar: "Panamá" },
+  en: { eyebrow: "Let's talk today", titulo: "Request a proposal", texto: "Tell us about your operation in four steps and get a proposal with a fixed price per phase.", cta: { href: "/en/contacto", label: "Request a proposal" }, cta2: { href: "/en/contacto?intencion=conversacion", label: "Book a conversation" }, nav: "Navigation", idioma: { href: "/es", label: "Español" }, derechos: "All rights reserved", lugar: "Panama" },
+};
+
+/** Wizard de contacto (/contacto). Cuatro pasos con opción preseleccionada: nunca un formulario vacío. El
+ *  resultado entra al sistema de leads del CMS. Las opciones son del negocio, no cifras. */
+export const CONTACTO: Record<Lang, {
+  eyebrow: string; titulo: string; bajada: string; pasos: string[];
+  tipo: { label: string; opciones: { id: string; label: string; detalle: string }[]; def: string };
+  industria: { label: string; otra: string; def: string };
+  plazo: { label: string; opciones: { id: string; label: string }[]; def: string };
+  datos: { nombre: string; empresa: string; correo: string; telefono: string; telefonoAyuda: string; mensaje: string; mensajeAyuda: string };
+  intencion: Record<string, string>;
+  botones: { seguir: string; atras: string; enviar: string; enviando: string };
+  listo: { titulo: string; texto: string; inicio: string; portfolio: string };
+  error: { titulo: string; texto: string; reintentar: string };
+  val: { nombre: string; correo: string };
+}> = {
+  es: {
+    eyebrow: "Contacto", titulo: "Pida una propuesta", bajada: "Cuatro pasos. Ya vienen marcadas las opciones más comunes: cambie lo que no encaje.",
+    pasos: ["Proyecto", "Industria", "Plazo", "Sus datos"],
+    tipo: { label: "¿Qué necesita?", def: "erp", opciones: [
+      { id: "erp", label: "ERP a medida", detalle: "Operación, inventario, cobros y reportes de la empresa" },
+      { id: "crm", label: "CRM a medida", detalle: "Clientes, seguimiento, cotizaciones y ventas" },
+      { id: "saas", label: "Plataforma o SaaS", detalle: "Un producto para varios clientes o sedes" },
+      { id: "portal", label: "Portal para clientes", detalle: "Que sus clientes consulten, paguen o reserven solos" },
+      { id: "ia", label: "Automatización con IA", detalle: "Leer documentos, clasificar, responder, integrar" },
+      { id: "no-se", label: "Todavía no lo sé", detalle: "Cuénteme la operación y lo vemos juntos" },
+    ] },
+    industria: { label: "¿En qué industria?", otra: "Otra", def: "Empresas" },
+    plazo: { label: "¿Para cuándo?", def: "1-3", opciones: [
+      { id: "ya", label: "Lo antes posible" }, { id: "1-3", label: "En 1 a 3 meses" }, { id: "3-6", label: "En 3 a 6 meses" }, { id: "explorando", label: "Solo estoy explorando" },
+    ] },
+    datos: { nombre: "Su nombre", empresa: "Empresa", correo: "Correo", telefono: "Teléfono o WhatsApp (opcional)", telefonoAyuda: "Solo si prefiere que le escribamos por ahí.", mensaje: "¿Algo más? (opcional)", mensajeAyuda: "Qué se hace hoy a mano, qué sistema usan, cuánta gente lo usaría." },
+    intencion: { propuesta: "Quiere una propuesta", conversacion: "Quiere agendar una conversación" },
+    botones: { seguir: "Continuar", atras: "Atrás", enviar: "Recibir la propuesta", enviando: "Enviando…" },
+    listo: { titulo: "Recibido. Le escribimos en breve.", texto: "Su solicitud ya está en nuestro sistema. Le respondemos al correo que indicó con los siguientes pasos.", inicio: "Volver al inicio", portfolio: "Ver sistemas entregados" },
+    error: { titulo: "No pudimos enviar la solicitud.", texto: "Puede ser la conexión. Sus respuestas siguen aquí: inténtelo otra vez.", reintentar: "Intentar de nuevo" },
+    val: { nombre: "Escriba su nombre.", correo: "Revise el correo: le respondemos ahí." },
+  },
+  en: {
+    eyebrow: "Contact", titulo: "Request a proposal", bajada: "Four steps. The most common options are already selected: change what doesn't fit.",
+    pasos: ["Project", "Industry", "Timing", "Your details"],
+    tipo: { label: "What do you need?", def: "erp", opciones: [
+      { id: "erp", label: "Custom ERP", detalle: "Operations, inventory, billing and company reports" },
+      { id: "crm", label: "Custom CRM", detalle: "Customers, follow-up, quotes and sales" },
+      { id: "saas", label: "Platform or SaaS", detalle: "A product for several customers or branches" },
+      { id: "portal", label: "Customer portal", detalle: "Let your customers check, pay or book on their own" },
+      { id: "ia", label: "AI automation", detalle: "Read documents, classify, answer, integrate" },
+      { id: "no-se", label: "I don't know yet", detalle: "Tell me about the operation and we'll figure it out" },
+    ] },
+    industria: { label: "Which industry?", otra: "Other", def: "Companies" },
+    plazo: { label: "When?", def: "1-3", opciones: [
+      { id: "ya", label: "As soon as possible" }, { id: "1-3", label: "In 1 to 3 months" }, { id: "3-6", label: "In 3 to 6 months" }, { id: "explorando", label: "Just exploring" },
+    ] },
+    datos: { nombre: "Your name", empresa: "Company", correo: "Email", telefono: "Phone or WhatsApp (optional)", telefonoAyuda: "Only if you'd rather we write you there.", mensaje: "Anything else? (optional)", mensajeAyuda: "What is done by hand today, which system you use, how many people would use it." },
+    intencion: { propuesta: "Wants a proposal", conversacion: "Wants to book a conversation" },
+    botones: { seguir: "Continue", atras: "Back", enviar: "Get the proposal", enviando: "Sending…" },
+    listo: { titulo: "Received. We'll write you shortly.", texto: "Your request is in our system. We'll reply to the email you gave with the next steps.", inicio: "Back to home", portfolio: "See delivered systems" },
+    error: { titulo: "We couldn't send the request.", texto: "It may be the connection. Your answers are still here: try again.", reintentar: "Try again" },
+    val: { nombre: "Write your name.", correo: "Check the email: we reply there." },
+  },
 };

@@ -12,7 +12,7 @@
 .ind-link:hover { color: var(--fg); border-color: var(--accent); }
 .ind-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 2px; }
 .ind-n { font-family: var(--font-display); font-weight: var(--w-display); font-size: var(--text-lg); color: var(--fg-3); font-variant-numeric: tabular-nums; padding-top: 2px; }
-.ind-foot { display: flex; justify-content: flex-end; }
+.ind-foot { display: flex; justify-content: space-between; align-items: center; gap: var(--s-4); flex-wrap: wrap; }
 @media (min-width: 1024px) {
   .ind-in { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); column-gap: var(--s-12); align-items: start; }
   .ind-head { position: sticky; top: calc(72px + var(--s-6)); }

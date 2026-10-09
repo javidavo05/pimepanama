@@ -5,8 +5,9 @@ export const LANGS: Lang[] = ["es", "en"];
 export const SITE = {
   nombre: "Pime Panamá",
   dominio: "pimepanama.com",
-  telefono: "6479-5352",
-  telefonoE164: "+50764795352",
+  /** Todo contacto entra al sistema de leads del CMS de la empresa (decisión de Javier, 2026-10-09): el sitio
+   *  no publica teléfono ni correo; cada llamada a la acción lleva al wizard de /contacto. */
+  leads: { ruta: "/contacto" },
   cifras: {
     anios: 7,
     proyectos: 50,
@@ -31,7 +32,6 @@ export const NAV = {
       { href: "/es/empresa", label: "Empresa" },
     ],
     cta: { href: "/es/contacto", label: "Pedir una propuesta" },
-    telefono: "Llamar al 6479-5352",
     abrir: "Abrir el menú",
     cerrar: "Cerrar el menú",
     idioma: { href: "/en", label: "EN", title: "Read in English" },
@@ -51,7 +51,6 @@ export const NAV = {
       { href: "/en/empresa", label: "Company" },
     ],
     cta: { href: "/en/contacto", label: "Request a proposal" },
-    telefono: "Call 6479-5352",
     abrir: "Open menu",
     cerrar: "Close menu",
     idioma: { href: "/es", label: "ES", title: "Leer en español" },

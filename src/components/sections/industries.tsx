@@ -4,6 +4,7 @@
 import Link from "next/link";
 import { Eyebrow, LetterChip, Lines } from "@/components/ui/primitives";
 import { TextLink } from "@/components/ui/text-link";
+import { Button } from "@/components/ui/button";
 import { CASOS } from "../../../content/portfolio";
 import { INDUSTRIAS_SEC } from "../../../content/home";
 import type { Lang } from "../../../content/site";
@@ -59,7 +60,7 @@ export function Industries({ lang }: { lang: Lang }) {
             </li>
           ))}
         </ol>
-        <div className="ind-foot" data-reveal="rise"><TextLink href={`/${lang}/portfolio`} className="tap">{t.ver}</TextLink></div>
+        <div className="ind-foot" data-reveal="rise"><TextLink href={`/${lang}/portfolio`} className="tap">{t.ver}</TextLink><Button href={t.cta.href} arrow>{t.cta.label}</Button></div>
       </div>
     </section>
   );

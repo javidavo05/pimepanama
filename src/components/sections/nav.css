@@ -51,7 +51,6 @@ html[data-menu-open] { overflow: hidden; }
 .nav-menu-link:hover > span { color: var(--accent); }
 .nav-menu-foot { display: grid; gap: var(--s-4); opacity: 0; transform: translate3d(0, var(--rise), 0); transition: opacity var(--dur-slow) var(--ease-out), transform var(--dur-slow) var(--ease-out); }
 .nav-menu[data-open] .nav-menu-foot { opacity: 1; transform: none; transition-delay: 480ms; }
-.nav-menu-tel { font-size: var(--text-md); font-weight: var(--w-semibold); color: var(--fg-2); text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
 .nav-menu-actions { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
 .nav-menu-actions .btn { flex: 1 1 240px; }
 @media (min-width: 1024px) { .nav-menu { display: none; } }
