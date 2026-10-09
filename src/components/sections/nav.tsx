@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { PaletteButton } from "@/components/ui/command-palette";
 import { NAV, type Lang } from "../../../content/site";
 import "./nav.css";
 
@@ -99,6 +100,7 @@ export function Nav({ lang }: { lang: Lang }) {
 
         <div className="nav-right">
           <span className="nav-tag caps" aria-hidden="true"><span key={tag} className="nav-tag-in">{tag}</span></span>
+          <PaletteButton lang={lang} />
           <span className="nav-theme"><ThemeToggle lang={lang} compact /></span>
           <Link href={n.idioma.href} className="nav-lang" hrefLang={lang === "es" ? "en" : "es"} title={n.idioma.title}>{n.idioma.label}</Link>
           <Button href={n.cta.href} size="sm" className="nav-cta">{n.cta.label}</Button>

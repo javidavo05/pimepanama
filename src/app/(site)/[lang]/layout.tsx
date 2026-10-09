@@ -5,6 +5,7 @@ import "../../globals.css";
 import { Reveal } from "@/components/motion/reveal";
 import { Nav } from "@/components/sections/nav";
 import { Footer } from "@/components/sections/footer";
+import { CommandPalette } from "@/components/ui/command-palette";
 import { LANGS, type Lang } from "../../../../content/site";
 
 export const metadata: Metadata = {
@@ -30,6 +31,7 @@ export default async function SiteLayout({ children, params }: { children: React
         <Nav lang={lang as Lang} />
         {children}
         <Footer lang={lang as Lang} />
+        <CommandPalette lang={lang as Lang} />
         <Reveal />
       </body>
     </html>
