@@ -3,8 +3,6 @@
 // LEADS_API_URL se configura en Vercel; por defecto apunta al CMS en producción.
 import { NextResponse } from "next/server";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
 
 const DESTINO = process.env.LEADS_API_URL ?? "https://pimepanama.com/api/contact";
 const MAX = { name: 120, email: 160, company: 160, phone: 40, message: 5000 };
