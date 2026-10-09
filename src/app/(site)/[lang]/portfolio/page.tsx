@@ -1,32 +1,27 @@
-import Link from "next/link";
-import { CaseShot } from "@/components/cases";
-import { Eyebrow, Pill } from "@/components/ui/primitives";
+import { notFound } from "next/navigation";
+import { Eyebrow } from "@/components/ui/primitives";
+import { PortfolioGrid } from "@/components/sections/portfolio-grid";
 import { CASOS } from "../../../../../content/portfolio";
 import { LANGS, type Lang } from "../../../../../content/site";
-import { notFound } from "next/navigation";
 import "./lista.css";
+
+const T = {
+  es: { eyebrow: "Portfolio", titulo: "Sistemas que operan empresas reales", bajada: "Todos los sistemas entregados que se pueden mostrar, con su tablero recreado con datos de muestra. Filtre por industria o por tipo." },
+  en: { eyebrow: "Portfolio", titulo: "Systems that run real companies", bajada: "Every delivered system we can show, with its dashboard recreated with sample data. Filter by industry or type." },
+};
 
 export default async function Portfolio({ params }: { params: Promise<{ lang: Lang }> }) {
   const { lang } = await params;
   if (!LANGS.includes(lang)) notFound();
+  const t = T[lang];
   const casos = CASOS.filter((c) => c.publicable);
   return (
     <main className="pl" data-motion="reveal">
       <div className="wrap pl-wrap">
-        <Eyebrow>{lang === "es" ? "Portfolio" : "Portfolio"}</Eyebrow>
-        <h1 className="t-1">{lang === "es" ? "Sistemas que operan empresas reales" : "Systems that run real companies"}</h1>
-        <ul className="pl-grid">
-          {casos.map((c) => (
-            <li key={c.slug} data-reveal="rise">
-              <Link href={`/${lang}/portfolio/${c.slug}`} className="pl-card">
-                <CaseShot slug={c.slug} label={`${c.nombre}`} />
-                <span className="pl-t">{c.nombre}</span>
-                <span className="meta">{c.cliente} · {c.industria[lang]}</span>
-                <Pill variant="ghost">{c.tipo[lang]}</Pill>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <Eyebrow>{t.eyebrow}</Eyebrow>
+        <h1 className="t-1">{t.titulo}</h1>
+        <p className="lead">{t.bajada}</p>
+        <PortfolioGrid casos={casos} lang={lang} />
       </div>
     </main>
   );
