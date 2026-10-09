@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import Script from "next/script";
 import "../../globals.css";
 import { Reveal } from "@/components/motion/reveal";
 import { Nav } from "@/components/sections/nav";
@@ -22,7 +23,7 @@ export default async function SiteLayout({ children, params }: { children: React
     <html lang={lang} suppressHydrationWarning>
       <head>
         <link rel="preload" href="/fonts/manrope-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
-        <script dangerouslySetInnerHTML={{ __html: "try{var t=localStorage.getItem('tema');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}" }} />
+        <Script id="tema" strategy="beforeInteractive">{"try{var t=localStorage.getItem('tema');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}"}</Script>
       </head>
       <body>
         <Nav lang={lang as Lang} />
