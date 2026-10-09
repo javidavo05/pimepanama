@@ -69,6 +69,16 @@ export const CASOS: Caso[] = [
     urlPublica: "https://academyx-app.vercel.app",
   },
   {
+    slug: "godmode", nombre: "GodMode", cliente: "Pime",
+    industria: { es: "Tecnología", en: "Technology" }, tipo: { es: "Superadministración", en: "Super-admin" },
+    resumen: { es: "Consola de plataforma de Academyx: instituciones, facturación de plataforma, cumplimiento y alertas, operada por MCP.", en: "Academyx platform console: institutions, platform billing, compliance and alerts, operated by MCP." },
+    problema: { es: "Sin documentar.", en: "Not documented." }, solucion: { es: "Una consola en su propio dominio y con base de datos propia que opera las instituciones por el MCP de control; el estado de cada institución se replica por eventos firmados.", en: "A console on its own domain and database that operates institutions through the control MCP; each institution's state is replicated by signed events." },
+    modulos: { es: ["Instituciones", "Facturación de plataforma", "Cumplimiento", "Alertas", "Eventos firmados", "Cliente MCP"], en: ["Institutions", "Platform billing", "Compliance", "Alerts", "Signed events", "MCP client"] },
+    stack: ["Next.js 16", "Supabase propio", "MCP de control", "Eventos firmados (HMAC)", "Monorepo pnpm + Turbo"], visual: "control",
+    estado: { es: "En producción", en: "In production" }, publicable: true, destacado: true,
+    urlPublica: "https://academyx-godmode.vercel.app", urlNota: { es: "Consola privada: el enlace abre el inicio de sesión.", en: "Private console: the link opens the sign-in." },
+  },
+  {
     slug: "bnb-real-estate", nombre: "CMS inmobiliario", cliente: "B&B Real Estate",
     industria: { es: "Inmobiliaria", en: "Real estate" }, tipo: { es: "CMS con integración", en: "CMS with integration" },
     resumen: { es: "Sitio trilingüe que capta y califica leads de inversionistas, con CMS propio sincronizado con Wasi.", en: "Trilingual site that captures and qualifies investor leads, with its own CMS synced with Wasi." },
@@ -160,15 +170,6 @@ export const CASOS: Caso[] = [
     stack: ["Next.js 16", "Supabase Realtime", "Python + FastAPI", "Google Drive y Gmail"], visual: "respaldo",
     estado: { es: "En producción", en: "In production" }, publicable: true, destacado: true,
     urlPublica: null, urlNota: { es: "Sistema privado de la organización cliente: sin enlace público.", en: "Private system of the client organization: no public link." },
-  },
-  {
-    slug: "godmode", nombre: "Godmode Control Center", cliente: "Pime",
-    industria: { es: "Tecnología", en: "Technology" }, tipo: { es: "Superadministración", en: "Super-admin" },
-    resumen: { es: "Consola multi-empresa: fuente de verdad de los tenants de Academyx y Smart Church, con cobros, cuentas por cobrar e inventario.", en: "Multi-company console: source of truth for Academyx and Smart Church tenants, with billing, receivables and inventory." },
-    problema: { es: "Sin documentar.", en: "Not documented." }, solucion: { es: "Monitorear negocios digitales y concesionarias en una sola consola, con feature flags y enlaces de pago.", en: "Monitor digital businesses and dealerships in one console, with feature flags and payment links." },
-    modulos: { es: ["Empresas", "Negocios", "Socios", "Finanzas", "Vehículos", "Instituciones", "Analítica", "Plano de control"], en: ["Companies", "Businesses", "Partners", "Finance", "Vehicles", "Institutions", "Analytics", "Control plane"] },
-    stack: ["Next.js 16", "Supabase", "Resend"], visual: "control",
-    estado: { es: "En producción", en: "In production" }, publicable: false,
   },
   {
     slug: "direct-booking", nombre: "Direct booking", cliente: "Pime",

@@ -4,11 +4,12 @@ import { createRequire } from "node:module";
 import { mkdirSync } from "node:fs";
 const require = createRequire(process.env.HOME + "/.claude/skills/pime-phone-check/scripts/");
 const { chromium } = require("playwright");
-const SLUGS = ["svitzer", "uapa-suite", "academyx", "bnb-real-estate", "smart-church", "john-henry", "misaza", "holo-realty", "pime-backup", "geogenius"];
+const SLUGS = ["svitzer", "uapa-suite", "academyx", "bnb-real-estate", "smart-church", "john-henry", "misaza", "holo-realty", "pime-backup", "geogenius", "godmode"];
 mkdirSync("public/cases", { recursive: true });
 const b = await chromium.launch();
 const p = await b.newPage({ viewport: { width: 1400, height: 900 }, deviceScaleFactor: 2 });
 await p.goto("http://localhost:3000/avance/casos", { waitUntil: "networkidle" });
+await p.addStyleTag({ content: "nextjs-portal{display:none!important}" });
 await p.waitForTimeout(800);
 for (const s of SLUGS) { const el = await p.$(`#${s} > div`); await el.screenshot({ path: `public/cases/${s}.png` }); console.log("ok", s); }
 await b.close();

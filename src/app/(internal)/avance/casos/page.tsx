@@ -9,11 +9,12 @@ import CaseMisaza from "@/components/cases/misaza";
 import CasePimeBackup from "@/components/cases/pime-backup";
 import CaseHoloRealty from "@/components/cases/holo-realty";
 import CaseGeoGenius from "@/components/cases/geogenius";
+import CaseGodmode from "@/components/cases/godmode";
 
 export const metadata: Metadata = { title: "Tableros a tamaño real · Pime v2", robots: { index: false } };
 
 /* Revisión interna: cada tablero a 1280×800, sin escalar, para compararlo con el sistema real. */
-const LISTA = [["svitzer", CaseSvitzer], ["uapa-suite", CaseUapaSuite], ["academyx", CaseAcademyx], ["bnb-real-estate", CaseBnbRealEstate], ["smart-church", CaseSmartChurch], ["john-henry", CaseJohnHenry], ["misaza", CaseMisaza], ["pime-backup", CasePimeBackup], ["holo-realty", CaseHoloRealty], ["geogenius", CaseGeoGenius]] as const;
+const LISTA = [["svitzer", CaseSvitzer], ["uapa-suite", CaseUapaSuite], ["academyx", CaseAcademyx], ["bnb-real-estate", CaseBnbRealEstate], ["smart-church", CaseSmartChurch], ["john-henry", CaseJohnHenry], ["misaza", CaseMisaza], ["pime-backup", CasePimeBackup], ["holo-realty", CaseHoloRealty], ["geogenius", CaseGeoGenius], ["godmode", CaseGodmode]] as const;
 
 export default function Casos() {
   return (
