@@ -16,7 +16,8 @@ const COPY = {
 
 export default async function Image({ params }: { params: Promise<{ lang: string }> }) {
   const { lang } = await params; const l = (LANGS.includes(lang as Lang) ? lang : "es") as Lang; const c = COPY[l];
-  const manrope = await readFile(join(process.cwd(), "public/fonts/manrope-var.woff2")).catch(() => null);
+  // satori no lee woff2: se usa el TTF estático de Manrope 800 (src/assets), el mismo peso del titular del sitio
+  const manrope = await readFile(join(process.cwd(), "src/assets/manrope-800.ttf")).catch(() => null);
   return new ImageResponse(
     (
       <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 72, background: "#0B0D14", color: "#FFFFFF", fontFamily: manrope ? "Manrope" : "sans-serif" }}>
