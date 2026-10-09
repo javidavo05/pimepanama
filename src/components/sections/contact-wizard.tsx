@@ -38,7 +38,10 @@ export function ContactWizard({ lang, industrias }: { lang: Lang; industrias: st
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const ir = (n: number) => { setDir(n > paso ? 1 : -1); setPaso(n); setTimeout(() => panel.current?.querySelector<HTMLElement>("h2")?.focus(), 50); };
+  const ir = (n: number) => {
+    setDir(n > paso ? 1 : -1); setPaso(n);
+    setTimeout(() => { const h = panel.current?.querySelector<HTMLElement>("h2"); h?.focus({ preventScroll: true }); h?.scrollIntoView({ block: "center", behavior: "smooth" }); }, 50);
+  };
   const valida = () => {
     const e: typeof err = {};
     if (!d.nombre.trim()) e.nombre = t.val.nombre;
@@ -55,6 +58,7 @@ export function ContactWizard({ lang, industrias }: { lang: Lang; industrias: st
     try {
       const r = await fetch("/api/leads", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: d.nombre.trim(), email: d.correo.trim(), company: d.empresa.trim(), phone: d.telefono.trim(), message, locale: lang }) });
       setEstado(r.ok ? "listo" : "error");
+      if (r.ok) scrollTo({ top: 0, behavior: "smooth" }); // el panel de confirmación es más corto que el formulario
     } catch { setEstado("error"); }
   };
 
