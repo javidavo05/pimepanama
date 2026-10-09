@@ -28,7 +28,7 @@ export function CommandPalette({ lang }: { lang: Lang }) {
   const items = useMemo<Item[]>(() => [
     ...CASOS.filter((c) => c.publicable).map((c) => ({ id: `c-${c.slug}`, grupo: t.casos, titulo: c.nombre, detalle: `${c.cliente} · ${c.industria[lang]}`, href: `${home}/portfolio/${c.slug}`, chip: c.cliente.slice(0, 2).toUpperCase() })),
     ...INDUSTRIAS(lang).map((i) => ({ id: `i-${i}`, grupo: t.industrias, titulo: i, href: `${home}/portfolio?industria=${encodeURIComponent(i)}`, chip: i.slice(0, 2).toUpperCase() })),
-    ...CAPACIDADES[lang].items.map((c) => ({ id: `k-${c.id}`, grupo: t.capacidades, titulo: c.titulo, detalle: c.apoyo, href: `${home}#capacidades`, chip: c.n })),
+    ...CAPACIDADES[lang].items.map((c) => ({ id: `k-${c.id}`, grupo: t.capacidades, titulo: c.titulo, detalle: c.apoyo, href: `${home}/servicios#${c.id}`, chip: c.n })),
     ...n.secciones.map((s) => ({ id: `p-${s.id}`, grupo: t.paginas, titulo: s.label, href: `${home}#${s.id}`, chip: s.label.slice(0, 2).toUpperCase() })),
     ...n.paginas.map((p) => ({ id: `p-${p.href}`, grupo: t.paginas, titulo: p.label, href: p.href, chip: p.label.slice(0, 2).toUpperCase() })),
     { id: "p-contacto", grupo: t.paginas, titulo: n.cta.label, href: n.cta.href, chip: "→" },
