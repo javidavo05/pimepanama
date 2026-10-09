@@ -17,6 +17,7 @@ const SIN_DOC = (s: string) => s.startsWith("Sin documentar") || s.startsWith("N
 
 export function CaseContent({ caso: c, lang, as: H = "h1", titleId, compact }: { caso: Caso; lang: Lang; as?: "h1" | "h2"; titleId?: string; compact?: boolean }) {
   const t = CASE_T[lang];
+  const S = (compact ? "h3" : "h2") as "h2" | "h3"; // orden de encabezados: h1→h2 en la ficha, h2→h3 en el pop-up
   const reveal = compact ? {} : { "data-reveal": "rise" };
   return (
     <>
@@ -39,20 +40,20 @@ export function CaseContent({ caso: c, lang, as: H = "h1", titleId, compact }: {
       </figure>
       <div className="cd-body">
         <div className="cd-text">
-          {!SIN_DOC(c.problema[lang]) && <section {...reveal}><h3 className="cd-h">{t.problema}</h3><p>{c.problema[lang]}</p></section>}
-          {!SIN_DOC(c.solucion[lang]) && <section {...reveal}><h3 className="cd-h">{t.solucion}</h3><p>{c.solucion[lang]}</p></section>}
+          {!SIN_DOC(c.problema[lang]) && <section {...reveal}><S className="cd-h">{t.problema}</S><p>{c.problema[lang]}</p></section>}
+          {!SIN_DOC(c.solucion[lang]) && <section {...reveal}><S className="cd-h">{t.solucion}</S><p>{c.solucion[lang]}</p></section>}
         </div>
         <aside className="cd-side" {...reveal}>
-          <h3 className="cd-h">{t.modulos}</h3>
+          <S className="cd-h">{t.modulos}</S>
           <ul className="cd-mods">{c.modulos[lang].map((m) => <li key={m}><Pill variant="soft">{m}</Pill></li>)}</ul>
-          <h3 className="cd-h">{t.stack}</h3>
+          <S className="cd-h">{t.stack}</S>
           <p className="cd-stack">{c.stack.join(" · ")}</p>
         </aside>
       </div>
       {c.slug === "john-henry" && (
         <section className="cd-live" data-motion="reveal" {...reveal} aria-labelledby="cd-live-t">
           <Eyebrow>{t.vivo}</Eyebrow>
-          <h3 id="cd-live-t" className="t-2">{t.vivoT}</h3>
+          <S id="cd-live-t" className="t-2">{t.vivoT}</S>
           <p className="lead">{t.vivoB}</p>
           <div className="cd-live-frame"><LiveMannequinPanel /></div>
         </section>
