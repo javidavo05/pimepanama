@@ -1,4 +1,5 @@
 import { Hero } from "@/components/sections/hero";
+import { Proof } from "@/components/sections/proof";
 import { NAV, type Lang } from "../../../../content/site";
 import "./home.css";
 
@@ -14,6 +15,7 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
   return (
     <main className="home-skel">
       <Hero lang={lang} />
+      <Proof lang={lang} />
       {placeholders.map((p) => (
         <section key={p.id} id={p.id} className="skel wrap" aria-label={p.t}>
           <span className="caps">{p.id}</span>
