@@ -30,7 +30,7 @@
 
 /* Escenas */
 .cs { display: grid; gap: var(--s-3); }
-.cs-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
+.cs-kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--s-3); }
 .cs-kpi { display: grid; gap: var(--s-1); padding: var(--s-3); border: var(--border); border-radius: var(--r-md); background: var(--paper); }
 .cs-kpi b { font-family: var(--font-display); font-weight: var(--w-display); font-size: var(--text-lg); letter-spacing: var(--tracking-display); }
 .cs-split { display: grid; gap: var(--s-3); grid-template-columns: minmax(0, 1fr); }
