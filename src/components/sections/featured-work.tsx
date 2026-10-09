@@ -13,8 +13,8 @@ import type { Lang } from "../../../content/site";
 import "./featured-work.css";
 
 const COPY = {
-  es: { eyebrow: "04 · Trabajo", titulo: ["Sistemas que hoy", "operan empresas reales"], bajada: "Seis casos en producción, cada uno con su tablero real recreado con datos de muestra. Cada tarjeta abre la ficha del sistema y su enlace público.", ver: "Ver el caso", todos: "Ver todo el portfolio", hint: "Bajá para recorrerlos" },
-  en: { eyebrow: "04 · Work", titulo: ["Systems that run", "real companies today"], bajada: "Six cases in production, each with its real dashboard recreated with sample data. Each card opens the system's page and public link.", ver: "View case", todos: "See the whole portfolio", hint: "Scroll to browse" },
+  es: { eyebrow: "04 · Trabajo", titulo: ["Sistemas que hoy", "operan empresas reales"], bajada: "Diez casos en producción, cada uno con su tablero real recreado con datos de muestra. Cada tarjeta abre la ficha del sistema y su enlace público.", ver: "Ver el caso", todos: "Ver todo el portfolio", hint: "Bajá para recorrerlos" },
+  en: { eyebrow: "04 · Work", titulo: ["Systems that run", "real companies today"], bajada: "Ten cases in production, each with its real dashboard recreated with sample data. Each card opens the system's page and public link.", ver: "View case", todos: "See the whole portfolio", hint: "Scroll to browse" },
 };
 
 function Card({ c, lang, i, n }: { c: Caso; lang: Lang; i: number; n: number }) {

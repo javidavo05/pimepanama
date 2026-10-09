@@ -4,7 +4,7 @@ import { createRequire } from "node:module";
 import { mkdirSync } from "node:fs";
 const require = createRequire(process.env.HOME + "/.claude/skills/pime-phone-check/scripts/");
 const { chromium } = require("playwright");
-const SLUGS = ["svitzer", "uapa-suite", "academyx", "bnb-real-estate", "smart-church", "john-henry"];
+const SLUGS = ["svitzer", "uapa-suite", "academyx", "bnb-real-estate", "smart-church", "john-henry", "misaza", "holo-realty", "pime-backup", "geogenius"];
 mkdirSync("public/cases", { recursive: true });
 const b = await chromium.launch();
 const p = await b.newPage({ viewport: { width: 1400, height: 900 }, deviceScaleFactor: 2 });

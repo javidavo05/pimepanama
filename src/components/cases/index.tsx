@@ -3,7 +3,7 @@
 // MUESTRA, capturadas a imagen con scripts/capture-cases.mjs desde /avance/casos. Las tarjetas no son funcionales.
 import Image from "next/image";
 
-const CON_TABLERO = ["svitzer", "uapa-suite", "academyx", "bnb-real-estate", "smart-church", "john-henry"];
+const CON_TABLERO = ["svitzer", "uapa-suite", "academyx", "bnb-real-estate", "smart-church", "john-henry", "misaza", "holo-realty", "pime-backup", "geogenius"];
 export const TIENE_TABLERO = (slug: string) => CON_TABLERO.includes(slug);
 
 export function CaseShot({ slug, label }: { slug: string; label: string }) {

@@ -1,0 +1,425 @@
+.case-geogenius {
+  --c-navy: #0b1f3a;
+  --c-navy-2: #163c74;
+  --c-gold: #d4af37;
+  --c-red: #e5484d;
+  --c-flame: #ff9d6c;
+  --c-white: #ffffff;
+  --c-glass: rgba(255, 255, 255, 0.05);
+  --c-line: rgba(255, 255, 255, 0.12);
+  width: 1280px;
+  height: 800px;
+  overflow: hidden;
+  position: relative;
+  box-sizing: border-box;
+  background: var(--c-navy);
+  color: var(--c-white);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.35;
+}
+.case-geogenius *,
+.case-geogenius *::before,
+.case-geogenius *::after {
+  box-sizing: border-box;
+}
+.case-geogenius p,
+.case-geogenius h1,
+.case-geogenius h2 {
+  margin: 0;
+}
+.case-geogenius .gg-backdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.06;
+}
+.case-geogenius .gg-gold { color: var(--c-gold); }
+.case-geogenius .gg-dim { color: rgba(255, 255, 255, 0.4); }
+
+/* Anillo de nivel */
+.case-geogenius .gg-ring {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+}
+.case-geogenius .gg-ring-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.case-geogenius .gg-ring-core {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(113, 185, 172, 0.18);
+}
+.case-geogenius .gg-ring-badge {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--c-gold);
+  color: var(--c-navy);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* HUD */
+.case-geogenius .gg-hud {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 68px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(11, 31, 58, 0.7);
+  z-index: 3;
+}
+.case-geogenius .gg-hud-in {
+  width: 1040px;
+  height: 100%;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.case-geogenius .gg-hud-main { flex: 1; min-width: 0; }
+.case-geogenius .gg-hud-name {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.case-geogenius .gg-hud-rank {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--c-gold);
+}
+.case-geogenius .gg-hud-bar { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.case-geogenius .gg-hud-xp {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.6);
+  font-variant-numeric: tabular-nums;
+}
+.case-geogenius .gg-track {
+  display: block;
+  flex: 1;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+.case-geogenius .gg-track-s { height: 6px; }
+.case-geogenius .gg-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--c-gold);
+}
+.case-geogenius .gg-streak {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(229, 72, 77, 0.15);
+  color: var(--c-flame);
+  font-size: 12px;
+  font-weight: 700;
+}
+.case-geogenius .gg-locale {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+}
+.case-geogenius .gg-round {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Cuerpo */
+.case-geogenius .gg-main {
+  position: absolute;
+  top: 68px;
+  bottom: 80px;
+  left: 0;
+  right: 0;
+  width: 1040px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 20px;
+  padding-top: 14px;
+  z-index: 2;
+}
+.case-geogenius .gg-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.case-geogenius .gg-panel {
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 24px;
+  background: var(--c-glass);
+}
+.case-geogenius .gg-panel-glow {
+  border-color: rgba(212, 175, 55, 0.35);
+  box-shadow: 0 0 50px -20px var(--c-gold);
+}
+.case-geogenius .gg-eyebrow {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.case-geogenius .gg-h1 { font-family: var(--font-display); font-size: 22px; font-weight: 600; letter-spacing: -0.01em; }
+.case-geogenius .gg-h2 { font-family: var(--font-display); font-size: 19px; font-weight: 600; margin-top: 2px; }
+.case-geogenius .gg-h2-l { font-size: 24px; margin-top: 4px; }
+.case-geogenius .gg-h3 { font-family: var(--font-display); font-size: 16px; font-weight: 600; }
+.case-geogenius .gg-sub { font-size: 13px; color: rgba(255, 255, 255, 0.6); margin-top: 2px; }
+.case-geogenius .gg-quiet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.55);
+  white-space: nowrap;
+}
+
+/* Quién soy */
+.case-geogenius .gg-who { display: flex; align-items: center; gap: 16px; padding: 0 4px 2px; }
+.case-geogenius .gg-who-text { flex: 1; min-width: 0; }
+.case-geogenius .gg-who-text .gg-eyebrow { margin-top: 4px; letter-spacing: 0.16em; }
+.case-geogenius .gg-school {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--c-white);
+}
+
+/* GeoGuía */
+.case-geogenius .gg-guide { padding: 18px 20px 16px; display: flex; flex-direction: column; gap: 8px; }
+.case-geogenius .gg-guide-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.case-geogenius .gg-path { position: relative; width: 100%; max-width: 320px; height: 296px; margin: 0 auto; }
+.case-geogenius .gg-path-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.case-geogenius .gg-stop {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+}
+.case-geogenius .gg-pulse {
+  position: absolute;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.15);
+}
+.case-geogenius .gg-camp {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(11, 31, 58, 0.8);
+  color: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+.case-geogenius .gg-camp-done {
+  background: var(--c-navy);
+  color: var(--c-gold);
+  box-shadow: 0 0 0 2px var(--c-gold), 0 0 24px -6px var(--c-gold);
+}
+.case-geogenius .gg-camp-tag {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--c-navy);
+  color: rgba(255, 255, 255, 0.5);
+  box-shadow: 0 0 0 2px var(--c-navy);
+}
+.case-geogenius .gg-camp-tag-done { background: var(--c-gold); color: var(--c-navy); }
+.case-geogenius .gg-way {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--c-navy);
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 10.5px;
+  font-weight: 600;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.2);
+}
+.case-geogenius .gg-label {
+  position: absolute;
+  top: 50%;
+  width: 112px;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(-50%);
+}
+.case-geogenius .gg-label-right { left: 100%; margin-left: 12px; text-align: left; }
+.case-geogenius .gg-label-left { right: 100%; margin-right: 44px; text-align: right; }
+.case-geogenius .gg-stop:nth-of-type(4) .gg-label-left { margin-right: 12px; }
+.case-geogenius .gg-label-t { font-size: 12px; font-weight: 600; }
+.case-geogenius .gg-label-s { font-size: 11px; color: rgba(255, 255, 255, 0.5); }
+.case-geogenius .gg-next { display: flex; flex-direction: column; gap: 6px; }
+.case-geogenius .gg-next-t { text-align: center; font-size: 13px; font-weight: 600; }
+.case-geogenius .gg-next-bar { display: flex; align-items: center; gap: 12px; }
+.case-geogenius .gg-next-n { font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.6); font-variant-numeric: tabular-nums; }
+.case-geogenius .gg-next-s { text-align: center; font-size: 11px; color: rgba(255, 255, 255, 0.45); }
+
+/* Jugar */
+.case-geogenius .gg-play { display: flex; align-items: center; gap: 20px; padding: 16px 20px; }
+.case-geogenius .gg-play-text { flex: 1; min-width: 0; }
+.case-geogenius .gg-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.case-geogenius .gg-chip {
+  padding: 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.65);
+}
+.case-geogenius .gg-play-btn {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--c-gold);
+  color: var(--c-navy);
+  box-shadow: 0 10px 30px -8px var(--c-gold);
+}
+
+/* Progreso y sellos */
+.case-geogenius .gg-progress { padding: 14px 20px 14px; display: flex; flex-direction: column; gap: 8px; }
+.case-geogenius .gg-progress-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.case-geogenius .gg-big { font-family: var(--font-display); font-size: 24px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.case-geogenius .gg-big-s { font-family: var(--font-body); font-size: 14px; font-weight: 400; color: rgba(255, 255, 255, 0.5); }
+.case-geogenius .gg-progress .gg-track { flex: none; height: 8px; }
+.case-geogenius .gg-hint { font-size: 11.5px; color: rgba(255, 255, 255, 0.45); }
+.case-geogenius .gg-stamps { display: flex; gap: 10px; }
+.case-geogenius .gg-stamp { flex: 1; min-width: 0; aspect-ratio: 1 / 1; height: auto; filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35)); }
+.case-geogenius .gg-stamp:nth-child(odd) { transform: rotate(-4deg); }
+.case-geogenius .gg-stamp:nth-child(even) { transform: rotate(3deg); }
+
+/* Cifras */
+.case-geogenius .gg-minis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.case-geogenius .gg-mini { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 8px; text-align: center; }
+.case-geogenius .gg-mini-v { font-family: var(--font-display); font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.case-geogenius .gg-mini-l { font-size: 11px; color: rgba(255, 255, 255, 0.5); }
+
+/* Liga */
+.case-geogenius .gg-league-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
+.case-geogenius .gg-rows {
+  margin-top: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(11, 31, 58, 0.55);
+}
+.case-geogenius .gg-row { display: flex; align-items: center; gap: 12px; padding: 8px 16px; border-top: 1px solid rgba(255, 255, 255, 0.07); }
+.case-geogenius .gg-row:first-child { border-top: 0; }
+.case-geogenius .gg-row-me { background: rgba(212, 175, 55, 0.14); box-shadow: inset 2px 0 0 var(--c-gold); }
+.case-geogenius .gg-pos { width: 24px; text-align: center; font-size: 13px; font-weight: 600; color: rgba(255, 255, 255, 0.7); }
+.case-geogenius .gg-emblem { display: flex; flex: none; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 10px; }
+.case-geogenius .gg-row-main { display: flex; flex: 1; min-width: 0; flex-direction: column; }
+.case-geogenius .gg-row-name { font-size: 13px; font-weight: 500; }
+.case-geogenius .gg-row-you { margin-left: 8px; font-size: 11px; color: var(--c-gold); }
+.case-geogenius .gg-row-stats { font-size: 11px; color: rgba(255, 255, 255, 0.68); }
+.case-geogenius .gg-row-xp { font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+/* Dock */
+.case-geogenius .gg-dock {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 80px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(11, 31, 58, 0.92);
+  z-index: 3;
+}
+.case-geogenius .gg-dock-in {
+  width: 1040px;
+  height: 80px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+}
+.case-geogenius .gg-dock-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 56px;
+  padding: 6px 8px;
+  border-radius: 16px;
+  font-size: 10px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+}
+.case-geogenius .gg-dock-on { background: rgba(255, 255, 255, 0.1); color: var(--c-white); }
+.case-geogenius .gg-dock-on svg { color: var(--c-gold); }
+.case-geogenius .gg-dock-play { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: -28px; }
+.case-geogenius .gg-dock-play-b {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--c-gold);
+  color: var(--c-navy);
+  box-shadow: 0 10px 30px -8px var(--c-gold), 0 0 0 4px var(--c-navy);
+}
+.case-geogenius .gg-dock-play-l {
+  font-size: 9.6px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-gold);
+}

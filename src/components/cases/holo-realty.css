@@ -1,0 +1,429 @@
+.case-holo-realty {
+  --c-bg: #f8fafc;
+  --c-card: #ffffff;
+  --c-fg: #1e293b;
+  --c-primary: #211552;
+  --c-primary-fg: #ffffff;
+  --c-primary-soft: rgba(33, 21, 82, 0.08);
+  --c-muted: #f1f5f9;
+  --c-muted-fg: #64748b;
+  --c-border: #e2e8f0;
+  --c-destructive: #ef4444;
+  --c-success: #10b981;
+  --c-success-bg: #dcfce7;
+  --c-warning: #f59e0b;
+  --c-warning-bg: #fef3c7;
+
+  width: 1280px;
+  height: 800px;
+  overflow: hidden;
+  display: flex;
+  background: var(--c-bg);
+  color: var(--c-fg);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 20px;
+  box-sizing: border-box;
+}
+
+.case-holo-realty *,
+.case-holo-realty *::before,
+.case-holo-realty *::after {
+  box-sizing: border-box;
+}
+
+.case-holo-realty p,
+.case-holo-realty h1,
+.case-holo-realty h2,
+.case-holo-realty ul {
+  margin: 0;
+  padding: 0;
+}
+
+.case-holo-realty ul {
+  list-style: none;
+}
+
+.case-holo-realty svg {
+  flex-shrink: 0;
+}
+
+/* Barra lateral */
+.case-holo-realty .hr-sidebar {
+  width: 256px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-card);
+  border-right: 1px solid var(--c-border);
+}
+
+.case-holo-realty .hr-brand {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.case-holo-realty .hr-brand-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--c-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.case-holo-realty .hr-brand-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.case-holo-realty .hr-brand-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--c-fg);
+}
+
+.case-holo-realty .hr-brand-sub {
+  font-size: 10px;
+  color: var(--c-muted-fg);
+}
+
+.case-holo-realty .hr-nav {
+  flex: 1;
+  padding: 16px 12px;
+}
+
+.case-holo-realty .hr-nav-group {
+  margin-bottom: 20px;
+}
+
+.case-holo-realty .hr-nav-label {
+  margin-bottom: 4px;
+  padding: 0 8px;
+  font-size: 10px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--c-muted-fg);
+}
+
+.case-holo-realty .hr-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.case-holo-realty .hr-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--c-muted-fg);
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.case-holo-realty .hr-nav-icon {
+  display: flex;
+}
+
+.case-holo-realty .hr-nav-text {
+  flex: 1;
+}
+
+.case-holo-realty .hr-signout {
+  border-top: 1px solid var(--c-border);
+  padding: 12px;
+}
+
+/* Columna principal */
+.case-holo-realty .hr-main-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.case-holo-realty .hr-topbar {
+  height: 56px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0 24px;
+  background: var(--c-card);
+  border-bottom: 1px solid var(--c-border);
+}
+
+.case-holo-realty .hr-bell {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: var(--c-muted-fg);
+}
+
+.case-holo-realty .hr-bell-dot {
+  position: absolute;
+  top: 7px;
+  right: 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-destructive);
+  border: 1.5px solid var(--c-card);
+}
+
+.case-holo-realty .hr-main {
+  flex: 1;
+  min-height: 0;
+  padding: 24px 24px 16px;
+}
+
+.case-holo-realty .hr-page {
+  width: 100%;
+}
+
+/* Cabecera del tablero */
+.case-holo-realty .hr-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--c-border);
+}
+
+.case-holo-realty .hr-date {
+  font-size: 14px;
+  color: var(--c-muted-fg);
+  text-transform: capitalize;
+}
+
+.case-holo-realty .hr-title {
+  margin-top: 4px;
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 32px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--c-fg);
+}
+
+.case-holo-realty .hr-intro {
+  margin-top: 8px;
+  max-width: 360px;
+  font-size: 14px;
+  color: var(--c-muted-fg);
+}
+
+.case-holo-realty .hr-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+
+.case-holo-realty .hr-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--c-border);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+  color: var(--c-fg);
+}
+
+.case-holo-realty .hr-btn-outline-bg {
+  background: var(--c-bg);
+}
+
+.case-holo-realty .hr-btn-outline {
+  background: var(--c-card);
+}
+
+.case-holo-realty .hr-btn-primary {
+  background: var(--c-primary);
+  border-color: var(--c-primary);
+  color: var(--c-primary-fg);
+}
+
+/* KPIs */
+.case-holo-realty .hr-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.case-holo-realty .hr-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 104px;
+  padding: 16px;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+}
+
+.case-holo-realty .hr-kpi-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.case-holo-realty .hr-kpi-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--c-muted-fg);
+}
+
+.case-holo-realty .hr-kpi-icon {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+}
+
+.case-holo-realty .hr-tone-default {
+  background: var(--c-muted);
+  color: var(--c-muted-fg);
+}
+
+.case-holo-realty .hr-tone-success {
+  background: var(--c-success-bg);
+  color: var(--c-success);
+}
+
+.case-holo-realty .hr-tone-warning {
+  background: var(--c-warning-bg);
+  color: var(--c-warning);
+}
+
+.case-holo-realty .hr-kpi-value {
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-fg);
+}
+
+.case-holo-realty .hr-kpi-sub {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--c-muted-fg);
+}
+
+.case-holo-realty .hr-kpi-delta {
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--c-success);
+}
+
+/* Paneles */
+.case-holo-realty .hr-panel {
+  padding: 20px;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+}
+
+.case-holo-realty .hr-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.case-holo-realty .hr-panel-title {
+  font-family: var(--font-display);
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 600;
+  color: var(--c-fg);
+}
+
+.case-holo-realty .hr-panel-sub {
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--c-muted-fg);
+}
+
+.case-holo-realty .hr-link {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  color: var(--c-primary);
+}
+
+.case-holo-realty .hr-funnel {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.case-holo-realty .hr-funnel-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 128px;
+  padding: 16px;
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+}
+
+.case-holo-realty .hr-funnel-label {
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 500;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  color: var(--c-muted-fg);
+}
+
+.case-holo-realty .hr-funnel-count {
+  margin-top: 8px;
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--c-fg);
+}
+
+.case-holo-realty .hr-funnel-pct {
+  margin-top: 4px;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--c-muted-fg);
+}
+
+.case-holo-realty .hr-funnel-link {
+  margin-top: 8px;
+}

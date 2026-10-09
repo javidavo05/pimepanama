@@ -1,223 +1,353 @@
 // motion: none — réplica estática del tablero real con datos de muestra; se captura a imagen (scripts/capture-cases.mjs).
 import "./academyx.css";
 
-type IconName =
-  | "grid" | "bell" | "cal" | "help" | "check" | "building" | "users" | "archive"
-  | "user" | "shirt" | "trophy" | "trend" | "wallet" | "lock" | "heart" | "brief"
-  | "file" | "mail" | "chat" | "gear" | "history" | "clock" | "grad" | "doc" | "dollar" | "chev" | "chevd" | "out";
-
-const PATHS: Record<IconName, string> = {
-  grid: "M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z",
-  bell: "M6 8a6 6 0 0 1 12 0c0 7 3 8 3 8H3s3-1 3-8M10 20a2 2 0 0 0 4 0",
-  cal: "M4 6h16v14H4zM4 10h16M8 3v4M16 3v4",
-  help: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01",
-  check: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM8 12l3 3 5-6",
-  building: "M5 21V4h9v17M14 9h5v12M3 21h18M8 8h3M8 12h3M8 16h3",
-  users: "M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2 20c0-3.5 3-6 7-6s7 2.5 7 6M17 4.5a3.5 3.5 0 0 1 0 6.5M19 14c2 .7 3 2.6 3 5",
-  archive: "M3 5h18v4H3zM5 9v11h14V9M10 13h4",
-  user: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21c0-4 3.5-6 8-6s8 2 8 6",
-  shirt: "M8 3l-5 3 2 5 3-1v11h8V10l3 1 2-5-5-3a4 4 0 0 1-8 0z",
-  trophy: "M7 4h10v6a5 5 0 0 1-10 0zM7 6H3c0 3 1 4 4 5M17 6h4c0 3-1 4-4 5M12 15v4M8 21h8",
-  trend: "M3 17l6-6 4 4 8-8M15 7h6v6",
-  wallet: "M3 7h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM3 7l12-3v3M16 14h2",
-  lock: "M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4",
-  heart: "M12 20s-8-5-8-11a4.5 4.5 0 0 1 8-2.5A4.5 4.5 0 0 1 20 9c0 6-8 11-8 11z",
-  brief: "M3 8h18v12H3zM9 8V5h6v3M3 13h18",
-  file: "M6 3h8l5 5v13H6zM14 3v5h5M9 13h6M9 17h6",
-  mail: "M3 5h18v14H3zM3 6l9 7 9-7",
-  chat: "M4 5h16v11H9l-5 4z",
-  gear: "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM19 12l2-1-2-4-2 .6-1.5-1L15 4h-4l-.5 2.6-1.5 1L7 7l-2 4 2 1v1l-2 1 2 4 2-.6 1.5 1L11 20h4l.5-2.6 1.5-1 2 .6 2-4-2-1z",
-  history: "M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 2",
-  clock: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 2",
-  grad: "M2 9l10-5 10 5-10 5zM6 11v5c3 2.5 9 2.5 12 0v-5",
-  doc: "M6 3h12v18H6zM9 8h6M9 12h6M9 16h4",
-  dollar: "M12 3v18M16 7.5c-1-1-2.4-1.5-4-1.5-2.2 0-4 1-4 2.8 0 4 8 2 8 6 0 1.8-1.8 2.7-4 2.7-1.8 0-3.2-.6-4.2-1.700",
-  chev: "M9 6l6 6-6 6",
-  chevd: "M6 9l6 6 6-6",
-  out: "M9 4H4v16h5M16 8l4 4-4 4M20 12H9",
-};
-
-function Ic({ n, s = 14 }: { n: IconName; s?: number }) {
+function Ic({ children, size = 16 }: { children: React.ReactNode; size?: number }) {
   return (
-    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d={PATHS[n]} />
+    <svg
+      className="ax-ic"
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {children}
     </svg>
   );
 }
 
-type NavItem = { label: string; icon: IconName; badge?: number; active?: boolean };
-type NavGroup = { label: string; open?: boolean; items: NavItem[] };
+const IconHome = () => (
+  <Ic>
+    <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+    <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+  </Ic>
+);
+const IconUsers = () => (
+  <Ic>
+    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+    <circle cx="9" cy="7" r="4" />
+    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </Ic>
+);
+const IconGrad = () => (
+  <Ic>
+    <path d="M21.42 10.922a1 1 0 0 0-.019-1.838L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.832l8.57 3.908a2 2 0 0 0 1.66 0z" />
+    <path d="M22 10v6" />
+    <path d="M6 12.5V16a6 3 0 0 0 12 0v-3.5" />
+  </Ic>
+);
+const IconWallet = () => (
+  <Ic>
+    <path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" />
+    <path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" />
+  </Ic>
+);
+const IconMessages = () => (
+  <Ic>
+    <path d="M16 10a2 2 0 0 1-2 2H6.828a2 2 0 0 0-1.414.586l-2.202 2.202A.71.71 0 0 1 2 14.286V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    <path d="M20 9a2 2 0 0 1 2 2v10.286a.71.71 0 0 1-1.212.502l-2.202-2.202A2 2 0 0 0 17.172 19H10a2 2 0 0 1-2-2v-1" />
+  </Ic>
+);
+const IconList = () => (
+  <Ic>
+    <path d="M3 5h.01" />
+    <path d="M3 12h.01" />
+    <path d="M3 19h.01" />
+    <path d="M8 5h13" />
+    <path d="M8 12h13" />
+    <path d="M8 19h13" />
+  </Ic>
+);
+const IconSettings = () => (
+  <Ic>
+    <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+    <circle cx="12" cy="12" r="3" />
+  </Ic>
+);
+const IconChevron = () => (
+  <Ic size={14}>
+    <path d="m6 9 6 6 6-6" />
+  </Ic>
+);
+const IconSearch = () => (
+  <Ic>
+    <path d="m21 21-4.34-4.34" />
+    <circle cx="11" cy="11" r="8" />
+  </Ic>
+);
+const IconPanel = () => (
+  <Ic>
+    <rect width="18" height="18" x="3" y="3" rx="2" />
+    <path d="M9 3v18" />
+  </Ic>
+);
+const IconSparkles = () => (
+  <Ic>
+    <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z" />
+    <path d="M20 3v4" />
+    <path d="M22 5h-4" />
+    <path d="M4 17v2" />
+    <path d="M5 18H3" />
+  </Ic>
+);
+const IconBell = () => (
+  <Ic size={20}>
+    <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+    <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
+  </Ic>
+);
+const IconFilePlus = () => (
+  <Ic size={20}>
+    <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+    <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+    <path d="M9 15h6" />
+    <path d="M12 18v-6" />
+  </Ic>
+);
+const IconCard = () => (
+  <Ic size={20}>
+    <rect width="20" height="14" x="2" y="5" rx="2" />
+    <line x1="2" x2="22" y1="10" y2="10" />
+  </Ic>
+);
+const IconMegaphone = () => (
+  <Ic size={20}>
+    <path d="M11 6a13 13 0 0 0 8.4-2.8A1 1 0 0 1 21 4v12a1 1 0 0 1-1.6.8A13 13 0 0 0 11 14H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2z" />
+    <path d="M6 14a12 12 0 0 0 2.4 7.2 2 2 0 0 0 3.2-2.4A8 8 0 0 1 10 14" />
+    <path d="M8 6v8" />
+  </Ic>
+);
+const IconUpDown = () => (
+  <Ic>
+    <path d="m7 15 5 5 5-5" />
+    <path d="m7 9 5-5 5 5" />
+  </Ic>
+);
 
-const NAV: NavGroup[] = [
-  {
-    label: "Resumen",
-    open: true,
-    items: [
-      { label: "Dashboard", icon: "grid", active: true },
-      { label: "Notificaciones", icon: "bell" },
-      { label: "Calendario", icon: "cal" },
-      { label: "Guía del sistema", icon: "help" },
-      { label: "Aprobaciones", icon: "check", badge: 7 },
-    ],
-  },
-  {
-    label: "Jugadores",
-    items: [
-      { label: "Matrícula", icon: "building" },
-      { label: "Jugadores", icon: "users" },
-      { label: "Estudiantes históricos", icon: "archive" },
-      { label: "Tutores", icon: "user" },
-      { label: "Familias", icon: "users" },
-    ],
-  },
-  { label: "Productos y eventos", items: [{ label: "Productos", icon: "shirt" }, { label: "Torneos", icon: "trophy" }] },
-  {
-    label: "Finanzas",
-    items: [
-      { label: "Finanzas", icon: "trend" },
-      { label: "Depósitos y ACH", icon: "wallet", badge: 3 },
-      { label: "Cuentas bloqueadas", icon: "lock" },
-    ],
-  },
-  { label: "Aliados y equipo", items: [{ label: "Padrinos", icon: "heart" }, { label: "Personal", icon: "brief" }] },
-  { label: "Reportes", items: [{ label: "Reportes", icon: "file" }] },
-  { label: "Comunicación", items: [{ label: "Correos", icon: "mail" }, { label: "WhatsApp", icon: "chat" }] },
-  { label: "Configuración", items: [{ label: "Configuración", icon: "gear" }, { label: "Bitácora", icon: "history" }] },
+const GROUPS: { label: string; icon: React.ReactNode; badge?: number }[] = [
+  { label: "Personas", icon: <IconUsers />, badge: 7 },
+  { label: "Académico", icon: <IconGrad /> },
+  { label: "Dinero", icon: <IconWallet />, badge: 5 },
+  { label: "Comunicación", icon: <IconMessages />, badge: 2 },
+  { label: "Reportes", icon: <IconList /> },
+  { label: "Configuración", icon: <IconSettings /> },
 ];
 
-type Kpi = { label: string; value: string; meta: string; icon: IconName; warn?: boolean };
+// Cobrado por día, del 1 al 8 de octubre (centavos de muestra, en dólares aquí)
+const DAILY = [1240, 3180, 860, 2950, 4120, 0, 1480, 4810];
 
-const KPIS_A: Kpi[] = [
-  { label: "Total de jugadores", value: "248", meta: "212 activos · 19 becados", icon: "users" },
-  { label: "Jugadores activos", value: "212", meta: "85,5 % del padrón · 17 inactivos", icon: "check" },
-  { label: "Aprobaciones pendientes", value: "7", meta: "Requieren revisión administrativa", icon: "clock", warn: true },
-  { label: "Becados", value: "19", meta: "Estudiantes con estatus de beca", icon: "grad" },
-];
-
-const KPIS_B: Kpi[] = [
-  { label: "Familias activas", value: "164", meta: "Con al menos un estudiante activo o becado", icon: "users" },
-  { label: "Temporadas activas", value: "2", meta: "Periodos operativos abiertos en temporadas", icon: "cal" },
-  { label: "Asignación de materias pendiente", value: "0", meta: "Todas las matrículas tienen materias", icon: "doc" },
-];
-
-type Action = { title: string; desc: string; icon: IconName; badge?: string };
-
-const ACTIONS: Action[] = [
-  { title: "Revisar aprobaciones", desc: "7 solicitudes en cola de aprobación", icon: "clock", badge: "7" },
-  { title: "Directorio de jugadores", desc: "248 registros en el padrón institucional", icon: "users" },
-  { title: "Centro financiero", desc: "Cobros, pagos, estados de cuenta y reportes", icon: "dollar" },
-  { title: "Familias", desc: "164 familias con estudiantes activos", icon: "users" },
-  { title: "Configuración", desc: "Precios, temporadas, cobros y parámetros operativos", icon: "cal" },
-];
-
-function KpiCard({ k }: { k: Kpi }) {
-  return (
-    <div className="ax-panel ax-kpi">
-      <div className="ax-kpi-top">
-        <p className="ax-kpi-label">{k.label}</p>
-        <span className="ax-kpi-ic"><Ic n={k.icon} s={16} /></span>
-      </div>
-      <p className={k.warn ? "ax-kpi-value ax-warn" : "ax-kpi-value"}>{k.value}</p>
-      <p className="ax-kpi-meta">{k.meta}</p>
-    </div>
-  );
+function sparkPath(values: number[], w: number, h: number) {
+  const max = Math.max(...values, 1);
+  const pts = values.map((v, i) => [
+    (i / (values.length - 1)) * (w - 4) + 2,
+    h - 4 - (v / max) * (h - 8),
+  ]);
+  const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p[0]?.toFixed(1)} ${p[1]?.toFixed(1)}`).join(" ");
+  const last = pts[pts.length - 1] ?? [0, 0];
+  const area = `${line} L${last[0]?.toFixed(1)} ${h} L2 ${h} Z`;
+  return { line, area, last };
 }
 
 export default function CaseAcademyx() {
+  const spark = sparkPath(DAILY, 96, 32);
+  const circ = 2 * Math.PI * 40;
   return (
     <div className="case case-academyx">
-      <aside className="ax-side" aria-label="Navegación principal">
-        <div className="ax-brand">
-          <div className="ax-logo">A</div>
-          <div className="ax-brand-txt">
-            <span className="ax-brand-name">Academia Halcones</span>
-            <span className="ax-badge">Academia</span>
+      <div className="ax-shell">
+        <aside className="ax-sidebar">
+          <div className="ax-sidebar__top">
+            <div className="ax-switcher">
+              <span className="ax-switcher__avatar">C</span>
+              <span className="ax-switcher__text">
+                <span className="ax-switcher__name">Colegio Costa Verde</span>
+                <span className="ax-switcher__detail">Colegio</span>
+              </span>
+              <IconUpDown />
+            </div>
           </div>
-          <span className="ax-collapse"><Ic n="chev" s={16} /></span>
-        </div>
-
-        <nav className="ax-nav">
-          {NAV.map((g) => (
-            <div key={g.label} className="ax-group">
-              <div className={g.open ? "ax-ghead is-open" : "ax-ghead"}>
-                <Ic n={g.open ? "chevd" : "chev"} s={12} />
-                <span>{g.label}</span>
+          <div className="ax-sidebar__search">
+            <IconSearch />
+            <span className="ax-sidebar__search-text">Buscar páginas, personas o cuentas</span>
+            <span className="ax-kbd">⌘K</span>
+          </div>
+          <div className="ax-sidebar__nav">
+            <div className="ax-nav-group">
+              <div className="ax-nav-item" data-current="">
+                <IconHome />
+                <span className="ax-nav-item__label">Hoy</span>
+                <span className="ax-nav-item__badge">9</span>
               </div>
-              {g.open && (
-                <div className="ax-links">
-                  {g.items.map((it) => (
-                    <div key={it.label} className={it.active ? "ax-link is-active" : "ax-link"}>
-                      <Ic n={it.icon} s={14} />
-                      <span>{it.label}</span>
-                      {it.badge ? <em className="ax-nbadge">{it.badge}</em> : null}
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
-          ))}
-        </nav>
-
-        <div className="ax-foot">
-          <div className="ax-user">
-            <span className="ax-bell"><Ic n="bell" s={16} /></span>
-            <span className="ax-avatar">D</span>
-            <div className="ax-user-txt">
-              <span className="ax-email">direccion@halcones.example</span>
-              <span className="ax-role">Administrador</span>
+            {GROUPS.map((g) => (
+              <div className="ax-nav-group" key={g.label}>
+                <div className="ax-nav-group__toggle">
+                  <span className="ax-nav-group__label">{g.label}</span>
+                  {g.badge ? <span className="ax-nav-item__badge">{g.badge}</span> : null}
+                  <span className="ax-chevron">
+                    <IconChevron />
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="ax-sidebar__bottom">
+            <div className="ax-nav-item">
+              <IconPanel />
+              <span className="ax-nav-item__label">Contraer</span>
             </div>
           </div>
-          <div className="ax-logout"><Ic n="out" s={16} /> Cerrar Sesión</div>
-        </div>
-      </aside>
+        </aside>
 
-      <main className="ax-main">
-        <div className="ax-surface">
-          <header className="ax-head">
-            <p className="ax-eyebrow">Panel de administración</p>
-            <h1 className="ax-title">Academia Halcones</h1>
-            <p className="ax-sub">Resumen operativo · jueves, 8 de octubre de 2026</p>
+        <div className="ax-main">
+          <header className="ax-topbar">
+            <span className="ax-topbar__spacer" />
+            <span className="ax-btn ax-btn--ghost">
+              <IconSparkles />
+              Asistente
+            </span>
+            <span className="ax-iconbtn">
+              <IconBell />
+              <span className="ax-iconbtn__dot" />
+            </span>
+            <span className="ax-avatar">MQ</span>
           </header>
 
-          <section>
-            <div className="ax-sec-head">
-              <h2>Indicadores de matrícula</h2>
-              <p>Conteos en tiempo real de la academia activa.</p>
-            </div>
-            <div className="ax-grid4">{KPIS_A.map((k) => <KpiCard key={k.label} k={k} />)}</div>
-          </section>
-
-          <section>
-            <div className="ax-sec-head">
-              <h2>Operación institucional</h2>
-              <p>Familias, ciclo académico y cuentas de representantes.</p>
-            </div>
-            <div className="ax-grid4">{KPIS_B.map((k) => <KpiCard key={k.label} k={k} />)}</div>
-          </section>
-
-          <section>
-            <div className="ax-sec-head">
-              <h2>Accesos directos</h2>
-              <p>Tareas frecuentes de administración académica y financiera.</p>
-            </div>
-            <div className="ax-grid2">
-              {ACTIONS.map((a) => (
-                <div key={a.title} className="ax-action">
-                  <span className="ax-action-ic"><Ic n={a.icon} s={20} /></span>
-                  <div className="ax-action-txt">
-                    <p className="ax-action-title">
-                      {a.title}
-                      {a.badge ? <em className="ax-pill">{a.badge}</em> : null}
-                    </p>
-                    <p className="ax-action-desc">{a.desc}</p>
-                  </div>
-                  <Ic n="chev" s={16} />
+          <main className="ax-page">
+            <section className="ax-hero-card">
+              <span className="ax-hero-card__light ax-hero-card__light--a" />
+              <span className="ax-hero-card__light ax-hero-card__light--b" />
+              <div className="ax-hero-card__body">
+                <p className="ax-hero-card__eyebrow">jueves, 8 de octubre · Colegio Costa Verde</p>
+                <h2 className="ax-hero-card__title">Buenos días, Mariela</h2>
+                <p className="ax-hero-card__desc">Hoy tienes 2 cosas por resolver. 412 estudiantes activos.</p>
+              </div>
+              <div className="ax-hero-card__aside">
+                <div className="ax-ring">
+                  <svg width="88" height="88" viewBox="0 0 88 88" aria-hidden="true">
+                    <circle className="ax-ring__track" cx="44" cy="44" r="40" />
+                    <circle
+                      className="ax-ring__value"
+                      cx="44"
+                      cy="44"
+                      r="40"
+                      strokeDasharray={circ.toFixed(1)}
+                      strokeDashoffset={(circ * 0.6).toFixed(1)}
+                      transform="rotate(-90 44 44)"
+                    />
+                  </svg>
+                  <span className="ax-ring__label">40 %</span>
                 </div>
-              ))}
+                <div className="ax-hero-card__money">
+                  <span className="ax-hero-card__eyebrow">Cobrado en octubre</span>
+                  <span className="ax-hero-card__amount">$18,640.00</span>
+                  <span className="ax-hero-card__sub">de $46,200.00 previstos</span>
+                </div>
+              </div>
+            </section>
+
+            <section className="ax-today">
+              <div className="ax-today__item" data-tone="urgent">
+                <span className="ax-today__dot" />
+                <div className="ax-today__text">
+                  <p className="ax-today__title">5 pagos por verificar</p>
+                  <p className="ax-today__detail">
+                    Transferencias y comprobantes: la familia espera que se reflejen en su cuenta.
+                  </p>
+                </div>
+                <span className="ax-btn ax-btn--primary">Verificar 5 pagos</span>
+              </div>
+              <div className="ax-today__item" data-tone="today">
+                <span className="ax-today__dot" />
+                <div className="ax-today__text">
+                  <p className="ax-today__title">4 solicitudes de matrícula por revisar</p>
+                  <p className="ax-today__detail">Familias que llenaron el formulario en línea y esperan respuesta.</p>
+                </div>
+                <span className="ax-btn ax-btn--secondary">Revisar solicitudes</span>
+              </div>
+              <div className="ax-today__item" data-tone="later">
+                <span className="ax-today__dot" />
+                <div className="ax-today__text">
+                  <p className="ax-today__title">11 cuotas vencen en los próximos 7 días</p>
+                  <p className="ax-today__detail">
+                    $3,260.00 en total. Los recordatorios salen solos tres días antes.
+                  </p>
+                </div>
+                <span className="ax-btn ax-btn--secondary">Ver cuentas</span>
+              </div>
+            </section>
+
+            <div className="ax-quick-grid">
+              <div className="ax-quick">
+                <span className="ax-quick__icon" data-tone="brand">
+                  <IconFilePlus />
+                </span>
+                <span className="ax-quick__text">
+                  <span className="ax-quick__label">Matricular estudiante</span>
+                  <span className="ax-quick__hint">Tres pasos, todo se guarda al final</span>
+                </span>
+              </div>
+              <div className="ax-quick">
+                <span className="ax-quick__icon" data-tone="success">
+                  <IconCard />
+                </span>
+                <span className="ax-quick__text">
+                  <span className="ax-quick__label">Cobrar</span>
+                  <span className="ax-quick__hint">Por nombre, cédula o código de pago</span>
+                </span>
+              </div>
+              <div className="ax-quick">
+                <span className="ax-quick__icon" data-tone="brand">
+                  <IconMegaphone />
+                </span>
+                <span className="ax-quick__text">
+                  <span className="ax-quick__label">Comunicar</span>
+                  <span className="ax-quick__hint">A toda la institución o a un grupo</span>
+                </span>
+              </div>
             </div>
-          </section>
+
+            <div className="ax-metrics">
+              <div className="ax-metric">
+                <div className="ax-metric__head">
+                  <p className="ax-metric__label">Estudiantes activos</p>
+                </div>
+                <p className="ax-metric__value">412</p>
+                <div className="ax-metric__foot">
+                  <span className="ax-metric__meta">&nbsp;</span>
+                </div>
+              </div>
+              <div className="ax-metric">
+                <div className="ax-metric__head">
+                  <p className="ax-metric__label">Cobrado en octubre</p>
+                  <svg className="ax-spark" width="96" height="32" viewBox="0 0 96 32" aria-hidden="true">
+                    <path className="ax-spark__area" d={spark.area} />
+                    <path className="ax-spark__line" d={spark.line} />
+                    <circle className="ax-spark__dot" cx={spark.last[0]} cy={spark.last[1]} r="2.5" />
+                  </svg>
+                </div>
+                <p className="ax-metric__value">$18,640.00</p>
+                <div className="ax-metric__foot">
+                  <span className="ax-metric__meta">de $46,200.00 previstos</span>
+                </div>
+              </div>
+              <div className="ax-metric">
+                <div className="ax-metric__head">
+                  <p className="ax-metric__label">Cuentas con acceso pausado</p>
+                </div>
+                <p className="ax-metric__value">6</p>
+                <div className="ax-metric__foot">
+                  <span className="ax-metric__meta">de 187 cuentas</span>
+                </div>
+              </div>
+            </div>
+          </main>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
