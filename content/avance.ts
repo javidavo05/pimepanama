@@ -167,7 +167,7 @@ export const PASOS: Paso[] = [
     revisar: [
       "Escritorio: al llegar a «Trabajo» la sección se fija y, mientras bajás, el carril se desplaza de derecha a izquierda; la tarjeta que pasa por el centro crece y las demás bajan de tono (scroll-timeline nativo, sin JavaScript). En navegadores sin soporte: carril con scroll horizontal y snap. En teléfono y tableta: lista vertical (una o dos columnas), sin recortes.",
       "Movelo con el mouse sobre una tarjeta: se inclina hasta 6° y una luz sigue el puntero.",
-      "Seis casos destacados: Svitzer, Unión Adventista, Academyx, B&B Real Estate, Smart Church (Revive) y John Henry. Cada visual es una composición en HTML del tipo de sistema, no una captura. Cada tarjeta abre /es/portfolio/[slug] (se construye en el paso 8).",
+      "Seis casos destacados: Svitzer, Unión Adventista, Academyx, B&B Real Estate, Smart Church (Revive) y John Henry. Cada tarjeta muestra el tablero de esa plataforma recreado en HTML con sus módulos reales y datos de muestra (marcado «Datos de muestra»), más problema, solución, módulos y stack. Abre /es/portfolio/[slug] (paso 8).",
       "Los datos de stack, módulos, problema y solución de los 13 sistemas se leyeron de sus repos en esta máquina (Svitzer no tiene repo aquí). En content/portfolio.ts cada caso tiene publicable; los de clientes no autorizados siguen en false.",
     ],
     capturas: { w375: "/avance/paso-07-375.png", w1440: "/avance/paso-07-1440.png" },
@@ -175,6 +175,7 @@ export const PASOS: Paso[] = [
     notas: [
       "Lighthouse móvil en /es (build local): rendimiento 95–98, accesibilidad 100 tras quitar un aria-label que no coincidía con el texto visible, buenas prácticas 96. Escritorio 100/100/96.",
       "Teléfonos (quick, 6 modelos actuales, motores reales de Safari y Chrome): primera corrida con recortes en los visuales (altura fija) y en el carril horizontal de teléfono; se pasó a altura por contenido y a lista vertical en pantallas chicas.",
+      "Nota de Javier (2026-10-09): «no sirve; algo más detallado del proyecto y que se vean los dashboards de cada plataforma con mock data». Se rehicieron las tarjetas: tablero completo por plataforma (menú, cifras, tablas, gráficas) con datos inventados y ficha detallada al lado.",
     ],
     actualizado: "2026-10-09",
   },
