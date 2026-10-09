@@ -9,7 +9,7 @@ export const SITE = {
   telefonoE164: "+50764795352",
   cifras: {
     anios: 7,
-    proyectos: 30,
+    proyectos: 50,
     /** Monto desarrollado. Se publica solo cuando Javier lo confirme (pregunta abierta en el artifact). */
     montoDesarrollado: null as number | null,
     mesesGarantia: 3,

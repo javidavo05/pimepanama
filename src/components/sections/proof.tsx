@@ -1,6 +1,7 @@
 // Prueba. Origen: el bloque oscuro de cifras clave de la propuesta (único bloque oscuro fuera del cierre)
 // y la fila de pills del recorrido del cliente, convertida en cinta. Los dígitos ruedan al entrar en pantalla.
-import { Counter, Eyebrow, Lines, Pill } from "@/components/ui/primitives";
+import Image from "next/image";
+import { Counter, Eyebrow, Lines } from "@/components/ui/primitives";
 import { Marquee } from "@/components/motion/marquee";
 import { CLIENTES, TIPOS_SISTEMA } from "../../../content/clientes";
 import { SITE, type Lang } from "../../../content/site";
@@ -62,20 +63,22 @@ export function Proof({ lang }: { lang: Lang }) {
         </dl>
       </div>
       <div className="proof-tapes" data-reveal="rise" style={{ "--delay": "300ms" } as React.CSSProperties}>
-        <div className="wrap proof-tape-head"><span className="caps">{autorizados.length >= 6 ? c.clientes : c.tipos}</span></div>
+        <div className="wrap proof-tape-head"><span className="caps">{c.clientes}</span></div>
         <Marquee speed={36}>
-          {(autorizados.length >= 6 ? autorizados.map((x) => x.nombre) : TIPOS_SISTEMA[lang]).map((n, i) => (
-            <span className="proof-pill" key={`${n}-${i}`}>{n}</span>
+          {autorizados.map((x) => (
+            <span className="proof-logo" key={x.nombre} title={x.sistema}>
+              {x.logo ? (
+                <Image src={x.logo} alt={x.nombre} height={40} width={Math.round(40 * (x.ancho ?? 2))} unoptimized={x.logo.endsWith(".svg")} />
+              ) : (
+                <span className="proof-wordmark">{x.nombre}</span>
+              )}
+            </span>
           ))}
         </Marquee>
-        {autorizados.length > 0 && autorizados.length < 6 && (
-          <div className="wrap proof-clients">
-            <span className="caps">{c.clientes}</span>
-            <div className="proof-client-row">
-              {autorizados.map((x) => <Pill key={x.nombre} variant="ghost" className="proof-client">{x.nombre}</Pill>)}
-            </div>
-          </div>
-        )}
+        <div className="wrap proof-tape-head"><span className="caps">{c.tipos}</span></div>
+        <Marquee speed={28} className="proof-tape-2">
+          {TIPOS_SISTEMA[lang].map((n, i) => <span className="proof-pill" key={`${n}-${i}`}>{n}</span>)}
+        </Marquee>
       </div>
     </section>
   );
