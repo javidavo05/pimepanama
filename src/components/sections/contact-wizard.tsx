@@ -68,7 +68,7 @@ export function ContactWizard({ lang, industrias }: { lang: Lang; industrias: st
         <span className="cw-check" aria-hidden="true">✓</span>
         <h2 className="t-2">{t.listo.titulo}</h2>
         <p className="lead">{t.listo.texto}</p>
-        <div className="cw-fin"><Link href={`/${lang}/portfolio`} className="btn">{t.listo.portfolio}</Link><Link href={`/${lang}`} className="btn secondary">{t.listo.inicio}</Link></div>
+        <div className="cw-fin"><Link href={`/${lang}/portfolio`} className="btn primary">{t.listo.portfolio}</Link><Link href={`/${lang}`} className="btn secondary">{t.listo.inicio}</Link></div>
       </div>
     );
   }
@@ -129,7 +129,7 @@ export function ContactWizard({ lang, industrias }: { lang: Lang; industrias: st
       <div className="cw-nav">
         {paso > 0 ? <button type="button" className="btn secondary" onClick={() => ir(paso - 1)}>{t.botones.atras}</button> : <span />}
         {paso < 3
-          ? <button type="button" className="btn" onClick={() => ir(paso + 1)}>{t.botones.seguir} <span aria-hidden="true">→</span></button>
+          ? <button type="button" className="btn primary" onClick={() => ir(paso + 1)}>{t.botones.seguir} <span aria-hidden="true">→</span></button>
           : <button type="submit" className="btn accent" disabled={estado === "enviando"}>{estado === "enviando" ? t.botones.enviando : estado === "error" ? t.error.reintentar : t.botones.enviar}</button>}
       </div>
     </form>
