@@ -39,7 +39,8 @@ export function Footer({ lang }: { lang: Lang }) {
             ))}
           </nav>
         </div>
-        <div className="ft-mark" aria-hidden="true"><span className="ft-word" data-reveal="rise">PIME</span></div>
+        {/* Marca de agua decorativa: el texto va en CSS (content) para que no cuente como texto legible */}
+        <div className="ft-mark" aria-hidden="true"><span className="ft-word" data-reveal="rise" data-word="PIME" /></div>
         <div className="ft-legal">
           <span>© <Year /> {SITE.nombre} · {t.derechos}</span>
           <span>{t.gracias}</span>
