@@ -69,6 +69,7 @@
 .cs-tenant { gap: var(--s-2); text-align: left; cursor: pointer; font: inherit; color: inherit; animation: rise-in 400ms var(--ease-out) both; animation-delay: calc(var(--i, 0) * 50ms); transition: border-color var(--dur-fast), background var(--dur-fast); }
 .cs-tenant:hover { border-color: var(--line-strong); }
 .cs-tenant[aria-selected="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.cs-tenant[aria-selected="true"] .meta, .cs-queue-item[aria-pressed="true"] .meta { color: var(--accent-ink); }
 .cs-tenant-mark { width: 32px; height: 32px; border-radius: var(--r-sm); display: grid; place-items: center; font-family: var(--font-display); font-weight: var(--w-display); font-size: 11px; color: var(--white); background: var(--ink); flex: none; }
 .cs-tenant-f { display: flex; justify-content: space-between; align-items: center; gap: var(--s-2); }
 .cs-detail { gap: var(--s-3); }
