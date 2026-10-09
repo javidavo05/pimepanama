@@ -1,0 +1,30 @@
+.cd { padding: calc(72px + var(--s-8)) 0 var(--section-y); }
+.cd-wrap { display: grid; gap: var(--s-8); min-width: 0; }
+.cd-wrap > * { min-width: 0; }
+.cd-back { justify-self: start; display: inline-flex; align-items: center; min-height: 44px; color: var(--fg-2); text-decoration: none; font-weight: var(--w-semibold); }
+.cd-head { display: grid; gap: var(--s-4); justify-items: start; }
+.cd-id { display: flex; align-items: center; gap: var(--s-4); flex-wrap: wrap; }
+.cd-logo { height: 32px; width: auto; max-width: 140px; object-fit: contain; filter: brightness(0); }
+:root[data-theme="dark"] .cd-logo { filter: brightness(0) invert(1); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .cd-logo { filter: brightness(0) invert(1); } }
+.cd-title { overflow-wrap: anywhere; }
+.cd-actions { display: flex; align-items: center; gap: var(--s-4); flex-wrap: wrap; }
+.cd-nolink { color: var(--fg-3); font-size: var(--text-sm); }
+.cd-shot { display: grid; gap: var(--s-2); margin: 0; }
+.cd-shot .shot { border-radius: var(--r-md); box-shadow: var(--shadow-2, none); }
+.cd-body { display: grid; gap: var(--s-8); }
+@media (min-width: 1024px) { .cd-body { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); } }
+.cd-text { display: grid; gap: var(--s-6); align-content: start; }
+.cd-text p, .cd-stack { font-size: var(--text-md); line-height: var(--leading-body); color: var(--fg-2); max-width: var(--measure); }
+.cd-h { font-family: var(--font-display); font-weight: var(--w-display); font-size: var(--text-lg); margin-bottom: var(--s-2); }
+.cd-side { display: grid; gap: var(--s-3); align-content: start; padding: var(--s-6); border: var(--border); border-radius: var(--r-md); background: var(--panel); }
+.cd-mods { list-style: none; display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.cd-live { display: grid; gap: var(--s-4); justify-items: start; }
+.cd-live-frame { width: 100%; max-width: 1280px; }
+.cd-pager { display: grid; gap: var(--s-4); border-top: var(--border); padding-top: var(--s-6); }
+@media (min-width: 640px) { .cd-pager { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.cd-pg { display: grid; gap: var(--s-1); text-decoration: none; color: inherit; padding: var(--s-4); border: var(--border); border-radius: var(--r-md); }
+.cd-pg b { font-family: var(--font-display); font-weight: var(--w-display); overflow-wrap: anywhere; }
+.cd-pg-r { text-align: right; }
+.cd-pg:hover { border-color: var(--accent); }
+.cd-pg:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }

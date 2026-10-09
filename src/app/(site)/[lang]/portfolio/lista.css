@@ -1,0 +1,9 @@
+.pl { padding: calc(72px + var(--s-8)) 0 var(--section-y); }
+.pl-wrap { display: grid; gap: var(--s-6); justify-items: start; min-width: 0; }
+.pl-grid { list-style: none; display: grid; gap: var(--s-6); width: 100%; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 640px) { .pl-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .pl-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.pl-card { display: grid; gap: var(--s-2); justify-items: start; text-decoration: none; color: inherit; min-width: 0; }
+.pl-card .shot { width: 100%; }
+.pl-t { font-family: var(--font-display); font-weight: var(--w-display); font-size: var(--text-lg); overflow-wrap: anywhere; }
+.pl-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
