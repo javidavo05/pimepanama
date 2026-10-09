@@ -318,6 +318,45 @@ export const PROCESO: Record<Lang, {
       { titulo: "Turnkey price", texto: "The price of each phase is set in the proposal and does not change during the project. It covers design, coding, testing, launch and training.", pills: ["No third-party licenses", "No per-user fees", "Independent phases"] },
       { titulo: "Three-month warranty", texto: "After delivery, any defect is fixed at no cost for three months. After that, you decide whether you want ongoing support.", pills: ["Fixes included", "Your code and data", "Optional support"] },
     ],
-    cta: { href: "/en/contact", label: "Request a proposal" },
+    cta: { href: "/en/contacto", label: "Request a proposal" },
+  },
+};
+
+/** Industrias (paso 9). Las industrias y los sistemas salen de content/portfolio.ts: nada inventado. */
+export const INDUSTRIAS_SEC: Record<Lang, { eyebrow: string; titulo: string[]; bajada: string; sistemas: (n: number) => string; ver: string }> = {
+  es: { eyebrow: "06 · Industrias", titulo: ["Operaciones distintas,", "el mismo rigor"], bajada: "Cada industria tiene su propia forma de cobrar, de atender y de rendir cuentas. Estos son los sectores donde ya hay un sistema de Pime en producción.", sistemas: (n) => (n === 1 ? "1 sistema" : `${n} sistemas`), ver: "Ver los casos" },
+  en: { eyebrow: "06 · Industries", titulo: ["Different operations,", "the same rigor"], bajada: "Every industry has its own way of billing, serving and reporting. These are the sectors where a Pime system is already in production.", sistemas: (n) => (n === 1 ? "1 system" : `${n} systems`), ver: "See the cases" },
+};
+
+/** Cierre y contacto (paso 9). Origen: la página de cierre de la propuesta (único fondo oscuro, pasos
+ *  numerados en círculos, nombre y dominio). Teléfono de SITE. */
+export const CIERRE: Record<Lang, { eyebrow: string; titulo: string[]; bajada: string; pasos: { titulo: string; texto: string }[]; cta: { href: string; label: string }; llamar: string; horario: string; gracias: string }> = {
+  es: {
+    eyebrow: "07 · Hablemos",
+    titulo: ["Cuéntenos cómo opera", "hoy su empresa"],
+    bajada: "En una conversación de media hora sabemos si un sistema a medida le conviene y qué fase tendría sentido primero.",
+    pasos: [
+      { titulo: "Cuéntenos su operación", texto: "Qué hace su equipo todos los días y dónde se traba." },
+      { titulo: "Reciba una propuesta", texto: "Precio cerrado por fase, alcance claro, sin letra chica." },
+      { titulo: "Empiece por lo urgente", texto: "La primera fase se usa desde que se entrega." },
+    ],
+    cta: { href: "/es/contacto", label: "Pedir una propuesta" },
+    llamar: "Llamar al",
+    horario: "Panamá",
+    gracias: "Gracias por la confianza.",
+  },
+  en: {
+    eyebrow: "07 · Let's talk",
+    titulo: ["Tell us how your", "company runs today"],
+    bajada: "In a half-hour conversation we know whether a custom system makes sense for you and which phase should come first.",
+    pasos: [
+      { titulo: "Tell us about your operation", texto: "What your team does every day and where it gets stuck." },
+      { titulo: "Get a proposal", texto: "Fixed price per phase, clear scope, no fine print." },
+      { titulo: "Start with what's urgent", texto: "The first phase is in use from the day it ships." },
+    ],
+    cta: { href: "/en/contacto", label: "Request a proposal" },
+    llamar: "Call",
+    horario: "Panama",
+    gracias: "Thank you for your trust.",
   },
 };
