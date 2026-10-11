@@ -26,6 +26,8 @@ import {
 import { DocumentType, DocumentStatus, ProjectStatus, ContractStatus, LeadStatus, LeadSource, LeadPriority, Prisma } from "@prisma/client";
 import type { FinancingPlan } from "@/lib/financing";
 import { serializeProject, serializeContract, serializeSchedule, serializeLead } from "@/lib/serializers";
+import { sincronizarPagosDeFactura } from "@/lib/portal/sincronizar-pagos";
+import { siguienteNumero } from "@/lib/numeracion";
 
 const DOCUMENT_LIST_PATH: Record<DocumentType, string> = {
   FACTURA: "facturas",
@@ -262,11 +264,8 @@ export async function createDocumentAction(data: {
           ? "BIT"
           : "COR";
 
-  const year = new Date().getFullYear();
-  const count = await prisma.document.count({
-    where: { type: data.type, userId: user.id },
-  });
-  const number = `${prefix}-${year}-${String(count + 1).padStart(4, "0")}`;
+  // El mayor número usado con ese prefijo y año, más uno: borrar un documento ya no repite números.
+  const number = await siguienteNumero(user.id, data.type, prefix);
 
   const doc = await prisma.document.create({
     data: {
@@ -383,6 +382,7 @@ export async function updateDocumentAction(
       // Reabrir: el cobro deja de estar registrado.
       await prisma.document.update({ where: { id }, data: { amountPaid: null } });
     }
+    if (existing.type === "FACTURA") await sincronizarPagosDeFactura(id);
     if (existing.type === "FACTURA" && existing.linkedDocumentId) {
       await syncQuoteInvoiceBalance(existing.linkedDocumentId, user.id);
     }

@@ -4,6 +4,7 @@ import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { ensurePimeOwner } from "@/lib/bitacora-attendees";
 import { parseAttendees, type ExecutiveMinutes } from "@/lib/meetings/types";
+import { siguienteNumero } from "@/lib/numeracion";
 
 export const runtime = "nodejs";
 
@@ -47,9 +48,7 @@ export const POST = withEmpresaIdRoute(async (req, { params }) => {
     select: { title: true, owner: true, dueDate: true },
   });
 
-  const year = new Date().getFullYear();
-  const count = await prisma.document.count({ where: { type: "BITACORA", userId: user.id } });
-  const number = `BIT-${year}-${String(count + 1).padStart(4, "0")}`;
+  const number = await siguienteNumero(user.id, "BITACORA", "BIT");
 
   const decisions = [...executive.decisions, ...executive.commitments].join("\n");
   const actionItemsText = actionItems

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import type { DocumentType } from "@prisma/client";
+import { siguienteNumero } from "@/lib/numeracion";
 
 export const runtime = "nodejs";
 
@@ -46,11 +47,7 @@ export async function POST(request: Request) {
             ? "BIT"
             : "COR";
 
-    const year = new Date().getFullYear();
-    const count = await prisma.document.count({
-      where: { type: body.type, userId: user.id },
-    });
-    const number = `${prefix}-${year}-${String(count + 1).padStart(4, "0")}`;
+    const number = await siguienteNumero(user.id, body.type, prefix);
 
     const doc = await prisma.document.create({
       data: { ...body, number, userId: user.id },

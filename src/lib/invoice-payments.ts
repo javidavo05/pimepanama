@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { syncQuoteInvoiceBalance } from "@/lib/quote-balance";
 import { clearLegacyPartialSchedules, settleDocumentSchedules } from "@/lib/invoice-settlement";
 import type { DocumentStatus } from "@prisma/client";
+import { sincronizarPagosDeFactura } from "@/lib/portal/sincronizar-pagos";
 
 /**
  * Lógica de cobro de facturas, sin dependencia de la sesión ni de Next —
@@ -65,6 +66,7 @@ export async function registerInvoicePayment(
     await syncQuoteInvoiceBalance(doc.linkedDocumentId, userId);
   }
 
+  await sincronizarPagosDeFactura(documentId);
   return { status, amountPaid, total, outstanding: Math.round((total - amountPaid) * 100) / 100 };
 }
 
@@ -80,6 +82,7 @@ export async function resetInvoicePayment(userId: string, documentId: string): P
     data: { status: "SENT", amountPaid: null },
   });
   await clearLegacyPartialSchedules(documentId);
+  await sincronizarPagosDeFactura(documentId);
 
   if (doc.linkedDocumentId) {
     await syncQuoteInvoiceBalance(doc.linkedDocumentId, userId);
@@ -121,6 +124,7 @@ export async function collectSchedule(userId: string, scheduleId: string): Promi
       },
     });
     if (isSettled) await settleDocumentSchedules(doc.id);
+    await sincronizarPagosDeFactura(doc.id, `Cuota cobrada: ${existing.description ?? ""}`.trim());
     if (doc.linkedDocumentId) await syncQuoteInvoiceBalance(doc.linkedDocumentId, userId);
   } else {
     // Cotización: si ya no queda ninguna cuota viva, queda saldada.
@@ -146,6 +150,7 @@ export async function markDocumentPaid(userId: string, documentId: string): Prom
     data: { status: "PAID", ...(doc.total != null ? { amountPaid: doc.total } : {}) },
   });
   await settleDocumentSchedules(documentId);
+  await sincronizarPagosDeFactura(documentId);
 
   if (doc.type === "FACTURA" && doc.linkedDocumentId) {
     await syncQuoteInvoiceBalance(doc.linkedDocumentId, userId);

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { syncQuoteInvoiceBalance, QUOTE_BALANCE_SCHEDULE_DESC } from "@/lib/quote-balance";
 import { registerInvoicePayment } from "@/lib/invoice-payments";
 import type { Document } from "@prisma/client";
+import { siguienteNumero } from "@/lib/numeracion";
 
 /**
  * Cobrar un saldo que NO tiene factura detrás (una cotización, o la cuota de
@@ -19,9 +20,7 @@ export type CollectResult = {
 };
 
 async function nextInvoiceNumber(userId: string, prefix: string): Promise<string> {
-  const year = new Date().getFullYear();
-  const count = await prisma.document.count({ where: { type: "FACTURA", userId } });
-  return `${prefix}-${year}-${String(count + 1).padStart(4, "0")}`;
+  return siguienteNumero(userId, "FACTURA", prefix);
 }
 
 /** Crea una factura por `amount` a partir de una cotización, ya cobrada. */

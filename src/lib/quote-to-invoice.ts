@@ -1,6 +1,7 @@
 import type { Document, EmpresaUser, CompanyConfig } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { syncQuoteInvoiceBalance } from "@/lib/quote-balance";
+import { siguienteNumero } from "@/lib/numeracion";
 
 export type EmpresaUserWithConfig = EmpresaUser & { config: CompanyConfig | null };
 
@@ -60,11 +61,7 @@ export async function createInvoiceFromQuote(
   dueDate.setDate(dueDate.getDate() + paymentTermsDays);
 
   const prefix = user.config?.invoicePrefix ?? "FAC";
-  const year = new Date().getFullYear();
-  const count = await prisma.document.count({
-    where: { type: "FACTURA", userId: user.id },
-  });
-  const number = `${prefix}-${year}-${String(count + 1).padStart(4, "0")}`;
+  const number = await siguienteNumero(user.id, "FACTURA", prefix);
 
   const invoiceContent = {
     lineItems: quoteContent.lineItems ?? [],
