@@ -55,10 +55,10 @@ export function RevenueChart({ data, title }: RevenueChartProps) {
           <YAxis tickFormatter={fmt} tick={{ fill: c.tickMuted, fontSize: 10 }} axisLine={false} tickLine={false} width={48} />
           <Tooltip content={<CustomTooltip />} cursor={{ fill: c.cursor }} />
           <Legend wrapperStyle={{ fontSize: "11px", color: c.legend, paddingTop: "12px" }} formatter={(v) => v === "bruto" ? "Bruto" : "Neto recibido"} />
-          <Bar dataKey="bruto" radius={[3, 3, 0, 0]} maxBarSize={32}>
+          <Bar dataKey="bruto" fill={c.primary} radius={[3, 3, 0, 0]} maxBarSize={32}>
             {data.map((_, i) => <Cell key={i} fill={c.primary} fillOpacity={0.85} />)}
           </Bar>
-          <Bar dataKey="neto" radius={[3, 3, 0, 0]} maxBarSize={32}>
+          <Bar dataKey="neto" fill={c.secondary} radius={[3, 3, 0, 0]} maxBarSize={32}>
             {data.map((_, i) => <Cell key={i} fill={c.secondary} fillOpacity={0.75} />)}
           </Bar>
         </BarChart>
@@ -122,10 +122,10 @@ export function DashboardRevenueChart({ monthlyData, yearlyData }: DashboardReve
           <YAxis tickFormatter={fmt} tick={{ fill: c.tickMuted, fontSize: 10 }} axisLine={false} tickLine={false} width={52} />
           <Tooltip content={<DashboardTooltip />} cursor={{ fill: c.cursor }} />
           <Legend wrapperStyle={{ fontSize: "11px", color: c.legend, paddingTop: "12px" }} formatter={(v) => (v === "bruto" ? "Bruto" : "Neto recibido")} />
-          <Bar dataKey="bruto" radius={[3, 3, 0, 0]} maxBarSize={36}>
+          <Bar dataKey="bruto" fill={c.primary} radius={[3, 3, 0, 0]} maxBarSize={36}>
             {chartData.map((_, i) => <Cell key={i} fill={c.primary} fillOpacity={0.85} />)}
           </Bar>
-          <Bar dataKey="neto" radius={[3, 3, 0, 0]} maxBarSize={36}>
+          <Bar dataKey="neto" fill={c.secondary} radius={[3, 3, 0, 0]} maxBarSize={36}>
             {chartData.map((_, i) => <Cell key={i} fill={c.secondary} fillOpacity={0.75} />)}
           </Bar>
         </BarChart>

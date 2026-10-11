@@ -1,184 +1,168 @@
 import Link from "@/components/empresa/link";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
-import { calcGptCost, fmtCost } from "@/lib/ai-pricing";
-import { DashboardStatCard } from "@/components/empresa/dashboard-stat-card";
-import { DocumentListTable } from "@/components/empresa/document-list-table";
+import { datosHoy, type ItemAgenda } from "@/lib/motor/hoy";
+import { BotonCobrar } from "@/components/empresa/cobrar/asistente-cobrar";
 import { LazyDashboardRevenueChart as DashboardRevenueChart } from "@/components/empresa/revenue-chart-lazy";
 import { buildMonthlyRevenue, buildYearlyRevenue } from "@/lib/revenue-helpers";
-import {
-  PAID_INVOICE_REVENUE_SELECT,
-  paidInvoiceWhere,
-  sumInvoiceRevenue,
-  effectiveInvoiceAmount,
-} from "@/lib/invoice-revenue";
-import { openQuoteWhere } from "@/lib/quote-list";
-import { getReceivables } from "@/lib/receivables";
-import { docTypeOutlineStyle } from "@/lib/empresa/doc-type-colors";
+import { PAID_INVOICE_REVENUE_SELECT, paidInvoiceWhere, effectiveInvoiceAmount } from "@/lib/invoice-revenue";
 
-export const metadata = { title: "Dashboard — Pime Suite" };
+export const metadata = { title: "Hoy — Pime Suite" };
+export const dynamic = "force-dynamic";
 
-function fmtUSD(n: number) {
-  return n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+const usd = (n: number) => `USD ${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const card = "bg-panel border border-line rounded-2xl p-4 sm:p-6 min-w-0";
+const h2 = "text-fg text-base font-semibold tracking-tight";
+const hora = (d: Date) => d.toLocaleTimeString("es-PA", { hour: "numeric", minute: "2-digit", timeZone: "America/Panama" });
+const TIPO: Record<ItemAgenda["tipo"], string> = { tarea: "Tarea", cita: "Cita", reunion: "Reunión", cuota: "Cobro", factura: "Cobro", evento: "Evento" };
 
-export default async function EmpresaDashboardPage() {
+export default async function HoyPage() {
   const user = await getEmpresaUser();
+  const [d, clientes, pagadas] = await Promise.all([
+    datosHoy(user.id),
+    prisma.client.findMany({ where: { userId: user.id, archivedAt: null }, orderBy: { name: "asc" }, select: { id: true, name: true, company: true } }),
+    prisma.document.findMany({ where: paidInvoiceWhere(user.id), select: PAID_INVOICE_REVENUE_SELECT, orderBy: { issueDate: "asc" } }),
+  ]);
+  const filas = pagadas.map((x) => ({ issueDate: x.issueDate, ...effectiveInvoiceAmount(x) }));
+  const nombre = (user.fullName || "").split(" ")[0];
+  const fecha = new Date().toLocaleDateString("es-PA", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Panama" });
+  const ahora = Date.now();
 
-  const [facturas, cotizaciones, totalCotizaciones, bitacoras, correos, recent, tokensResult, paidInvoices, acceptedCotizaciones, receivables, activeProjects, overdueSchedules] =
-    await Promise.all([
-      prisma.document.count({ where: { userId: user.id, type: "FACTURA" } }),
-      prisma.document.count({ where: openQuoteWhere(user.id) }),
-      prisma.document.count({ where: { userId: user.id, type: "COTIZACION" } }),
-      prisma.document.count({ where: { userId: user.id, type: "BITACORA" } }),
-      prisma.document.count({ where: { userId: user.id, type: "CORREO" } }),
-      prisma.document.findMany({
-        where: { userId: user.id },
-        orderBy: { createdAt: "desc" },
-        take: 8,
-      }),
-      prisma.aiUsageLog.aggregate({
-        where: {
-          supabaseUid: user.supabaseUid,
-          createdAt: {
-            gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
-          },
-        },
-        _sum: { inputTokens: true, outputTokens: true },
-      }),
-      prisma.document.findMany({
-        where: paidInvoiceWhere(user.id),
-        select: PAID_INVOICE_REVENUE_SELECT,
-        orderBy: { issueDate: "asc" },
-      }),
-      prisma.document.count({
-        where: { userId: user.id, type: "COTIZACION", status: "ACCEPTED" },
-      }),
-      getReceivables(user.id),
-      prisma.project.count({ where: { userId: user.id, status: "ACTIVE" } }),
-      prisma.paymentSchedule.count({ where: { userId: user.id, status: "OVERDUE" } }),
-    ]);
-
-  const inputTokens = tokensResult._sum.inputTokens ?? 0;
-  const outputTokens = tokensResult._sum.outputTokens ?? 0;
-  const totalTokens = inputTokens + outputTokens;
-  const aiCostUSD = calcGptCost(inputTokens, outputTokens);
-
-  const now = new Date();
-  const monthName = now.toLocaleDateString("es-PA", { month: "long", year: "numeric" });
-
-  // Economic KPIs — solo facturas pagadas (fuente de verdad)
-  const { gross: totalBruto, net: totalNeto, commission: totalComisiones } = sumInvoiceRevenue(paidInvoices);
-  const tasaCierre = totalCotizaciones > 0 ? Math.round((acceptedCotizaciones / totalCotizaciones) * 100) : 0;
-
-  // Chart data — para PARTIALLY_PAID se usa lo efectivamente cobrado, no el total facturado
-  const revenueRows = paidInvoices.map((d) => ({ issueDate: d.issueDate, ...effectiveInvoiceAmount(d) }));
-  const monthlyData = buildMonthlyRevenue(revenueRows);
-  const yearlyData = buildYearlyRevenue(revenueRows);
-
-  // Misma fuente de verdad que /empresa/cuentas-por-cobrar: saldos, no totales.
-  const totalPorCobrar = receivables.total;
+  const resumen = [
+    d.agenda.length ? `${d.agenda.length} ${d.agenda.length === 1 ? "cosa en la agenda" : "cosas en la agenda"}` : null,
+    d.totalVencidas ? `${d.totalVencidas} ${d.totalVencidas === 1 ? "cobro vencido" : "cobros vencidos"}` : null,
+    d.sistemas.length ? `${d.sistemas.length} ${d.sistemas.length === 1 ? "sistema con problemas" : "sistemas con problemas"}` : null,
+  ].filter(Boolean).join(" · ") || "Nada urgente: todo al día.";
+  const hayAlertas = d.vencidas.length > 0 || d.sistemas.length > 0 || d.tickets.sinResponder.length > 0;
+  const cambioMes = d.dinero.entroMesPasado > 0 ? Math.round(((d.dinero.entroMes - d.dinero.entroMesPasado) / d.dinero.entroMesPasado) * 100) : null;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div className="max-w-5xl mx-auto space-y-6">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-fg text-2xl font-semibold tracking-tight">Dashboard</h1>
-          <p className="text-fg-dim text-sm mt-1 break-words">
-            Bienvenido, {user.fullName ?? user.email.split("@")[0]}
-          </p>
+          <p className="text-fg-dim text-sm first-letter:uppercase">{fecha}</p>
+          <h1 className="text-fg text-2xl font-semibold tracking-tight">{nombre ? `Hola, ${nombre}` : "Hoy"}</h1>
+          <p className="text-fg-mute text-sm mt-1">{resumen}</p>
         </div>
-        <div className="sm:text-right">
-          <p className="text-fg-dim text-xs uppercase tracking-widest">Tokens IA — {monthName}</p>
-          <p className="text-sand-fg font-mono text-xl font-semibold mt-1">
-            {totalTokens.toLocaleString()}
-          </p>
-          <p className="text-fg-faint text-xs font-mono mt-0.5" title={`$${aiCostUSD.toFixed(6)} (entrada: ${inputTokens.toLocaleString()} × $0.0000025 + salida: ${outputTokens.toLocaleString()} × $0.000010)`}>
-            costo est. {fmtCost(aiCostUSD)}
-          </p>
-        </div>
-      </div>
+        <BotonCobrar clientes={clientes.map((c) => ({ id: c.id, nombre: c.company || c.name }))} className="inline-flex items-center justify-center min-h-12 sm:min-h-11 px-6 rounded-xl bg-brand text-on-brand text-sm font-semibold hover:bg-brand-hi" />
+      </header>
 
-      {/* Doc type stat cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <DashboardStatCard label="Facturas" count={facturas} href="/empresa/facturas" newHref="/empresa/facturas/nueva" color="rgb(var(--c-info))" />
-        <DashboardStatCard label="Cotizaciones" count={cotizaciones} href="/empresa/cotizaciones" newHref="/empresa/cotizaciones/nueva" color="rgb(var(--c-iris-fg))" />
-        <DashboardStatCard label="Bitácoras" count={bitacoras} href="/empresa/bitacoras" newHref="/empresa/bitacoras/nueva" color="rgb(var(--c-emerald2))" />
-        <DashboardStatCard label="Correos" count={correos} href="/empresa/correos" newHref="/empresa/correos/nueva" color="rgb(var(--c-warn))" />
-      </div>
-
-      {/* Proyectos + AR KPIs */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <Link href="/empresa/cuentas-por-cobrar"
-          className="bg-panel border border-line hover:border-brand/20 rounded-2xl p-5 transition-all group">
-          <p className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-3">Cuentas por cobrar</p>
-          <p className="font-mono text-2xl font-semibold text-brand-fg">${fmtUSD(totalPorCobrar)}</p>
-          <p className="text-fg-faint text-xs mt-1.5 group-hover:text-fg-dim transition-colors">facturas + cotizaciones enviadas →</p>
+      {/* Dinero con colores: rojo vencido, azul por cobrar, verde entró. */}
+      <section aria-label="Dinero" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <Link href="/empresa/cuentas-por-cobrar" className={`rounded-2xl border p-4 sm:p-6 ${d.dinero.vencido > 0 ? "border-danger/40 bg-danger/5" : "border-line bg-panel"}`}>
+          <p className={`text-sm font-semibold ${d.dinero.vencido > 0 ? "text-danger" : "text-fg-dim"}`}>{d.dinero.vencido > 0 ? "● Vencido" : "Vencido"}</p>
+          <p className={`text-2xl font-bold tabular-nums tracking-tight ${d.dinero.vencido > 0 ? "text-danger" : "text-fg-dim"}`}>{usd(d.dinero.vencido)}</p>
+          <p className="text-fg-dim text-xs mt-1">{d.totalVencidas ? d.totalVencidas === 1 ? "1 factura pasada de fecha" : `${d.totalVencidas} facturas pasadas de fecha` : "Nadie te debe pasado de fecha"}</p>
         </Link>
-        <Link href="/empresa/proyectos"
-          className="bg-panel border border-line hover:border-ok/20 rounded-2xl p-5 transition-all group">
-          <p className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-3">Proyectos activos</p>
-          <p className="font-mono text-2xl font-semibold text-ok">{activeProjects}</p>
-          <p className="text-fg-faint text-xs mt-1.5 group-hover:text-fg-dim transition-colors">en curso →</p>
+        <Link href="/empresa/cuentas-por-cobrar" className="rounded-2xl border border-brand/30 bg-brand/5 p-4 sm:p-6">
+          <p className="text-brand-fg text-sm font-semibold">● Por cobrar</p>
+          <p className="text-brand-fg text-2xl font-bold tabular-nums tracking-tight">{usd(d.dinero.porCobrar)}</p>
+          <p className="text-fg-dim text-xs mt-1">{d.dinero.porVencer > 0 ? <span className="text-warn font-semibold">{usd(d.dinero.porVencer)} vence en 3 días</span> : "Todavía no vence"}</p>
         </Link>
-        <Link href="/empresa/cuentas-por-cobrar"
-          className={`bg-panel border rounded-2xl p-5 transition-all group ${overdueSchedules > 0 ? "border-danger/20 hover:border-danger/40" : "border-line hover:border-line-mid"}`}>
-          <p className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-3">Pagos vencidos</p>
-          <p className={`font-mono text-2xl font-semibold ${overdueSchedules > 0 ? "text-danger" : "text-fg-dim"}`}>{overdueSchedules}</p>
-          <p className={`text-xs mt-1.5 ${overdueSchedules > 0 ? "text-danger" : "text-fg-faint"} group-hover:opacity-80 transition-opacity`}>
-            {overdueSchedules > 0 ? "requieren atención →" : "al día"}
-          </p>
+        <Link href="/empresa/dinero" className="rounded-2xl border border-ok/30 bg-ok/5 p-4 sm:p-6">
+          <p className="text-ok text-sm font-semibold">● Entró este mes</p>
+          <p className="text-ok text-2xl font-bold tabular-nums tracking-tight">{usd(d.dinero.entroMes)}</p>
+          <p className="text-fg-dim text-xs mt-1">{cambioMes === null ? `Mes pasado: ${usd(d.dinero.entroMesPasado)}` : `${cambioMes >= 0 ? "+" : ""}${cambioMes} % contra el mes pasado`}</p>
         </Link>
-      </div>
+      </section>
 
-      {/* Economic KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {[
-          { label: "Ingresos brutos", value: `$${fmtUSD(totalBruto)}`, color: "text-brand-fg", sub: "facturas pagadas" },
-          { label: "Neto recibido", value: `$${fmtUSD(totalNeto)}`, color: "text-ok", sub: "facturas pagadas" },
-          { label: "Comisiones", value: `$${fmtUSD(totalComisiones)}`, color: "text-warn", sub: "pagadas a pasarelas" },
-          { label: "Tasa de cierre", value: `${tasaCierre}%`, color: "text-iris-fg", sub: `${acceptedCotizaciones} de ${totalCotizaciones} cot.` },
-        ].map(({ label, value, color, sub }) => (
-          <div key={label} className="bg-panel border border-line rounded-2xl p-5">
-            <p className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-3">{label}</p>
-            <p className={`font-mono text-2xl font-semibold ${color}`}>{value}</p>
-            <p className="text-fg-faint text-xs mt-1.5">{sub}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Revenue timeline chart */}
-      <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6">
-        <DashboardRevenueChart monthlyData={monthlyData} yearlyData={yearlyData} />
-      </div>
-
-      {/* Recent documents */}
-      <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-          <h2 className="text-fg font-semibold">Documentos recientes</h2>
-          <div className="grid grid-cols-2 gap-2 sm:flex">
-            {(
-              [
-                ["facturas", "Factura", "--c-info"],
-                ["cotizaciones", "Cotización", "--c-iris-fg"],
-                ["bitacoras", "Bitácora", "--c-emerald2"],
-                ["correos", "Correo", "--c-warn"],
-              ] as const
-            ).map(([type, label, color]) => (
-              <Link
-                key={type}
-                href={`/empresa/${type}/nueva`}
-                className="inline-flex items-center justify-center min-h-11 sm:min-h-9 text-sm sm:text-xs font-medium px-3 rounded-lg border transition-all hover:opacity-80"
-                style={docTypeOutlineStyle(color)}
-              >
-                + {label}
-              </Link>
+      {hayAlertas && (
+        <section className={`${card} border-danger/30`} aria-label="Alertas">
+          <h2 className={`${h2} text-danger`}>Atiende primero</h2>
+          <ul className="mt-3 divide-y divide-line">
+            {d.sistemas.map((s) => (
+              <li key={s.id}><Link href={`/empresa/sistemas/${s.id}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3 min-h-12">
+                <span className="min-w-0"><span className="block text-fg text-sm font-semibold truncate">{s.nombre} {s.estado === "caido" ? "no responde" : "funciona con fallas"}</span><span className="block text-fg-dim text-xs truncate">{s.cliente}</span></span>
+                <span className="rounded-full bg-danger/10 px-3 py-1 text-xs font-semibold text-danger">{s.estado === "caido" ? "Caído" : "Con fallas"}</span>
+              </Link></li>
             ))}
+            {d.vencidas.map((v) => (
+              <li key={v.id}><Link href={v.href} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3 min-h-12">
+                <span className="min-w-0"><span className="block text-fg text-sm font-semibold truncate">{v.cliente} te debe {usd(v.falta)}</span><span className="block text-fg-dim text-xs">{v.numero ?? "Factura"} · vencida hace {v.dias} {v.dias === 1 ? "día" : "días"}</span></span>
+                <span className="text-danger text-sm font-semibold whitespace-nowrap">Cobrar →</span>
+              </Link></li>
+            ))}
+            {d.tickets.sinResponder.map((t) => (
+              <li key={t.id}><Link href={`/empresa/tickets/${t.id}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3 min-h-12">
+                <span className="min-w-0"><span className="block text-fg text-sm font-semibold truncate">{t.cliente} espera respuesta</span><span className="block text-fg-dim text-xs truncate">{t.numero} · {t.titulo}</span></span>
+                <span className={`text-sm font-semibold whitespace-nowrap ${t.urgente ? "text-danger" : "text-warn"}`}>Responder →</span>
+              </Link></li>
+            ))}
+          </ul>
+          {d.totalVencidas > d.vencidas.length && <Link href="/empresa/cuentas-por-cobrar" className="mt-2 inline-flex items-center min-h-11 text-sm font-semibold text-danger hover:underline">Ver las {d.totalVencidas} vencidas</Link>}
+        </section>
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-5 items-start">
+        <section className={`${card} lg:col-span-3`} aria-label="Agenda de hoy">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className={h2}>Tu día</h2>
+            <Link href="/empresa/tareas" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">Tareas</Link>
           </div>
+          {d.tareasAtrasadas > 0 && <p className="mt-2 text-sm text-warn font-semibold">{d.tareasAtrasadas} {d.tareasAtrasadas === 1 ? "tarea atrasada" : "tareas atrasadas"} de días anteriores</p>}
+          {d.agenda.length === 0 ? (
+            <div className="mt-4 rounded-xl bg-fill p-4 text-sm text-fg-dim">No tienes nada agendado para hoy. Las tareas que venzan hoy, tus citas, reuniones y cobros del día aparecen aquí. Pronto también tu Google Calendar.</div>
+          ) : (
+            <ol className="mt-4 space-y-1">
+              {d.agenda.map((a) => {
+                const paso = a.hora ? a.hora.getTime() < ahora - 30 * 60_000 : false;
+                const Cuerpo = (
+                  <span className={`grid grid-cols-[4.5rem_minmax(0,1fr)] gap-3 rounded-xl px-3 py-3 min-h-12 ${paso ? "opacity-50" : "hover:bg-fill"}`}>
+                    <span className="text-fg-dim text-sm tabular-nums">{a.hora ? hora(a.hora) : "Hoy"}</span>
+                    <span className="min-w-0">
+                      <span className="block text-fg text-sm font-semibold [overflow-wrap:anywhere]">{a.titulo}</span>
+                      <span className="block text-fg-dim text-xs">{TIPO[a.tipo]}{a.detalle ? ` · ${a.detalle}` : ""}</span>
+                    </span>
+                  </span>
+                );
+                return <li key={a.id}>{a.href ? <Link href={a.href} className="block">{Cuerpo}</Link> : Cuerpo}</li>;
+              })}
+            </ol>
+          )}
+        </section>
+
+        <div className="space-y-6 lg:col-span-2 min-w-0">
+          <section className={card} aria-label="Esperan tu decisión">
+            <h2 className={h2}>Esperan tu decisión</h2>
+            {d.decisiones.length === 0 ? (
+              <p className="mt-2 text-sm text-fg-dim">Nada pendiente: sin borradores ni pagos por confirmar.</p>
+            ) : (
+              <ul className="mt-3 divide-y divide-line">
+                {d.decisiones.slice(0, 6).map((x) => (
+                  <li key={x.id}><Link href={x.href} className="block py-3 min-h-12">
+                    <span className="block text-fg text-sm font-semibold truncate">{x.titulo}</span>
+                    <span className="block text-fg-dim text-xs truncate">{x.detalle}</span>
+                  </Link></li>
+                ))}
+              </ul>
+            )}
+          </section>
+
+          <section className={card} aria-label="Proyectos en curso">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className={h2}>Proyectos en curso</h2>
+              <Link href="/empresa/proyectos" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">Todos</Link>
+            </div>
+            {d.proyectos.length === 0 ? (
+              <p className="mt-2 text-sm text-fg-dim">No hay proyectos en curso.</p>
+            ) : (
+              <ul className="mt-3 space-y-4">
+                {d.proyectos.map((p) => (
+                  <li key={p.id}><Link href={`/empresa/proyectos/${p.id}`} className="block space-y-2">
+                    <span className="flex items-baseline justify-between gap-3"><span className="min-w-0 truncate text-fg text-sm font-semibold">{p.nombre}</span><span className="text-fg text-sm tabular-nums">{Math.round(p.avance)} %</span></span>
+                    <span className="block h-1.5 rounded-full bg-fill-3 overflow-hidden"><span className="block h-full bg-brand origin-left" style={{ transform: `scaleX(${p.avance / 100})` }} /></span>
+                    <span className="block text-fg-dim text-xs truncate">{p.cliente}{p.diasSinActividad !== null && p.diasSinActividad > 14 ? <span className="text-warn font-semibold"> · {p.diasSinActividad} días sin actividad en GitHub</span> : ""}</span>
+                  </Link></li>
+                ))}
+              </ul>
+            )}
+          </section>
         </div>
-        <DocumentListTable documents={recent} showType />
       </div>
+
+      <section className={card} aria-label="Ingresos">
+        <DashboardRevenueChart monthlyData={buildMonthlyRevenue(filas)} yearlyData={buildYearlyRevenue(filas)} />
+      </section>
     </div>
   );
 }
