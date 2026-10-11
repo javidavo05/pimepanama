@@ -13,6 +13,7 @@
 .caps-t { font-family: var(--font-display); font-weight: var(--w-display); font-size: clamp(24px, 1.2rem + 1.2vw, 32px); line-height: var(--leading-snug); letter-spacing: var(--tracking-display); }
 .caps-apoyo { color: var(--fg-2); max-width: 44ch; }
 .caps-mods { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.caps-scene-hueco { min-height: 280px; }
 .caps-scene-inline { margin-top: var(--s-2); border: var(--border); border-radius: var(--r-lg); padding: var(--s-4); background: var(--surface); }
 @media (min-width: 1024px) { .caps-scene-inline { display: none; } }
 
