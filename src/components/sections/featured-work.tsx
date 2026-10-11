@@ -8,6 +8,7 @@ import { TiltCard } from "@/components/ui/tilt-card";
 import { TextLink } from "@/components/ui/text-link";
 import { CaseShot } from "@/components/cases";
 import { CaseModalProvider, CaseTrigger } from "./case-modal";
+import { RailMeter } from "@/components/motion/rail-meter";
 import { DESTACADOS, type Caso } from "../../../content/portfolio";
 import type { Lang } from "../../../content/site";
 import "./featured-work.css";
@@ -65,7 +66,7 @@ export function FeaturedWork({ lang }: { lang: Lang }) {
             </ol>
           </div>
         </CaseModalProvider>
-        <div className="wrap fw-foot"><span className="meta fw-hint">{t.hint}</span><span className="meta fw-hint-m">{t.hintM}</span><span className="meta num">{String(casos.length).padStart(2, "0")} {lang === "es" ? "casos" : "cases"}</span></div>
+        <div className="wrap fw-foot"><span className="meta fw-hint">{t.hint}</span><span className="meta fw-hint-m">{t.hintM}</span><RailMeter root=".fw" rail=".fw-rail" n={casos.length} pinned sufijo={lang === "es" ? "casos" : "cases"} /></div>
       </div>
     </section>
   );

@@ -2,7 +2,7 @@
 // derecha, separador de 1 px). Cada fila es una industria real con sus sistemas en producción; entran en
 // orden (stagger) y el separador se dibuja. Datos derivados de content/portfolio.ts.
 import Link from "next/link";
-import { Eyebrow, LetterChip, Lines } from "@/components/ui/primitives";
+import { Counter, Eyebrow, LetterChip, Lines } from "@/components/ui/primitives";
 import { TextLink } from "@/components/ui/text-link";
 import { Button } from "@/components/ui/button";
 import { CASOS } from "../../../content/portfolio";
@@ -56,7 +56,7 @@ export function Industries({ lang }: { lang: Lang }) {
                   ))}
                 </p>
               </div>
-              <span className="ind-n num">{String(sistemas.length).padStart(2, "0")}</span>
+              <span className="ind-n num"><Counter value={sistemas.length} prefix={sistemas.length < 10 ? "0" : ""} /></span>
             </li>
           ))}
         </ol>

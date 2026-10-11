@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Eyebrow, Lines, Pill } from "@/components/ui/primitives";
 import { EscenaCRM, EscenaERP, EscenaIA, EscenaPortal, EscenaSaaS } from "./capability-scenes";
 import { CapsPreview } from "./capability-previews";
+import { RailMeter } from "@/components/motion/rail-meter";
 import { CAPACIDADES } from "../../../content/home";
 import type { Lang } from "../../../content/site";
 import "./capabilities.css";
@@ -38,7 +39,7 @@ export function Capabilities({ lang }: { lang: Lang }) {
         <span id="caps-title" className="sr-only">{c.titulo.join(" ")}</span>
         <p className="lead" data-reveal="rise" style={{ "--delay": "200ms" } as React.CSSProperties}>{c.bajada}</p>
       </div>
-      <div className="caps-hint meta" aria-hidden="true"><span>{lang === "es" ? "Deslice para ver los cinco →" : "Swipe to see all five →"}</span><span className="num">01–05</span></div>
+      <div className="caps-hint meta"><span aria-hidden="true">{lang === "es" ? "Deslice para ver los cinco →" : "Swipe to see all five →"}</span><RailMeter root=".capsec" rail=".caps-steps" n={c.items.length} /></div>
       <div className="wrap caps-grid" ref={ref}>
         <ol className="caps-steps">
           {c.items.map((it, i) => (

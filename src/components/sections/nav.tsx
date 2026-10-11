@@ -88,6 +88,7 @@ export function Nav({ lang }: { lang: Lang }) {
   return (
     <>
     <header className="nav" data-motion="nav" data-hidden={hidden || undefined} data-compact={compact || undefined} data-open={open || undefined}>
+      <span className="nav-progress" aria-hidden="true" />
       <div className="nav-bar wrap">
         <Link href={home} className="nav-brand" aria-label={`${n.marca}: ${n.inicio}`} onClick={() => setOpen(false)}>
           <Image src="/brand/logo_icon.png" alt="" width={16} height={20} priority />

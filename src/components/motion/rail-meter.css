@@ -1,0 +1,9 @@
+.meter { display: inline-flex; align-items: center; gap: var(--s-3); font-size: var(--text-sm); color: var(--fg-3); white-space: nowrap; }
+.meter-n { display: inline-flex; align-items: baseline; gap: 4px; font-variant-numeric: tabular-nums; color: var(--fg-2); }
+.meter-cur { display: inline-block; color: var(--fg); font-weight: var(--w-semibold); animation: meter-in var(--dur-base) var(--ease-out) both; }
+@keyframes meter-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.meter-sep { color: var(--fg-3); }
+.meter-suf { color: var(--fg-3); }
+.meter-bar { display: block; width: 72px; height: 2px; border-radius: 1px; background: var(--line-strong); overflow: hidden; }
+.meter-bar b { display: block; height: 100%; width: var(--p, 0%); background: var(--accent); border-radius: 1px; transition: width var(--dur-fast) linear; }
+@media (prefers-reduced-motion: reduce) { .meter-cur { animation: none; } .meter-bar b { transition: none; } }
