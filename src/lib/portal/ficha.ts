@@ -9,7 +9,7 @@ import { fasesVigentes } from "./datos";
 export async function fichaCliente(userId: string, clientId: string) {
   const cliente = await prisma.client.findFirst({ where: { id: clientId, userId } });
   if (!cliente) return null;
-  const [config, proyectos, tickets, facturas, cotizaciones, pagos, horas, personas, eventos, contratos] = await Promise.all([
+  const [config, proyectos, tickets, facturas, cotizaciones, pagos, horas, personas, eventos, contratos, sistemas] = await Promise.all([
     prisma.companyConfig.findFirst({ where: { users: { some: { id: userId } } } }),
     prisma.project.findMany({
       where: { userId, OR: [{ clientId }, { clients: { some: { clientId } } }] },
@@ -24,6 +24,7 @@ export async function fichaCliente(userId: string, clientId: string) {
     prisma.clientUser.findMany({ where: { clientId, status: { not: "revocado" } }, orderBy: { createdAt: "asc" }, select: { id: true, email: true, fullName: true, role: true, status: true, lastLoginAt: true, invitedAt: true } }),
     prisma.activityEvent.findMany({ where: { clientId }, orderBy: { createdAt: "desc" }, take: 40, select: { id: true, title: true, detail: true, createdAt: true, visibility: true, actorType: true, kind: true } }),
     prisma.contract.findMany({ where: { userId, clientId }, select: { id: true, title: true, status: true, signingStatus: true, value: true }, orderBy: { createdAt: "desc" }, take: 10 }),
+    prisma.monitoredSystem.findMany({ where: { userId, clientId }, orderBy: [{ active: "desc" }, { name: "asc" }], select: { id: true, name: true, status: true, active: true, lastSeenAt: true, _count: { select: { incidents: { where: { resolvedAt: null } } } } } }),
   ]);
   const reglas = reglasDe(config);
   const facturasConSaldo = facturas.map((f) => {
@@ -46,6 +47,7 @@ export async function fichaCliente(userId: string, clientId: string) {
     personas,
     eventos,
     contratos,
+    sistemas,
     saldo: saldoCliente(facturas, pagos),
   };
 }

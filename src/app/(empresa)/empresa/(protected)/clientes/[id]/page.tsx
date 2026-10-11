@@ -10,6 +10,7 @@ import type { DocumentStatus } from "@prisma/client";
 import { btn } from "@/components/empresa/page-header";
 import { FacturarHorasForm, HorasForm, InvitarForm, PagoForm, PagoPorConfirmar, PersonaAcciones } from "@/components/empresa/clientes/formularios";
 import { ZonaLinea } from "@/components/empresa/clientes/zona-linea";
+import { EstadoSistemaPill } from "@/components/empresa/sistemas/estado";
 
 export const metadata = { title: "Cliente — Pime Suite" };
 
@@ -71,8 +72,8 @@ export default async function FichaCliente({ params }: { params: Promise<{ id: s
         </dl>
       </header>
 
-      <div className="grid gap-6 lg:grid-cols-3 items-start">
-        <div className="space-y-6 lg:col-span-2 min-w-0">
+      <div className="grid gap-6 xl:grid-cols-3 items-start">
+        <div className="space-y-6 xl:col-span-2 min-w-0">
           {f.porConfirmar.length > 0 && (
             <section className={`${card} border-warn/40`}>
               <h2 className={h2}>Pagos reportados por el cliente</h2>
@@ -88,7 +89,7 @@ export default async function FichaCliente({ params }: { params: Promise<{ id: s
           )}
 
           <section className={card}>
-            <div className="flex items-center justify-between gap-3"><h2 className={h2}>Tickets</h2><Link href={`/empresa/tickets?cliente=${c.id}`} className="text-sm text-brand-fg hover:underline">Ver todos</Link></div>
+            <div className="flex items-center justify-between gap-3"><h2 className={h2}>Tickets</h2><Link href={`/empresa/tickets?cliente=${c.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">Ver todos</Link></div>
             {f.tickets.length ? (
               <ul className="mt-3 divide-y divide-line">
                 {f.tickets.slice(0, 8).map((t) => (
@@ -102,7 +103,7 @@ export default async function FichaCliente({ params }: { params: Promise<{ id: s
           </section>
 
           <section className={card}>
-            <div className="flex items-center justify-between gap-3"><h2 className={h2}>Proyectos</h2><Link href={`/empresa/proyectos/nuevo?clientId=${c.id}`} className="text-sm text-brand-fg hover:underline">+ Proyecto</Link></div>
+            <div className="flex items-center justify-between gap-3"><h2 className={h2}>Proyectos</h2><Link href={`/empresa/proyectos/nuevo?clientId=${c.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">+ Proyecto</Link></div>
             {f.proyectos.length ? (
               <ul className="mt-3 space-y-3">
                 {f.proyectos.map((p) => (
@@ -117,7 +118,7 @@ export default async function FichaCliente({ params }: { params: Promise<{ id: s
           </section>
 
           <section className={card}>
-            <div className="flex items-center justify-between gap-3"><h2 className={h2}>Facturas</h2><Link href={`/empresa/facturas/nueva?clientId=${c.id}`} className="text-sm text-brand-fg hover:underline">+ Factura</Link></div>
+            <div className="flex items-center justify-between gap-3"><h2 className={h2}>Facturas</h2><Link href={`/empresa/facturas/nueva?clientId=${c.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">+ Factura</Link></div>
             {f.facturas.length ? (
               <ul className="mt-3 divide-y divide-line">
                 {f.facturas.slice(0, 12).map((x) => (
@@ -178,6 +179,20 @@ export default async function FichaCliente({ params }: { params: Promise<{ id: s
               </div>
             ) : <p className="mt-2 text-sm text-fg-dim">Sin horas por facturar.</p>}
             <div className="mt-4 border-t border-line pt-4"><p className="text-fg-mute text-sm font-medium mb-2">Registrar horas sin ticket</p><HorasForm clientId={c.id} tarifa={f.tarifa} /></div>
+          </section>
+
+          <section className={card}>
+            <div className="flex items-center justify-between gap-3"><h2 className={h2}>Sistemas</h2><Link href={`/empresa/sistemas/nuevo?cliente=${c.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">+ Conectar</Link></div>
+            {f.sistemas.length ? (
+              <ul className="mt-3 divide-y divide-line">
+                {f.sistemas.map((x) => (
+                  <li key={x.id}><Link href={`/empresa/sistemas/${x.id}`} className="flex items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
+                    <span className="min-w-0 flex-1"><span className="block text-fg text-sm font-medium truncate">{x.name}</span><span className="block text-fg-dim text-xs">{x._count.incidents ? `${x._count.incidents} ${x._count.incidents === 1 ? "error abierto" : "errores abiertos"}` : "Sin errores abiertos"}</span></span>
+                    <EstadoSistemaPill status={x.status} activo={x.active} />
+                  </Link></li>
+                ))}
+              </ul>
+            ) : <p className="mt-2 text-sm text-fg-dim">Conecta los sistemas que le entregaste: Pime te avisa si se caen y el cliente ve si están en línea.</p>}
           </section>
 
           {c.notes && <section className={card}><h2 className={h2}>Notas internas</h2><p className="mt-2 text-sm text-fg-mute whitespace-pre-line">{c.notes}</p></section>}

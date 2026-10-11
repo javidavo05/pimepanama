@@ -453,3 +453,18 @@ export function getPortalInvoiceReminderEmail(params: { name?: string | null; nu
   ].join("");
   return { subject: titulo, html: shell({ preheader: `Saldo de ${params.amount}`, content, lang: "es" }) };
 }
+
+/** Alerta grave de un sistema entregado (Pulso). Solo al equipo de Pime. */
+export function getPulsoAlertEmail(params: { system: string; client: string; title: string; detail?: string | null; link: string; recovered?: boolean }) {
+  const content = [
+    eyebrow(params.recovered ? "Pulso · volvió a funcionar" : "Pulso · alerta grave"),
+    heading(params.title),
+    detailPanel([
+      { label: "Sistema", value: `${esc(params.system)} · ${esc(params.client)}` },
+      ...(params.detail ? [{ label: "Detalle", value: nl2br(params.detail.slice(0, 1500)) }] : []),
+    ]),
+    button(params.link, "Abrir en /empresa"),
+    spacer(),
+  ].join("");
+  return { subject: `[Pulso] ${params.system} · ${params.title}`, html: shell({ preheader: params.detail?.slice(0, 120) || params.title, content, lang: "es" }) };
+}

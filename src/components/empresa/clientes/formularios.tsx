@@ -4,7 +4,7 @@
  * Formularios cortos del equipo para Pime Clientes. Cada uno pide lo mínimo, trae los valores más
  * comunes ya puestos y dice qué va a pasar en el botón.
  */
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState } from "react";
 import Link from "next/link";
 import {
   decidirPagoAction, estimarTicketAction, facturarHorasAction, guardarClienteAction, invitarAlPortalAction, marcarGarantiaAction,
@@ -91,7 +91,7 @@ export function InvitarForm({ clientId, email, nombre, hayPrincipal }: { clientI
     <form action={accion} className="space-y-3">
       <input type="hidden" name="clientId" value={clientId} />
       <input type="hidden" name="rol" value={hayPrincipal ? "miembro" : "principal"} />
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
         <div><label htmlFor="inv-nombre" className={etiqueta}>Nombre</label><input id="inv-nombre" name="nombre" defaultValue={hayPrincipal ? "" : nombre ?? ""} className={campo} autoComplete="off" /></div>
         <div><label htmlFor="inv-email" className={etiqueta}>Correo</label><input id="inv-email" name="email" type="email" required defaultValue={hayPrincipal ? "" : email ?? ""} className={campo} autoComplete="off" /></div>
       </div>
@@ -169,6 +169,7 @@ export function EstimarTicket({ ticketId, umbralHoras }: { ticketId: string; umb
 
 export function HorasForm({ clientId, ticketId, projectId, tarifa, garantia }: { clientId: string; ticketId?: string; projectId?: string | null; tarifa: number; garantia?: boolean }) {
   const [estado, accion, enviando] = useActionState(registrarHorasAction, null);
+  const uid = useId();
   const form = useRef<HTMLFormElement>(null);
   useEffect(() => { if (estado?.ok) form.current?.reset(); }, [estado]);
   return (
@@ -176,10 +177,10 @@ export function HorasForm({ clientId, ticketId, projectId, tarifa, garantia }: {
       <input type="hidden" name="clientId" value={clientId} />
       {ticketId && <input type="hidden" name="ticket" value={ticketId} />}
       {projectId && <input type="hidden" name="projectId" value={projectId} />}
-      <div className="grid grid-cols-3 gap-2">
-        <div><label htmlFor={`h-${ticketId}`} className={etiqueta}>Horas</label><input id={`h-${ticketId}`} name="horas" inputMode="decimal" defaultValue="0" className={campo} /></div>
-        <div><label htmlFor={`m-${ticketId}`} className={etiqueta}>Minutos</label><input id={`m-${ticketId}`} name="minutos" inputMode="numeric" defaultValue="30" className={campo} /></div>
-        <div><label htmlFor={`f-${ticketId}`} className={etiqueta}>Fecha</label><input id={`f-${ticketId}`} name="fecha" type="date" defaultValue={hoy()} className={campo} /></div>
+      <div className="grid grid-cols-2 gap-2">
+        <div><label htmlFor={`h-${uid}`} className={etiqueta}>Horas</label><input id={`h-${uid}`} name="horas" inputMode="decimal" defaultValue="0" className={campo} /></div>
+        <div><label htmlFor={`m-${uid}`} className={etiqueta}>Minutos</label><input id={`m-${uid}`} name="minutos" inputMode="numeric" defaultValue="30" className={campo} /></div>
+        <div className="col-span-2"><label htmlFor={`f-${uid}`} className={etiqueta}>Fecha</label><input id={`f-${uid}`} name="fecha" type="date" defaultValue={hoy()} className={campo} /></div>
       </div>
       <input name="nota" className={campo} placeholder="Qué se hizo (lo ve el cliente en la factura)" aria-label="Nota" />
       {garantia && <input type="hidden" name="garantia" value="1" />}
@@ -229,7 +230,7 @@ export function PagoForm({ clientId, facturas }: { clientId: string; facturas: {
         <select id="p-doc" name="documentId" value={doc} onChange={(e) => setDoc(e.target.value)} className={`${campo} field-select pr-8`}>
           {facturas.map((f) => <option key={f.id} value={f.id}>{f.etiqueta}</option>)}<option value="">Anticipo sin factura</option>
         </select></div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
         <div><label htmlFor="p-monto" className={etiqueta}>Monto</label><input id="p-monto" name="monto" inputMode="decimal" required key={doc} defaultValue={falta ? falta.toFixed(2) : ""} className={campo} /></div>
         <div><label htmlFor="p-fecha" className={etiqueta}>Fecha</label><input id="p-fecha" name="fecha" type="date" defaultValue={hoy()} className={campo} /></div>
         <div><label htmlFor="p-met" className={etiqueta}>Método</label>

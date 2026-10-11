@@ -25,11 +25,11 @@ export function NavPortal({ linea, empresa, persona }: { linea: "normal" | "prem
     <>
       <header className="sticky top-0 z-30 border-b border-line bg-panel/90 backdrop-blur supports-[backdrop-filter]:bg-panel/80" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="mx-auto flex w-full max-w-5xl items-center gap-4 px-4 sm:px-6 h-16">
-          <Link href="/cliente" className="flex items-center gap-3 min-w-0" aria-label="Inicio de tu cuenta">
+          <Link href="/cliente" className="flex items-center gap-3 min-w-0 min-h-11" aria-label="Inicio de tu cuenta">
             {/* eslint-disable-next-line @next/next/no-img-element -- logo SVG de la línea */}
             <img src={`/brand/pime-${linea}-horizontal-color.svg`} alt="Pime" width={84} height={24} className="h-6 w-auto shrink-0" />
-            <span className="hidden sm:block h-6 w-px bg-line-mid" aria-hidden />
-            <span className="text-fg-dim text-sm font-semibold truncate">{empresa}</span>
+            <span className="hidden lg:block h-6 w-px bg-line-mid" aria-hidden />
+            <span className="text-fg-dim text-sm font-semibold truncate sm:hidden lg:block">{empresa}</span>
           </Link>
           <nav className="hidden sm:flex items-center gap-1 ml-auto" aria-label="Secciones">
             {ITEMS.map(({ href, label }) => (

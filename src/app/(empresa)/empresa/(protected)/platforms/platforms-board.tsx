@@ -15,6 +15,7 @@ import { PlatformConfidentialVault } from "@/components/empresa/platform-confide
 import { hasPlatformVault } from "@/lib/platform-vault-shared";
 import { Icon, ICON } from "@/components/empresa/tasks/task-parts";
 import { PageHeader, btn } from "@/components/empresa/page-header";
+import Link from "@/components/empresa/link";
 
 export type SerializedPlatform = {
   id: string;
@@ -506,10 +507,13 @@ export function PlatformsBoard({ initialPlatforms, initialProAccounts }: Platfor
         title="Platforms"
         description="Accesos, cuentas de Supabase y Vercel y enlaces de cada proyecto."
         actions={
-          <button type="button" onClick={() => setShowAdd((v) => !v)} aria-expanded={showAdd} className={btn.primary}>
-            <Icon d={ICON.plus} />
-            Nueva plataforma
-          </button>
+          <>
+            <Link href="/empresa/sistemas" className={btn.secondary}>Estado de los sistemas</Link>
+            <button type="button" onClick={() => setShowAdd((v) => !v)} aria-expanded={showAdd} className={btn.primary}>
+              <Icon d={ICON.plus} />
+              Nueva plataforma
+            </button>
+          </>
         }
       />
 

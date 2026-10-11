@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { syncAccount } from "@/lib/mail/imap-sync";
+import { revisarPulsos } from "@/lib/pulso/sondeo";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -15,6 +16,8 @@ const LOOKBACK_MS = 2 * 24 * 60 * 60 * 1000;
  * dispara el sync. Los UIDs ya guardados se descartan antes de bajarlos, así
  * que la IA solo corre sobre correo realmente nuevo.
  *
+ * También corre la revisión del Pulso (sondeo de salud de los sistemas entregados).
+ *
  * Lo llama pg_cron desde Supabase cada 30 minutos (migraciones 0032 y 0037): el plan
  * Hobby de Vercel solo permite crons diarios.
  */
@@ -26,8 +29,14 @@ async function run(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Pulso de los sistemas entregados: va en la misma corrida para no sumar funciones de Vercel.
+  const pulso = await revisarPulsos().catch((err) => {
+    console.error("[cron/mail-watch] falló la revisión del pulso", err);
+    return { error: true };
+  });
+
   const accounts = await prisma.mailAccount.findMany({ where: { active: true } });
-  if (accounts.length === 0) return NextResponse.json({ accounts: 0, fetched: 0 });
+  if (accounts.length === 0) return NextResponse.json({ accounts: 0, fetched: 0, pulso });
 
   const since = new Date(Date.now() - LOOKBACK_MS);
   const results = await Promise.all(
@@ -46,6 +55,7 @@ async function run(req: NextRequest) {
     accounts: accounts.length,
     fetched: results.reduce((sum, r) => sum + r.fetched, 0),
     failed: results.filter((r) => r.error).length,
+    pulso,
   });
 }
 

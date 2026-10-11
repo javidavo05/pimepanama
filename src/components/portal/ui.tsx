@@ -27,7 +27,7 @@ export function TituloSeccion({ children, accion }: { children: ReactNode; accio
   return (
     <div className="flex items-center justify-between gap-4 mb-4">
       <h2 className="text-fg text-base sm:text-lg font-bold tracking-tight">{children}</h2>
-      {accion}
+      {accion && <div className="shrink-0 [&>a]:inline-flex [&>a]:items-center [&>a]:min-h-11">{accion}</div>}
     </div>
   );
 }

@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
     "/api/empresa/contracts/preview": [...PDF_FONT_TRACE],
     "/api/empresa/contracts/preview/html": [...PDF_FONT_TRACE],
     "/api/empresa/projects/[id]/proposal-pdf": [...PDF_FONT_TRACE],
+    "/api/empresa/pulso/paquete": ["./packages/pime-pulso/pulso.ts"],
   },
   images: {
     remotePatterns: [

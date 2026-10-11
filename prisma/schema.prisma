@@ -278,6 +278,7 @@ model EmpresaUser {
   paymentsRecorded      Payment[]                @relation("PaymentRecordedBy")
   approvals             Approval[]
   activityEvents        ActivityEvent[]          @relation("ActivityTenant")
+  monitoredSystems      MonitoredSystem[]
   activityActed         ActivityEvent[]          @relation("ActivityActorEmpresa")
   /// PAT de GitHub cifrado (AES-256-GCM). Es del usuario, no del proyecto: un
   /// token sirve para todos sus repos.
@@ -320,6 +321,7 @@ model Client {
   payments           Payment[]
   approvals          Approval[]
   activityEvents     ActivityEvent[]
+  systems            MonitoredSystem[]
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
@@ -560,6 +562,7 @@ model Project {
   tickets         Ticket[]
   timeEntries     TimeEntry[]
   activityEvents  ActivityEvent[]
+  systems         MonitoredSystem[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
@@ -1566,4 +1569,69 @@ model ActivityEvent {
 
   @@index([clientId, createdAt(sort: Desc)])
   @@index([projectId, createdAt(sort: Desc)])
+}
+
+/// Sistema entregado que reporta a Pime (migración 0039).
+model MonitoredSystem {
+  id              String           @id @default(cuid())
+  userId          String
+  user            EmpresaUser      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId        String
+  client          Client           @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  projectId       String?
+  project         Project?         @relation(fields: [projectId], references: [id])
+  key             String           @unique
+  name            String
+  url             String?
+  healthUrl       String?
+  /// "sin_senal" | "ok" | "degradado" | "caido"
+  status          String           @default("sin_senal")
+  statusDetail    String?
+  statusChangedAt DateTime?
+  failCount       Int              @default(0)
+  lastSeenAt      DateTime?
+  lastProbeAt     DateTime?
+  lastLatencyMs   Int?
+  lastEventAt     DateTime?
+  appVersion      String?
+  secretVersion   Int              @default(1)
+  alertedStatus   String?
+  portalVisible   Boolean          @default(true)
+  active          Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  incidents       SystemIncident[]
+  eventIds        PulseEventId[]
+
+  @@index([clientId])
+  @@index([userId, active])
+}
+
+model SystemIncident {
+  id          String          @id @default(cuid())
+  systemId    String
+  system      MonitoredSystem @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  fingerprint String
+  /// "aviso" | "error" | "grave"
+  severity    String          @default("error")
+  title       String
+  detail      String?
+  count       Int             @default(1)
+  firstSeenAt DateTime        @default(now())
+  lastSeenAt  DateTime        @default(now())
+  resolvedAt  DateTime?
+  notifiedAt  DateTime?
+
+  @@unique([systemId, fingerprint])
+  @@index([systemId, lastSeenAt(sort: Desc)])
+}
+
+model PulseEventId {
+  systemId   String
+  system     MonitoredSystem @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  eventId    String
+  receivedAt DateTime        @default(now())
+
+  @@id([systemId, eventId])
+  @@index([receivedAt])
 }

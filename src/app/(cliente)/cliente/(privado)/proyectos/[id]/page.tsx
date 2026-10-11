@@ -4,6 +4,8 @@ import { getPortalUser } from "@/lib/portal/sesion";
 import { proyectoDelCliente, dinero } from "@/lib/portal/datos";
 import { FASE_COBRO_LABEL, FASE_ESTADO_LABEL, type FaseCobro, type FaseEstado } from "@/lib/portal/estados";
 import { avanceDeFase } from "@/lib/portal/avance";
+import { EstadoSistemas } from "@/components/portal/sistemas";
+import { sistemasDelCliente } from "@/lib/pulso/datos";
 import { Barra, Encabezado, Etiqueta, Fila, Tarjeta, TituloSeccion, Vacio, btnSecundario, fechaCorta, haceCuanto } from "@/components/portal/ui";
 import { IconAtras } from "@/components/portal/iconos";
 
@@ -13,12 +15,13 @@ const ORDEN: Record<string, [string, "aviso" | "ok" | "neutro" | "peligro"]> = {
 export default async function ProyectoCliente({ params }: { params: Promise<{ id: string }> }) {
   const p = await getPortalUser();
   const { id } = await params;
-  const x = await proyectoDelCliente(p.clientId, id);
+  const [x, sistemas] = await Promise.all([proyectoDelCliente(p.clientId, id), sistemasDelCliente(p.clientId)]);
   if (!x) notFound();
+  const delProyecto = sistemas.filter((s) => s.projectId === x.id);
   const total = x.phases.reduce((a, f) => a + Number(f.price), 0);
   return (
     <>
-      <Link href="/cliente/proyectos" className="inline-flex items-center gap-1 text-sm font-semibold text-fg-dim hover:text-fg"><IconAtras width={16} height={16} />Proyectos</Link>
+      <Link href="/cliente/proyectos" className="inline-flex items-center gap-1 min-h-11 text-sm font-semibold text-fg-dim hover:text-fg"><IconAtras width={16} height={16} />Proyectos</Link>
       <Encabezado eyebrow={x.kind === "modificacion" ? "Modificación" : "Proyecto"} titulo={x.name} detalle={x.description ?? undefined}
         accion={<Link href={`/cliente/tickets/nuevo?proyecto=${x.id}&tipo=cambio`} className={btnSecundario}>Pedir un cambio</Link>} />
 
@@ -30,6 +33,8 @@ export default async function ProyectoCliente({ params }: { params: Promise<{ id
         <div className="mt-4"><Barra valor={x.avance} etiqueta={`Avance de ${x.name}`} /></div>
         <p className="mt-3 text-xs text-fg-faint">El avance se actualiza solo a medida que el equipo cierra las tareas de cada fase.</p>
       </Tarjeta>
+
+      <EstadoSistemas sistemas={delProyecto} titulo={delProyecto.length === 1 ? "Estado del sistema" : "Estado de los sistemas"} />
 
       <Tarjeta>
         <TituloSeccion accion={total > 0 ? <span className="text-fg-dim text-sm">Total <b className="text-fg tabular-nums">{dinero(total)}</b></span> : undefined}>Fases</TituloSeccion>

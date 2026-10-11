@@ -4,12 +4,15 @@ import { datosInicio, dinero } from "@/lib/portal/datos";
 import { FASE_ESTADO_LABEL, TICKET_ESTADO_LABEL, type FaseEstado, type TicketEstado } from "@/lib/portal/estados";
 import { Barra, Encabezado, Etiqueta, Fila, Tarjeta, TituloSeccion, Vacio, btnPrincipal, btnSecundario, fechaCorta, haceCuanto } from "@/components/portal/ui";
 import { IconMas } from "@/components/portal/iconos";
+import { EstadoSistemas, hayProblema } from "@/components/portal/sistemas";
+import { sistemasDelCliente } from "@/lib/pulso/datos";
 
 export const metadata = { title: "Inicio" };
 
 export default async function InicioCliente() {
   const persona = await getPortalUser();
-  const d = await datosInicio(persona.clientId);
+  const [d, sistemas] = await Promise.all([datosInicio(persona.clientId), sistemasDelCliente(persona.clientId)]);
+  const problema = hayProblema(sistemas);
   const nombre = (persona.fullName || "").split(" ")[0];
   const principal = d.activos[0] ?? null;
 
@@ -27,6 +30,8 @@ export default async function InicioCliente() {
         detalle={resumen || "Aquí vas a ver el avance de tus proyectos, tus tickets y tus pagos."}
         accion={<Link href="/cliente/tickets/nuevo" className={btnPrincipal}><IconMas />Abrir un ticket</Link>}
       />
+
+      {problema && <EstadoSistemas sistemas={sistemas} />}
 
       {d.decisiones.length > 0 && (
         <Tarjeta className="border-sand/60 bg-sand/10">
@@ -132,6 +137,7 @@ export default async function InicioCliente() {
           )}
         </Tarjeta>
       </div>
+      {!problema && <EstadoSistemas sistemas={sistemas} />}
     </>
   );
 }

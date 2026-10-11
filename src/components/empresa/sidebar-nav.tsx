@@ -73,7 +73,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/empresa/tickets", label: "Tickets", icon: "ticket", group: "Principal" },
   { href: "/empresa/proyectos", label: "Proyectos", icon: "folder", group: "Principal" },
   { href: "/empresa/dinero", label: "Dinero", icon: "cash", match: "/empresa/(dinero|facturas|cotizaciones|cuentas-por-cobrar|por-pagar)", group: "Principal" },
-  { href: "/empresa/platforms", label: "Sistemas", icon: "desktop", match: "/empresa/(platforms|sistemas)", group: "Principal" },
+  { href: "/empresa/sistemas", label: "Sistemas", icon: "desktop", match: "/empresa/(platforms|sistemas)", group: "Principal" },
   { href: "/empresa/tareas", label: "Tareas", icon: "check", group: "Herramientas" },
   { href: "/empresa/correos/hub", label: "Correos", icon: "mail", match: "/empresa/correos", group: "Herramientas" },
   { href: "/empresa/reuniones", label: "Reuniones", icon: "mic", group: "Herramientas" },
