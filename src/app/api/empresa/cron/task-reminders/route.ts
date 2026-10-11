@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-export async function POST(req: NextRequest) {
+// Vercel Cron llama con GET; antes solo existía POST y la tarea respondía 405 todos los días.
+async function run(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   const secret = process.env.CRON_SECRET;
 
-  if (secret && authHeader !== `Bearer ${secret}`) {
+  if (!secret || authHeader !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -49,3 +50,6 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json({ ok: true, notified });
 }
+
+export const GET = run;
+export const POST = run;

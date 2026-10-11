@@ -439,3 +439,17 @@ export function getPimeTicketAlertEmail(params: { client: string; person?: strin
   ].join("");
   return { subject: `[${params.client}] ${params.number} · ${params.title}`, html: shell({ preheader: params.message.slice(0, 120), content, lang: "es" }) };
 }
+
+/** Recordatorio de cobro al cliente (3 días antes, el día del vencimiento y 7 días después). */
+export function getPortalInvoiceReminderEmail(params: { name?: string | null; number: string; amount: string; due: string; stage: "antes" | "hoy" | "vencida"; link: string }) {
+  const titulo = params.stage === "antes" ? `Tu factura ${params.number} vence el ${params.due}` : params.stage === "hoy" ? `Tu factura ${params.number} vence hoy` : `Tu factura ${params.number} está vencida`;
+  const content = [
+    eyebrow("Recordatorio de pago"),
+    heading(titulo),
+    paragraph(`${params.name ? `Hola, ${esc(params.name)}. ` : ""}Queda un saldo de <strong style="color:${C.ink};">${esc(params.amount)}</strong>. En tu cuenta tienes la factura en PDF, los datos para transferir y el botón para reportar el pago con su comprobante.`),
+    button(params.link, "Ver la factura y pagar"),
+    paragraph(`Si ya pagaste, repórtalo en tu cuenta y lo confirmamos. Gracias.`, 20),
+    spacer(),
+  ].join("");
+  return { subject: titulo, html: shell({ preheader: `Saldo de ${params.amount}`, content, lang: "es" }) };
+}
