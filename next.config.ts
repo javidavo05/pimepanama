@@ -5,7 +5,13 @@ const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const PDF_FONT_TRACE = ["./public/fonts/pdf/**/*"] as const;
 
+// pimepanama.com lo sirve pime-v2 y reenvía /empresa, /cliente, /firmar… a este proyecto. Next no deja
+// reenviar /_next/static (devuelve 404 antes de mirar los reenvíos), así que las páginas de este proyecto
+// piden su CSS, JS y fuentes directo a su propio dominio. Sin esto se ven sin formato y no funcionan.
+const ORIGEN_PROPIO = process.env.VERCEL_ENV === "production" ? "https://pimepanama-wt62.vercel.app" : undefined;
+
 const nextConfig: NextConfig = {
+  assetPrefix: ORIGEN_PROPIO,
   // react-pdf reads TTFs from disk in API routes; Vercel lambdas don't get public/ unless traced.
   outputFileTracingIncludes: {
     "/api/empresa/documents/[id]/pdf": [...PDF_FONT_TRACE],
@@ -46,6 +52,11 @@ const nextConfig: NextConfig = {
     // "localhost" y fuerza https://, que no existe en el servidor local.
     const isProd = process.env.NODE_ENV === "production";
     return [
+      // Las fuentes se piden desde pimepanama.com a este dominio: necesitan permiso entre orígenes.
+      {
+        source: "/_next/static/:path*",
+        headers: [{ key: "Access-Control-Allow-Origin", value: "*" }],
+      },
       {
         source: "/(.*)",
         headers: [
