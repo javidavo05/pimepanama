@@ -5,119 +5,60 @@ import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { FingerprintIcon } from "@/components/empresa/fingerprint-icon";
 import { biometricLabel, loginWithPasskey, passkeysSupported } from "@/lib/passkeys-client";
+import { botonPrincipal, botonSecundario, campo, errorBox, etiqueta } from "@/components/auth/auth-shell";
 
 export function EmpresaLoginForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  // La huella solo aparece donde el navegador la soporta; se decide al montar
-  // porque depende del dispositivo, no de la sesión.
+  const [cargando, setCargando] = useState<"huella" | "correo" | null>(null);
+  // La huella solo aparece donde el navegador la soporta; se decide al montar porque depende del equipo.
   const [bioLabel, setBioLabel] = useState<string | null>(null);
+  useEffect(() => { if (passkeysSupported()) setBioLabel(biometricLabel()); }, []);
 
-  useEffect(() => {
-    if (passkeysSupported()) setBioLabel(biometricLabel());
-  }, []);
-
-  async function handlePasskey() {
-    setError(null);
-    setLoading(true);
-    const result = await loginWithPasskey();
-    if (!result.ok) {
-      if (result.error) setError(result.error);
-      setLoading(false);
-      return;
-    }
-    router.push("/empresa");
-    router.refresh();
+  async function conHuella() {
+    setError(null); setCargando("huella");
+    const r = await loginWithPasskey();
+    if (!r.ok) { if (r.error) setError(r.error); setCargando(null); return; }
+    router.push("/empresa"); router.refresh();
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function conCorreo(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
-
-    const supabase = createSupabaseBrowserClient();
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (authError) {
-      setError("Credenciales incorrectas. Verifica tu correo y contraseña.");
-      setLoading(false);
-      return;
-    }
-
-    router.push("/empresa");
-    router.refresh();
+    setError(null); setCargando("correo");
+    const { error: authError } = await createSupabaseBrowserClient().auth.signInWithPassword({ email, password });
+    if (authError) { setError("El correo o la contraseña no coinciden. Revísalos e intenta otra vez."); setCargando(null); return; }
+    router.push("/empresa"); router.refresh();
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <div className="space-y-6">
       {bioLabel && (
-        <div className="space-y-4">
-          <button
-            type="button"
-            onClick={() => void handlePasskey()}
-            disabled={loading}
-            className="w-full inline-flex items-center justify-center gap-2 bg-fill border border-line-mid hover:border-sand/50 disabled:opacity-50 disabled:cursor-not-allowed text-fg font-medium text-sm py-3 rounded-lg transition-all"
-          >
-            <FingerprintIcon className="w-5 h-5" />
-            Entrar con {bioLabel}
+        <>
+          <button type="button" onClick={() => void conHuella()} disabled={cargando !== null} className={`${botonPrincipal} gap-2`}>
+            <FingerprintIcon className="h-5 w-5" />
+            {cargando === "huella" ? "Esperando tu huella…" : `Entrar con ${bioLabel}`}
           </button>
           <div className="flex items-center gap-3" aria-hidden="true">
-            <span className="h-px flex-1 bg-line" />
-            <span className="text-fg-faint text-xs">o con tu correo</span>
-            <span className="h-px flex-1 bg-line" />
+            <span className="h-px flex-1 bg-line" /><span className="text-fg-faint text-xs">o con tu correo</span><span className="h-px flex-1 bg-line" />
           </div>
+        </>
+      )}
+      <form onSubmit={conCorreo} className="space-y-4">
+        <div>
+          <label htmlFor="login-email" className={etiqueta}>Correo</label>
+          <input id="login-email" type="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" placeholder="nombre@pimepanama.com" className={campo} />
         </div>
-      )}
-
-      <div>
-        <label className="block text-fg-dim text-xs font-medium uppercase tracking-widest mb-2">
-          Correo corporativo
-        </label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          autoComplete="email"
-          placeholder="nombre@pimepanama.com"
-          className="w-full bg-fill border border-line rounded-lg px-4 py-3 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-sand/50 focus:ring-1 focus:ring-sand/20 transition-all"
-        />
-      </div>
-
-      <div>
-        <label className="block text-fg-dim text-xs font-medium uppercase tracking-widest mb-2">
-          Contraseña
-        </label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          autoComplete="current-password"
-          placeholder="••••••••"
-          className="w-full bg-fill border border-line rounded-lg px-4 py-3 text-fg text-sm placeholder-fg-trace focus:outline-none focus:border-sand/50 focus:ring-1 focus:ring-sand/20 transition-all"
-        />
-      </div>
-
-      {error && (
-        <p className="text-danger text-sm bg-danger/10 border border-danger/20 rounded-lg px-4 py-3">
-          {error}
-        </p>
-      )}
-
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full bg-sand hover:bg-sand-lt disabled:opacity-50 disabled:cursor-not-allowed text-on-accent font-semibold text-sm py-3 rounded-lg transition-all tracking-wide"
-      >
-        {loading ? "Verificando..." : "Ingresar al sistema"}
-      </button>
-    </form>
+        <div>
+          <label htmlFor="login-clave" className={etiqueta}>Contraseña</label>
+          <input id="login-clave" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" className={campo} />
+        </div>
+        {error && <p className={errorBox} role="alert">{error}</p>}
+        <button type="submit" disabled={cargando !== null} className={bioLabel ? botonSecundario : botonPrincipal}>
+          {cargando === "correo" ? "Entrando…" : "Entrar con correo y contraseña"}
+        </button>
+      </form>
+    </div>
   );
 }
