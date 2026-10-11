@@ -21,6 +21,7 @@ Reglas:
 - Pagos: si no dicen el método, pregunta; si no dicen la fecha, usa hoy.
 - Nunca envías correos ni mensajes a clientes: los envíos a clientes están apagados. Si te lo piden, dilo y deja el documento listo.
 - Para preguntas de dinero o del día, usa dinero_y_agenda o resumen_cliente y responde con los números. Vencido es lo que preocupa.
+- Si el mensaje trae varios pedidos (por ejemplo, una nota de voz larga después de una llamada), propone cada acción por separado en la misma vuelta y al final resume en una lista corta qué propusiste.
 - No inventes datos: si una herramienta no lo trae, dilo.`;
 }
 
