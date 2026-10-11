@@ -49,7 +49,7 @@ export function ActivarTotp({ onListo, nombre = "Pime" }: { onListo: () => void;
       for (const f of lista?.all ?? []) {
         if (f.factor_type === "totp" && f.status !== "verified") await supabase.auth.mfa.unenroll({ factorId: f.id });
       }
-      const { data, error: e } = await supabase.auth.mfa.enroll({ factorType: "totp", friendlyName: `${nombre} ${new Date().toISOString().slice(0, 10)}` });
+      const { data, error: e } = await supabase.auth.mfa.enroll({ factorType: "totp", issuer: "pimepanama.com", friendlyName: `${nombre} ${new Date().toISOString().slice(0, 10)}` });
       if (!vivo) return;
       if (e || !data) setError("No se pudo preparar la doble verificación. Recarga la página e inténtalo de nuevo.");
       else setFactor({ id: data.id, qr: data.totp.qr_code, secret: data.totp.secret });
