@@ -3,7 +3,8 @@ import { COLORS, FONTS, SPACING } from "../tokens";
 import type { PdfTranslations } from "../translations";
 
 const s = StyleSheet.create({
-  container: { marginTop: SPACING.xl },
+  // Manrope es algo más alta que Inter: márgenes ajustados para que el bloque no salte solo a otra página.
+  container: { marginTop: SPACING.lg },
   acceptanceText: {
     fontFamily: FONTS.body,
     fontWeight: 500,
@@ -17,7 +18,7 @@ const s = StyleSheet.create({
   line: {
     borderBottomWidth: 1,
     borderBottomColor: COLORS.line,
-    height: 32,
+    height: 26,
     marginBottom: SPACING.xs,
   },
   label: { fontFamily: FONTS.body, fontWeight: 700, fontSize: 7, color: COLORS.blue, letterSpacing: 1 },

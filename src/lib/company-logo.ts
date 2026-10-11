@@ -60,7 +60,9 @@ export function getEmailLogoUrl(
   requestOrigin?: string
 ): string {
   const base = (requestOrigin ?? getSiteUrl()).replace(/\/$/, "");
-  return `${base}/logo-pime.png`;
+  // PNG con nombre versionado: Gmail y Outlook guardan las imágenes por URL, así que una marca nueva va en un
+  // archivo nuevo. Existe en este proyecto y en pime-v2 (public/brand), que es quien sirve pimepanama.com.
+  return `${base}/brand/pime-normal-correo-v1.png`;
 }
 
 /** Favicon del panel /empresa — siempre estático (sin API autenticada; el favicon no envía cookies). */

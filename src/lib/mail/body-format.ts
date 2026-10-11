@@ -37,7 +37,7 @@ export function mailBodyHasContent(body: string): boolean {
 /** User message only — strips appended HTML signature block. */
 function extractOutboundMessageHtml(html: string): string {
   const bodyMatch = html.match(
-    /<div style="font-family:'Segoe UI'[^>]*>([\s\S]*?)<\/div>/i
+    /<div style="font-family:(?:'Segoe UI'|Manrope)[^>]*>([\s\S]*?)<\/div>/i
   );
   if (bodyMatch?.[1]) return bodyMatch[1];
 

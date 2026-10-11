@@ -13,7 +13,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#030611",
+  // theme-ok: color de la barra del navegador, el mismo del fondo oscuro de la marca (manifest.webmanifest).
+  themeColor: "#060E1E",
 };
 
 /** Static metadata only — no force-dynamic here (avoids Turbopack metadata-route races on /empresa). */

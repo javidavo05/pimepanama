@@ -1,33 +1,29 @@
-@font-face { font-family:'Inter'; font-weight:300; src:url('/design-system/fonts/inter-latin-300-normal.woff2') format('woff2'); }
-@font-face { font-family:'Inter'; font-weight:400; src:url('/design-system/fonts/inter-latin-400-normal.woff2') format('woff2'); }
-@font-face { font-family:'Inter'; font-weight:500; src:url('/design-system/fonts/inter-latin-500-normal.woff2') format('woff2'); }
-@font-face { font-family:'Inter'; font-weight:600; src:url('/design-system/fonts/inter-latin-600-normal.woff2') format('woff2'); }
-@font-face { font-family:'Inter'; font-weight:700; src:url('/design-system/fonts/inter-latin-700-normal.woff2') format('woff2'); }
-@font-face { font-family:'Inter'; font-weight:800; src:url('/design-system/fonts/inter-latin-800-normal.woff2') format('woff2'); }
-@font-face { font-family:'Inter'; font-weight:900; src:url('/design-system/fonts/inter-latin-900-normal.woff2') format('woff2'); }
+@font-face { font-family:'Manrope'; font-weight:400; src:url('/design-system/fonts/manrope-latin-400-normal.woff2') format('woff2'); }
 @font-face { font-family:'Manrope'; font-weight:500; src:url('/design-system/fonts/manrope-latin-500-normal.woff2') format('woff2'); }
 @font-face { font-family:'Manrope'; font-weight:600; src:url('/design-system/fonts/manrope-latin-600-normal.woff2') format('woff2'); }
 @font-face { font-family:'Manrope'; font-weight:700; src:url('/design-system/fonts/manrope-latin-700-normal.woff2') format('woff2'); }
 @font-face { font-family:'Manrope'; font-weight:800; src:url('/design-system/fonts/manrope-latin-800-normal.woff2') format('woff2'); }
 
 :root{
-  --blue:#0586FE;
-  --purple:#552EFF;
-  --ink:#0B0D14;
-  --ink-soft:#1B1F2B;
-  --slate:#4B5468;
-  --slate-light:#8A93A6;
-  --line:#E7E9EF;
-  --paper:#FCFCFD;
-  --panel:#F5F6F9;
+  /* Marca «Capas abiertas», línea Normal (design-system/brand/manual.html). --blue es el azul señal y
+     --purple quedó como nombre histórico del azul cielo. Sin degradados de dos colores. */
+  --blue:#1F5BFF;
+  --purple:#6FA8FF;
+  --ink:#0B1D3A;
+  --ink-soft:#1C2B48;
+  --slate:#4A5A78;
+  --slate-light:#8792A8;
+  --line:#E4E8F0;
+  --paper:#FFFFFF;
+  --panel:#F4F6FA;
   --white:#FFFFFF;
-  --grad: linear-gradient(120deg, var(--blue) 0%, var(--purple) 100%);
+  --grad: linear-gradient(var(--blue), var(--blue));
 }
 
 *{ box-sizing:border-box; margin:0; padding:0; }
 
 html,body{
-  font-family:'Inter', sans-serif;
+  font-family:'Manrope', 'Segoe UI', sans-serif;
   color:var(--ink);
   background:var(--white);
   -webkit-font-smoothing:antialiased;
@@ -48,7 +44,7 @@ html,body{
 /* ---------- Typography ---------- */
 h1,h2,h3,h4{ font-family:'Manrope', sans-serif; color:var(--ink); letter-spacing:-0.02em; }
 .eyebrow{
-  font-family:'Inter', sans-serif;
+  font-family:'Manrope', 'Segoe UI', sans-serif;
   font-weight:700;
   font-size:9.5pt;
   letter-spacing:0.14em;

@@ -67,6 +67,7 @@ export function BrandMenu({ companyName, logoSrc, onLogoError }: BrandMenuProps)
             fill
             sizes="32px"
             className="object-contain p-0.5"
+            unoptimized={logoSrc.endsWith(".svg")}
             onError={onLogoError}
           />
         </div>

@@ -4,7 +4,7 @@ export const DESIGN_SYSTEM_BASE = "/design-system";
 const SCREEN_STYLES = `
   html, body { margin: 0; padding: 0; }
   body {
-    background: #d8dce6;
+    background: #DCE2EC;
     padding: 24px 16px 48px;
     display: flex;
     flex-direction: column;
@@ -12,16 +12,16 @@ const SCREEN_STYLES = `
     gap: 24px;
   }
   .page {
-    box-shadow: 0 4px 24px rgba(11, 13, 20, 0.12);
+    box-shadow: 0 4px 24px rgba(11, 29, 58, 0.12);
     flex-shrink: 0;
   }
   [contenteditable="true"]:focus {
-    outline: 2px solid rgba(5, 134, 254, 0.45);
+    outline: 2px solid rgba(31, 91, 255, 0.45);
     outline-offset: 2px;
     border-radius: 2px;
   }
   [contenteditable="true"]:hover {
-    background: rgba(5, 134, 254, 0.04);
+    background: rgba(31, 91, 255, 0.04);
   }
 `;
 

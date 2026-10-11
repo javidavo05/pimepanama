@@ -18,11 +18,12 @@ const s = StyleSheet.create({
     alignItems: "center",
     flex: 1,
   },
+  // Logo horizontal «Capas abiertas» (3.49 : 1), no un ícono cuadrado.
   logo: {
-    width: 42,
-    height: 42,
+    width: 84,
+    height: 24,
     objectFit: "contain",
-    marginRight: SPACING.sm,
+    marginRight: SPACING.md,
   },
   companyCol: { flexDirection: "column" },
   companyName: {

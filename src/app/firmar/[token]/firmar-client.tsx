@@ -67,7 +67,7 @@ export function FirmarClient({ token }: { token: string }) {
 
   if (done) {
     return (
-      <main className="theme-dark min-h-screen bg-[#030611] text-white flex items-center justify-center p-6">
+      <main className="theme-dark min-h-screen bg-[#060E1E] text-white flex items-center justify-center p-6">
         <div className="max-w-md text-center space-y-4">
           <div className="text-4xl">✓</div>
           <h1 className="text-xl font-semibold">Firma registrada</h1>
@@ -82,10 +82,12 @@ export function FirmarClient({ token }: { token: string }) {
   }
 
   return (
-    <main className="theme-dark min-h-screen bg-[#030611] text-white">
+    <main className="theme-dark min-h-screen bg-[#060E1E] text-white">
       <div className="max-w-lg mx-auto px-5 py-10 space-y-6">
         <div>
-          <p className="text-[#C8A96E] text-xs uppercase tracking-widest mb-2">PimeSign</p>
+          {/* eslint-disable-next-line @next/next/no-img-element -- SVG estático del logo */}
+          <img src="/brand/pime-normal-horizontal-invertido.svg" alt="Pime" width={112} height={32} className="h-8 w-auto mb-8" />
+          <p className="text-[#6FA8FF] text-xs uppercase tracking-widest mb-2">PimeSign</p>
           <h1 className="text-2xl font-semibold">{info?.contractTitle ?? "Contrato"}</h1>
           {info ? (
             <p className="text-white/55 text-sm mt-2">
@@ -110,7 +112,7 @@ export function FirmarClient({ token }: { token: string }) {
                 type="button"
                 disabled={loading}
                 onClick={submit}
-                className="flex-1 px-4 py-3 bg-[#C8A96E] hover:bg-[#d4b87a] disabled:opacity-50 text-[#030611] font-semibold rounded-lg"
+                className="flex-1 px-4 py-3 bg-[#6FA8FF] hover:bg-[#9CC3FF] disabled:opacity-50 text-[#0B1D3A] font-semibold rounded-lg"
               >
                 {loading ? "Guardando…" : "Firmar contrato"}
               </button>

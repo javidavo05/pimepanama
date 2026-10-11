@@ -1,60 +1,57 @@
-import { Svg, Defs, LinearGradient, Stop, Rect, View, Text, StyleSheet } from "@react-pdf/renderer";
-import { COLORS, FONTS, GRADIENT_STOPS, RADIUS } from "../tokens";
+import { Svg, Rect, Path, View, Text, StyleSheet } from "@react-pdf/renderer";
+import { COLORS, FONTS, LAYERS, RADIUS } from "../tokens";
 
 /**
- * The blue→purple brand accent bar (design-system §1 `--grad`). Use for cover stripes, dividers,
- * eyebrow ticks. `width`/`height` must be concrete pt values (react-pdf's Svg needs a real size to
- * rasterize the gradient — pass the page width or a fixed chip size, never a percentage string).
+ * Banda de marca (manual de marca, «banda de tres capas»): azul tinta, azul señal y azul cielo apilados.
+ * Con alto menor a 3 pt se dibuja solo el azul señal. Se conserva el nombre GradientBar para no tocar
+ * a quienes la usan; ya no hay degradado. `width`/`height` deben ser pt concretos.
  */
 export function GradientBar({ width, height = 4, radius = 0 }: { width: number; height?: number; radius?: number }) {
+  if (height < 3) {
+    return (
+      <Svg width={width} height={height}>
+        <Rect x="0" y="0" width={width} height={height} fill={COLORS.blue} rx={radius} ry={radius} />
+      </Svg>
+    );
+  }
+  const h = height / 3;
   return (
     <Svg width={width} height={height}>
-      <Defs>
-        <LinearGradient id="brandGrad" x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor={GRADIENT_STOPS[0]} />
-          <Stop offset="1" stopColor={GRADIENT_STOPS[1]} />
-        </LinearGradient>
-      </Defs>
-      <Rect x="0" y="0" width="100%" height="100%" fill="url(#brandGrad)" rx={radius} ry={radius} />
+      <Rect x="0" y="0" width={width} height={h} fill={LAYERS[0]} />
+      <Rect x="0" y={h} width={width} height={h} fill={LAYERS[1]} />
+      <Rect x="0" y={h * 2} width={width} height={h} fill={LAYERS[2]} />
     </Svg>
   );
 }
 
 const chipStyles = StyleSheet.create({
   wrap: { position: "relative", marginBottom: 10 },
-  labelBox: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  label: {
-    fontFamily: FONTS.heading,
-    fontWeight: 800,
-    color: COLORS.white,
-    textAlign: "center",
-  },
+  labelBox: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, alignItems: "center", justifyContent: "center" },
+  label: { fontFamily: FONTS.heading, fontWeight: 800, color: COLORS.purple, textAlign: "center" },
 });
 
-/** Square gradient icon-chip used to head cards (design-system §4.6 `.icon-chip`). `children` is 1-2 letters/glyph. */
+/** Chip cuadrado de tarjeta (manual: fondo azul tinta, letra en azul cielo). `children` es 1-2 letras. */
 export function GradientChip({ size = 26, children, fontSize = 11 }: { size?: number; children: React.ReactNode; fontSize?: number }) {
   return (
     <View style={[chipStyles.wrap, { width: size, height: size }]}>
       <Svg width={size} height={size}>
-        <Defs>
-          <LinearGradient id="chipGrad" x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor={GRADIENT_STOPS[0]} />
-            <Stop offset="1" stopColor={GRADIENT_STOPS[1]} />
-          </LinearGradient>
-        </Defs>
-        <Rect x="0" y="0" width="100%" height="100%" fill="url(#chipGrad)" rx={RADIUS.chip} ry={RADIUS.chip} />
+        <Rect x="0" y="0" width={size} height={size} fill={COLORS.ink} rx={RADIUS.chip} ry={RADIUS.chip} />
       </Svg>
       <View style={chipStyles.labelBox}>
         <Text style={[chipStyles.label, { fontSize }]}>{children}</Text>
       </View>
     </View>
+  );
+}
+
+/** Símbolo de la marca en contorno (las tres capas), para portadas y cierres. Coordenadas sobre 100 × 100. */
+export function CapasOutline({ size, color, opacity = 1, strokeWidth = 1.6 }: { size: number; color: string; opacity?: number; strokeWidth?: number }) {
+  const common = { fill: "none", stroke: color, strokeWidth, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  return (
+    <Svg width={size} height={size} viewBox="0 0 100 100" style={{ opacity }}>
+      <Path d="M20 72 L50 84 L80 72" {...common} />
+      <Path d="M20 54 L50 66 L80 54" {...common} />
+      <Path d="M20 36 L50 16 L80 36 L50 48 Z" {...common} />
+    </Svg>
   );
 }

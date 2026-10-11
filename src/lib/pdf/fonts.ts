@@ -6,13 +6,7 @@ import path from "path";
 // woff2-decompressed tables ("Offset is outside the bounds of the DataView"). Converted once from the
 // design-system woff2 originals with fontTools (`flavor = None; save()`) — see git history for the repro.
 const FONT_FILES = {
-  "inter-300": "inter-latin-300-normal.ttf",
-  "inter-400": "inter-latin-400-normal.ttf",
-  "inter-500": "inter-latin-500-normal.ttf",
-  "inter-600": "inter-latin-600-normal.ttf",
-  "inter-700": "inter-latin-700-normal.ttf",
-  "inter-800": "inter-latin-800-normal.ttf",
-  "inter-900": "inter-latin-900-normal.ttf",
+  "manrope-400": "manrope-latin-400-normal.ttf",
   "manrope-500": "manrope-latin-500-normal.ttf",
   "manrope-600": "manrope-latin-600-normal.ttf",
   "manrope-700": "manrope-latin-700-normal.ttf",
@@ -35,31 +29,22 @@ function resolveSrc(filename: string): string {
 
 let registered = false;
 
-/** Registers Inter + Manrope (design-system brand fonts) with react-pdf. Idempotent, safe on client and server. */
+/** Registers Manrope (única familia de la marca) with react-pdf. Idempotent, safe on client and server. */
 export function registerPdfFonts() {
   if (registered) return;
   registered = true;
 
   Font.register({
-    family: "Inter",
-    fonts: [
-      { src: resolveSrc(FONT_FILES["inter-300"]), fontWeight: 300 },
-      { src: resolveSrc(FONT_FILES["inter-400"]), fontWeight: 400 },
-      { src: resolveSrc(FONT_FILES["inter-500"]), fontWeight: 500 },
-      { src: resolveSrc(FONT_FILES["inter-600"]), fontWeight: 600 },
-      { src: resolveSrc(FONT_FILES["inter-700"]), fontWeight: 700 },
-      { src: resolveSrc(FONT_FILES["inter-800"]), fontWeight: 800 },
-      { src: resolveSrc(FONT_FILES["inter-900"]), fontWeight: 900 },
-    ],
-  });
-
-  Font.register({
     family: "Manrope",
     fonts: [
+      // Manrope no trae 300 ni 900 en estos archivos: se mapean al peso vecino para que nada falle.
+      { src: resolveSrc(FONT_FILES["manrope-400"]), fontWeight: 300 },
+      { src: resolveSrc(FONT_FILES["manrope-400"]), fontWeight: 400 },
       { src: resolveSrc(FONT_FILES["manrope-500"]), fontWeight: 500 },
       { src: resolveSrc(FONT_FILES["manrope-600"]), fontWeight: 600 },
       { src: resolveSrc(FONT_FILES["manrope-700"]), fontWeight: 700 },
       { src: resolveSrc(FONT_FILES["manrope-800"]), fontWeight: 800 },
+      { src: resolveSrc(FONT_FILES["manrope-800"]), fontWeight: 900 },
     ],
   });
 

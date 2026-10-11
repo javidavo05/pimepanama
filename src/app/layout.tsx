@@ -1,32 +1,26 @@
 import type { Metadata, Viewport } from "next";
-import { Syne, Inter } from "next/font/google";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 import { JsonLd, organizationSchema, websiteSchema } from "@/lib/structured-data";
 
-const syne = Syne({
-  variable: "--font-display",
+// Una sola familia en todo el producto (manual de marca): Manrope para títulos y texto.
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
-  weight: ["700", "800"],
-  display: "swap",
-});
-
-const inter = Inter({
-  variable: "--font-body",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#030611",
+  themeColor: "#060E1E",
 };
 
 export const metadata: Metadata = {
   icons: {
-    icon: "/pime-icon.svg",
-    apple: "/pime-icon.svg",
+    icon: [{ url: "/favicon.ico", sizes: "48x48" }, { url: "/pime-icon.svg", type: "image/svg+xml" }],
+    apple: "/icons/apple-touch-icon-180.png",
   },
   verification: {
     google: "OTj-RcT9lrWRDHTA8ZWZUWcBn3G4-fuM_V9EfjPLyAQ",
@@ -48,7 +42,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <JsonLd data={[organizationSchema, websiteSchema]} />
       </head>
       <body
-        className={`${syne.variable} ${inter.variable} text-white antialiased`}
+        className={`${manrope.variable} text-white antialiased`}
         suppressHydrationWarning
       >
         <div className="relative min-h-screen">{children}</div>

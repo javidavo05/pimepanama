@@ -52,7 +52,7 @@ export function clientSigningEmail(opts: {
     subject: `Firma requerida: ${opts.contractTitle}`,
     body: `<p>Hola ${opts.clientName},</p>
 <p><strong>${opts.companyName}</strong> te envió el contrato <strong>${opts.contractTitle}</strong> para firma digital.</p>
-<p><a href="${link}" style="display:inline-block;padding:12px 24px;background:#C8A96E;color:#030611;text-decoration:none;border-radius:8px;font-weight:600">Revisar y firmar</a></p>
+<p><a href="${link}" style="display:inline-block;padding:12px 24px;background:#0B1D3A;color:#FFFFFF;text-decoration:none;border-radius:8px;font-weight:600">Revisar y firmar</a></p>
 <p>O copia este enlace: <a href="${link}">${link}</a></p>
 <p>Este enlace es personal y expira en unos días.</p>`,
   };
@@ -68,7 +68,7 @@ export function companySigningEmail(opts: {
   return {
     subject: `Tu firma requerida: ${opts.contractTitle}`,
     body: `<p>El cliente <strong>${opts.clientName}</strong> ya firmó el contrato <strong>${opts.contractTitle}</strong>.</p>
-<p><a href="${link}" style="display:inline-block;padding:12px 24px;background:#C8A96E;color:#030611;text-decoration:none;border-radius:8px;font-weight:600">Firmar como ${opts.companyName}</a></p>
+<p><a href="${link}" style="display:inline-block;padding:12px 24px;background:#0B1D3A;color:#FFFFFF;text-decoration:none;border-radius:8px;font-weight:600">Firmar como ${opts.companyName}</a></p>
 <p>O copia este enlace: <a href="${link}">${link}</a></p>`,
   };
 }

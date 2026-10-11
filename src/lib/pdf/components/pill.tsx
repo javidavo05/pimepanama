@@ -1,10 +1,8 @@
 import { View, Text, StyleSheet } from "@react-pdf/renderer";
 import { COLORS, FONTS, RADIUS } from "../tokens";
 
-// Flat midpoint between --blue and --purple. Pills auto-size to their text, so an SVG gradient fill
-// (which needs a concrete pixel size) isn't practical here — the accent bar/icon-chip use the real
-// gradient where the box size is known ahead of render; this blend reads as "the accent" on badges.
-const GRAD_BLEND = "#2D5AFE";
+// La pill destacada usa el azul señal sólido (manual de marca: sin degradados).
+const GRAD_BLEND = COLORS.blue;
 
 const s = StyleSheet.create({
   base: {

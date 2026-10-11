@@ -96,12 +96,12 @@ export function AgendarClient({
 
   if (done) {
     return (
-      <main className="min-h-screen bg-[#030611] text-white flex items-center justify-center p-6">
+      <main className="min-h-screen bg-[#060E1E] text-white flex items-center justify-center p-6">
         <div className="max-w-md text-center space-y-4">
-          <div className="text-4xl text-[#C8A96E]">✓</div>
+          <div className="text-4xl text-[#6FA8FF]">✓</div>
           <h1 className="text-2xl font-semibold">Cita confirmada</h1>
           <p className="text-white/60 text-sm">Te enviamos un correo de confirmación a {email}.</p>
-          <Link href="/" className="text-[#1AA7F0] text-sm hover:underline">Volver al inicio</Link>
+          <Link href="/" className="text-[#6FA8FF] text-sm hover:underline">Volver al inicio</Link>
         </div>
       </main>
     );
@@ -110,10 +110,12 @@ export function AgendarClient({
   const currentType = types.find((t) => t.slug === selectedType);
 
   return (
-    <main className="min-h-screen bg-[#030611] text-white">
+    <main className="min-h-screen bg-[#060E1E] text-white">
       <div className="max-w-xl mx-auto px-5 py-10 space-y-8">
         <div>
-          <p className="text-[#1AA7F0] text-xs uppercase tracking-widest mb-2">PimeBook</p>
+          {/* eslint-disable-next-line @next/next/no-img-element -- SVG estático del logo */}
+          <img src="/brand/pime-normal-horizontal-invertido.svg" alt="Pime" width={112} height={32} className="h-8 w-auto mb-8" />
+          <p className="text-[#6FA8FF] text-xs uppercase tracking-widest mb-2">PimeBook</p>
           <h1 className="text-3xl font-semibold">Agenda una consulta</h1>
           <p className="text-white/55 text-sm mt-2">Elige tipo, fecha y horario disponible.</p>
         </div>
@@ -128,7 +130,7 @@ export function AgendarClient({
                 onClick={() => setSelectedType(t.slug)}
                 className={`px-4 py-2 rounded-lg text-sm border transition-all ${
                   selectedType === t.slug
-                    ? "border-[#C8A96E] bg-[#C8A96E]/10 text-[#C8A96E]"
+                    ? "border-[#6FA8FF] bg-[#6FA8FF]/10 text-[#6FA8FF]"
                     : "border-white/10 text-white/60 hover:border-white/20"
                 }`}
               >
@@ -163,7 +165,7 @@ export function AgendarClient({
                   onClick={() => setSelectedSlot(s)}
                   className={`py-2 rounded-lg text-sm border ${
                     selectedSlot?.startTime === s.startTime
-                      ? "border-[#1AA7F0] bg-[#1AA7F0]/10 text-[#1AA7F0]"
+                      ? "border-[#6FA8FF] bg-[#6FA8FF]/10 text-[#6FA8FF]"
                       : "border-white/10 text-white/70 hover:border-white/20"
                   }`}
                 >
@@ -207,7 +209,7 @@ export function AgendarClient({
             type="button"
             disabled={loading}
             onClick={submit}
-            className="w-full py-3 bg-[#C8A96E] hover:bg-[#d4b87a] disabled:opacity-50 text-[#030611] font-semibold rounded-lg"
+            className="w-full py-3 bg-[#6FA8FF] hover:bg-[#9CC3FF] disabled:opacity-50 text-[#0B1D3A] font-semibold rounded-lg"
           >
             {loading ? "Reservando…" : "Confirmar cita"}
           </button>

@@ -4,13 +4,13 @@
 
 :root {
   color-scheme: dark;
-  --color-bg-dark: #030611;
-  --color-bg-section: #04050c;
-  --color-accent: #3B82F6;
-  --color-accent-dim: #2563EB;
-  --color-accent-glow: rgba(37, 99, 235, 0.35);
-  --color-accent-purple: rgba(124, 58, 237, 0.25);
-  --color-gold: #C8A96E;
+  --color-bg-dark: #060E1E;
+  --color-bg-section: #0B1D3A;
+  --color-accent: #1F5BFF;
+  --color-accent-dim: #1546D6;
+  --color-accent-glow: rgba(31, 91, 255, 0.35);
+  --color-accent-purple: rgba(111, 168, 255, 0.2);
+  --color-gold: #B8892E;
   --color-text-muted: rgba(255, 255, 255, 0.55);
   --color-border: rgba(255, 255, 255, 0.08);
   --color-border-accent: rgba(37, 99, 235, 0.2);
@@ -27,14 +27,15 @@
   }
 
   body {
+    /* Una sola familia (manual de marca). Van en body y no en :root porque next/font declara
+       --font-manrope en la clase del body; desde :root la variable todavía no existe. */
+    --font-body: var(--font-manrope), "Manrope";
+    --font-display: var(--font-manrope), "Manrope";
     @apply text-white antialiased;
     font-family: var(--font-body), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     overflow-x: hidden;
-    background-color: #030611;
-    background-image:
-      radial-gradient(circle at 15% -10%, rgba(37, 99, 235, 0.25), transparent 55%),
-      radial-gradient(circle at 85% 0%, rgba(124, 58, 237, 0.25), transparent 55%),
-      linear-gradient(180deg, rgba(3, 4, 13, 1) 0%, rgba(1, 1, 6, 1) 100%);
+    /* Marca «Capas abiertas» (design-system/brand/manual.html): azul tinta profundo, sin degradados de colores. */
+    background-color: #060E1E;
   }
 
   a {
@@ -43,6 +44,9 @@
 }
 
 @layer utilities {
+  /* Cifras alineadas en columnas sin cambiar de familia (font-mono apunta a Manrope). */
+  .font-mono { font-variant-numeric: tabular-nums; }
+
   .no-number-spinner::-webkit-inner-spin-button,
   .no-number-spinner::-webkit-outer-spin-button {
     -webkit-appearance: none;
@@ -138,46 +142,48 @@
 :root,
 html[data-theme="dark"],
 .theme-dark {
-  --c-canvas: 5 5 8;
-  --c-panel: 10 10 16;
-  --c-panel-2: 7 7 14;
-  --c-panel-3: 18 18 26;
-  --c-pop: 13 13 24;
+  --c-canvas: 6 14 30;
+  --c-panel: 11 24 46;
+  --c-panel-2: 8 19 38;
+  --c-panel-3: 19 34 62;
+  --c-pop: 15 29 54;
 
   --c-fg: 255 255 255;
-  --c-fg-soft: 224 228 236;
-  --c-fg-mute: 196 202 214;
-  --c-fg-dim: 160 168 184;
-  --c-fg-faint: 132 141 158;
-  --c-fg-ghost: 120 129 146;
-  --c-fg-trace: 84 92 108;
+  --c-fg-soft: 226 231 240;
+  --c-fg-mute: 198 206 220;
+  --c-fg-dim: 162 174 194;
+  --c-fg-faint: 132 145 168;
+  --c-fg-ghost: 120 133 156;
+  --c-fg-trace: 84 98 122;
 
-  --c-line: 26 26 33;
-  --c-line-mid: 39 39 46;
-  --c-line-loud: 59 59 66;
+  --c-line: 27 41 66;
+  --c-line-mid: 38 54 82;
+  --c-line-loud: 58 76 106;
 
-  --c-fill: 17 17 23;
-  --c-fill-2: 25 25 32;
-  --c-fill-3: 39 39 46;
+  --c-fill: 16 29 52;
+  --c-fill-2: 24 38 64;
+  --c-fill-3: 38 54 82;
 
-  --c-brand: 26 167 240;
-  --c-brand-hi: 14 135 200;
-  --c-brand-fg: 26 167 240;
+  --c-brand: 111 168 255;
+  --c-brand-hi: 76 125 255;
+  --c-brand-fg: 111 168 255;
   /* El azul de marca en oscuro es luminoso, así que encima va tinta oscura, no
      blanca: en blanco daba 2.68:1. En claro la marca es oscura y `--c-on-brand`
      sí es blanco. Cada relleno decide su propia tinta. */
-  --c-on-brand: 3 6 17;
-  --c-on-accent: 3 6 17;
+  --c-on-brand: 11 29 58;
+  --c-on-accent: 11 29 58;
   /* Los rellenos sólidos de estado son oscuros en ambos temas: siempre blanco. */
   --c-on-solid: 255 255 255;
 
-  --c-sand: 200 169 110;
-  --c-sand-lt: 212 184 122;
-  --c-sand-fg: 200 169 110;
+  /* «sand» era el dorado. La línea Normal no lleva oro (manual de marca): ahora es el segundo acento azul,
+     relleno claro con texto azul tinta (`text-on-accent`). El oro queda solo para la línea Premium. */
+  --c-sand: 156 195 255;
+  --c-sand-lt: 190 214 255;
+  --c-sand-fg: 190 214 255;
   --c-iris: 99 68 232;
   --c-iris-fg: 139 111 255;
-  --c-azure: 5 134 254;
-  --c-sky: 79 192 255;
+  --c-azure: 76 125 255;
+  --c-sky: 156 195 255;
 
   --c-ok: 74 222 128;
   --c-ok-soft: 134 239 172;
@@ -213,53 +219,53 @@ html[data-theme="dark"],
 }
 
 html[data-theme="light"] {
-  --c-canvas: 244 246 249;
+  --c-canvas: 244 246 250;
   --c-panel: 255 255 255;
   --c-panel-2: 255 255 255;
-  --c-panel-3: 237 240 245;
+  --c-panel-3: 236 240 247;
   --c-pop: 255 255 255;
 
-  --c-fg: 11 18 32;
-  --c-fg-soft: 23 32 46;
-  --c-fg-mute: 44 54 70;
-  --c-fg-dim: 74 85 103;
+  --c-fg: 11 29 58;
+  --c-fg-soft: 28 43 72;
+  --c-fg-mute: 46 61 92;
+  --c-fg-dim: 74 90 120;
   /* Rampa neutra del tema claro, monótona y con suelo AA: hasta `fg-ghost`
      todo pasa 4.5:1 sobre el canvas. `fg-trace` queda por debajo a propósito —
      es el paso de los placeholders (ver la regla ::placeholder más abajo) y no
      debe usarse para texto o controles con significado. */
-  --c-fg-faint: 92 104 122;
-  --c-fg-ghost: 99 108 123;
-  --c-fg-trace: 140 149 164;
+  --c-fg-faint: 94 107 133;
+  --c-fg-ghost: 99 112 138;
+  --c-fg-trace: 140 152 172;
 
-  --c-line: 226 230 236;
-  --c-line-mid: 213 218 226;
-  --c-line-loud: 195 201 212;
+  --c-line: 228 232 240;
+  --c-line-mid: 214 220 230;
+  --c-line-loud: 197 206 221;
 
-  --c-fill: 246 247 250;
-  --c-fill-2: 239 241 245;
-  --c-fill-3: 229 232 238;
+  --c-fill: 246 248 251;
+  --c-fill-2: 238 241 247;
+  --c-fill-3: 228 233 241;
 
   /* Estos tonos están resueltos contra el fondo real sobre el que caen, no
      elegidos a ojo: `--c-brand` lleva texto blanco encima (4.60:1) y los `-fg`
      caen sobre su propio tinte al 10-18 % (>= 4.6:1). Ver la auditoría en
      scripts/theme-contrast-audit.js. */
-  --c-brand: 15 118 178;
-  --c-brand-hi: 12 99 150;
-  --c-brand-fg: 9 98 149;
+  --c-brand: 31 91 255;
+  --c-brand-hi: 21 70 214;
+  --c-brand-fg: 21 70 214;
   --c-on-brand: 255 255 255;
-  --c-on-accent: 3 6 17;
+  --c-on-accent: 11 29 58;
   --c-on-solid: 255 255 255;
 
-  --c-sand: 169 128 58;
-  --c-sand-lt: 185 143 69;
+  --c-sand: 111 168 255;
+  --c-sand-lt: 156 195 255;
   /* 130 95 30 y no un arena más vivo: el texto arena suele ir sobre `bg-sand/10`,
      y sobre ese fondo tintado el valor anterior (138 101 32) daba 4.42:1, justo
      por debajo de AA. Aquí da 4.86:1 sobre el tinte y 5.83:1 sobre blanco. */
-  --c-sand-fg: 130 95 30;
+  --c-sand-fg: 21 70 214;
   --c-iris: 91 63 214;
   --c-iris-fg: 84 51 201;
-  --c-azure: 10 106 203;
-  --c-sky: 10 111 168;
+  --c-azure: 31 91 255;
+  --c-sky: 26 84 222;
 
   --c-ok: 18 113 54;
   /* En oscuro los `-soft` son la variante más clara del par. En claro eso los
@@ -286,7 +292,7 @@ html[data-theme="light"] {
   --c-flame: 194 65 12;
   --c-tangerine: 194 65 12;
 
-  --panel-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.06);
+  --panel-shadow: 0 1px 2px rgba(11, 29, 58, 0.04), 0 1px 3px rgba(11, 29, 58, 0.06);
   --app-scheme: light;
 }
 
@@ -334,7 +340,7 @@ html[data-theme="light"] {
   --cajon-ancho: min(76vw, 20rem);
   --cajon-escala: 0.88;
   --cajon-radio: 0.875rem;
-  --cajon-sombra: 0 10px 24px -8px rgb(20 33 58 / 0.18), 0 28px 56px -24px rgb(20 33 58 / 0.3);
+  --cajon-sombra: 0 10px 24px -8px rgb(11 29 58 / 0.18), 0 28px 56px -24px rgb(11 29 58 / 0.3);
 }
 
 .cajon {

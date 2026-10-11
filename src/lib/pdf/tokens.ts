@@ -3,27 +3,29 @@ import { registerPdfFonts } from "./fonts";
 
 registerPdfFonts();
 
-// Brand tokens ported 1:1 from design-system/PROMPT_CLAUDE_CODE.md §1.
-// Do not invent new colors here — anything outside this palette breaks the shared visual system.
+// Marca «Capas abiertas», línea Normal (design-system/brand/manual.html y assets/style.css).
+// No inventar colores aquí. `blue` es el azul señal (acento) y `purple` quedó como nombre histórico del azul cielo.
 export const COLORS = {
-  blue: "#0586FE",
-  purple: "#552EFF",
-  ink: "#0B0D14",
-  inkSoft: "#1B1F2B",
-  slate: "#4B5468",
-  slateLight: "#8A93A6",
-  line: "#E7E9EF",
-  paper: "#FCFCFD",
-  panel: "#F5F6F9",
+  blue: "#1F5BFF",
+  purple: "#6FA8FF",
+  ink: "#0B1D3A",
+  inkSoft: "#1C2B48",
+  slate: "#4A5A78",
+  slateLight: "#8792A8",
+  line: "#E4E8F0",
+  paper: "#FFFFFF",
+  panel: "#F4F6FA",
   white: "#FFFFFF",
 };
 
+/** Las tres capas del logo, de abajo hacia arriba: base del documento, banda y viñetas. */
+export const LAYERS: [string, string, string] = [COLORS.ink, COLORS.blue, COLORS.purple];
 export const GRADIENT_STOPS: [string, string] = [COLORS.blue, COLORS.purple];
 
 // react-pdf resolves weight via the `fontWeight` style prop against the registered family
 // (see fonts.ts) — components set `fontFamily: FONTS.body, fontWeight: 600` etc, no per-weight family names needed.
 export const FONTS = {
-  body: "Inter",
+  body: "Manrope", // una sola familia (manual de marca)
   heading: "Manrope",
 };
 

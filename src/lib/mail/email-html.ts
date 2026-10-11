@@ -95,7 +95,7 @@ export function buildEmailSrcDoc(html: string, options?: BuildEmailSrcDocOptions
 html,body{margin:0;padding:0;}
 body{padding:16px 20px;font-family:-apple-system,Arial,sans-serif;font-size:14px;line-height:1.6;color:#222;background:#fff;word-break:break-word;}
 img{max-width:100%!important;height:auto;}
-a{color:#1AA7F0;text-decoration:none;}
+a{color:#1F5BFF;text-decoration:none;}
 a:hover{text-decoration:underline;}
 table{max-width:100%!important;border-collapse:collapse;}
 td,th{max-width:100%!important;word-break:break-word;}

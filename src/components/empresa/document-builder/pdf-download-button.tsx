@@ -66,7 +66,7 @@ export function PdfDownloadButton({
     >
       {loading ? (
         <>
-          <span className="w-3 h-3 border-2 border-canvas/30 border-t-[#030611] rounded-full animate-spin" />
+          <span className="w-3 h-3 border-2 border-canvas/30 border-t-canvas rounded-full animate-spin" />
           Generando...
         </>
       ) : (

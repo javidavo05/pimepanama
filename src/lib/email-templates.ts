@@ -31,22 +31,23 @@ type ContactData = {
   leadUrl?: string;
 };
 
-// design-system/PROMPT_CLAUDE_CODE.md §1 — no se inventan variantes.
+// Manual de marca (design-system/brand/manual.html), línea Normal — no se inventan variantes.
+// `blue` es el azul señal (acento) y `purple` quedó como nombre histórico del azul cielo.
 const C = {
-  blue: "#0586FE",
-  purple: "#552EFF",
-  ink: "#0B0D14",
-  slate: "#4B5468",
-  slateLight: "#8A93A6",
-  line: "#E7E9EF",
-  panel: "#F5F6F9",
+  blue: "#1F5BFF",
+  purple: "#6FA8FF",
+  ink: "#0B1D3A",
+  slate: "#4A5A78",
+  slateLight: "#8792A8",
+  line: "#E4E8F0",
+  panel: "#F4F6FA",
   white: "#FFFFFF",
 };
 
+// Una sola familia (Manrope); los clientes de correo sin ella caen a la fuente del sistema.
 const BODY_FONT =
-  "'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
-const HEAD_FONT =
-  "'Manrope','Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+  "'Manrope',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+const HEAD_FONT = BODY_FONT;
 
 /** El contenido lo escribe un desconocido en un formulario público: se escapa. */
 function esc(value: string | undefined | null): string {
@@ -117,18 +118,18 @@ function shell(opts: { preheader: string; content: string; lang: Lang }): string
 
         <table role="presentation" class="wrap" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:600px;background-color:${C.white};border:1px solid ${C.line};border-radius:14px;overflow:hidden;">
 
-          <!-- Acento de marca. El gradiente solo se usa así: una barra fina.
-               Outlook ignora el degradado y muestra el azul sólido. -->
-          <tr>
-            <td height="4" bgcolor="${C.blue}" style="height:4px;line-height:4px;font-size:0;background-color:${C.blue};background-image:linear-gradient(90deg,${C.blue} 0%,${C.purple} 100%);border-radius:13px 13px 0 0;">&nbsp;</td>
-          </tr>
+          <!-- Banda de tres capas (manual de marca): azul tinta, azul señal y azul cielo. Colores sólidos,
+               así Outlook la muestra igual. -->
+          <tr><td height="3" bgcolor="${C.ink}" style="height:3px;line-height:3px;font-size:0;background-color:${C.ink};">&nbsp;</td></tr>
+          <tr><td height="3" bgcolor="${C.blue}" style="height:3px;line-height:3px;font-size:0;background-color:${C.blue};">&nbsp;</td></tr>
+          <tr><td height="3" bgcolor="${C.purple}" style="height:3px;line-height:3px;font-size:0;background-color:${C.purple};">&nbsp;</td></tr>
 
           <!-- Logo sobre blanco: el wordmark es negro y desaparece en oscuro. -->
           <tr>
             <td class="pad" bgcolor="${C.white}" align="left" style="padding:32px 40px 8px 40px;background-color:${C.white};">
               <a href="${site}" style="text-decoration:none;">
-                <img src="${logo}" width="150" height="83" alt="Pime Panamá"
-                     style="display:block;width:150px;height:83px;border:0;outline:none;font-family:${HEAD_FONT};font-size:21px;font-weight:800;letter-spacing:-0.02em;color:${C.ink};" />
+                <img src="${logo}" width="132" height="38" alt="Pime Panamá"
+                     style="display:block;width:132px;height:38px;border:0;outline:none;font-family:${HEAD_FONT};font-size:21px;font-weight:800;letter-spacing:-0.02em;color:${C.ink};" />
               </a>
             </td>
           </tr>

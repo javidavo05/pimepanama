@@ -129,7 +129,9 @@ export function SidebarNav({ userEmail, companyName, logoUrl, children }: Sideba
   const pathname = usePathname();
   const [logoFailed, setLogoFailed] = useState(false);
   const [open, setOpen] = useState(false);
-  const logoSrc = logoFailed ? "/logo-pime.png" : (logoUrl ?? "/logo-pime.png");
+  // El chip del menú es cuadrado: sin logo propio va el ícono de la marca (no el logo horizontal).
+  const ICONO = "/pime-icon.svg";
+  const logoSrc = logoFailed || !logoUrl || logoUrl === "/logo-pime.png" ? ICONO : logoUrl;
   const trigger = useRef<HTMLButtonElement>(null);
   const drawer = useRef<HTMLElement>(null);
   const canvas = useRef<HTMLDivElement>(null);

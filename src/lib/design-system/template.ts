@@ -1,6 +1,10 @@
 import { DESIGN_SYSTEM_BASE } from "./document";
 
-const LOGO = `${DESIGN_SYSTEM_BASE}/logo_icon.png`;
+const LOGO = `${DESIGN_SYSTEM_BASE}/logo.svg`;
+const LOGO_INVERTIDO = `${DESIGN_SYSTEM_BASE}/logo-invertido.svg`;
+
+/** Banda de tres capas del manual de marca (azul tinta, azul señal, azul cielo). */
+const BANDA = `<div style="position:absolute; top:0; left:0; right:0; display:flex; flex-direction:column;"><div style="height:1.6mm; background:var(--ink);"></div><div style="height:1.6mm; background:var(--blue);"></div><div style="height:1.6mm; background:var(--purple);"></div></div>`;
 
 export function escapeHtml(text: string): string {
   return text
@@ -17,7 +21,7 @@ export function nl2br(text: string): string {
 export function docHeader(sectionTag: string): string {
   return `
     <div class="doc-header">
-      <div class="brand"><img src="${LOGO}" alt=""><span>PIME</span></div>
+      <div class="brand"><img src="${LOGO}" alt="Pime" style="height:6mm; width:auto;"></div>
       <div class="tag">${sectionTag}</div>
     </div>`;
 }
@@ -43,12 +47,11 @@ export function coverPage(input: CoverPageInput): string {
   const preparedBy = input.preparedBy ?? "Pime Panam&aacute;";
   return `
 <div class="page" style="background:var(--white); color:var(--ink);">
-  <div style="position:absolute; top:0; left:0; right:0; height:5mm; background:var(--grad);"></div>
+  ${BANDA}
   <div style="position:relative; padding:22mm 18mm 18mm 18mm; height:292mm; display:flex; flex-direction:column;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <div style="display:flex; align-items:center; gap:9px;">
-        <img src="${LOGO}" style="height:20px;" alt="">
-        <span style="font-family:'Manrope'; font-weight:800; font-size:13pt; letter-spacing:-0.01em; color:var(--ink);">PIME</span>
+        <img src="${LOGO}" style="height:9mm; width:auto;" alt="Pime">
       </div>
       <div style="font-size:8pt; letter-spacing:0.14em; text-transform:uppercase; color:var(--slate-light); font-weight:600;">
         Panam&aacute; &middot; Desarrollo de Software
@@ -135,19 +138,16 @@ export function closingPage(input: ClosingPageInput): string {
   return `
 <div class="page" style="background:var(--ink); color:white;">
   <div style="position:absolute; inset:0; background:
-      radial-gradient(circle at 85% 15%, rgba(85,46,255,0.45), transparent 45%),
-      radial-gradient(circle at 10% 90%, rgba(5,134,254,0.4), transparent 45%),
-      #0B0D14;"></div>
+      #0B1D3A;"></div>
   <div style="position:relative; padding:20mm 18mm; height:297mm; display:flex; flex-direction:column;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <div style="display:flex; align-items:center; gap:9px;">
-        <img src="${LOGO}" style="height:16px;" alt="">
-        <span style="font-family:'Manrope'; font-weight:800; font-size:11pt;">PIME</span>
+        <img src="${LOGO_INVERTIDO}" style="height:6mm; width:auto;" alt="Pime">
       </div>
       <div style="font-size:8pt; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.45); font-weight:600;">${input.sectionTag}</div>
     </div>
     <div style="margin-top:14mm;">
-      <div class="eyebrow" style="color:#7fb8ff;">Pr&oacute;ximos pasos</div>
+      <div class="eyebrow" style="color:#6FA8FF;">Pr&oacute;ximos pasos</div>
       <h2 style="font-family:'Manrope'; font-weight:800; font-size:26pt; margin-top:3mm; line-height:1.15;">${escapeHtml(input.title)}</h2>
       <div style="margin-top:10mm; display:flex; flex-direction:column; gap:5mm;">
         ${stepsHtml}

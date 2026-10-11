@@ -243,8 +243,8 @@ export function EmailComposeModal({
     if (!account) return "";
     const bodyContent = mailBodyHasContent(body)
       ? plainTextToHtml(body)
-      : '<p style="color:#aaa;font-style:italic;margin:0;">(Sin mensaje)</p>';
-    const bodyBlock = `<div style="font-family:'Segoe UI',Arial,sans-serif;font-size:14px;line-height:1.65;color:#222;">${bodyContent}</div>`;
+      : '<p style="color:#8792A8;font-style:italic;margin:0;">(Sin mensaje)</p>';
+    const bodyBlock = `<div style="font-family:Manrope,'Segoe UI',Arial,sans-serif;font-size:14px;line-height:1.65;color:#1C2B48;">${bodyContent}</div>`;
     const sig =
       account.signatureEnabled !== false
         ? buildSignatureHtml(

@@ -10,7 +10,8 @@ export default {
     extend: {
       fontFamily: {
         sans: ["var(--font-body)", "system-ui", "sans-serif"],
-        mono: ["monospace"],
+        // Una sola familia (manual de marca): las cifras van en Manrope con números tabulares (ver globals.css).
+        mono: ["var(--font-body)", "monospace"],
         display: ["var(--font-display)", "sans-serif"],
         body: ["var(--font-body)", "sans-serif"],
       },
@@ -122,9 +123,9 @@ export default {
         },
       },
       boxShadow: {
-        glow: "0 20px 50px -30px rgba(37, 99, 235, 0.6)",
-        "glow-sm": "0 10px 30px -15px rgba(37, 99, 235, 0.5)",
-        "glow-lg": "0 30px 70px -30px rgba(37, 99, 235, 0.8)",
+        glow: "0 20px 50px -30px rgba(31, 91, 255, 0.6)",
+        "glow-sm": "0 10px 30px -15px rgba(31, 91, 255, 0.5)",
+        "glow-lg": "0 30px 70px -30px rgba(31, 91, 255, 0.8)",
       },
       animation: {
         "gradient-shift": "gradientShift 8s ease infinite",

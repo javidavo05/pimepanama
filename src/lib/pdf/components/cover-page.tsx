@@ -7,7 +7,7 @@ const s = StyleSheet.create({
   content: { position: "relative", padding: "30pt 26pt 26pt 26pt", height: PAGE.height - 6, display: "flex", flexDirection: "column" },
   topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   brand: { flexDirection: "row", alignItems: "center", gap: 8 },
-  logo: { width: 22, height: 22, objectFit: "contain" },
+  logo: { width: 98, height: 28, objectFit: "contain" },
   brandName: { fontFamily: FONTS.heading, fontWeight: 800, fontSize: 13, color: COLORS.ink },
   tag: { fontSize: 7.5, letterSpacing: 1.6, textTransform: "uppercase", color: COLORS.slateLight, fontWeight: 600 },
   middle: { flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", marginTop: 10 },
@@ -61,7 +61,6 @@ export function CoverPage({ logoSrc, eyebrow, title, subtitle, preparedFor, prep
           <View style={s.brand}>
             {/* eslint-disable-next-line jsx-a11y/alt-text */}
             <Image style={s.logo} src={logoSrc} />
-            <Text style={s.brandName}>PIME</Text>
           </View>
           <Text style={s.tag}>{brandTag}</Text>
         </View>

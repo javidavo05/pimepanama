@@ -14,7 +14,7 @@ function paragraph(text: string): string {
 
 function section(title: string, inner: string): string {
   if (!inner) return "";
-  return `<h3 style="margin:1.6em 0 .5em 0;font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:#5b6472;">${escapeHtml(title)}</h3>${inner}`;
+  return `<h3 style="margin:1.6em 0 .5em 0;font-size:14px;text-transform:uppercase;letter-spacing:.06em;color:#4A5A78;">${escapeHtml(title)}</h3>${inner}`;
 }
 
 function bullets(items: string[]): string {

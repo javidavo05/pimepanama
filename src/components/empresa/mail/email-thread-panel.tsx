@@ -201,7 +201,7 @@ export function EmailThreadPanel({
       <div className="space-y-2">
         {filteredMessages.map((msg) => {
           const isSent = msg.folder === "SENT";
-          const border = isSent ? "border-l-[#1AA7F0]" : "border-l-emerald-400";
+          const border = isSent ? "border-l-brand" : "border-l-emerald-400";
           const bg = msg.isCurrent
             ? isSent
               ? "bg-brand/[0.06]"
