@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   images: { localPatterns: [{ pathname: "/cases/**", search: `?v=${CASES_V}` }, { pathname: "/**", search: "" }] },
   cacheComponents: true,
   partialPrefetching: true,
-  experimental: { inlineCss: true },
+  experimental: { inlineCss: true, globalNotFound: true },
   // Solo cambia el front end (Javier, 2026-10-10): el CMS sigue en el proyecto anterior de Vercel. Desde
   // pimepanama.com, todo lo que es del CMS se reenvía allá sin que el navegador lo note: panel /empresa, cuenta del
   // cliente /cliente, admin,
