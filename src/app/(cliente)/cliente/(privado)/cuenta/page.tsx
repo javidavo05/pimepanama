@@ -1,5 +1,6 @@
 import { getPortalUser } from "@/lib/portal/sesion";
 import { prisma } from "@/lib/prisma";
+import { ThemeToggleLabeled } from "@/components/empresa/theme/theme-toggle";
 import { Encabezado, Etiqueta, Tarjeta, TituloSeccion, fechaCorta } from "@/components/portal/ui";
 import { CambiarClave, DobleVerificacion, InvitarCompanero, QuitarCompanero } from "./cuenta-forms";
 
@@ -22,6 +23,7 @@ export default async function CuentaCliente() {
           <p className="mt-4 text-xs text-fg-faint">Para cambiar el correo o los datos de facturación, escríbenos en un ticket.</p>
         </Tarjeta>
         <Tarjeta><TituloSeccion>Contraseña</TituloSeccion><CambiarClave /></Tarjeta>
+        <Tarjeta><TituloSeccion>Apariencia</TituloSeccion><p className="text-fg-dim text-sm mb-4">Claro, oscuro o el mismo de tu teléfono o computadora.</p><ThemeToggleLabeled /></Tarjeta>
         <Tarjeta><TituloSeccion>Doble verificación</TituloSeccion><DobleVerificacion /></Tarjeta>
         <Tarjeta>
           <TituloSeccion>Personas con acceso</TituloSeccion>

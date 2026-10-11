@@ -7,6 +7,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "re
 import { signOutAction } from "@/app/(empresa)/empresa/actions";
 import { NotificationBell } from "@/components/empresa/mail/notification-bell";
 import { BrandMenu } from "@/components/empresa/brand-menu";
+import { ThemeToggleLabeled } from "@/components/empresa/theme/theme-toggle";
 
 /** Íconos de la barra de pestañas del celular: trazo de 1.5 px sobre 24×24. */
 const ICONS = {
@@ -272,6 +273,7 @@ export function SidebarNav({ userEmail, companyName, logoUrl, children }: Sideba
             </Link>
           ))}
 
+          <div className="mt-2"><ThemeToggleLabeled /></div>
           <div className="mt-2 px-3 py-3 rounded-lg bg-fill border border-line">
             <p className="text-fg-dim text-xs truncate">{userEmail}</p>
             <form action={signOutAction}>
@@ -338,7 +340,8 @@ export function SidebarNav({ userEmail, companyName, logoUrl, children }: Sideba
               </div>
             ))}
 
-            <div className="mt-4 mx-1 px-3 py-3 rounded-lg bg-fill border border-line">
+            <div className="mt-4 mx-1"><ThemeToggleLabeled /></div>
+            <div className="mt-2 mx-1 px-3 py-3 rounded-lg bg-fill border border-line">
               <p className="text-fg-dim text-xs truncate">{userEmail}</p>
               <form action={signOutAction}>
                 <button

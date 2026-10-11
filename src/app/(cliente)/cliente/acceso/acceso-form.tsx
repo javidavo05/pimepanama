@@ -27,11 +27,9 @@ export function AccesoForm({ conSesion }: { conSesion: boolean }) {
         <input id="email" type="email" autoComplete="email" inputMode="email" required className={campo} value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
       <div>
-        <div className="flex items-baseline justify-between gap-3">
-          <label htmlFor="clave" className={etiqueta}>Contraseña</label>
-          <a href="/cliente/recuperar" className="text-xs font-semibold text-brand-fg hover:underline mb-2">Olvidé mi contraseña</a>
-        </div>
+        <label htmlFor="clave" className={etiqueta}>Contraseña</label>
         <input id="clave" type="password" autoComplete="current-password" required className={campo} value={clave} onChange={(e) => setClave(e.target.value)} />
+        <div className="flex justify-end"><a href="/cliente/recuperar" className="inline-flex items-center min-h-11 text-xs font-semibold text-brand-fg hover:underline">Olvidé mi contraseña</a></div>
       </div>
       {error && <p className={errorBox} role="alert">{error}</p>}
       <button type="submit" className={botonPrincipal} disabled={cargando}>{cargando ? "Entrando…" : "Entrar a mi cuenta"}</button>

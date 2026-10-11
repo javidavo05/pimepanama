@@ -330,7 +330,7 @@ html[data-theme="light"] {
    así los componentes sirven en los dos lados. Un cliente Premium la ve en la
    línea Premium del manual (negro y oro).
    ══════════════════════════════════════════════════════════════════════════ */
-.portal-app {
+html:not([data-theme="dark"]) .portal-app {
   --c-canvas: 244 246 250;
   --c-panel: 255 255 255;
   --c-panel-2: 255 255 255;
@@ -407,14 +407,18 @@ html[data-theme="light"] {
   --panel-shadow: 0 1px 2px rgba(11, 29, 58, 0.04), 0 1px 3px rgba(11, 29, 58, 0.06);
   --app-scheme: light;
   color-scheme: light;
+}
+/* En oscuro la cuenta toma los tokens oscuros de la suite (sin sobrescribir nada). */
+.portal-app {
   background-color: rgb(var(--c-canvas));
   color: rgb(var(--c-fg-soft));
   min-height: 100dvh;
 }
+html[data-theme="dark"] .portal-app { color-scheme: dark; }
 .portal-app :where(*) { border-color: rgb(var(--c-line)); }
 .portal-app :where(.bg-panel) { box-shadow: var(--panel-shadow); }
 .portal-app ::placeholder { color: rgb(var(--c-fg-trace)); }
-.portal-app[data-linea="premium"] {
+html:not([data-theme="dark"]) .portal-app[data-linea="premium"] {
   --c-canvas: 248 246 241;
   --c-panel-3: 244 240 233;
   --c-fg: 10 10 10;
@@ -447,7 +451,8 @@ html[data-theme="light"] {
    un cliente Premium se pintan enteros en negro y oro (manual de marca), en
    los dos temas. Se activa con la clase .linea-premium en el contenedor.
    ══════════════════════════════════════════════════════════════════════════ */
-.linea-premium {
+.linea-premium,
+html[data-theme="dark"] .portal-app[data-linea="premium"] {
   --c-canvas: 10 10 10;
   --c-panel: 20 19 17;
   --c-panel-2: 15 14 13;

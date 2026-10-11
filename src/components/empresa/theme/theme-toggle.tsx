@@ -22,8 +22,8 @@ function MoonIcon({ className = "w-4 h-4" }: { className?: string }) {
 function SystemIcon({ className = "w-4 h-4" }: { className?: string }) {
   return (
     <svg className={className} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden>
-      <rect x="2" y="4" width="20" height="13" rx="2" />
-      <path strokeLinecap="round" d="M9 21h6m-3-4v4" />
+      <rect x="3" y="4" width="18" height="12" rx="1.5" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M8 20h8M12 16v4" />
     </svg>
   );
 }
@@ -71,6 +71,28 @@ export function ThemeToggle() {
             }`}
           >
             <Icon className="w-4 h-4" />
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * Pie de la barra lateral: tres opciones con ícono y nombre, siempre a la vista (antes vivía escondido en
+ * el menú de la marca). El nombre evita confundir «Sistema» con «Oscuro».
+ */
+export function ThemeToggleLabeled() {
+  const { preference, setPreference, ready } = useTheme();
+  return (
+    <div role="radiogroup" aria-label="Tema" className="grid grid-cols-3 gap-1 p-1 rounded-lg bg-fill border border-line">
+      {OPTIONS.map(({ value, label, hint, Icon }) => {
+        const active = ready && preference === value;
+        return (
+          <button key={value} type="button" role="radio" aria-checked={active} title={hint} onClick={() => setPreference(value)}
+            className={`flex min-h-11 sm:min-h-9 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-semibold transition-colors ${active ? "bg-brand/15 text-brand-fg" : "text-fg-dim hover:text-fg hover:bg-fill-2"}`}>
+            <Icon className="h-4 w-4 shrink-0" />
+            <span className="truncate">{label}</span>
           </button>
         );
       })}
