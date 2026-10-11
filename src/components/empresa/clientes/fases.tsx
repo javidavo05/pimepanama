@@ -3,7 +3,7 @@
 /** Fases del proyecto y órdenes de cambio, del lado del equipo. Lo que se guarda aquí es lo que ve el cliente. */
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { avanceFaseAction, borrarFaseAction, enviarOrdenAction, facturarFaseAction, guardarFaseAction, guardarOrdenAction, tipoProyectoAction, type Estado } from "@/app/(empresa)/empresa/(protected)/acciones-clientes";
+import { sincronizarGithubAction, avanceFaseAction, borrarFaseAction, enviarOrdenAction, facturarFaseAction, guardarFaseAction, guardarOrdenAction, tipoProyectoAction, type Estado } from "@/app/(empresa)/empresa/(protected)/acciones-clientes";
 import { btn } from "@/components/empresa/page-header";
 import { campo, etiqueta } from "./formularios";
 
@@ -119,4 +119,17 @@ export function OrdenForm({ projectId, ticketId, abierta }: { projectId: string;
 export function EnviarOrden({ ordenId }: { ordenId: string }) {
   const [e, a, p] = useActionState(enviarOrdenAction, null);
   return <form action={a}><input type="hidden" name="ordenId" value={ordenId} /><button className="text-xs font-semibold text-brand-fg hover:underline min-h-10 px-2" disabled={p}>Enviar al cliente</button><Msg e={e} /></form>;
+}
+
+export function SincronizarGithub({ projectId, repo }: { projectId: string; repo: string | null }) {
+  const [e, a, p] = useActionState(sincronizarGithubAction, null);
+  if (!repo) return <p className="text-xs text-fg-dim">Conecta el repositorio del proyecto (pestaña Resumen) y pon el número de milestone en cada fase: el avance se mueve solo cuando se cierran sus tareas.</p>;
+  return (
+    <form action={a} className="flex flex-wrap items-center gap-3">
+      <input type="hidden" name="projectId" value={projectId} />
+      <span className="text-xs text-fg-dim">GitHub: <span className="font-mono text-fg-mute">{repo}</span></span>
+      <button className="text-xs font-semibold text-brand-fg hover:underline min-h-10" disabled={p}>{p ? "Sincronizando…" : "Sincronizar avance ahora"}</button>
+      <Msg e={e} />
+    </form>
+  );
 }

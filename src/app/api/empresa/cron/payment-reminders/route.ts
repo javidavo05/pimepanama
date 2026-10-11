@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { correrRecordatorios } from "@/lib/portal/recordatorios";
+import { sincronizarTodos } from "@/lib/portal/github-avance";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -14,7 +15,10 @@ async function run(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const r = await correrRecordatorios();
-  return NextResponse.json({ ok: true, ...r });
+  // Respaldo diario del avance desde GitHub (el webhook lo hace al instante). Vercel Hobby permite
+  // pocas tareas programadas, así que va en la misma.
+  const github = await sincronizarTodos().catch((e) => ({ error: String(e) }));
+  return NextResponse.json({ ok: true, ...r, github });
 }
 
 export const GET = run;

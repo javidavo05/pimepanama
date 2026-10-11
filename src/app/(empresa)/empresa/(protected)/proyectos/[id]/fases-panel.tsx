@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { avanceDeProyecto } from "@/lib/portal/avance";
 import { dinero } from "@/lib/portal/datos";
-import { EnviarOrden, FaseFila, FaseForm, OrdenForm, TipoProyecto } from "@/components/empresa/clientes/fases";
+import { EnviarOrden, FaseFila, FaseForm, OrdenForm, SincronizarGithub, TipoProyecto } from "@/components/empresa/clientes/fases";
 
 const ORDEN: Record<string, string> = { borrador: "Borrador", enviada: "Espera al cliente", aprobada: "Aprobada", rechazada: "No aprobada", cancelada: "Cancelada" };
 
@@ -10,7 +10,7 @@ export async function FasesPanel({ projectId, userId, ordenNueva, ticketId }: { 
   const p = await prisma.project.findFirst({
     where: { id: projectId, userId },
     select: {
-      id: true, kind: true, portalVisible: true,
+      id: true, kind: true, portalVisible: true, repoOwner: true, repoName: true,
       phases: { orderBy: { sortOrder: "asc" }, include: { invoice: { select: { number: true } }, changeOrder: { select: { status: true } } } },
       changeOrders: { orderBy: { createdAt: "desc" }, select: { id: true, number: true, title: true, status: true, total: true, decidedAt: true, decisionComment: true } },
     },
@@ -27,6 +27,7 @@ export async function FasesPanel({ projectId, userId, ordenNueva, ticketId }: { 
       </summary>
       <div className="space-y-6 border-t border-line p-4 sm:p-6">
         <TipoProyecto projectId={p.id} kind={p.kind} portalVisible={p.portalVisible} />
+        <SincronizarGithub projectId={p.id} repo={p.repoOwner && p.repoName ? `${p.repoOwner}/${p.repoName}` : null} />
         {vigentes.length ? (
           <ol className="space-y-3">
             {vigentes.map((f, i) => (

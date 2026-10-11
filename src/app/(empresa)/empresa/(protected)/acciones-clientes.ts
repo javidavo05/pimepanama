@@ -341,3 +341,15 @@ export async function enviarOrdenAction(_: Estado, form: FormData): Promise<Esta
   revalidatePath(`/empresa/proyectos/${o.projectId}`);
   return { ok: true, mensaje: "Enviada al cliente." };
 }
+
+export async function sincronizarGithubAction(_: Estado, form: FormData): Promise<Estado> {
+  const u = await getEmpresaUser();
+  const p = await proyectoDe(u.id, txt(form.get("projectId"), 60));
+  if (!p) return { error: "No encontré ese proyecto." };
+  try {
+    const { sincronizarProyecto } = await import("@/lib/portal/github-avance");
+    const r = await sincronizarProyecto(p.id);
+    revalidatePath(`/empresa/proyectos/${p.id}`);
+    return { ok: true, mensaje: r.fases ? `Sincronizado: ${r.fases} fase(s), ${r.issues} tarea(s) nueva(s) contadas al cliente.` : "Ninguna fase tiene milestone de GitHub. Agrégalo en «Editar fase»." };
+  } catch (e) { return falla(e); }
+}

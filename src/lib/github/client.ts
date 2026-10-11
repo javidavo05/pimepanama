@@ -153,3 +153,19 @@ export function parseRepoRef(input: string): { owner: string; repo: string } | n
 
   return null;
 }
+
+// ─── Avance en vivo (Pime Clientes) ─────────────────────────────────────────
+
+export interface MilestoneSummary { number: number; title: string; state: "open" | "closed"; open_issues: number; closed_issues: number }
+
+export function getMilestones(owner: string, repo: string, token: string | null): Promise<MilestoneSummary[]> {
+  return api<MilestoneSummary[]>(`/repos/${owner}/${repo}/milestones?state=all&per_page=100`, token);
+}
+
+export interface ClosedIssue { number: number; title: string; closed_at: string; html_url: string; pull_request?: unknown }
+
+/** Issues cerrados de un milestone (sin pull requests), los más recientes primero. */
+export async function getClosedIssues(owner: string, repo: string, milestone: number, token: string | null): Promise<ClosedIssue[]> {
+  const items = await api<ClosedIssue[]>(`/repos/${owner}/${repo}/issues?milestone=${milestone}&state=closed&sort=updated&direction=desc&per_page=50`, token);
+  return items.filter((i) => !i.pull_request);
+}
