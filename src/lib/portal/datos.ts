@@ -8,6 +8,9 @@ import { avanceDeProyecto, faseActual } from "./avance";
 import { saldoCliente, FACTURA_CUENTA } from "./saldo";
 import { TICKET_ABIERTOS } from "./estados";
 
+/** Fases que cuentan: las del proyecto y las de órdenes de cambio ya aprobadas. */
+export const fasesVigentes = { OR: [{ changeOrderId: null }, { changeOrder: { status: "aprobada" } }] };
+
 /** Proyectos visibles para el cliente: los suyos por el vínculo nuevo o por el campo heredado. */
 export const proyectosDelCliente = (clientId: string) => ({
   portalVisible: true,
@@ -19,7 +22,7 @@ export async function datosInicio(clientId: string) {
   const [proyectos, facturas, pagos, ordenes, tickets, eventos] = await Promise.all([
     prisma.project.findMany({
       where: proyectosDelCliente(clientId),
-      select: { id: true, name: true, kind: true, status: true, updatedAt: true, phases: { orderBy: { sortOrder: "asc" }, select: { id: true, name: true, status: true, progress: true, price: true, sortOrder: true, billingPoint: true } } },
+      select: { id: true, name: true, kind: true, status: true, updatedAt: true, phases: { where: fasesVigentes, orderBy: { sortOrder: "asc" }, select: { id: true, name: true, status: true, progress: true, price: true, sortOrder: true, billingPoint: true } } },
       orderBy: { updatedAt: "desc" },
     }),
     prisma.document.findMany({ where: { clientId, type: "FACTURA" }, select: { id: true, status: true, total: true, amountPaid: true, dueDate: true, number: true } }),
@@ -54,7 +57,7 @@ export async function proyectoDelCliente(clientId: string, id: string) {
     where: { id, ...proyectosDelCliente(clientId) },
     select: {
       id: true, name: true, description: true, kind: true, status: true, startDate: true, endDate: true,
-      phases: { orderBy: { sortOrder: "asc" }, select: { id: true, name: true, description: true, status: true, progress: true, price: true, sortOrder: true, billingPoint: true, startedAt: true, completedAt: true, estimatedDays: true, invoice: { select: { id: true, number: true, status: true } } } },
+      phases: { where: fasesVigentes, orderBy: { sortOrder: "asc" }, select: { id: true, name: true, description: true, status: true, progress: true, price: true, sortOrder: true, billingPoint: true, startedAt: true, completedAt: true, estimatedDays: true, invoice: { select: { id: true, number: true, status: true } } } },
       changeOrders: { where: { clientId, status: { not: "borrador" } }, orderBy: { createdAt: "desc" }, select: { id: true, number: true, title: true, status: true, total: true, sentAt: true, decidedAt: true } },
     },
   });

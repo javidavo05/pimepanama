@@ -131,6 +131,15 @@ export async function decidirOrdenAction(_: Estado, form: FormData): Promise<Est
     prisma.approval.create({ data: { userId: p.client.userId, clientId: p.clientId, entityType: "orden_de_cambio", entityId: orden.id, decision, clientUserId: p.id, comment: comentario, ...o } }),
     prisma.changeOrder.update({ where: { id: orden.id }, data: { status: nuevoEstado, decidedAt: new Date(), decidedByClientUserId: p.id, decisionComment: comentario } }),
   ]);
+  if (decision === "aprobado") {
+    // Las fases de la orden pasan al final del proyecto, en el orden en que vienen en la orden.
+    const [ultima, nuevas] = await Promise.all([
+      prisma.projectPhase.aggregate({ where: { projectId: orden.projectId, OR: [{ changeOrderId: null }, { changeOrder: { status: "aprobada" }, NOT: { changeOrderId: orden.id } }] }, _max: { sortOrder: true } }),
+      prisma.projectPhase.findMany({ where: { changeOrderId: orden.id }, orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { id: true } }),
+    ]);
+    const base = (ultima._max.sortOrder ?? -1) + 1;
+    await prisma.$transaction(nuevas.map((f, i) => prisma.projectPhase.update({ where: { id: f.id }, data: { sortOrder: base + i } })));
+  }
   const verbo = decision === "aprobado" ? "Aprobaste" : decision === "rechazado" ? "No aprobaste" : "Pediste ajustes a";
   await registrarEvento({ userId: p.client.userId, clientId: p.clientId, projectId: orden.projectId, entityType: "orden_de_cambio", entityId: orden.id, kind: `orden_${decision}`, title: `${verbo} la orden de cambio ${orden.number}: ${orden.title}`, detail: decision === "aprobado" ? `Total ${dinero(orden.total)}` : comentario, visibility: "cliente", actorType: "cliente", actorClientUserId: p.id });
   await avisarAlEquipo(p.client.userId, `Orden ${orden.number} ${nuevoEstado} · ${p.client.company || p.client.name}`, orden.title, `/empresa/proyectos/${orden.projectId}`);
