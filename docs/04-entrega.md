@@ -27,18 +27,26 @@ industria, plazo, datos). El wizard envía a `/api/leads`, que reenvía al endpo
 (`/api/contact`), el mismo que alimenta `/empresa/leads`: crea o anexa el lead, avisa por correo y lo prioriza.
 Nada del CMS se tocó.
 
-## Corte de dominio (pendiente de decisión)
+## Corte de dominio (hecho el 2026-10-10)
 
-El CMS (`/empresa`, `/api/*`, crons) vive en el proyecto viejo y Javier pidió que todo eso quede igual. Dos
-proyectos no pueden servir el mismo dominio, así que para que pimepanama.com muestre el sitio nuevo:
+Javier pidió reemplazar **solo el front end**: el CMS (`/empresa`, `/admin`, `/firmar`, `/agendar`, `/api/*`, crons)
+sigue en el proyecto viejo `pimepanama-wt62` sin cambios. Cómo quedó:
 
-1. Añadir un subdominio al proyecto viejo (por ejemplo `cms.pimepanama.com`) y confirmar que `/empresa` y
-   `/api/contact` responden ahí.
-2. Cambiar `LEADS_API_URL` del proyecto pime-v2 a `https://cms.pimepanama.com/api/contact` y redesplegar.
-3. Mover `pimepanama.com` y `www` al proyecto pime-v2.
-4. Quitar el `noindex` (`robots` en `src/app/(site)/[lang]/layout.tsx`) y redesplegar.
-5. Comprobar: https://pimepanama.com/es, /en, una ficha, el wizard con un lead de prueba (`[prueba]`), el sitemap
-   y las redirecciones 301 del sitemap viejo (en `next.config.ts`).
+- `pimepanama.com` y `www.pimepanama.com` (308 → apex) están en el proyecto **pime-v2**.
+- `next.config.ts` reenvía al proyecto viejo (`CMS_ORIGIN`, por defecto `https://pimepanama-wt62.vercel.app`) todo
+  lo del CMS: `/empresa`, `/admin`, `/firmar`, `/agendar`, `/resume`, `/api/*` (salvo `/api/leads`, que es de este
+  sitio) y, como último recurso, los `/_next/*` que este sitio no tiene (los del CMS). El navegador no lo nota:
+  misma dirección, mismas cookies. Los crons del CMS siguen corriendo en su proyecto.
+- `LEADS_API_URL` apunta directo a `https://pimepanama-wt62.vercel.app/api/contact`.
+- `noindex` quitado; sitemap y hreflang con `https://pimepanama.com`.
+- Verificado contra los servidores de Vercel con el nombre del dominio (`curl --resolve`): la home nueva y el acceso
+  al CMS responden 200.
+
+**Incidente ajeno al corte:** el dominio `pimepanama.com` **expiró en Namecheap el 2026-10-10 a las 05:20 UTC** y el
+registro lo puso en nameservers de parking (`ns1/ns2.lander.d.parity.domains`, IPs de WorldStream). Por eso desde
+internet no carga ni el sitio nuevo ni el CMS. Hay que **renovarlo en Namecheap**; al volver los nameservers
+normales (`dns101/dns102.registrar-servers.com`) con sus registros anteriores, todo queda en vivo sin más pasos. Si
+los registros se perdieran: `A @ → 76.76.21.21` (o `216.198.79.1`) y `CNAME www → cname.vercel-dns.com`.
 
 ## Ajustes hechos en el proyecto Vercel
 
