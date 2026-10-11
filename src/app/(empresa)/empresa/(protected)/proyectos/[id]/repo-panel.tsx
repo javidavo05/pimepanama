@@ -197,18 +197,18 @@ export function RepoPanel({ projectId }: { projectId: string }) {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+        <div className="grid grid-cols-2 gap-2 xl:grid-cols-[minmax(0,1fr)_8rem_auto]">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="javidavo05/pimepanama o la URL de GitHub"
-            className="col-span-2 min-w-0 sm:flex-1 sm:min-w-[220px] bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
+            className="col-span-2 xl:col-span-1 min-h-11 sm:min-h-8 min-w-0 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
           />
           <input
             value={branch}
             onChange={(e) => setBranch(e.target.value)}
             placeholder="rama (opcional)"
-            className="min-w-0 sm:w-32 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
+            className="min-w-0 min-h-11 sm:min-h-8 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
           />
           <button
             onClick={() => void connect()}

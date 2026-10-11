@@ -48,11 +48,14 @@ export function ProjectDetailClient({
   allClients,
   initialTab,
   tasksPanel,
+  dineroPanel,
 }: {
   project: Project;
   allClients: Client[];
   initialTab: Tab;
   tasksPanel: React.ReactNode;
+  /** Dinero del proyecto (servidor): presupuesto, facturado, cobrado, por cobrar y el botón «Cobrar». */
+  dineroPanel?: React.ReactNode;
 }) {
   const router = useRouter();
   const { tasks } = useTaskStore();
@@ -62,7 +65,7 @@ export function ProjectDetailClient({
   function changeTab(next: Tab) {
     setTab(next);
     const url = new URL(window.location.href);
-    if (next === "tareas") url.searchParams.delete("tab");
+    if (next === "resumen") url.searchParams.delete("tab");
     else url.searchParams.set("tab", next);
     window.history.replaceState(null, "", url);
   }
@@ -168,8 +171,8 @@ export function ProjectDetailClient({
       <div role="tablist" aria-label="Secciones del proyecto" className="flex gap-6 border-b border-line mb-6">
         {(
           [
-            { key: "tareas", label: "Tareas", count: openTaskCount },
             { key: "resumen", label: "Resumen" },
+            { key: "tareas", label: "Tareas", count: openTaskCount },
           ] as { key: Tab; label: string; count?: number }[]
         ).map((t) => (
           <button
@@ -194,6 +197,7 @@ export function ProjectDetailClient({
       <div className={tab === "resumen" ? "grid grid-cols-1 lg:grid-cols-3 gap-6" : "hidden"}>
         {/* Main column */}
         <div className="lg:col-span-2 space-y-6">
+          {dineroPanel}
 
           {/* Description / Scope */}
           <div className="bg-panel border border-line rounded-xl p-6 space-y-4">
@@ -304,10 +308,6 @@ export function ProjectDetailClient({
                 <Link href={`/empresa/cotizaciones/nueva?projectId=${project.id}${mainClient ? `&clientId=${mainClient.id}` : ""}`}
                   className={MINI_ACTION}>
                   + Cotización
-                </Link>
-                <Link href={`/empresa/facturas/nueva?projectId=${project.id}${mainClient ? `&clientId=${mainClient.id}` : ""}`}
-                  className={MINI_ACTION}>
-                  + Factura
                 </Link>
               </div>
             </div>

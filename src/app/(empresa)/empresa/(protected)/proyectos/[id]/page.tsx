@@ -9,6 +9,9 @@ import { ProjectTasks } from "@/components/empresa/tasks/project-tasks";
 import { ProjectDetailClient } from "./project-detail-client";
 import { FasesPanel } from "./fases-panel";
 import { ZonaLinea } from "@/components/empresa/clientes/zona-linea";
+import { DineroProyecto } from "@/components/empresa/cobrar/dinero-proyecto";
+import { VerificacionGithubCard } from "@/components/empresa/cobrar/verificacion-github";
+import type { VerificacionGithub } from "@/lib/motor/verificar-github";
 
 export const dynamic = "force-dynamic";
 
@@ -130,8 +133,12 @@ export default async function ProyectoDetailPage({
         <ProjectDetailClient
           project={serialized}
           allClients={allClients}
-          initialTab={tab === "resumen" ? "resumen" : "tareas"}
+          initialTab={tab === "tareas" ? "tareas" : "resumen"}
           tasksPanel={<ProjectTasks projectId={project.id} />}
+          dineroPanel={<>
+            <DineroProyecto userId={user.id} projectId={project.id} clienteId={projectClients[0]?.id ?? null} clientes={allClients.filter((c) => !c.archivedAt).map((c) => ({ id: c.id, nombre: c.company || c.name }))} />
+            <VerificacionGithubCard projectId={project.id} repo={project.repoOwner && project.repoName ? `${project.repoOwner}/${project.repoName}` : null} check={(project.githubCheck as unknown as VerificacionGithub | null) ?? null} checkAt={project.githubCheckAt} />
+          </>}
         />
       </TaskWorkspace>
     </div>

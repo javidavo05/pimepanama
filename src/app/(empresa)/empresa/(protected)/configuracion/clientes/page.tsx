@@ -20,7 +20,8 @@ export default async function ConfigClientesPage() {
   });
   const filas = clientes.map((c) => ({ ...c, facturado: saldoCliente(c.documents, c.payments).facturado, tarifa: tarifaDe(c, reglas) })).sort((a, b) => b.facturado - a.facturado);
   const premium = filas.filter((c) => c.brandLine === "premium").length;
-  const envios = !!u.config?.clientEmailsEnabled;
+  const bloqueado = process.env.PIME_ENVIOS_CLIENTES === "off";
+  const envios = !bloqueado && !!u.config?.clientEmailsEnabled;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -39,7 +40,7 @@ export default async function ConfigClientesPage() {
       </section>
 
       <section className={`${card} ${envios ? "" : "border-warn/40"}`}>
-        <EnviosClientes encendidos={envios} />
+        <EnviosClientes encendidos={envios} bloqueado={bloqueado} />
       </section>
 
       <section className={card}>
@@ -58,7 +59,7 @@ export default async function ConfigClientesPage() {
             {filas.map((c) => (
               <li key={c.id} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="min-w-0">
-                  <Link href={`/empresa/clientes/${c.id}`} className="block text-fg text-sm font-semibold truncate hover:underline">{c.company || c.name}</Link>
+                  <Link href={`/empresa/clientes/${c.id}`} className="flex items-center min-h-11 sm:min-h-8 text-fg text-sm font-semibold truncate hover:underline">{c.company || c.name}</Link>
                   <p className="text-fg-dim text-xs">Facturado {dinero(c.facturado)} · {dinero(c.tarifa)}/h{c.hourlyRate != null ? " (tarifa propia)" : ""}</p>
                 </div>
                 <LineaCliente clientId={c.id} linea={c.brandLine === "premium" ? "premium" : "normal"} />

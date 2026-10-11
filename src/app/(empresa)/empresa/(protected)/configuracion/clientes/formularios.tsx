@@ -16,7 +16,7 @@ export function TarifasForm({ normal, premium }: { normal: number; premium: numb
   const [estado, accion, enviando] = useActionState(guardarTarifasAction, null);
   return (
     <form action={accion} className="space-y-4">
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         {[["normal", "Normal", normal, "Azul tinta"], ["premium", "Premium", premium, "Negro y oro"]].map(([k, t, v, d]) => (
           <label key={k as string} className="block rounded-xl border border-line-mid p-4">
             <span className="block text-fg text-sm font-semibold">{t as string} <span className="text-fg-dim font-normal">· {d as string}</span></span>
@@ -54,7 +54,7 @@ export function LineaCliente({ clientId, linea }: { clientId: string; linea: "no
   );
 }
 
-export function EnviosClientes({ encendidos }: { encendidos: boolean }) {
+export function EnviosClientes({ encendidos, bloqueado = false }: { encendidos: boolean; bloqueado?: boolean }) {
   const [estado, accion, enviando] = useActionState(enviosClientesAction, null);
   const [seguro, setSeguro] = useState(false);
   return (
@@ -68,6 +68,9 @@ export function EnviosClientes({ encendidos }: { encendidos: boolean }) {
           ? "Pime escribe a los clientes: invitaciones a su cuenta, recordatorios de cobro, respuestas a tickets y órdenes de cambio."
           : "Pime no le escribe a ningún cliente. Invitaciones, recordatorios de cobro, respuestas a tickets y órdenes de cambio se guardan, pero no sale ningún correo."}
       </p>
+      {bloqueado ? (
+        <p className="rounded-xl bg-fill px-4 py-3 text-sm text-fg-mute">Bloqueados también en el servidor (PIME_ENVIOS_CLIENTES=off en Vercel). Para encenderlos hay que quitar esa variable primero.</p>
+      ) : (
       <form action={accion} className="space-y-3">
         <input type="hidden" name="encender" value={encendidos ? "0" : "1"} />
         {encendidos ? (
@@ -85,6 +88,7 @@ export function EnviosClientes({ encendidos }: { encendidos: boolean }) {
         )}
         <Mensajes e={estado} />
       </form>
+      )}
     </div>
   );
 }

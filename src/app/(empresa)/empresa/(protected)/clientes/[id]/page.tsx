@@ -11,6 +11,8 @@ import { btn } from "@/components/empresa/page-header";
 import { FacturarHorasForm, HorasForm, InvitarForm, PagoForm, PagoPorConfirmar, PersonaAcciones } from "@/components/empresa/clientes/formularios";
 import { ZonaLinea } from "@/components/empresa/clientes/zona-linea";
 import { EstadoSistemaPill } from "@/components/empresa/sistemas/estado";
+import { BotonCobrar } from "@/components/empresa/cobrar/asistente-cobrar";
+import { prisma } from "@/lib/prisma";
 
 export const metadata = { title: "Cliente — Pime Suite" };
 
@@ -25,8 +27,12 @@ const tiempo = (d: Date) => {
 export default async function FichaCliente({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const u = await getEmpresaUser();
-  const f = await fichaCliente(u.id, id);
+  const [f, todos] = await Promise.all([
+    fichaCliente(u.id, id),
+    prisma.client.findMany({ where: { userId: u.id, archivedAt: null }, orderBy: { name: "asc" }, select: { id: true, name: true, company: true } }),
+  ]);
   if (!f) notFound();
+  const clientesCobro = todos.map((x) => ({ id: x.id, nombre: x.company || x.name }));
   const c = f.cliente;
   const premium = c.brandLine === "premium";
   const principal = f.personas.find((p) => p.role === "principal");
@@ -55,7 +61,7 @@ export default async function FichaCliente({ params }: { params: Promise<{ id: s
           </div>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:justify-end">
             <Link href={`/empresa/tickets/nuevo?clientId=${c.id}`} className={btn.primary}>+ Ticket</Link>
-            <Link href={`/empresa/facturas/nueva?clientId=${c.id}`} className={btn.secondary}>+ Factura</Link>
+            <BotonCobrar clientes={clientesCobro} clienteInicial={c.id} etiqueta="Cobrar" className={btn.secondary} />
             <Link href={`/empresa/proyectos/nuevo?clientId=${c.id}`} className={btn.secondary}>+ Proyecto</Link>
             <Link href={`/empresa/clientes/${c.id}/editar`} className={btn.secondary}>Editar</Link>
           </div>
@@ -118,7 +124,7 @@ export default async function FichaCliente({ params }: { params: Promise<{ id: s
           </section>
 
           <section className={card}>
-            <div className="flex items-center justify-between gap-3"><h2 className={h2}>Facturas</h2><Link href={`/empresa/facturas/nueva?clientId=${c.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">+ Factura</Link></div>
+            <div className="flex items-center justify-between gap-3"><h2 className={h2}>Facturas</h2><BotonCobrar clientes={clientesCobro} clienteInicial={c.id} etiqueta="Cobrar" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline" /></div>
             {f.facturas.length ? (
               <ul className="mt-3 divide-y divide-line">
                 {f.facturas.slice(0, 12).map((x) => (

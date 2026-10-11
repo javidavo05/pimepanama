@@ -288,7 +288,7 @@ export function ContractsPanel({
                     <div className="flex items-center gap-2 min-w-0">
                       <Link
                         href={`/empresa/contratos/${c.id}`}
-                        className="text-fg-soft text-sm hover:text-brand-fg transition-colors truncate min-w-0"
+                        className="inline-flex items-center min-h-11 sm:min-h-8 text-fg-soft text-sm hover:text-brand-fg transition-colors truncate min-w-0"
                       >
                         {c.title}
                       </Link>

@@ -70,7 +70,7 @@ export function ClientsPanel({ projectId, clients, allClients }: ClientsPanelPro
               <div className="min-w-0">
                 <Link
                   href={`/empresa/clientes/${c.id}`}
-                  className="text-fg-soft text-sm hover:text-brand-fg transition-colors truncate block"
+                  className="flex items-center min-h-11 sm:min-h-8 text-fg-soft text-sm hover:text-brand-fg transition-colors truncate"
                 >
                   {c.name}
                 </Link>
@@ -122,7 +122,7 @@ export function ClientsPanel({ projectId, clients, allClients }: ClientsPanelPro
           className={`${INPUT_COMPACT} disabled:opacity-40`}
         >
           <option value="">
-            {pending ? "Guardando…" : empty ? "Asignar cliente…" : "+ agregar otro cliente…"}
+            {pending ? "Guardando…" : empty ? "Asignar cliente…" : "+ otro cliente"}
           </option>
           {available.map((c) => (
             <option key={c.id} value={c.id}>

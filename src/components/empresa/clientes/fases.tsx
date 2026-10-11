@@ -70,12 +70,12 @@ export function FaseForm({ projectId, f }: { projectId: string; f?: FaseVista })
 export function TipoProyecto({ projectId, kind, portalVisible }: { projectId: string; kind: string; portalVisible: boolean }) {
   const [e, a, p] = useActionState(tipoProyectoAction, null);
   return (
-    <form action={a} className="flex flex-wrap items-end gap-2">
+    <form action={a} className="grid gap-3 sm:grid-cols-2 sm:items-end">
       <input type="hidden" name="projectId" value={projectId} />
-      <div><label className={etiqueta}>Tipo</label><select name="kind" defaultValue={kind} className={`${campo} field-select pr-8 w-44`}><option value="nuevo">Proyecto nuevo</option><option value="modificacion">Modificación</option><option value="soporte">Soporte continuo</option></select></div>
-      <div><label className={etiqueta}>Cuenta del cliente</label><select name="portalVisible" defaultValue={portalVisible ? "1" : "0"} className={`${campo} field-select pr-8 w-44`}><option value="1">Lo ve el cliente</option><option value="0">Oculto</option></select></div>
-      <button className={btn.secondary} disabled={p}>Guardar</button>
-      <Msg e={e} />
+      <div><label className={etiqueta}>Tipo</label><select name="kind" defaultValue={kind} className={`${campo} field-select pr-8`}><option value="nuevo">Proyecto nuevo</option><option value="modificacion">Modificación</option><option value="soporte">Soporte continuo</option></select></div>
+      <div><label className={etiqueta}>Cuenta del cliente</label><select name="portalVisible" defaultValue={portalVisible ? "1" : "0"} className={`${campo} field-select pr-8`}><option value="1">Lo ve el cliente</option><option value="0">Oculto</option></select></div>
+      <button className={`${btn.secondary} sm:col-span-2 w-full`} disabled={p}>Guardar tipo y visibilidad</button>
+      <div className="sm:col-span-2 empty:hidden"><Msg e={e} /></div>
     </form>
   );
 }
