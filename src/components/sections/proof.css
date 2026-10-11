@@ -18,3 +18,11 @@
 .proof .marquee { mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent); }
 .proof .marquee-track { animation: none; gap: var(--s-3); padding: var(--s-1) 0; align-items: center; }
 @media (prefers-reduced-motion: reduce) { .proof .marquee { mask-image: none; overflow: visible; } .proof .marquee-track { flex-wrap: wrap; width: auto; padding-inline: var(--gutter); } }
+
+@media (max-width: 639px) {
+  .proof-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); }
+  .proof-stat { padding-top: var(--s-3); gap: var(--s-2); }
+  .proof-v { font-size: clamp(32px, 10.5vw, 44px); }
+  .proof-stat dd { font-size: var(--text-xs); }
+  .proof-tapes { padding-top: var(--s-12); }
+}

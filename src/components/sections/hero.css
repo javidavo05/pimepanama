@@ -221,3 +221,10 @@
 }
 :root[data-reduced-motion] .hero-bar, :root[data-reduced-motion] .hw-frame, :root[data-reduced-motion] .hw-side-item, :root[data-reduced-motion] .hw-head, :root[data-reduced-motion] .hw-card, :root[data-reduced-motion] .hv-col, :root[data-reduced-motion] .hv-card, :root[data-reduced-motion] .hv-list li, :root[data-reduced-motion] .hv-docs li, :root[data-reduced-motion] .hv-hero-num, :root[data-reduced-motion] .ch-ring, :root[data-reduced-motion] .ch-ring-fg, :root[data-reduced-motion] .ch-area, :root[data-reduced-motion] .ch-line, :root[data-reduced-motion] .ch-stack, :root[data-reduced-motion] .ch-cell, :root[data-reduced-motion] .ch-cal-d, :root[data-reduced-motion] .ch-hbar-track i, :root[data-reduced-motion] .ch-gantt-track i, :root[data-reduced-motion] .ch-funnel-step i, :root[data-reduced-motion] .hv-health-bar i { animation: none; }
 :root[data-reduced-motion] .ch-line { stroke-dashoffset: 0; } :root[data-reduced-motion] .ch-area { opacity: 1; }
+
+/* Teléfono: la ventana del sistema es una ventana (alto acotado, scroll dentro), no una columna de widgets */
+@media (max-width: 767px) {
+  .hero-meta { display: none; }
+  .hero-stage-outer { padding-top: var(--s-8); }
+  .hw-main { max-height: 56svh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+}

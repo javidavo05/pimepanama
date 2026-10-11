@@ -112,3 +112,11 @@ table.clean td.right, table.clean th.right { text-align: right; }
 .theme-ico[data-t="auto"]::after { content: ""; position: absolute; inset: 1px; border-radius: 50%; background: currentColor; clip-path: inset(0 50% 0 0); }
 .theme.compact .theme-l { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .theme.compact .theme-opt { min-width: 36px; justify-content: center; min-height: 36px; }
+
+/* ---------- Teléfono: ritmo más corto. Las secciones no pueden medir varias pantallas cada una ---------- */
+@media (max-width: 639px) {
+  :root { --section-y: var(--s-16); }
+  .lead { font-size: var(--text-md); }
+  .t-1 { font-size: clamp(30px, 8.4vw, 36px); }
+  .t-2 { font-size: clamp(24px, 6.6vw, 28px); }
+}

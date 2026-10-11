@@ -40,3 +40,12 @@
 @keyframes pr-on { from { color: var(--fg-3); } to { color: var(--fg); } }
 @keyframes pr-on-chip { from { opacity: 0.45; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .pr-line-fg { animation: none; stroke-dashoffset: 0; } .pr-step .num-chip, .pr-step .pr-t { animation: none; } }
+
+@media (max-width: 639px) {
+  .pr-in { gap: var(--s-8); }
+  .pr-steps { gap: var(--s-6); padding-left: 48px; }
+  .pr-chip { left: -48px; }
+  .pr-t { font-size: var(--text-lg); }
+  .pr-x { font-size: var(--text-sm); }
+  .pr-close { padding: var(--s-6); gap: var(--s-6); }
+}

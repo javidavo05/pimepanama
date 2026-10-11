@@ -1,5 +1,6 @@
 .capsec { padding: var(--section-y) 0; overflow-x: clip; }
 .caps-head { display: grid; gap: var(--s-4); justify-items: start; margin-bottom: var(--s-12); }
+.caps-hint { display: none; }
 .caps-grid { display: grid; gap: var(--s-8); }
 @media (min-width: 1024px) { .caps-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--s-16); align-items: start; } }
 
@@ -135,3 +136,16 @@
 .cs-result[data-listo] { border-color: var(--accent); }
 
 @media (prefers-reduced-motion: reduce) { .caps-scene { transition: opacity var(--dur-base); transform: none; } .cs-tenant, .cs-contact, .cs-log li, .cs-block { animation: none; } }
+
+/* Teléfono y tableta: carrusel con snap (una capacidad por pantalla, con la siguiente asomando) */
+@media (max-width: 1023px) {
+  .caps-head { margin-bottom: var(--s-6); }
+  .caps-grid { display: block; padding: 0; }
+  .caps-steps { display: flex; gap: var(--s-3); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding: var(--s-1) var(--gutter) var(--s-3); scroll-padding-inline: var(--gutter); }
+  .caps-steps::-webkit-scrollbar { display: none; }
+  .caps-step { flex: 0 0 min(86vw, 520px); scroll-snap-align: start; border: var(--border); border-top: var(--border); border-radius: var(--r-lg); background: var(--surface); padding: var(--s-4); gap: var(--s-2); align-content: start; }
+  .caps-t { font-size: var(--text-xl); }
+  .caps-apoyo { font-size: var(--text-sm); }
+  .caps-scene-inline { max-height: 300px; overflow-y: auto; overscroll-behavior: contain; padding: var(--s-3); border-radius: var(--r-md); background: var(--paper); }
+  .caps-hint { display: flex; justify-content: space-between; gap: var(--s-4); padding: 0 var(--gutter); }
+}

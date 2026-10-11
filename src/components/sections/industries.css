@@ -20,3 +20,10 @@
   .ind-foot { grid-column: 2; }
   .ind-row { grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--s-6); }
 }
+
+@media (max-width: 639px) {
+  .ind-in { gap: var(--s-6); }
+  .ind-row { padding: var(--s-3) 0; gap: var(--s-3); }
+  .ind-t { font-size: var(--text-lg); }
+  .ind-s { font-size: var(--text-sm); }
+}
