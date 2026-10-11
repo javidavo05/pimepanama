@@ -596,7 +596,8 @@ export async function createProjectWithContractAction(data: {
         value: data.contract.value ?? undefined,
         startsAt: toDate(data.contract.startsAt),
         endsAt: toDate(data.contract.endsAt),
-        status: "ACTIVE",
+        // Borrador hasta que se firme: antes quedaba «activo» sin firma de nadie.
+        status: "DRAFT",
       },
     });
   }

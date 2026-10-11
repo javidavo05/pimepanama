@@ -37,6 +37,7 @@ const ICONS = {
   settings:
     "M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75",
   more: "M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5",
+  ticket: "M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 0 1 1.037-.443 48.282 48.282 0 0 0 5.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z",
   close: "M6 18 18 6M6 6l12 12",
 } as const;
 
@@ -53,8 +54,6 @@ function NavIcon({ name, className = "w-5 h-5" }: { name: IconName; className?: 
 interface NavItem {
   href: string;
   label: string;
-  /** Ícono del menú lateral (el de siempre). */
-  emoji: string;
   /** Ícono de la pestaña de abajo en el celular. */
   icon: IconName;
   exact?: boolean;
@@ -64,31 +63,33 @@ interface NavItem {
   group: string;
 }
 
+/**
+ * Menú en dos bloques: seis secciones principales (la ficha del cliente es el centro) y las
+ * herramientas de siempre. Un solo estilo de íconos: línea de 1.5 px (NavIcon).
+ */
 const NAV_ITEMS: NavItem[] = [
-  { href: "/empresa", label: "Dashboard", emoji: "⬛", icon: "home", exact: true, group: "Día a día" },
-  { href: "/empresa/tareas", label: "Tareas", emoji: "✅", icon: "check", group: "Día a día" },
-  { href: "/empresa/clientes", label: "Clientes", emoji: "👥", icon: "users", group: "Comercial" },
-  { href: "/empresa/leads", label: "Leads", emoji: "🎯", icon: "funnel", group: "Comercial" },
-  { href: "/empresa/citas", label: "Citas", emoji: "📅", icon: "calendar", group: "Día a día" },
-  { href: "/empresa/proyectos", label: "Proyectos", emoji: "🗂️", icon: "folder", group: "Comercial" },
-  { href: "/empresa/contratos", label: "Contratos", emoji: "📑", icon: "contract", group: "Comercial" },
-  { href: "/empresa/cotizaciones", label: "Cotizaciones", emoji: "📋", icon: "clipboard", group: "Documentos" },
-  { href: "/empresa/facturas", label: "Facturas", emoji: "📄", icon: "invoice", group: "Documentos" },
-  { href: "/empresa/cuentas-por-cobrar", label: "Por Cobrar", emoji: "💰", icon: "cash", group: "Finanzas" },
-  { href: "/empresa/por-pagar", label: "Por pagar", emoji: "💸", icon: "card", group: "Finanzas" },
-  { href: "/empresa/platforms", label: "Platforms", emoji: "🖥️", icon: "desktop", group: "Sistema" },
-  { href: "/empresa/reuniones", label: "Reuniones", emoji: "🎙️", icon: "mic", group: "Día a día" },
-  { href: "/empresa/bitacoras", label: "Bitácoras", emoji: "📝", icon: "pencil", group: "Documentos" },
-  { href: "/empresa/correos/hub", label: "Correos", emoji: "✉️", icon: "mail", match: "/empresa/correos", group: "Día a día" },
+  { href: "/empresa", label: "Inicio", icon: "home", exact: true, group: "Principal" },
+  { href: "/empresa/clientes", label: "Clientes", icon: "users", group: "Principal" },
+  { href: "/empresa/tickets", label: "Tickets", icon: "ticket", group: "Principal" },
+  { href: "/empresa/proyectos", label: "Proyectos", icon: "folder", group: "Principal" },
+  { href: "/empresa/dinero", label: "Dinero", icon: "cash", match: "/empresa/(dinero|facturas|cotizaciones|cuentas-por-cobrar|por-pagar)", group: "Principal" },
+  { href: "/empresa/platforms", label: "Sistemas", icon: "desktop", match: "/empresa/(platforms|sistemas)", group: "Principal" },
+  { href: "/empresa/tareas", label: "Tareas", icon: "check", group: "Herramientas" },
+  { href: "/empresa/correos/hub", label: "Correos", icon: "mail", match: "/empresa/correos", group: "Herramientas" },
+  { href: "/empresa/reuniones", label: "Reuniones", icon: "mic", group: "Herramientas" },
+  { href: "/empresa/citas", label: "Citas", icon: "calendar", group: "Herramientas" },
+  { href: "/empresa/leads", label: "Leads", icon: "funnel", group: "Herramientas" },
+  { href: "/empresa/contratos", label: "Contratos", icon: "contract", group: "Herramientas" },
+  { href: "/empresa/bitacoras", label: "Bitácoras", icon: "pencil", group: "Herramientas" },
 ];
 
-const BOTTOM_ITEMS: NavItem[] = [{ href: "/empresa/configuracion", label: "Configuración", emoji: "⚙️", icon: "settings", group: "Sistema" }];
+const BOTTOM_ITEMS: NavItem[] = [{ href: "/empresa/configuracion", label: "Configuración", icon: "settings", group: "Herramientas" }];
 
 /**
  * Pestañas de abajo en el celular: lo que se usa todos los días, a un toque.
  * El resto de las secciones queda en «Más», que abre el menú completo.
  */
-const TAB_HREFS = ["/empresa", "/empresa/tareas", "/empresa/reuniones", "/empresa/correos/hub"];
+const TAB_HREFS = ["/empresa", "/empresa/clientes", "/empresa/tickets", "/empresa/dinero"];
 const TAB_ITEMS = TAB_HREFS.map((href) => NAV_ITEMS.find((i) => i.href === href)!);
 
 /** Bloques del cajón en el orden en que aparecen, con Configuración al final. */
@@ -214,7 +215,8 @@ export function SidebarNav({ userEmail, companyName, logoUrl, children }: Sideba
 
   function matches(item: NavItem, path: string) {
     if (item.exact) return path === item.href;
-    return path.startsWith(item.match ?? item.href);
+    // `match` es una expresión (p. ej. Dinero agrupa facturas, cotizaciones, por cobrar y por pagar).
+    return item.match ? new RegExp(`^${item.match}`).test(path) : path.startsWith(item.href);
   }
 
   function isActive(item: NavItem) {
@@ -248,19 +250,24 @@ export function SidebarNav({ userEmail, companyName, logoUrl, children }: Sideba
           </div>
         </div>
 
-        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {NAV_ITEMS.map((item) => (
-            <Link key={item.href} href={item.href} onClick={(e) => onNavigate(e, item.href)} className={linkClass(isActive(item))}>
-              <span className="text-base w-5 text-center">{item.emoji}</span>
-              <span className="flex-1">{item.label}</span>
-            </Link>
+        <nav className="flex-1 px-3 py-4 overflow-y-auto">
+          {groupItems(NAV_ITEMS).map((block) => (
+            <div key={block.group} className="space-y-0.5 mb-4">
+              {block.group !== "Principal" && <p className="px-3 pt-2 pb-1 text-fg-faint text-[11px] font-semibold uppercase tracking-[0.14em]">{block.group}</p>}
+              {block.items.map((item) => (
+                <Link key={item.href} href={item.href} onClick={(e) => onNavigate(e, item.href)} className={linkClass(isActive(item))}>
+                  <NavIcon name={item.icon} />
+                  <span className="flex-1">{item.label}</span>
+                </Link>
+              ))}
+            </div>
           ))}
         </nav>
 
         <div className="px-3 py-3 border-t border-line space-y-0.5">
           {BOTTOM_ITEMS.map((item) => (
             <Link key={item.href} href={item.href} onClick={(e) => onNavigate(e, item.href)} className={linkClass(isActive(item))}>
-              <span className="text-base w-5 text-center">{item.emoji}</span>
+              <NavIcon name={item.icon} />
               {item.label}
             </Link>
           ))}
@@ -324,7 +331,7 @@ export function SidebarNav({ userEmail, companyName, logoUrl, children }: Sideba
                       isActive(item) ? "bg-brand/10 text-brand-fg font-semibold" : "text-fg-mute hover:text-fg hover:bg-fill"
                     }`}
                   >
-                    <span className="text-base w-5 text-center">{item.emoji}</span>
+                    <NavIcon name={item.icon} />
                     {item.label}
                   </Link>
                 ))}

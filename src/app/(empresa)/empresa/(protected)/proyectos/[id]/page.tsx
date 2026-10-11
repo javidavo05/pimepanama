@@ -7,6 +7,7 @@ import { loadTaskWorkspace } from "@/lib/tasks";
 import { TaskWorkspace } from "@/components/empresa/tasks/task-workspace";
 import { ProjectTasks } from "@/components/empresa/tasks/project-tasks";
 import { ProjectDetailClient } from "./project-detail-client";
+import { FasesPanel } from "./fases-panel";
 
 export const dynamic = "force-dynamic";
 
@@ -15,9 +16,9 @@ export default async function ProyectoDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; orden?: string; ticket?: string }>;
 }) {
-  const [{ id }, { tab }] = await Promise.all([params, searchParams]);
+  const [{ id }, { tab, orden, ticket }] = await Promise.all([params, searchParams]);
   const user = await getEmpresaUser();
 
   const [project, allClients, workspace] = await Promise.all([
@@ -118,6 +119,8 @@ export default async function ProyectoDetailPage({
         <span className="text-fg-faint">/</span>
         <span className="text-fg-dim truncate min-w-0 max-w-xs">{project.name}</span>
       </div>
+
+      <FasesPanel projectId={project.id} userId={user.id} ordenNueva={orden === "nueva"} ticketId={ticket} />
 
       <TaskWorkspace tasks={workspace.tasks} projects={workspace.projects}>
         <ProjectDetailClient

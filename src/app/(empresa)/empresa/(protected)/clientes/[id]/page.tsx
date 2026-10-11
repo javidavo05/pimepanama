@@ -1,279 +1,189 @@
 import { notFound } from "next/navigation";
 import Link from "@/components/empresa/link";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
-import { prisma } from "@/lib/prisma";
+import { fichaCliente } from "@/lib/portal/ficha";
+import { dinero } from "@/lib/portal/datos";
+import { formatoHoras } from "@/lib/portal/horas";
+import { PAGO_METODO_LABEL, TICKET_ESTADO_LABEL, type PagoMetodo, type TicketEstado } from "@/lib/portal/estados";
 import { StatusBadge } from "@/components/empresa/document-builder/status-badge";
-import { LazyRevenueChart as RevenueChart } from "@/components/empresa/revenue-chart-lazy";
-import { buildMonthlyRevenue } from "@/lib/revenue-helpers";
-import { computeClientStats } from "@/lib/client-stats";
-import { filterPaidInvoices, effectiveInvoiceAmount } from "@/lib/invoice-revenue";
 import type { DocumentStatus } from "@prisma/client";
-import { ActionRow, btn } from "@/components/empresa/page-header";
+import { btn } from "@/components/empresa/page-header";
+import { FacturarHorasForm, HorasForm, InvitarForm, PagoForm, PagoPorConfirmar, PersonaAcciones } from "@/components/empresa/clientes/formularios";
 
-export default async function ClienteDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export const metadata = { title: "Cliente — Pime Suite" };
+
+const card = "bg-panel border border-line rounded-2xl p-4 sm:p-6 min-w-0";
+const h2 = "text-fg text-base font-semibold tracking-tight";
+const fecha = (d: Date | null | undefined) => (d ? new Date(d).toLocaleDateString("es-PA", { day: "numeric", month: "short", year: "numeric", timeZone: "America/Panama" }) : "—");
+const tiempo = (d: Date) => {
+  const m = Math.round((Date.now() - new Date(d).getTime()) / 60000);
+  return m < 60 ? `hace ${Math.max(1, m)} min` : m < 1440 ? `hace ${Math.round(m / 60)} h` : fecha(d);
+};
+
+export default async function FichaCliente({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const user = await getEmpresaUser();
-
-  const client = await prisma.client.findFirst({
-    where: { id, userId: user.id },
-    include: {
-      documents: {
-        where: { type: { in: ["COTIZACION", "FACTURA"] } },
-        orderBy: { issueDate: "desc" },
-        include: { paymentMethod: { select: { name: true } } },
-      },
-    },
-  });
-
-  if (!client) notFound();
-
-  const quotes = client.documents.filter((d) => d.type === "COTIZACION");
-  const invoices = client.documents.filter((d) => d.type === "FACTURA");
-  const paidInvoices = filterPaidInvoices(client.documents);
-  const stats = computeClientStats(client.documents);
-
-  const totalGross = stats.gross;
-  const totalNet = stats.net;
-  const totalCommission = totalGross - totalNet;
-
-  const chartData = buildMonthlyRevenue(
-    paidInvoices.map((d) => ({ issueDate: d.issueDate, ...effectiveInvoiceAmount(d) }))
-  );
+  const u = await getEmpresaUser();
+  const f = await fichaCliente(u.id, id);
+  if (!f) notFound();
+  const c = f.cliente;
+  const premium = c.brandLine === "premium";
+  const principal = f.personas.find((p) => p.role === "principal");
+  const cuenta = !f.personas.length ? ["Sin cuenta", "bg-fill-2 text-fg-dim"] : f.personas.some((p) => p.status === "activo") ? ["Cuenta activa", "bg-ok/10 text-ok"] : ["Invitación enviada", "bg-warn/10 text-warn"];
+  const porFacturar = f.horasPorFacturar.reduce((a, h) => a + Number(h.amount), 0);
+  const minutosPorFacturar = f.horasPorFacturar.reduce((a, h) => a + h.billedMinutes, 0);
+  const facturasAbiertas = f.facturas.filter((x) => x.falta > 0.005 && x.status !== "DRAFT" && x.status !== "CANCELLED");
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center gap-2 text-sm text-fg-dim min-w-0">
-        <Link
-          href="/empresa/clientes"
-          className="inline-flex items-center min-h-11 sm:min-h-8 shrink-0 hover:text-fg-mute transition-colors"
-        >
-          Clientes
-        </Link>
-        <span>/</span>
-        <span className="text-fg-mute truncate min-w-0">{client.name}</span>
-      </div>
+    <div className="max-w-6xl mx-auto space-y-6">
+      <nav className="flex items-center gap-2 text-sm text-fg-dim min-w-0" aria-label="Ruta">
+        <Link href="/empresa/clientes" className="inline-flex items-center min-h-11 sm:min-h-8 shrink-0 hover:text-fg-mute">Clientes</Link>
+        <span aria-hidden>/</span><span className="text-fg-mute truncate">{c.company || c.name}</span>
+      </nav>
 
-      <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6">
-        {/* En el celular los dos botones bajan debajo de los datos, en columnas
-            iguales; desde tablet quedan a la derecha. */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <h1 className="text-fg text-2xl font-semibold break-words">{client.name}</h1>
-            {client.company && <p className="text-fg-faint text-sm mt-1">{client.company}</p>}
-            <div className="flex flex-wrap gap-x-4 gap-y-1 mt-3 [&>span]:break-all">
-              {client.ruc && <span className="text-fg-dim text-xs font-mono">RUC: {client.ruc}</span>}
-              {client.email && <span className="text-fg-dim text-xs">{client.email}</span>}
-              {client.phone && <span className="text-fg-dim text-xs">{client.phone}</span>}
-              {client.address && <span className="text-fg-dim text-xs">{client.address}</span>}
+      <header className={card}>
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${premium ? "bg-sand/15 text-sand-fg" : "bg-brand/10 text-brand-fg"}`}>{premium ? "Premium" : "Normal"} · {dinero(f.tarifa)}/h</span>
+              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${cuenta[1]}`}>{cuenta[0]}</span>
             </div>
+            <h1 className="text-fg text-2xl font-semibold tracking-tight break-words">{c.company || c.name}</h1>
+            <p className="text-fg-dim text-sm break-words">{[c.company ? c.name : null, c.email, c.phone, c.ruc ? `RUC ${c.ruc}` : null].filter(Boolean).join(" · ") || "Sin datos de contacto"}</p>
           </div>
-          <ActionRow>
-            <Link href={`/empresa/cotizaciones/nueva?clientId=${client.id}`} className={btn.primary}>
-              + Cotización
-            </Link>
-            <Link href={`/empresa/facturas/nueva?clientId=${client.id}`} className={btn.accent}>
-              + Factura
-            </Link>
-          </ActionRow>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        {[
-          { label: "Cotizaciones", value: String(stats.totalQuotes), mono: false },
-          {
-            label: "Cotiz. aceptadas",
-            value: `${stats.acceptedQuotes} (${stats.quoteAcceptanceRate}%)`,
-            mono: true,
-            color: "text-fg-mute",
-          },
-          { label: "Facturas", value: String(stats.totalInvoices), mono: false },
-          {
-            label: "Facturas pagadas",
-            value: String(stats.paidInvoices),
-            mono: true,
-            color: "text-ok",
-          },
-          {
-            label: "Ingresos brutos",
-            value: `$${totalGross.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-            mono: true,
-            color: "text-brand-fg",
-          },
-        ].map(({ label, value, mono, color }) => (
-          <div key={label} className="bg-panel border border-line rounded-xl p-4 min-w-0">
-            <p className="text-fg-dim text-xs uppercase tracking-widest mb-2">{label}</p>
-            <p className={`text-lg font-semibold break-words ${mono ? "font-mono" : ""} ${color ?? "text-fg"}`}>
-              {value}
-            </p>
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:justify-end">
+            <Link href={`/empresa/tickets/nuevo?clientId=${c.id}`} className={btn.primary}>+ Ticket</Link>
+            <Link href={`/empresa/facturas/nueva?clientId=${c.id}`} className={btn.secondary}>+ Factura</Link>
+            <Link href={`/empresa/proyectos/nuevo?clientId=${c.id}`} className={btn.secondary}>+ Proyecto</Link>
+            <Link href={`/empresa/clientes/${c.id}/editar`} className={btn.secondary}>Editar</Link>
           </div>
-        ))}
-      </div>
-
-      <div className="bg-panel border border-line rounded-xl p-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <p className="text-fg-dim text-xs uppercase tracking-widest">Neto recibido (facturas pagadas)</p>
-        <p className="text-ok font-mono text-xl font-semibold">
-          ${totalNet.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-        </p>
-      </div>
-
-      {chartData.length > 0 && (
-        <div className="bg-panel border border-line rounded-2xl p-6">
-          <RevenueChart data={chartData} title="Ingresos por mes (facturas pagadas)" />
-          {totalCommission > 0 && (
-            <p className="text-warn text-xs mt-3 text-right">
-              Comisiones descontadas en total: $
-              {totalCommission.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-            </p>
-          )}
         </div>
-      )}
-
-      <DocumentHistoryTable
-        title={`Facturas (${invoices.length})`}
-        documents={invoices}
-        basePath="/empresa/facturas"
-        emptyMessage="Aún no hay facturas para este cliente."
-      />
-
-      <DocumentHistoryTable
-        title={`Cotizaciones (${quotes.length})`}
-        documents={quotes}
-        basePath="/empresa/cotizaciones"
-        emptyMessage="Aún no hay cotizaciones para este cliente."
-      />
-    </div>
-  );
-}
-
-function DocumentHistoryTable({
-  title,
-  documents,
-  basePath,
-  emptyMessage,
-}: {
-  title: string;
-  documents: {
-    id: string;
-    status: DocumentStatus;
-    number: string | null;
-    issueDate: Date;
-    total: unknown;
-    netAmount: unknown;
-    paymentMethod: { name: string } | null;
-  }[];
-  basePath: string;
-  emptyMessage: string;
-}) {
-  return (
-    <div className="bg-panel border border-line rounded-2xl overflow-hidden">
-      <div className="px-4 sm:px-5 py-4 border-b border-line">
-        <h2 className="text-fg-mute text-sm font-medium uppercase tracking-widest">{title}</h2>
-      </div>
-      {documents.length === 0 ? (
-        <div className="p-10 text-center text-fg-dim text-sm">{emptyMessage}</div>
-      ) : (
-        <>
-        {/* Celular: una tarjeta por documento. Siete columnas no caben en
-            390 px y la tabla cortaba el neto por el borde. */}
-        <ul className="sm:hidden divide-y divide-line">
-          {documents.map((doc) => (
-            <li key={doc.id}>
-              <Link
-                href={`${basePath}/${doc.id}`}
-                className="block px-4 py-3 space-y-2 hover:bg-fill transition-colors"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-mono text-fg-mute text-sm truncate min-w-0">{doc.number ?? "—"}</span>
-                  <StatusBadge status={doc.status} />
-                </div>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                  <span className="text-fg-dim">
-                    {new Date(doc.issueDate).toLocaleDateString("es-PA", {
-                      day: "2-digit",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </span>
-                  <span className="text-right font-mono text-fg-dim text-sm">
-                    ${Number(doc.total ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                  </span>
-                  <span className="text-fg-dim truncate min-w-0">{doc.paymentMethod?.name ?? "—"}</span>
-                  <span className="text-right font-mono">
-                    {doc.netAmount ? (
-                      <span className="text-ok">
-                        Neto ${Number(doc.netAmount).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                      </span>
-                    ) : (
-                      <span className="text-fg-faint">Neto —</span>
-                    )}
-                  </span>
-                </div>
-              </Link>
-            </li>
+        <dl className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {[
+            ["Por cobrar", dinero(f.saldo.pendiente), f.saldo.pendiente > 0 ? "text-fg" : "text-fg-dim"],
+            ["Pagado", dinero(f.saldo.pagado), "text-ok"],
+            ["Horas por facturar", porFacturar ? `${dinero(porFacturar)} · ${formatoHoras(minutosPorFacturar)}` : "—", porFacturar ? "text-sand-fg" : "text-fg-dim"],
+            ["Tickets abiertos", String(f.abiertos.length), f.abiertos.length ? "text-brand-fg" : "text-fg-dim"],
+          ].map(([k, v, cls]) => (
+            <div key={k} className="rounded-xl bg-fill px-4 py-3 min-w-0"><dt className="text-fg-dim text-xs">{k}</dt><dd className={`font-semibold font-mono text-base truncate ${cls}`}>{v}</dd></div>
           ))}
-        </ul>
-        {/* Desde tablet, la tabla; si aún no cabe, se desplaza dentro de su caja. */}
-        <div className="hidden sm:block overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-line">
-              {["Número", "Fecha", "Total bruto", "Neto", "Método pago", "Estado", ""].map((h) => (
-                <th
-                  key={h}
-                  className="text-left text-fg-dim text-xs uppercase tracking-widest font-medium px-5 py-3"
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-line">
-            {documents.map((doc) => (
-              <tr key={doc.id} className="group hover:bg-fill transition-colors">
-                <td className="px-5 py-3 font-mono text-fg-dim text-xs">{doc.number ?? "—"}</td>
-                <td className="px-5 py-3 text-fg-dim text-xs">
-                  {new Date(doc.issueDate).toLocaleDateString("es-PA", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </td>
-                <td className="px-5 py-3 font-mono text-fg-dim text-sm">
-                  ${Number(doc.total ?? 0).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                </td>
-                <td className="px-5 py-3 font-mono text-sm">
-                  {doc.netAmount ? (
-                    <span className="text-ok">
-                      ${Number(doc.netAmount).toLocaleString("en-US", { minimumFractionDigits: 2 })}
-                    </span>
-                  ) : (
-                    <span className="text-fg-faint">—</span>
-                  )}
-                </td>
-                <td className="px-5 py-3 text-fg-dim text-xs">{doc.paymentMethod?.name ?? "—"}</td>
-                <td className="px-5 py-3">
-                  <StatusBadge status={doc.status} />
-                </td>
-                <td className="px-5 py-3">
-                  <Link
-                    href={`${basePath}/${doc.id}`}
-                    className="inline-flex items-center min-h-8 px-2 -mx-2 whitespace-nowrap text-brand-fg hover:text-brand-fg text-xs opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all"
-                  >
-                    {doc.status === "PAID" && basePath.includes("facturas") ? "Ver →" : "Abrir →"}
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        </dl>
+      </header>
+
+      <div className="grid gap-6 lg:grid-cols-3 items-start">
+        <div className="space-y-6 lg:col-span-2 min-w-0">
+          {f.porConfirmar.length > 0 && (
+            <section className={`${card} border-warn/40`}>
+              <h2 className={h2}>Pagos reportados por el cliente</h2>
+              <ul className="mt-4 divide-y divide-line">
+                {f.porConfirmar.map((p) => (
+                  <li key={p.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0 text-sm"><p className="text-fg font-semibold font-mono">{dinero(p.amount)}</p><p className="text-fg-dim">{fecha(p.paidAt)} · {PAGO_METODO_LABEL[p.method as PagoMetodo] ?? p.method}{p.reference ? ` · ref. ${p.reference}` : ""}{p.receiptR2Key ? " · con comprobante" : ""}</p></div>
+                    <PagoPorConfirmar pagoId={p.id} clientId={c.id} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          <section className={card}>
+            <div className="flex items-center justify-between gap-3"><h2 className={h2}>Tickets</h2><Link href={`/empresa/tickets?cliente=${c.id}`} className="text-sm text-brand-fg hover:underline">Ver todos</Link></div>
+            {f.tickets.length ? (
+              <ul className="mt-3 divide-y divide-line">
+                {f.tickets.slice(0, 8).map((t) => (
+                  <li key={t.id}><Link href={`/empresa/tickets/${t.id}`} className="flex items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
+                    <span className="min-w-0 flex-1"><span className="block text-fg text-sm font-medium truncate">{t.title}</span><span className="block text-fg-dim text-xs">{t.number} · {tiempo(t.updatedAt)}{t.lastClientActivityAt && (!t.lastPimeActivityAt || t.lastClientActivityAt > t.lastPimeActivityAt) ? " · el cliente escribió" : ""}</span></span>
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${t.status === "abierto" ? "bg-warn/10 text-warn" : t.status === "resuelto" || t.status === "cerrado" ? "bg-fill-2 text-fg-dim" : "bg-brand/10 text-brand-fg"}`}>{TICKET_ESTADO_LABEL[t.status as TicketEstado] ?? t.status}</span>
+                  </Link></li>
+                ))}
+              </ul>
+            ) : <p className="mt-3 text-sm text-fg-dim">Sin tickets. Cuando el cliente abra uno desde su cuenta, aparece aquí y te llega un aviso.</p>}
+          </section>
+
+          <section className={card}>
+            <div className="flex items-center justify-between gap-3"><h2 className={h2}>Proyectos</h2><Link href={`/empresa/proyectos/nuevo?clientId=${c.id}`} className="text-sm text-brand-fg hover:underline">+ Proyecto</Link></div>
+            {f.proyectos.length ? (
+              <ul className="mt-3 space-y-3">
+                {f.proyectos.map((p) => (
+                  <li key={p.id}><Link href={`/empresa/proyectos/${p.id}`} className="block rounded-xl border border-line px-4 py-3 hover:border-line-mid">
+                    <div className="flex items-center justify-between gap-3"><span className="text-fg text-sm font-semibold truncate">{p.name}</span><span className="text-fg font-mono text-sm">{Math.round(p.avance)} %</span></div>
+                    <div className="mt-2 h-1.5 rounded-full bg-fill-3 overflow-hidden"><div className="h-full bg-brand origin-left" style={{ transform: `scaleX(${p.avance / 100})` }} /></div>
+                    <p className="mt-2 text-xs text-fg-dim">{p.status === "ACTIVE" ? "En curso" : p.status === "COMPLETED" ? "Terminado" : p.status === "PAUSED" ? "En pausa" : "Cancelado"}{p.actual ? ` · ahora: ${p.actual.name}` : p.phases.length ? "" : " · sin fases cargadas"}{p._count.changeOrders ? ` · ${p._count.changeOrders} orden(es) esperando al cliente` : ""}</p>
+                  </Link></li>
+                ))}
+              </ul>
+            ) : <p className="mt-3 text-sm text-fg-dim">Sin proyectos. Crea uno con sus fases y precios: de ahí salen la propuesta, las facturas y el avance que ve el cliente.</p>}
+          </section>
+
+          <section className={card}>
+            <div className="flex items-center justify-between gap-3"><h2 className={h2}>Facturas</h2><Link href={`/empresa/facturas/nueva?clientId=${c.id}`} className="text-sm text-brand-fg hover:underline">+ Factura</Link></div>
+            {f.facturas.length ? (
+              <ul className="mt-3 divide-y divide-line">
+                {f.facturas.slice(0, 12).map((x) => (
+                  <li key={x.id}><Link href={`/empresa/facturas/${x.id}`} className="flex items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
+                    <span className="min-w-0 flex-1"><span className="block text-fg text-sm font-medium truncate">{x.number ?? "Factura"} · {x.title}</span><span className="block text-fg-dim text-xs">{fecha(x.issueDate)}{x.falta > 0.005 && x.pagado > 0 ? ` · falta ${dinero(x.falta)}` : ""}</span></span>
+                    <span className="font-mono text-sm text-fg">{dinero(x.total)}</span>
+                    <StatusBadge status={x.status as DocumentStatus} />
+                  </Link></li>
+                ))}
+              </ul>
+            ) : <p className="mt-3 text-sm text-fg-dim">Sin facturas todavía.</p>}
+            {f.cotizaciones.length > 0 && <p className="mt-4 text-xs text-fg-dim">{f.cotizaciones.length} cotización(es): {f.cotizaciones.slice(0, 3).map((q) => <Link key={q.id} href={`/empresa/cotizaciones/${q.id}`} className="text-brand-fg hover:underline mr-2">{q.number}</Link>)}</p>}
+          </section>
+
+          <section className={card}>
+            <h2 className={h2}>Línea de tiempo</h2>
+            {f.eventos.length ? (
+              <ol className="mt-4 space-y-4">
+                {f.eventos.map((e) => (
+                  <li key={e.id} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
+                    <span className={`mt-1.5 h-2 w-2 rounded-full ${e.actorType === "cliente" ? "bg-sand" : e.actorType === "github" ? "bg-ok" : "bg-brand"}`} aria-hidden />
+                    <div className="min-w-0"><p className="text-fg text-sm break-words">{e.title}{e.visibility === "interno" && <span className="ml-2 text-xs text-fg-faint">(interno)</span>}</p>{e.detail && <p className="text-fg-dim text-xs break-words">{e.detail}</p>}<p className="text-fg-faint text-xs">{tiempo(e.createdAt)}</p></div>
+                  </li>
+                ))}
+              </ol>
+            ) : <p className="mt-3 text-sm text-fg-dim">Cada ticket, aprobación, factura y pago de este cliente queda aquí en orden.</p>}
+          </section>
         </div>
-        </>
-      )}
+
+        <aside className="space-y-6 min-w-0">
+          <section className={card}>
+            <h2 className={h2}>Cuenta del cliente</h2>
+            {f.personas.length > 0 && (
+              <ul className="mt-3 divide-y divide-line">
+                {f.personas.map((p) => (
+                  <li key={p.id} className="py-3">
+                    <p className="text-fg text-sm font-medium truncate">{p.fullName || p.email} <span className="text-fg-faint text-xs">· {p.role === "principal" ? "principal" : "miembro"}</span></p>
+                    <p className="text-fg-dim text-xs truncate">{p.email} · {p.status === "invitado" ? `invitado el ${fecha(p.invitedAt)}` : p.lastLoginAt ? `entró ${tiempo(p.lastLoginAt)}` : "activo"}</p>
+                    <PersonaAcciones id={p.id} invitado={p.status === "invitado"} />
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="mt-4"><InvitarForm clientId={c.id} email={c.email} nombre={c.name} hayPrincipal={!!principal} /></div>
+          </section>
+
+          <section className={card}>
+            <h2 className={h2}>Registrar un pago</h2>
+            <div className="mt-3"><PagoForm clientId={c.id} facturas={facturasAbiertas.map((x) => ({ id: x.id, etiqueta: `${x.number ?? "Factura"} · falta ${dinero(x.falta)}`, falta: x.falta }))} /></div>
+          </section>
+
+          <section className={card}>
+            <h2 className={h2}>Horas</h2>
+            {f.horasPorFacturar.length > 0 ? (
+              <div className="mt-3 space-y-3">
+                <ul className="space-y-1 text-xs text-fg-dim">{f.horasPorFacturar.slice(0, 6).map((h) => <li key={h.id} className="flex justify-between gap-2"><span className="truncate">{fecha(h.workDate)} · {h.ticket?.number ?? "General"}{h.note ? ` · ${h.note}` : ""}</span><span className="font-mono shrink-0">{dinero(h.amount)}</span></li>)}</ul>
+                <FacturarHorasForm clientId={c.id} monto={dinero(porFacturar)} />
+              </div>
+            ) : <p className="mt-2 text-sm text-fg-dim">Sin horas por facturar.</p>}
+            <div className="mt-4 border-t border-line pt-4"><p className="text-fg-mute text-sm font-medium mb-2">Registrar horas sin ticket</p><HorasForm clientId={c.id} tarifa={f.tarifa} /></div>
+          </section>
+
+          {c.notes && <section className={card}><h2 className={h2}>Notas internas</h2><p className="mt-2 text-sm text-fg-mute whitespace-pre-line">{c.notes}</p></section>}
+          {f.contratos.length > 0 && (
+            <section className={card}><h2 className={h2}>Contratos</h2><ul className="mt-2 space-y-1 text-sm">{f.contratos.map((k) => <li key={k.id}><Link href={`/empresa/contratos/${k.id}`} className="text-brand-fg hover:underline">{k.title}</Link> <span className="text-fg-faint text-xs">· {k.signingStatus === "COMPLETED" ? "firmado" : k.signingStatus === "DRAFT" ? "borrador" : "por firmar"}</span></li>)}</ul></section>
+          )}
+        </aside>
+      </div>
     </div>
   );
 }

@@ -32,6 +32,8 @@ interface ProjectFormValues {
 interface ProjectBuilderProps {
   clients: Client[];
   creatorName: string | null;
+  /** Cliente ya elegido al llegar desde su ficha. */
+  preselectClientId?: string;
 }
 
 const STATUS_OPTS = [
@@ -41,7 +43,7 @@ const STATUS_OPTS = [
   { value: "CANCELLED", label: "Cancelado", color: "border-line-mid text-fg-dim" },
 ];
 
-export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBuilderProps) {
+export function ProjectBuilder({ clients, creatorName: _creatorName, preselectClientId }: ProjectBuilderProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [recording, setRecording] = useState(false);
@@ -50,7 +52,7 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
   const [expandCost, setExpandCost] = useState<number | null>(null);
   const [tempProjectId] = useState(() => `tmp-${Date.now()}`);
   // Un proyecto puede pertenecer a varios clientes (tabla ProjectClient).
-  const [selectedClients, setSelectedClients] = useState<Client[]>([]);
+  const [selectedClients, setSelectedClients] = useState<Client[]>(() => clients.filter((c) => c.id === preselectClientId));
   const [withContract, setWithContract] = useState(true);
   const [contract, setContract] = useState({
     title: "",
@@ -356,7 +358,8 @@ export function ProjectBuilder({ clients, creatorName: _creatorName }: ProjectBu
               setValue("clientName", "");
               setValue("clientId", c.id);
             }}
-            onNewClient={() => {}}
+            // Antes no hacía nada y había que salir a crear una cotización para tener cliente.
+            onNewClient={() => router.push("/empresa/clientes/nuevo")}
             selectedClientId={clientId || undefined}
           />
         </div>
