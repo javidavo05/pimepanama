@@ -4,6 +4,14 @@ import { PortfolioGrid } from "@/components/sections/portfolio-grid";
 import { CASOS } from "../../../../../content/portfolio";
 import { LANGS, type Lang } from "../../../../../content/site";
 import "./lista.css";
+import type { Metadata } from "next";
+import { SEO } from "../../../../../content/seo";
+import { metaDePagina } from "@/lib/seo";
+
+export async function generateMetadata({ params }: { params: Promise<{ lang: Lang }> }): Promise<Metadata> {
+  const { lang } = await params;
+  return metaDePagina(lang, "/portfolio", SEO.portfolio[lang].titulo, SEO.portfolio[lang].descripcion);
+}
 
 const T = {
   es: { eyebrow: "Portfolio", titulo: "Sistemas que operan empresas reales", bajada: "Una parte de los sistemas entregados: los que se pueden mostrar, con su tablero recreado con datos de muestra. Filtre por industria o por tipo." },

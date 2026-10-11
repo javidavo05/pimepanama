@@ -45,15 +45,15 @@ export const HOME: Record<Lang, {
 }> = {
   es: {
     hero: {
-      eyebrow: "ERP y CRM a medida · Panamá",
-      titulo: ["Su ERP o CRM,", "construido desde cero", "para su empresa"],
-      bajada: "Nada de plantillas: diseñamos y programamos el sistema que su empresa opera todos los días, con precio cerrado y tres meses de garantía.",
+      eyebrow: "Desarrollo de software a medida · Panamá",
+      titulo: ["Software 100\u00a0%\u00a0a\u00a0medida,", "con trato personal"],
+      bajada: "Somos un equipo de profesionales en Panamá: diseñamos y programamos su sistema desde cero, usted habla directo con quien lo construye, y paga un precio cerrado por fase con tres meses de garantía.",
       cta: { href: "/es/contacto", label: "Pedir una propuesta" },
       secundario: { href: "/es/portfolio", label: "Ver sistemas entregados" },
       metadatos: [
-        { k: "Qué hacemos", v: "ERP, CRM, SaaS y plataformas internas" },
-        { k: "Cómo", v: "A medida, desde cero, sin licencias ajenas" },
-        { k: "Entrega", v: "Precio llave en mano, fases independientes" },
+        { k: "Qué hacemos", v: "ERP, CRM, SaaS, portales y sitios web" },
+        { k: "Cómo", v: "100 % a medida, desde cero, sin plantillas" },
+        { k: "Con quién", v: "Directo con el equipo que lo programa" },
       ],
       ventana: {
         app: "Suite", buscar: "Buscar cliente, módulo o documento", usuario: "JV", hoy: "Miércoles 8 de octubre",
@@ -147,15 +147,15 @@ export const HOME: Record<Lang, {
   },
   en: {
     hero: {
-      eyebrow: "Custom ERP and CRM · Panama",
-      titulo: ["Your ERP or CRM,", "built from scratch", "for your company"],
-      bajada: "No templates: we design and build the system your company runs every day, at a fixed price, with three months of warranty.",
+      eyebrow: "Custom software development · Panama",
+      titulo: ["100%\u00a0custom software,", "built for you personally"],
+      bajada: "A team of professionals in Panama that designs and codes your system from scratch. Your time zone, priced in US dollars, a fixed price per phase and a three-month warranty — and you talk directly to the people who build it.",
       cta: { href: "/en/contacto", label: "Request a proposal" },
       secundario: { href: "/en/portfolio", label: "See delivered systems" },
       metadatos: [
-        { k: "What we build", v: "ERP, CRM, SaaS and internal platforms" },
-        { k: "How", v: "Custom, from scratch, no third-party licenses" },
-        { k: "Delivery", v: "Turnkey price, independent phases" },
+        { k: "What we build", v: "ERP, CRM, SaaS, portals and websites" },
+        { k: "For", v: "Companies in the US and Panama" },
+        { k: "Pricing", v: "Fixed price per phase, in US dollars" },
       ],
       ventana: {
         app: "Suite", buscar: "Search client, module or document", usuario: "JV", hoy: "Wednesday, October 8",

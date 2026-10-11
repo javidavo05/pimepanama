@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { metaDePagina } from "@/lib/seo";
 import type { Metadata } from "next";
 import { CaseDetail } from "@/components/sections/case-detail";
 import { CASOS } from "../../../../../../content/portfolio";
@@ -13,7 +14,9 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ lang: Lang; slug: string }> }): Promise<Metadata> {
   const { lang, slug } = await params;
   const c = CASOS.find((x) => x.slug === slug && x.publicable);
-  return c ? { title: `${c.nombre} · ${c.cliente}`, description: c.resumen[lang] } : {};
+  if (!c) return {};
+  const titulo = lang === "es" ? `${c.cliente}: ${c.tipo.es} a medida | Pime` : `${c.cliente}: custom ${c.tipo.en} | Pime`;
+  return metaDePagina(lang, `/portfolio/${c.slug}`, titulo, c.resumen[lang]);
 }
 
 export default async function CasePage({ params }: { params: Promise<{ lang: Lang; slug: string }> }) {

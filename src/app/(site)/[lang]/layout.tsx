@@ -7,29 +7,24 @@ import { Nav } from "@/components/sections/nav";
 import { Footer } from "@/components/sections/footer";
 import { CommandPalette } from "@/components/ui/command-palette";
 import { LANGS, type Lang } from "../../../../content/site";
+import { SEO } from "../../../../content/seo";
+import { jsonLdEmpresa } from "@/lib/seo";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://pimepanama.com";
 
 /** Barra del navegador del teléfono del color del sitio, según el esquema del sistema; el selector de tema la ajusta. */
 export const viewport: Viewport = { themeColor: [{ media: "(prefers-color-scheme: light)", color: "#FCFDFE" }, { media: "(prefers-color-scheme: dark)", color: "#08142A" }], width: "device-width", initialScale: 1, viewportFit: "cover" };
-const META = {
-  es: { titulo: "Pime Panamá · ERP y CRM a medida", descripcion: "Diseñamos y programamos ERP, CRM y plataformas a medida desde cero para empresas en Panamá, con precio cerrado por fase y tres meses de garantía." },
-  en: { titulo: "Pime Panamá · Custom ERP and CRM", descripcion: "We design and code custom ERP, CRM and platforms from scratch for companies in Panama, with a fixed price per phase and a three-month warranty." },
-} as const;
-
-/** Metadatos por idioma: título, descripción, hreflang (es, en, x-default) y Open Graph con su imagen. */
+/** Metadatos base del sitio. Cada página fija su título, descripción y canónica con metaDePagina (src/lib/seo.ts);
+ *  aquí no va canónica: antes todas las páginas heredaban la de la home. */
 export async function generateMetadata({ params }: { params: Promise<{ lang: string }> }): Promise<Metadata> {
   const { lang } = await params;
   const l = (LANGS.includes(lang as Lang) ? lang : "es") as Lang;
-  const m = META[l];
   return {
     metadataBase: new URL(BASE),
-    title: { default: m.titulo, template: "%s · Pime Panamá" },
-    description: m.descripcion,
-    alternates: { canonical: `/${l}`, languages: { es: "/es", en: "/en", "x-default": "/es" } },
-    openGraph: { type: "website", siteName: "Pime Panamá", locale: l === "es" ? "es_PA" : "en_US", alternateLocale: l === "es" ? ["en_US"] : ["es_PA"], url: `/${l}`, title: m.titulo, description: m.descripcion },
-    twitter: { card: "summary_large_image" },
-    robots: { index: true, follow: true },
+    title: { default: SEO.home[l].titulo, template: "%s · Pime Panamá" },
+    description: SEO.home[l].descripcion,
+    applicationName: "Pime Panamá",
+    robots: { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 } },
   };
 }
 
@@ -47,6 +42,7 @@ export default async function SiteLayout({ children, params }: { children: React
         <Script id="tema" strategy="beforeInteractive">{"try{var t=localStorage.getItem('tema');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}"}</Script>
       </head>
       <body>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdEmpresa(lang as Lang)) }} />
         <Nav lang={lang as Lang} />
         {children}
         <Footer lang={lang as Lang} />

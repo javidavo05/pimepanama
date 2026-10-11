@@ -10,9 +10,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const rutas = [...PAGINAS, ...CASOS.filter((c) => c.publicable).map((c) => `/portfolio/${c.slug}`)];
   return rutas.flatMap((r) => LANGS.map((l) => ({
     url: `${BASE}/${l}${r}`,
-    lastModified: new Date("2026-10-09"),
+    lastModified: new Date("2026-10-12"),
     changeFrequency: r === "" ? "weekly" as const : "monthly" as const,
     priority: r === "" ? 1 : r.startsWith("/portfolio/") ? 0.6 : 0.8,
-    alternates: { languages: Object.fromEntries(LANGS.map((x) => [x, `${BASE}/${x}${r}`])) },
+    alternates: { languages: { "es-PA": `${BASE}/es${r}`, "en-US": `${BASE}/en${r}`, "x-default": `${BASE}/en${r}` } },
   })));
 }
