@@ -3,7 +3,7 @@ import { AgendarClient } from "./agendar-client";
 export default async function AgendarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; leadId?: string; email?: string; name?: string }>;
+  searchParams: Promise<{ type?: string; leadId?: string; email?: string; name?: string; lang?: string }>;
 }) {
   const sp = await searchParams;
   return (
@@ -12,6 +12,7 @@ export default async function AgendarPage({
       leadId={sp.leadId}
       prefillEmail={sp.email}
       prefillName={sp.name}
+      lang={sp.lang}
     />
   );
 }

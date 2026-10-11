@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { siteUrl } from "./config";
 import { sendBookingConfirmationEmail } from "./notify";
 import { syncBookingToCrm } from "./sync-crm";
+import { computeAvailableSlots } from "./slots";
 
 export async function createBooking(opts: {
   userId: string;
@@ -21,6 +22,10 @@ export async function createBooking(opts: {
   if (!eventType) throw new Error("Tipo de cita no encontrado.");
 
   const endTime = new Date(opts.startTime.getTime() + eventType.durationMin * 60 * 1000);
+
+  // Solo se reserva un turno que de verdad está libre (antes se aceptaba cualquier hora, incluso las 3:00).
+  const libres = await computeAvailableSlots({ userId: opts.userId, eventTypeSlug: opts.eventTypeSlug, from: new Date(opts.startTime.getTime() - 60_000), to: new Date(opts.startTime.getTime() + 60_000) });
+  if (!libres.some((s) => s.startTime.getTime() === opts.startTime.getTime())) throw new Error("Ese horario ya no está disponible. Elige otro.");
 
   const conflict = await prisma.booking.findFirst({
     where: {
