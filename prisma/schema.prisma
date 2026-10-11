@@ -280,6 +280,7 @@ model EmpresaUser {
   activityEvents        ActivityEvent[]          @relation("ActivityTenant")
   monitoredSystems      MonitoredSystem[]
   githubAccounts        GithubAccount[]
+  assistantActions      AssistantAction[]
   activityActed         ActivityEvent[]          @relation("ActivityActorEmpresa")
   /// PAT de GitHub cifrado (AES-256-GCM). Es del usuario, no del proyecto: un
   /// token sirve para todos sus repos.
@@ -1658,4 +1659,26 @@ model GithubAccount {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   projects      Project[]
+}
+
+/// Acción propuesta o hecha por el asistente (migración 0043).
+model AssistantAction {
+  id         String      @id @default(cuid())
+  userId     String
+  user       EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// "factura" | "tarea" | "nota" | "pago"
+  kind       String
+  payload    Json
+  summary    String
+  request    String?
+  /// "propuesta" | "hecha" | "cancelada" | "deshecha" | "fallida"
+  status     String      @default("propuesta")
+  resultType String?
+  resultId   String?
+  resultHref String?
+  error      String?
+  createdAt  DateTime    @default(now())
+  decidedAt  DateTime?
+
+  @@index([userId, createdAt(sort: Desc)])
 }

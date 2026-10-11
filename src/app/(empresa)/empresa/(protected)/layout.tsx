@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { SidebarNav } from "@/components/empresa/sidebar-nav";
 import { resolveCompanyLogoUrl } from "@/lib/company-logo";
+import { AsistenteChat } from "@/components/empresa/asistente-ia/asistente-chat";
 
 export const dynamic = "force-dynamic";
 
@@ -33,9 +34,10 @@ export default async function EmpresaProtectedLayout({
             la barra de estado) y termina sobre la de pestañas (64 px más la
             barra de inicio del sistema). */}
         <main className="pt-[calc(3.5rem+env(safe-area-inset-top))] md:pt-0 md:ml-60 min-h-screen">
-          <div className="p-4 sm:p-6 md:p-8 pb-[calc(5rem+env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] sm:pb-[calc(5rem+env(safe-area-inset-bottom))] md:p-8">{children}</div>
+          <div className="p-4 sm:p-6 md:p-8 pb-[calc(9rem+env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] sm:pb-[calc(9rem+env(safe-area-inset-bottom))] md:p-8 md:pb-24">{children}</div>
         </main>
       </SidebarNav>
+      <AsistenteChat />
     </div>
   );
 }

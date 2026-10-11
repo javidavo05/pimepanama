@@ -55,3 +55,4 @@ Todas las migraciones se corren manualmente en **Supabase → SQL Editor**.
 | 0040 | `0040_github_cuentas.sql` | GithubAccount — varias cuentas de GitHub por equipo (token cifrado por cuenta, importables desde la CLI de GitHub como en Git PIME) + Project.githubAccountId (con qué cuenta se lee el repo) | 2026-10-11 | ✅ Aplicado |
 | 0041 | `0041_tarifas_y_envios.sql` | Tarifas por línea Normal $40 y Premium $30 (antes 30/20) + CompanyConfig.clientEmailsEnabled (envíos a clientes apagados por defecto) | 2026-10-11 | ✅ Aplicado |
 | 0042 | `0042_verificacion_github.sql` | Project.githubCheck + githubCheckAt — estado del proyecto verificado con GitHub (commits, milestones, issues, PRs) | 2026-10-11 | ✅ Aplicado |
+| 0043 | `0043_asistente.sql` | AssistantAction — registro de lo que propone y hace el asistente (factura, tarea, nota, pago), con confirmación y deshacer | 2026-10-11 | ✅ Aplicado |

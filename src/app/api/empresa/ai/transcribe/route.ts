@@ -21,7 +21,9 @@ export async function POST(request: Request) {
 
     const arrayBuffer = await audioFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
-    const file = await toFile(buffer, "recording.webm", { type: "audio/webm" });
+    // Safari en iPhone graba audio/mp4: se respeta el formato real para que Whisper lo lea.
+    const esMp4 = /mp4|m4a|aac/.test(audioFile.type) || /\.m4a$/i.test(audioFile.name ?? "");
+    const file = await toFile(buffer, esMp4 ? "recording.m4a" : "recording.webm", { type: esMp4 ? "audio/mp4" : "audio/webm" });
 
     const start = Date.now();
     const response = await openai.audio.transcriptions.create({
