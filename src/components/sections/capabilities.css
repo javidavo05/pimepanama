@@ -144,7 +144,9 @@
   .caps-grid { display: block; padding: 0; }
   .caps-steps { display: flex; gap: var(--s-3); overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding: var(--s-1) var(--gutter) var(--s-3); scroll-padding-inline: var(--gutter); }
   .caps-steps::-webkit-scrollbar { display: none; }
-  .caps-step { flex: 0 0 min(86vw, 520px); scroll-snap-align: start; border: var(--border); border-top: var(--border); border-radius: var(--r-lg); background: var(--surface); padding: var(--s-4); gap: var(--s-2); align-content: start; }
+  /* Tarjetas simétricas: todas miden lo mismo (la más alta manda) y la caja de la pantalla llena el resto */
+  .caps-step { flex: 0 0 min(86vw, 520px); scroll-snap-align: start; border: var(--border); border-top: var(--border); border-radius: var(--r-lg); background: var(--surface); padding: var(--s-4); gap: var(--s-2); grid-template-rows: auto auto auto minmax(0, 1fr); align-content: stretch; }
+  .caps-scene-inline { height: 100%; min-height: 320px; align-self: stretch; box-sizing: border-box; }
   .caps-t { font-size: var(--text-xl); }
   .caps-apoyo { font-size: var(--text-sm); }
   /* La pantalla de cada tarjeta NO desliza por dentro: un scroll vertical anidado se traga el gesto horizontal y el
@@ -152,6 +154,8 @@
   .caps-scene-inline { padding: var(--s-3); border-radius: var(--r-md); background: var(--paper); touch-action: pan-x pan-y; }
   /* En la tarjeta solo van los dos primeros bloques de la pantalla (cabecera y cifras): nada queda cortado a medias */
   .caps-scene-inline .cs > :nth-child(n+3) { display: none; }
+  .caps-scene-inline .cs-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .caps-scene-inline .cs-kpi b { font-size: var(--text-md); }
   .caps-steps { touch-action: pan-x pan-y; }
   .caps-hint { display: flex; justify-content: space-between; gap: var(--s-4); padding: 0 var(--gutter); }
 }
