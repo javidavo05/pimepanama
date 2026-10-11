@@ -86,13 +86,14 @@ export function ThemeToggleLabeled() {
   const { preference, setPreference, ready } = useTheme();
   return (
     <div role="radiogroup" aria-label="Tema" className="grid grid-cols-3 gap-1 p-1 rounded-lg bg-fill border border-line">
+      {/* Ícono arriba y nombre abajo: en la barra lateral (240 px) el nombre al lado se cortaba. */}
       {OPTIONS.map(({ value, label, hint, Icon }) => {
         const active = ready && preference === value;
         return (
           <button key={value} type="button" role="radio" aria-checked={active} title={hint} onClick={() => setPreference(value)}
-            className={`flex min-h-11 sm:min-h-9 items-center justify-center gap-1.5 rounded-md px-2 text-xs font-semibold transition-colors ${active ? "bg-brand/15 text-brand-fg" : "text-fg-dim hover:text-fg hover:bg-fill-2"}`}>
+            className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-md px-1 py-2 text-xs font-semibold transition-colors ${active ? "bg-brand/15 text-brand-fg" : "text-fg-dim hover:text-fg hover:bg-fill-2"}`}>
             <Icon className="h-4 w-4 shrink-0" />
-            <span className="truncate">{label}</span>
+            <span>{label}</span>
           </button>
         );
       })}
