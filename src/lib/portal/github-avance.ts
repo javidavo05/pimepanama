@@ -6,17 +6,18 @@
  * terminarla del todo sigue siendo decisión del equipo.
  */
 import { prisma } from "@/lib/prisma";
-import { decryptGithubToken, getClosedIssues, getMilestones } from "@/lib/github/client";
+import { getClosedIssues, getMilestones } from "@/lib/github/client";
+import { tokenParaRepo } from "@/lib/github/cuentas";
 import { registrarEvento } from "./eventos";
 
 export async function sincronizarProyecto(projectId: string): Promise<{ fases: number; issues: number }> {
   const p = await prisma.project.findUnique({
     where: { id: projectId },
-    select: { id: true, name: true, userId: true, repoOwner: true, repoName: true, clientId: true, clients: { select: { clientId: true } }, user: { select: { githubTokenEnc: true } },
+    select: { id: true, name: true, userId: true, repoOwner: true, repoName: true, clientId: true, clients: { select: { clientId: true } }, githubAccountId: true,
       phases: { where: { githubMilestone: { not: null } }, select: { id: true, name: true, status: true, progress: true, githubMilestone: true, startedAt: true } } },
   });
   if (!p?.repoOwner || !p.repoName || !p.phases.length) return { fases: 0, issues: 0 };
-  const token = p.user.githubTokenEnc ? decryptGithubToken(p.user.githubTokenEnc) : process.env.GITHUB_TOKEN ?? null;
+  const { token } = await tokenParaRepo({ userId: p.userId, owner: p.repoOwner, repo: p.repoName, projectId: p.id, cuentaId: p.githubAccountId });
   const milestones = await getMilestones(p.repoOwner, p.repoName, token);
   const clientId = p.clientId ?? p.clients[0]?.clientId ?? null;
   let issues = 0;

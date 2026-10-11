@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { fechaCorta } from "@/lib/format-datetime";
+import { AsistenteTokenGithub } from "@/components/empresa/github/asistente-token";
 
 interface RepoState {
   owner: string | null;
@@ -9,6 +10,7 @@ interface RepoState {
   branch: string | null;
   syncedAt: string | null;
   hasToken: boolean;
+  account: string | null;
   summary: string | null;
   stats: {
     files: number;
@@ -38,8 +40,7 @@ export function RepoPanel({ projectId }: { projectId: string }) {
   const [state, setState] = useState<RepoState | null>(null);
   const [input, setInput] = useState("");
   const [branch, setBranch] = useState("");
-  const [token, setToken] = useState("");
-  const [showToken, setShowToken] = useState(false);
+  const [asistente, setAsistente] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -57,29 +58,6 @@ export function RepoPanel({ projectId }: { projectId: string }) {
   useEffect(() => {
     void load();
   }, [load]);
-
-  async function saveToken() {
-    setBusy("token");
-    setError(null);
-    setMessage(null);
-    try {
-      const res = await fetch("/api/empresa/github", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error ?? "No se pudo guardar el token");
-      setToken("");
-      setShowToken(false);
-      setMessage(`Token guardado${data.login ? ` — conectado como ${data.login}` : ""}.`);
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "No se pudo guardar el token");
-    } finally {
-      setBusy(null);
-    }
-  }
 
   async function connect() {
     setBusy("connect");
@@ -137,36 +115,19 @@ export function RepoPanel({ projectId }: { projectId: string }) {
         </p>
       </div>
 
-      {state && !state.hasToken && (
+      {state && (!state.hasToken || (connected && !state.stats)) && (
         <div className="border border-warn/20 bg-warn/[0.04] rounded-xl p-3.5 space-y-2">
           <p className="text-warn text-xs leading-relaxed">
-            No hay token de GitHub guardado. Sin él solo se pueden leer repositorios públicos.
+            {state.hasToken
+              ? `Ninguna cuenta de GitHub guardada puede leer ${state.owner}/${state.repo}. Agrega un token de la cuenta ${state.owner} o de una que tenga acceso.`
+              : "No hay token de GitHub guardado. Sin él solo se pueden leer repositorios públicos."}
           </p>
-          {showToken ? (
-            <div className="grid gap-2 sm:flex sm:flex-wrap">
-              <input
-                type="password"
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-                placeholder="ghp_… (token con lectura de repositorios)"
-                className="min-w-0 sm:flex-1 sm:min-w-[220px] bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
-              />
-              <button
-                onClick={() => void saveToken()}
-                disabled={busy !== null || !token.trim()}
-                className="min-h-11 sm:min-h-8 px-4 py-2 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
-              >
-                {busy === "token" ? "Comprobando…" : "Guardar token"}
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowToken(true)}
-              className="inline-flex items-center min-h-11 sm:min-h-8 text-brand-fg hover:text-brand-hi text-xs transition-colors"
-            >
-              + Añadir token de GitHub
-            </button>
-          )}
+          <button
+            onClick={() => setAsistente(true)}
+            className="inline-flex items-center min-h-11 sm:min-h-8 text-brand-fg hover:text-brand-hi text-xs font-semibold transition-colors"
+          >
+            Conectar cuenta de GitHub
+          </button>
         </div>
       )}
 
@@ -177,6 +138,7 @@ export function RepoPanel({ projectId }: { projectId: string }) {
               {state.owner}/{state.repo}
             </span>
             <span className="text-fg-ghost text-xs">rama {state.branch}</span>
+            {state.account && <span className="text-fg-ghost text-xs">· cuenta {state.account}</span>}
             {state.syncedAt && (
               <span className="text-fg-ghost text-xs">
                 · leído {fechaCorta(state.syncedAt)}
@@ -260,6 +222,16 @@ export function RepoPanel({ projectId }: { projectId: string }) {
 
       {message && <p className="text-ok text-xs">{message}</p>}
       {error && <p className="text-danger text-xs">{error}</p>}
+      <AsistenteTokenGithub
+        abierto={asistente}
+        onCerrar={() => setAsistente(false)}
+        cuenta={state?.owner ?? null}
+        repo={state?.owner && state?.repo ? `${state.owner}/${state.repo}` : null}
+        onListo={async () => {
+          if (state?.owner && state?.repo && !state.stats) await connect();
+          else await load();
+        }}
+      />
     </div>
   );
 }

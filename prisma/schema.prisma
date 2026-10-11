@@ -279,6 +279,7 @@ model EmpresaUser {
   approvals             Approval[]
   activityEvents        ActivityEvent[]          @relation("ActivityTenant")
   monitoredSystems      MonitoredSystem[]
+  githubAccounts        GithubAccount[]
   activityActed         ActivityEvent[]          @relation("ActivityActorEmpresa")
   /// PAT de GitHub cifrado (AES-256-GCM). Es del usuario, no del proyecto: un
   /// token sirve para todos sus repos.
@@ -563,6 +564,8 @@ model Project {
   timeEntries     TimeEntry[]
   activityEvents  ActivityEvent[]
   systems         MonitoredSystem[]
+  githubAccountId String?
+  githubAccount   GithubAccount?  @relation(fields: [githubAccountId], references: [id])
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
@@ -1634,4 +1637,21 @@ model PulseEventId {
 
   @@id([systemId, eventId])
   @@index([receivedAt])
+}
+
+/// Cuenta de GitHub con su token cifrado (migración 0040).
+model GithubAccount {
+  id            String      @id @default(cuid())
+  userId        String
+  user          EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  login         String
+  tokenEnc      String
+  scopes        String?
+  /// "manual" | "gh-cli"
+  source        String      @default("manual")
+  lastCheckedAt DateTime?
+  lastError     String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  projects      Project[]
 }
