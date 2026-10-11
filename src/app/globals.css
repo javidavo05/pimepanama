@@ -441,6 +441,75 @@ html[data-theme="light"] {
   --panel-shadow: 0 1px 2px rgba(10, 10, 10, 0.04), 0 1px 3px rgba(10, 10, 10, 0.06);
 }
 
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Línea Premium dentro de /empresa: la ficha, los tickets y los proyectos de
+   un cliente Premium se pintan enteros en negro y oro (manual de marca), en
+   los dos temas. Se activa con la clase .linea-premium en el contenedor.
+   ══════════════════════════════════════════════════════════════════════════ */
+.linea-premium {
+  --c-canvas: 10 10 10;
+  --c-panel: 20 19 17;
+  --c-panel-2: 15 14 13;
+  --c-panel-3: 30 28 25;
+  --c-pop: 24 22 20;
+  --c-fg: 255 255 255;
+  --c-fg-soft: 236 232 225;
+  --c-fg-mute: 212 205 194;
+  --c-fg-dim: 176 168 155;
+  --c-fg-faint: 148 140 128;
+  --c-fg-ghost: 135 127 116;
+  --c-fg-trace: 96 90 82;
+  --c-line: 38 35 31;
+  --c-line-mid: 52 48 42;
+  --c-line-loud: 74 68 60;
+  --c-fill: 26 24 22;
+  --c-fill-2: 34 31 28;
+  --c-fill-3: 48 44 39;
+  --c-brand: 227 194 122;
+  --c-brand-hi: 184 137 46;
+  --c-brand-fg: 227 194 122;
+  --c-on-brand: 10 10 10;
+  --c-sand: 227 194 122;
+  --c-sand-lt: 236 211 156;
+  --c-sand-fg: 236 211 156;
+  --c-on-accent: 10 10 10;
+  background-color: rgb(var(--c-canvas));
+  color: rgb(var(--c-fg-soft));
+}
+html[data-theme="light"] .linea-premium {
+  --c-canvas: 248 246 241;
+  --c-panel: 255 255 255;
+  --c-panel-2: 255 255 255;
+  --c-panel-3: 244 240 233;
+  --c-pop: 255 255 255;
+  --c-fg: 10 10 10;
+  --c-fg-soft: 31 29 26;
+  --c-fg-mute: 58 54 48;
+  --c-fg-dim: 87 82 74;
+  --c-fg-faint: 105 98 88;
+  --c-fg-ghost: 112 105 95;
+  --c-fg-trace: 160 152 140;
+  --c-line: 236 231 222;
+  --c-line-mid: 224 217 205;
+  --c-line-loud: 205 196 181;
+  --c-fill: 250 248 244;
+  --c-fill-2: 244 240 233;
+  --c-fill-3: 236 231 222;
+  --c-brand: 10 10 10;
+  --c-brand-hi: 38 36 33;
+  --c-brand-fg: 138 100 32;
+  --c-on-brand: 255 255 255;
+  --c-sand: 184 137 46;
+  --c-sand-lt: 200 156 72;
+  --c-sand-fg: 138 100 32;
+  --c-on-accent: 255 255 255;
+}
+.linea-premium :where(*) { border-color: rgb(var(--c-line)); }
+.logo-tema-claro { display: none; }
+html[data-theme="light"] .logo-tema-claro { display: block; }
+html[data-theme="light"] .logo-tema-oscuro { display: none; }
+
 /* ══════════════════════════════════════════════════════════════════════════
    Cajón revelado — el menú del celular no se superpone: se REVELA.
    ──────────────────────────────────────────────────────────────────────────

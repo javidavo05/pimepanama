@@ -8,6 +8,7 @@ import { TaskWorkspace } from "@/components/empresa/tasks/task-workspace";
 import { ProjectTasks } from "@/components/empresa/tasks/project-tasks";
 import { ProjectDetailClient } from "./project-detail-client";
 import { FasesPanel } from "./fases-panel";
+import { ZonaLinea } from "@/components/empresa/clientes/zona-linea";
 
 export const dynamic = "force-dynamic";
 
@@ -106,7 +107,10 @@ export default async function ProyectoDetailPage({
     })),
   };
 
+  const lineaCliente = await prisma.client.findFirst({ where: { id: { in: projectClients.map((c) => c.id) }, brandLine: "premium" }, select: { brandLine: true } });
+
   return (
+    <ZonaLinea linea={lineaCliente?.brandLine}>
     <div className="max-w-6xl mx-auto">
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-4 text-sm min-w-0">
@@ -131,5 +135,6 @@ export default async function ProyectoDetailPage({
         />
       </TaskWorkspace>
     </div>
+    </ZonaLinea>
   );
 }

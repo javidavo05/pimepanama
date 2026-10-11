@@ -7,6 +7,7 @@ import { sugerirGarantia } from "@/lib/portal/empresa";
 import { dinero } from "@/lib/portal/datos";
 import { TICKET_ESTADO_LABEL, TICKET_TIPO_LABEL, type TicketEstado, type TicketTipo } from "@/lib/portal/estados";
 import { EstimarTicket, GarantiaToggle, HorasForm, ResponderTicket } from "@/components/empresa/clientes/formularios";
+import { ZonaLinea } from "@/components/empresa/clientes/zona-linea";
 
 export const metadata = { title: "Ticket — Pime Suite" };
 const card = "bg-panel border border-line rounded-2xl p-4 sm:p-6 min-w-0";
@@ -33,6 +34,7 @@ export default async function TicketEquipo({ params }: { params: Promise<{ id: s
   const cobrado = t.timeEntries.reduce((a, e) => a + Number(e.amount), 0);
 
   return (
+    <ZonaLinea linea={t.client.brandLine}>
     <div className="max-w-6xl mx-auto space-y-6">
       <nav className="flex items-center gap-2 text-sm text-fg-dim min-w-0" aria-label="Ruta">
         <Link href="/empresa/tickets" className="inline-flex items-center min-h-11 sm:min-h-8 hover:text-fg-mute">Tickets</Link><span aria-hidden>/</span>
@@ -106,5 +108,6 @@ export default async function TicketEquipo({ params }: { params: Promise<{ id: s
         </aside>
       </div>
     </div>
+    </ZonaLinea>
   );
 }

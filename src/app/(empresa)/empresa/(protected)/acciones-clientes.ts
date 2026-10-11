@@ -172,11 +172,14 @@ export async function sugerirGarantiaAction(ticketId: string): Promise<boolean> 
 
 export async function facturarHorasAction(_: Estado, form: FormData): Promise<Estado> {
   const u = await getEmpresaUser();
+  let docId: string;
   try {
     const doc = await facturarHoras(u, txt(form.get("clientId"), 60));
-    refrescar(txt(form.get("clientId"), 60), ["/empresa/facturas"]);
-    return { ok: true, mensaje: `Factura ${doc.number} creada en borrador por ${dinero(doc.total)}. Revísala y envíala.`, enlace: `/empresa/facturas/${doc.id}` };
+    docId = doc.id;
   } catch (e) { return falla(e); }
+  refrescar(txt(form.get("clientId"), 60), ["/empresa/facturas"]);
+  // A la factura en borrador: se revisa y se envía desde ahí.
+  redirect(`/empresa/facturas/${docId}`);
 }
 
 export async function registrarPagoAction(_: Estado, form: FormData): Promise<Estado> {

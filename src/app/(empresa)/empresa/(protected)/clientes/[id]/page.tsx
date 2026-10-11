@@ -9,6 +9,7 @@ import { StatusBadge } from "@/components/empresa/document-builder/status-badge"
 import type { DocumentStatus } from "@prisma/client";
 import { btn } from "@/components/empresa/page-header";
 import { FacturarHorasForm, HorasForm, InvitarForm, PagoForm, PagoPorConfirmar, PersonaAcciones } from "@/components/empresa/clientes/formularios";
+import { ZonaLinea } from "@/components/empresa/clientes/zona-linea";
 
 export const metadata = { title: "Cliente — Pime Suite" };
 
@@ -34,6 +35,7 @@ export default async function FichaCliente({ params }: { params: Promise<{ id: s
   const facturasAbiertas = f.facturas.filter((x) => x.falta > 0.005 && x.status !== "DRAFT" && x.status !== "CANCELLED");
 
   return (
+    <ZonaLinea linea={c.brandLine}>
     <div className="max-w-6xl mx-auto space-y-6">
       <nav className="flex items-center gap-2 text-sm text-fg-dim min-w-0" aria-label="Ruta">
         <Link href="/empresa/clientes" className="inline-flex items-center min-h-11 sm:min-h-8 shrink-0 hover:text-fg-mute">Clientes</Link>
@@ -185,5 +187,6 @@ export default async function FichaCliente({ params }: { params: Promise<{ id: s
         </aside>
       </div>
     </div>
+    </ZonaLinea>
   );
 }
