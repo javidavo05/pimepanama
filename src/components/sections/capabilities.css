@@ -13,7 +13,6 @@
 .caps-t { font-family: var(--font-display); font-weight: var(--w-display); font-size: clamp(24px, 1.2rem + 1.2vw, 32px); line-height: var(--leading-snug); letter-spacing: var(--tracking-display); }
 .caps-apoyo { color: var(--fg-2); max-width: 44ch; }
 .caps-mods { display: flex; flex-wrap: wrap; gap: var(--s-2); }
-.caps-scene-hueco { min-height: 280px; }
 .caps-scene-inline { margin-top: var(--s-2); border: var(--border); border-radius: var(--r-lg); padding: var(--s-4); background: var(--surface); }
 @media (min-width: 1024px) { .caps-scene-inline { display: none; } }
 
@@ -146,16 +145,14 @@
   .caps-steps::-webkit-scrollbar { display: none; }
   /* Tarjetas simétricas: todas miden lo mismo (la más alta manda) y la caja de la pantalla llena el resto */
   .caps-step { flex: 0 0 min(86vw, 520px); scroll-snap-align: start; border: var(--border); border-top: var(--border); border-radius: var(--r-lg); background: var(--surface); padding: var(--s-4); gap: var(--s-2); grid-template-rows: auto auto auto minmax(0, 1fr); align-content: stretch; }
-  .caps-scene-inline { height: 100%; min-height: 320px; align-self: stretch; box-sizing: border-box; }
+  .caps-scene-inline { height: 100%; align-self: stretch; box-sizing: border-box; font-size: 11px; }
+  .caps-scene-inline .cv { height: 100%; align-content: start; font-size: 11px; }
   .caps-t { font-size: var(--text-xl); }
   .caps-apoyo { font-size: var(--text-sm); }
   /* La pantalla de cada tarjeta NO desliza por dentro: un scroll vertical anidado se traga el gesto horizontal y el
      carrusel «no agarra». Se recorta a una altura fija con un fundido abajo; la tarjeta entera es lo que se desliza. */
   .caps-scene-inline { padding: var(--s-3); border-radius: var(--r-md); background: var(--paper); touch-action: pan-x pan-y; }
   /* En la tarjeta solo van los dos primeros bloques de la pantalla (cabecera y cifras): nada queda cortado a medias */
-  .caps-scene-inline .cs > :nth-child(n+3) { display: none; }
-  .caps-scene-inline .cs-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .caps-scene-inline .cs-kpi b { font-size: var(--text-md); }
   .caps-steps { touch-action: pan-x pan-y; }
   .caps-hint { display: flex; justify-content: space-between; gap: var(--s-4); padding: 0 var(--gutter); }
 }

@@ -5,6 +5,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Eyebrow, Lines, Pill } from "@/components/ui/primitives";
 import { EscenaCRM, EscenaERP, EscenaIA, EscenaPortal, EscenaSaaS } from "./capability-scenes";
+import { CapsPreview } from "./capability-previews";
 import { CAPACIDADES } from "../../../content/home";
 import type { Lang } from "../../../content/site";
 import "./capabilities.css";
@@ -14,10 +15,6 @@ const ESCENAS = [EscenaERP, EscenaCRM, EscenaSaaS, EscenaPortal, EscenaIA];
 export function Capabilities({ lang }: { lang: Lang }) {
   const c = CAPACIDADES[lang];
   const [activa, setActiva] = useState(0);
-  // Teléfono y tableta: las escenas en línea viven en un carrusel; solo se montan las tarjetas que están a la
-  // vista (y las vecinas), así una tarjeta fuera de pantalla no deja controles «activos» invisibles ni trabajo
-  // de más. En escritorio las escenas en línea no se muestran (va la pantalla fija).
-  const [visibles, setVisibles] = useState<Set<number>>(() => new Set([0, 1]));
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -30,17 +27,7 @@ export function Capabilities({ lang }: { lang: Lang }) {
       { rootMargin: "-45% 0px -45% 0px", threshold: 0 },
     );
     steps.forEach((s) => io.observe(s));
-    const rail = root.querySelector<HTMLElement>(".caps-steps");
-    const ioRail = new IntersectionObserver(
-      (entries) => setVisibles((prev) => {
-        const next = new Set(prev);
-        for (const e of entries) { const i = Number((e.target as HTMLElement).dataset.step); if (e.isIntersecting) { next.add(i); next.add(i + 1); } else next.delete(i); }
-        return next;
-      }),
-      { root: rail, threshold: 0.2 },
-    );
-    steps.forEach((s) => ioRail.observe(s));
-    return () => { io.disconnect(); ioRail.disconnect(); };
+    return () => io.disconnect();
   }, []);
 
   return (
@@ -62,9 +49,8 @@ export function Capabilities({ lang }: { lang: Lang }) {
               </button>
               <p className="caps-apoyo">{it.apoyo}</p>
               <div className="caps-mods">{it.modulos.map((m) => <Pill key={m} variant="ghost">{m}</Pill>)}</div>
-              <div className="caps-scene-inline">
-                {visibles.has(i) ? (() => { const E = ESCENAS[i]; return <E lang={lang} />; })() : <div className="caps-scene-hueco" aria-hidden="true" />}
-              </div>
+              {/* Teléfono y tableta: vista previa estática y simétrica; la pantalla funcional va en escritorio (caps-sticky) */}
+              <div className="caps-scene-inline"><CapsPreview id={it.id} lang={lang} /></div>
             </li>
           ))}
         </ol>
