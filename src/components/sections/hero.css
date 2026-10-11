@@ -226,5 +226,6 @@
 @media (max-width: 767px) {
   .hero-meta { display: none; }
   .hero-stage-outer { padding-top: var(--s-8); }
-  .hw-main { max-height: 56svh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+  /* Sin overscroll-behavior: contain: con él, al llegar al final de la ventana el dedo quedaba atrapado y la página no seguía */
+  .hw-main { max-height: 56svh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 }
