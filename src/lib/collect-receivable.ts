@@ -1,3 +1,4 @@
+import { enlacesDeDocumento } from "@/lib/motor/enlaces";
 import { prisma } from "@/lib/prisma";
 import { syncQuoteInvoiceBalance, QUOTE_BALANCE_SCHEDULE_DESC } from "@/lib/quote-balance";
 import { registerInvoicePayment } from "@/lib/invoice-payments";
@@ -35,6 +36,8 @@ async function createInvoiceForQuoteAmount(
   const number = await nextInvoiceNumber(userId, prefix);
   const quoteContent = (quote.content ?? {}) as Record<string, unknown>;
 
+  const enlaces = await enlacesDeDocumento(userId, { type: "FACTURA", clientId: quote.clientId, clientName: quote.clientName, clientEmail: quote.clientEmail, clientCompany: quote.clientCompany, clientAddress: quote.clientAddress, clientRuc: quote.clientRuc, projectId: quote.projectId, leadId: quote.leadId });
+  if (enlaces.clientId && !quote.clientId) await prisma.document.update({ where: { id: quote.id }, data: { clientId: enlaces.clientId } });
   return prisma.document.create({
     data: {
       type: "FACTURA",
@@ -47,7 +50,8 @@ async function createInvoiceForQuoteAmount(
       clientCompany: quote.clientCompany,
       clientAddress: quote.clientAddress,
       clientRuc: quote.clientRuc,
-      clientId: quote.clientId,
+      clientId: enlaces.clientId,
+      leadId: quote.leadId,
       content: {
         lineItems: [
           { description, quantity: 1, unitPrice: amount, taxPercent: 0, discount: 0 },
@@ -63,7 +67,7 @@ async function createInvoiceForQuoteAmount(
       total: amount,
       currency: quote.currency,
       paymentMethodId: quote.paymentMethodId,
-      projectId: quote.projectId ?? undefined,
+      projectId: enlaces.projectId ?? undefined,
       contractId: quote.contractId ?? undefined,
       linkedDocumentId: quote.id,
       userId,

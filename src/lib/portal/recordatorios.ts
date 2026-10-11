@@ -5,8 +5,8 @@
  * Cada etapa se avisa una sola vez: queda registrada en la línea de tiempo (ActivityEvent).
  * Las cuotas (PaymentSchedule) siguen como antes: vencidas pasan a OVERDUE.
  */
+import { enviarAlCliente } from "@/lib/motor/envios";
 import { prisma } from "@/lib/prisma";
-import { sendEmail } from "@/lib/email-service";
 import { getPortalInvoiceReminderEmail } from "@/lib/email-templates";
 import { getSiteUrl } from "@/lib/site-url";
 import { notifyUser } from "@/lib/notifications/notify";
@@ -48,7 +48,7 @@ export async function correrRecordatorios(hoy = new Date()) {
     if (personas.length) {
       const principal = personas.find((p) => p.role === "principal") ?? personas[0];
       const c = getPortalInvoiceReminderEmail({ name: principal.fullName, number: f.number ?? "", amount: dinero(falta), due: vence, stage: etapa, link: `${getSiteUrl()}/cliente/facturas` });
-      try { await sendEmail({ to: personas.map((p) => p.email), subject: c.subject, html: c.html }); clientes++; } catch (e) { console.error("[recordatorios] correo", f.id, e); }
+      try { const r = await enviarAlCliente({ to: personas.map((p) => p.email), subject: c.subject, html: c.html, motivo: `recordatorio ${f.number}` }); if (r.enviado) clientes++; } catch (e) { console.error("[recordatorios] correo", f.id, e); }
     }
     await registrarEvento({ userId: f.userId, clientId: f.clientId, entityType: "factura", entityId: f.id, kind: marca, title: `Recordatorio de cobro ${etapa === "antes" ? "(3 días antes)" : etapa === "hoy" ? "(vence hoy)" : "(7 días vencida)"}: ${f.number}`, detail: `${dinero(falta)}${personas.length ? " · correo al cliente" : ""}`, visibility: "interno", actorType: "sistema" });
   }

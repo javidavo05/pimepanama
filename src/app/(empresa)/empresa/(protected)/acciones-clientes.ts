@@ -5,6 +5,7 @@
  * (invitar, restablecer, quitar acceso), tickets, horas, facturas de horas, pagos, fases y órdenes
  * de cambio. Todas pasan por getEmpresaUser (equipo + doble verificación) y filtran por su userId.
  */
+import { enviarAlCliente, enviosAClientesActivos } from "@/lib/motor/envios";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -14,7 +15,6 @@ import { registrarEvento } from "@/lib/portal/eventos";
 import { decidirPagoReportado, facturarHoras, fijarEstimado, registrarHoras, registrarPago, responderComoPime, avanceDeFaseEvento, sugerirGarantia, clientePrincipal } from "@/lib/portal/empresa";
 import { FASE_COBRO, FASE_ESTADOS, PAGO_METODOS, PROYECTO_TIPOS, TICKET_PRIORIDADES, TICKET_TIPOS, esUno } from "@/lib/portal/estados";
 import { dinero } from "@/lib/portal/datos";
-import { sendEmail } from "@/lib/email-service";
 import { getSiteUrl } from "@/lib/site-url";
 
 export type Estado = { error?: string; ok?: boolean; mensaje?: string; enlace?: string } | null;
@@ -324,12 +324,12 @@ export async function guardarOrdenAction(_: Estado, form: FormData): Promise<Est
     if (personas.length) {
       const { getPortalTicketUpdateEmail } = await import("@/lib/email-templates");
       const c = getPortalTicketUpdateEmail({ number: o.number, title: titulo, status: "Espera tu aprobación", message: `${descripcion ?? ""}\n\nTotal: ${dinero(total)}`.trim(), link: `${getSiteUrl()}/cliente/cambios/${o.id}` });
-      await sendEmail({ to: personas.map((x) => x.email), subject: `Orden de cambio ${o.number} · ${titulo}`, html: c.html }).catch((e) => console.error("[orden] correo", e));
+      await enviarAlCliente({ to: personas.map((x) => x.email), subject: `Orden de cambio ${o.number} · ${titulo}`, html: c.html, motivo: `orden ${o.number}` }).catch((e) => console.error("[orden] correo", e));
     }
   }
   revalidatePath(`/empresa/proyectos/${p.id}`);
   refrescar(clientId);
-  return { ok: true, mensaje: enviar ? `Orden ${o.number} enviada al cliente.` : `Orden ${o.number} guardada en borrador.` };
+  return { ok: true, mensaje: enviar ? `Orden ${o.number} publicada en la cuenta del cliente${(await enviosAClientesActivos()) ? " y avisada por correo" : " (los correos a clientes están apagados)"}.` : `Orden ${o.number} guardada en borrador.` };
 }
 
 export async function enviarOrdenAction(_: Estado, form: FormData): Promise<Estado> {

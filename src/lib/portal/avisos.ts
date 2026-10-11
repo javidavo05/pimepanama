@@ -2,6 +2,7 @@
  * Avisos de Pime Clientes. Al equipo: campana + celular (notifyUser) y correo. Al cliente: correo.
  * Nunca rompen la acción: si un aviso falla, queda en el log.
  */
+import { enviarAlCliente } from "@/lib/motor/envios";
 import { prisma } from "@/lib/prisma";
 import { notifyUser } from "@/lib/notifications/notify";
 import { sendEmail } from "@/lib/email-service";
@@ -37,7 +38,7 @@ export async function avisarAlClienteTicket(ticketId: string, mensaje?: string |
     const p = t?.openedByClient;
     if (!t || !p || p.status !== "activo") return;
     const c = getPortalTicketUpdateEmail({ name: p.fullName, number: t.number, title: t.title, status: TICKET_ESTADO_LABEL[t.status as TicketEstado] ?? t.status, message: mensaje, link: `${getSiteUrl()}/cliente/tickets/${t.id}` });
-    await sendEmail({ to: p.email, subject: c.subject, html: c.html });
+    await enviarAlCliente({ to: p.email, subject: c.subject, html: c.html, motivo: `ticket ${t.number}` });
   } catch (e) {
     console.error("[portal] aviso al cliente", e);
   }

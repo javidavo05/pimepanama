@@ -118,13 +118,16 @@ export async function facturarHoras(u: Equipo, clientId: string, hasta?: Date) {
   const subtotal = Math.round(lineItems.reduce((a, l) => a + l.quantity * l.unitPrice, 0) * 100) / 100;
   const taxAmount = Math.round(subtotal * impuesto) / 100;
   const desde = entradas[0].workDate, fin = entradas[entradas.length - 1].workDate;
+  // Si todas las horas son de un mismo proyecto, la factura queda en ese proyecto.
+  const proyectos = [...new Set(entradas.map((e) => e.projectId).filter(Boolean))];
+  const projectId = proyectos.length === 1 && entradas.every((e) => e.projectId) ? (proyectos[0] as string) : null;
   const mes = (d: Date) => d.toLocaleDateString("es-PA", { month: "long", year: "numeric", timeZone: "UTC" });
 
   const doc = await prisma.$transaction(async (tx) => {
     const number = await siguienteNumero(u.id, "FACTURA", u.config?.invoicePrefix ?? "FAC", tx);
     const d = await tx.document.create({
       data: {
-        type: "FACTURA", status: "DRAFT", userId: u.id, companyId: u.configId ?? undefined, clientId, number,
+        type: "FACTURA", status: "DRAFT", userId: u.id, companyId: u.configId ?? undefined, clientId, projectId, number,
         title: `Soporte ${mes(desde) === mes(fin) ? mes(desde) : `${mes(desde)} a ${mes(fin)}`}`,
         clientName: cliente.name, clientEmail: cliente.email, clientCompany: cliente.company, clientAddress: cliente.address, clientRuc: cliente.ruc,
         content: { currency: "USD", lineItems, notes: `Horas de soporte a ${dinero(lineItems[0]?.unitPrice ?? 0)} la hora, en bloques de 15 minutos.` },

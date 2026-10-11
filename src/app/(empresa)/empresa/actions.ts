@@ -27,6 +27,7 @@ import { DocumentType, DocumentStatus, ProjectStatus, ContractStatus, LeadStatus
 import type { FinancingPlan } from "@/lib/financing";
 import { serializeProject, serializeContract, serializeSchedule, serializeLead } from "@/lib/serializers";
 import { sincronizarPagosDeFactura } from "@/lib/portal/sincronizar-pagos";
+import { enlacesDeDocumento, asignarClienteDeLead, unirClienteAProyecto } from "@/lib/motor/enlaces";
 import { siguienteNumero } from "@/lib/numeracion";
 
 const DOCUMENT_LIST_PATH: Record<DocumentType, string> = {
@@ -266,6 +267,8 @@ export async function createDocumentAction(data: {
 
   // El mayor número usado con ese prefijo y año, más uno: borrar un documento ya no repite números.
   const number = await siguienteNumero(user.id, data.type, prefix);
+  // Un solo motor: la factura siempre queda con su cliente y con el proyecto coherente.
+  const enlaces = await enlacesDeDocumento(user.id, { ...data, projectId: data.projectId ?? null });
 
   const doc = await prisma.document.create({
     data: {
@@ -277,7 +280,7 @@ export async function createDocumentAction(data: {
       clientCompany: data.clientCompany,
       clientAddress: data.clientAddress,
       clientRuc: data.clientRuc,
-      clientId: data.clientId,
+      clientId: enlaces.clientId ?? undefined,
       leadId: data.leadId,
       content: (data.content as object) ?? {},
       issueDate: toDate(data.issueDate),
@@ -292,7 +295,7 @@ export async function createDocumentAction(data: {
       status: data.status ?? "DRAFT",
       paymentMethodId: data.paymentMethodId,
       r2Key: data.r2Key,
-      projectId: data.projectId,
+      projectId: enlaces.projectId ?? undefined,
       contractId: data.contractId,
       number,
       userId: user.id,
@@ -348,10 +351,27 @@ export async function updateDocumentAction(
   });
   if (!existing) throw new Error("Document not found or access denied");
 
+  // Si cambian el cliente o el proyecto, se vuelven a cuadrar con las mismas reglas que al crear.
+  const tocaEnlaces = ["clientId", "clientName", "clientCompany", "clientEmail", "projectId"].some((k) => k in data);
+  const enlaces = tocaEnlaces
+    ? await enlacesDeDocumento(user.id, {
+        type: existing.type,
+        clientId: "clientId" in data ? data.clientId : existing.clientId,
+        clientName: data.clientName ?? existing.clientName,
+        clientEmail: data.clientEmail ?? existing.clientEmail,
+        clientCompany: data.clientCompany ?? existing.clientCompany,
+        clientAddress: data.clientAddress ?? existing.clientAddress,
+        clientRuc: data.clientRuc ?? existing.clientRuc,
+        projectId: "projectId" in data ? data.projectId || null : existing.projectId,
+        leadId: existing.leadId,
+      })
+    : null;
+
   const doc = await prisma.document.update({
     where: { id },
     data: {
       ...data,
+      ...(enlaces ? { clientId: enlaces.clientId, projectId: enlaces.projectId } : {}),
       content: data.content as object | undefined,
       subtotal: data.subtotal ?? undefined,
       taxAmount: data.taxAmount ?? undefined,
@@ -360,6 +380,9 @@ export async function updateDocumentAction(
   });
 
   await logDocumentEditIfNeeded(existing, data, user.email, user.fullName);
+  if (enlaces?.clientId && enlaces.clientId !== existing.clientId) {
+    await prisma.payment.updateMany({ where: { documentId: id }, data: { clientId: enlaces.clientId } });
+  }
 
   const newStatus = data.status ?? existing.status;
 
@@ -680,6 +703,7 @@ export async function updateProjectAction(
           : data.financingPlan ?? Prisma.DbNull,
     },
   });
+  if (data.clientId) await unirClienteAProyecto(user.id, id, data.clientId);
   revalidatePath("/empresa/proyectos");
   revalidatePath(`/empresa/proyectos/${id}`);
   revalidatePath("/empresa");
@@ -941,6 +965,8 @@ export async function updateLeadStatusAction(id: string, status: LeadStatus) {
         where: { leadId: id },
         data: { clientId: client.id },
       });
+      // Y las facturas que salieron de esas cotizaciones, con sus pagos.
+      await asignarClienteDeLead(id, client.id, tx);
       return [client, updatedLead];
     });
     revalidatePath("/empresa/leads");
@@ -1171,6 +1197,14 @@ export async function linkDocumentsAction(facturaId: string, cotizacionId: strin
     }),
   ]);
 
+  // La factura toma el cliente y el proyecto de su cotización si le faltaban.
+  {
+    const f = await prisma.document.findUnique({ where: { id: facturaId }, select: { clientId: true, projectId: true } });
+    const q = await prisma.document.findUnique({ where: { id: cotizacionId }, select: { clientId: true, projectId: true } });
+    if (f && q && ((!f.clientId && q.clientId) || (!f.projectId && q.projectId))) {
+      await prisma.document.update({ where: { id: facturaId }, data: { clientId: f.clientId ?? q.clientId, projectId: f.projectId ?? q.projectId } });
+    }
+  }
   await syncQuoteInvoiceBalance(cotizacionId, user.id);
 
   revalidatePath(`/empresa/facturas/${facturaId}`);
@@ -1201,6 +1235,14 @@ export async function attachInvoiceToQuoteAction(invoiceId: string, quoteId: str
     },
   });
 
+  // La factura toma el cliente y el proyecto de su cotización si le faltaban.
+  {
+    const f = await prisma.document.findUnique({ where: { id: invoiceId }, select: { clientId: true, projectId: true } });
+    const q = await prisma.document.findUnique({ where: { id: quoteId }, select: { clientId: true, projectId: true } });
+    if (f && q && ((!f.clientId && q.clientId) || (!f.projectId && q.projectId))) {
+      await prisma.document.update({ where: { id: invoiceId }, data: { clientId: f.clientId ?? q.clientId, projectId: f.projectId ?? q.projectId } });
+    }
+  }
   await syncQuoteInvoiceBalance(quoteId, user.id);
   revalidatePath(`/empresa/facturas/${invoiceId}`);
   revalidatePath(`/empresa/cotizaciones/${quoteId}`);

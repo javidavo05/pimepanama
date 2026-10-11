@@ -3,10 +3,10 @@
  * B&B: el token viaja una sola vez en el enlace y en la base solo queda su SHA-256; vence en 7 días.
  * Los correos salen por Resend con la plantilla de la marca (no la de Supabase).
  */
+import { enviarAlCliente } from "@/lib/motor/envios";
 import { createHash, randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { getSiteUrl } from "@/lib/site-url";
-import { sendEmail } from "@/lib/email-service";
 import { getPortalInvitationEmail, getPortalPasswordResetEmail } from "@/lib/email-templates";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { registrarEvento } from "./eventos";
@@ -63,8 +63,7 @@ export async function invitarPersona(opts: {
   let enviado = false;
   try {
     const correo = getPortalInvitationEmail({ name: persona.fullName, company: client.company || client.name, link: enlace, invitedBy: opts.invitadoPor });
-    await sendEmail({ to: email, subject: correo.subject, html: correo.html });
-    enviado = true;
+    enviado = (await enviarAlCliente({ to: email, subject: correo.subject, html: correo.html, motivo: `invitación ${email}` })).enviado;
   } catch (e) {
     console.error("[portal] invitación sin enviar", e);
   }
@@ -133,5 +132,5 @@ export async function enviarRecuperacion(emailCrudo: string): Promise<void> {
   const th = data?.properties?.hashed_token;
   if (error || !th) { console.error("[portal] recuperación", error); return; }
   const correo = getPortalPasswordResetEmail({ name: persona.fullName, link: `${getSiteUrl()}/cliente/nueva-clave?th=${encodeURIComponent(th)}` });
-  try { await sendEmail({ to: email, subject: correo.subject, html: correo.html }); } catch (e) { console.error("[portal] recuperación sin enviar", e); }
+  try { await enviarAlCliente({ to: email, subject: correo.subject, html: correo.html, motivo: "recuperación de clave" }); } catch (e) { console.error("[portal] recuperación sin enviar", e); }
 }

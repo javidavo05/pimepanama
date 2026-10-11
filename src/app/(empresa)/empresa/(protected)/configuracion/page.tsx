@@ -6,6 +6,7 @@ import { PaymentMethodsSettings } from "@/components/empresa/payment-methods-set
 import Link from "@/components/empresa/link";
 import { ThemeToggleCards } from "@/components/empresa/theme/theme-toggle";
 import { PasskeysSettings } from "@/components/empresa/passkeys-settings";
+import { CuentasGithub } from "@/components/empresa/github/cuentas-github";
 
 export const metadata = { title: "Configuración — Pime Suite" };
 
@@ -32,6 +33,21 @@ export default async function ConfiguracionPage() {
         </p>
         <ThemeToggleCards />
       </section>
+
+      <Link
+        href="/empresa/configuracion/clientes"
+        className="flex items-center justify-between gap-4 bg-panel border border-line rounded-2xl p-6 hover:border-line-mid transition-colors"
+      >
+        <div>
+          <h2 className="text-fg text-sm font-semibold">Clientes Normal y Premium</h2>
+          <p className="text-fg-dim text-xs mt-1">
+            Tarifa por hora de cada línea ({`$${Number(user.config?.hourlyRateNormal ?? 40)} y $${Number(user.config?.hourlyRatePremium ?? 30)}`}), línea de cada cliente y correos a clientes ({user.config?.clientEmailsEnabled ? "encendidos" : "apagados"}).
+          </p>
+        </div>
+        <span className="text-fg-faint text-sm">→</span>
+      </Link>
+
+      <CuentasGithub />
 
       <PasskeysSettings />
 

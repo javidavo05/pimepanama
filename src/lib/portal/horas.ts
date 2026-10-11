@@ -1,5 +1,5 @@
 /**
- * Horas de soporte (decisiones del 2026-10-11): $30 la hora línea Normal y $20 Premium, bloques de
+ * Horas de soporte (decisiones del 2026-10-11): $40 la hora línea Normal y $30 Premium (cambio del 2026-10-11, editable en Configuración), bloques de
  * 15 minutos con mínimo de 30 por registro, el cliente aprueba si el estimado pasa de 2 horas, y las
  * fallas nuestras dentro de la garantía (90 días) no se cobran. Todos los valores salen de
  * CompanyConfig; aquí solo están los cálculos, sin base de datos, para poder probarlos.
@@ -16,8 +16,8 @@ export type ReglasHoras = {
 };
 
 export const REGLAS_POR_DEFECTO: ReglasHoras = {
-  tarifaNormal: 30,
-  tarifaPremium: 20,
+  tarifaNormal: 40,
+  tarifaPremium: 30,
   redondeoMinutos: 15,
   minimoMinutos: 30,
   aprobacionHoras: 2,

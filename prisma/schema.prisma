@@ -430,8 +430,10 @@ model CompanyConfig {
   footerNotes_es       String?
   bookingAutoLead      Boolean       @default(true)
   signingMailAccountId String?
-  hourlyRateNormal      Decimal       @default(30) @db.Decimal(10, 2)
-  hourlyRatePremium     Decimal       @default(20) @db.Decimal(10, 2)
+  hourlyRateNormal      Decimal       @default(40) @db.Decimal(10, 2)
+  hourlyRatePremium     Decimal       @default(30) @db.Decimal(10, 2)
+  /// Envíos automáticos a clientes (invitaciones, recordatorios, avisos). Apagado hasta que el equipo lo encienda.
+  clientEmailsEnabled   Boolean       @default(false)
   timeRoundingMinutes   Int           @default(15)
   timeMinimumMinutes    Int           @default(30)
   estimateApprovalHours Decimal       @default(2) @db.Decimal(6, 2)

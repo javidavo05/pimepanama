@@ -13,17 +13,17 @@ test("redondeo: bloques de 15 y mínimo 30", () => {
   assert.equal(minutosCobrados(61, R), 75);
 });
 
-test("monto a $30 y $20 la hora", () => {
+test("monto según la tarifa por hora", () => {
   assert.equal(montoDe(60, 30), 30);
   assert.equal(montoDe(45, 30), 22.5);
   assert.equal(montoDe(75, 20), 25);
 });
 
 test("tarifa: propia, si no la de la línea", () => {
-  assert.equal(tarifaDe({ brandLine: "normal" }, R), 30);
-  assert.equal(tarifaDe({ brandLine: "premium" }, R), 20);
+  assert.equal(tarifaDe({ brandLine: "normal" }, R), 40);
+  assert.equal(tarifaDe({ brandLine: "premium" }, R), 30);
   assert.equal(tarifaDe({ brandLine: "premium", hourlyRate: "45.00" }, R), 45);
-  assert.equal(tarifaDe({ brandLine: null, hourlyRate: null }, R), 30);
+  assert.equal(tarifaDe({ brandLine: null, hourlyRate: null }, R), 40);
 });
 
 test("aprobación solo si el estimado pasa de 2 horas", () => {
