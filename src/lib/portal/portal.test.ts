@@ -82,6 +82,10 @@ test("saldo: facturado menos pagos confirmados", () => {
   assert.equal(estadoPorPago(300, 0), null);
 });
 
+test("saldo: factura marcada PAID sin amountPaid cuenta como pagada", () => {
+  assert.deepEqual(saldoCliente([{ id: "v", status: "PAID", total: 1000, amountPaid: null }], []), { facturado: 1000, pagado: 1000, porConfirmar: 0, pendiente: 0 });
+});
+
 test("saldo: pagos viejos que solo viven en amountPaid y anticipos sin factura", () => {
   const facturas = [{ id: "f1", status: "PAID", total: 500, amountPaid: "500" }, { id: "f2", status: "PARTIALLY_PAID", total: 800, amountPaid: 200 }];
   const pagos = [{ documentId: "f2", amount: 300, status: "confirmado" }, { documentId: null, amount: 100, status: "confirmado" }];

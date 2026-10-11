@@ -1,6 +1,6 @@
 import { getPortalUser } from "@/lib/portal/sesion";
 import { facturasDelCliente, datosDeTransferencia, dinero } from "@/lib/portal/datos";
-import { pagadoDeFactura } from "@/lib/portal/saldo";
+import { pagadoEfectivo } from "@/lib/portal/saldo";
 import { PAGO_METODO_LABEL, type PagoMetodo } from "@/lib/portal/estados";
 import { Encabezado, Etiqueta, Tarjeta, TituloSeccion, Vacio, fechaCorta } from "@/components/portal/ui";
 import { ReportarPago } from "./reportar-pago";
@@ -11,7 +11,7 @@ export default async function FacturasCliente() {
   const p = await getPortalUser();
   const [{ facturas, pagos, saldo }, cuentas] = await Promise.all([facturasDelCliente(p.clientId), datosDeTransferencia(p.client.userId)]);
   const conSaldo = facturas
-    .map((f) => { const pagado = Math.max(pagadoDeFactura(f.id, pagos), Number(f.amountPaid ?? 0)); return { ...f, pagado, falta: Math.max(0, Number(f.total ?? 0) - pagado) }; });
+    .map((f) => { const pagado = pagadoEfectivo(f, pagos); return { ...f, pagado, falta: Math.max(0, Number(f.total ?? 0) - pagado) }; });
   const pendientes = conSaldo.filter((f) => f.falta > 0.005);
 
   return (

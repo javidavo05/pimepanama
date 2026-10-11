@@ -10,6 +10,7 @@ const prisma = new PrismaClient();
 let clientId = "";
 
 after(async () => {
+  if (clientId) await prisma.payment.deleteMany({ where: { clientId } }).catch(() => {});
   if (clientId) await prisma.client.delete({ where: { id: clientId } }).catch((e) => console.error("limpieza", e));
   await prisma.$disconnect();
 });
@@ -42,6 +43,7 @@ test("portal: tickets, aprobaciones inmutables, pagos y cascada", async () => {
 
   // Borrar el cliente se lleva todo, incluidas las aprobaciones (el trigger lo permite solo en cascada).
   await prisma.project.delete({ where: { id: project.id } });
+  await prisma.payment.deleteMany({ where: { clientId } });
   await prisma.client.delete({ where: { id: clientId } });
   clientId = "";
   assert.equal(await prisma.approval.count({ where: { id: aprobacion.id } }), 0);

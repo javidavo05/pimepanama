@@ -1,7 +1,7 @@
 /** Todo lo de un cliente para su ficha en /empresa, en una sola ida a la base (consultas en paralelo). */
 import { prisma } from "@/lib/prisma";
 import { avanceDeProyecto, faseActual } from "./avance";
-import { saldoCliente, pagadoDeFactura } from "./saldo";
+import { saldoCliente, pagadoEfectivo } from "./saldo";
 import { TICKET_ABIERTOS } from "./estados";
 import { reglasDe, tarifaDe } from "./horas";
 import { fasesVigentes } from "./datos";
@@ -27,7 +27,7 @@ export async function fichaCliente(userId: string, clientId: string) {
   ]);
   const reglas = reglasDe(config);
   const facturasConSaldo = facturas.map((f) => {
-    const pagado = Math.max(pagadoDeFactura(f.id, pagos), Number(f.amountPaid ?? 0));
+    const pagado = pagadoEfectivo(f, pagos);
     return { ...f, pagado, falta: Math.max(0, Number(f.total ?? 0) - pagado) };
   });
   return {

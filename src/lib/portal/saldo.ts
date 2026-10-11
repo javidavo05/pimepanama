@@ -22,11 +22,20 @@ export function saldoCliente(facturas: Factura[], pagos: Pago[]) {
   const vivas = facturas.filter((f) => FACTURA_CUENTA(f.status));
   const facturado = r2(vivas.reduce((a, f) => a + n(f.total), 0));
   const ids = new Set(facturas.map((f) => f.id));
-  const porFactura = vivas.reduce((a, f) => a + Math.max(pagadoDeFactura(f.id, pagos), n(f.amountPaid)), 0);
+  const porFactura = vivas.reduce((a, f) => a + pagadoEfectivo(f, pagos), 0);
   const sueltos = pagos.filter((p) => p.status === "confirmado" && (!p.documentId || !ids.has(p.documentId))).reduce((a, p) => a + n(p.amount), 0);
   const pagado = r2(porFactura + sueltos);
   const porConfirmar = r2(pagos.filter((p) => p.status === "por_confirmar").reduce((a, p) => a + n(p.amount), 0));
   return { facturado, pagado, porConfirmar, pendiente: r2(Math.max(0, facturado - pagado)) };
+}
+
+/**
+ * Lo pagado de verdad de una factura: si está marcada PAID es su total (las facturas viejas marcadas
+ * a mano no guardaban amountPaid); si no, el mayor entre sus pagos confirmados y amountPaid.
+ */
+export function pagadoEfectivo(f: Factura, pagos: Pago[]): number {
+  if (f.status === "PAID") return n(f.total);
+  return Math.max(pagadoDeFactura(f.id, pagos), n(f.amountPaid));
 }
 
 /** Lo pagado de una factura (suma de pagos confirmados): es lo que se guarda en Document.amountPaid. */

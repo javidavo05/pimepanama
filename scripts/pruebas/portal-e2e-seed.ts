@@ -38,6 +38,8 @@ async function borrar(clientId: string) {
   for (const p of personas) if (p.supabaseUid) await admin.auth.admin.deleteUser(p.supabaseUid);
   const lista = await r2.send(new ListObjectsV2Command({ Bucket: R2_BUCKET, Prefix: `portal/${clientId}/` }));
   for (const o of lista.Contents ?? []) if (o.Key) await deleteR2Object(o.Key);
+  await prisma.payment.deleteMany({ where: { clientId } });
+  await prisma.timeEntry.deleteMany({ where: { clientId } });
   await prisma.document.deleteMany({ where: { clientId } });
   await prisma.project.deleteMany({ where: { OR: [{ clientId }, { clients: { some: { clientId } } }] } });
   await prisma.client.delete({ where: { id: clientId } });
