@@ -2,13 +2,13 @@
 // después pidió quitar todo teléfono: el sitio no publica número ni correo y cada llamada a la acción entra
 // al sistema de leads del CMS por el wizard de /contacto. Dos CTA (propuesta y conversación), navegación en
 // una línea y línea legal.
-import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Year } from "@/components/ui/year";
 import { FOOTER } from "../../../content/home";
 import { NAV, SITE, type Lang } from "../../../content/site";
 import "./footer.css";
+import { Logo } from "@/components/ui/logo";
 
 export function Footer({ lang }: { lang: Lang }) {
   const t = FOOTER[lang];
@@ -30,7 +30,7 @@ export function Footer({ lang }: { lang: Lang }) {
           </div>
         </div>
         <nav className="ft-nav" aria-label={t.nav}>
-          <Link href={home} className="ft-brand tap" aria-label={SITE.nombre}><Image src="/brand/logo_icon.png" alt="" width={16} height={20} /><span>PIME</span></Link>
+          <Link href={home} className="ft-brand tap" aria-label={SITE.nombre}><Logo height={24} /></Link>
           <ul>{links.map((l) => <li key={l.href}><Link href={l.href} className="ft-link">{l.label}</Link></li>)}</ul>
         </nav>
         <div className="ft-legal">

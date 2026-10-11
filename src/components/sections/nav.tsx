@@ -2,7 +2,6 @@
 // Navegación. Origen: la cabecera de documento de la referencia (ícono + PIME a la izquierda,
 // nombre de la sección en mayúsculas a la derecha, línea abajo). Se oculta al bajar y vuelve al subir,
 // se compacta con el scroll, el indicador de sección se desliza y el menú móvil abre en coreografía.
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -11,6 +10,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { PaletteButton } from "@/components/ui/command-palette";
 import { NAV, type Lang } from "../../../content/site";
 import "./nav.css";
+import { Logo } from "@/components/ui/logo";
 
 export function Nav({ lang }: { lang: Lang }) {
   const n = NAV[lang];
@@ -91,8 +91,7 @@ export function Nav({ lang }: { lang: Lang }) {
       <span className="nav-progress" aria-hidden="true" />
       <div className="nav-bar wrap">
         <Link href={home} className="nav-brand" aria-label={`${n.marca}: ${n.inicio}`} onClick={() => setOpen(false)}>
-          <Image src="/brand/logo_icon.png" alt="" width={16} height={20} priority />
-          <span>PIME</span>
+          <Logo height={22} />
         </Link>
 
         <nav className="nav-links" aria-label={lang === "es" ? "Secciones" : "Sections"} ref={linksRef}>

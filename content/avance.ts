@@ -189,4 +189,19 @@ export const PASOS: Paso[] = [
   { n: 14, titulo: "/contacto y paleta ⌘K", descripcion: "Wizard guiado con opciones preseleccionadas y buscador global.", estado: "pendiente" },
   { n: 15, titulo: "Versión EN", descripcion: "Copy nativo en inglés, hreflang y OG por idioma.", estado: "pendiente", ruta: "/en" },
   { n: 16, titulo: "Puerta final", descripcion: "npm run gate completo y docs/04-entrega.md con redirects 301.", estado: "pendiente" },
+  {
+    n: 17,
+    titulo: "Marca nueva «Capas abiertas»",
+    descripcion: "Logo, paleta y tipografía del manual de marca (design-system/brand/manual.html), línea Normal: azul tinta, azul señal y azul cielo. Una sola familia, Manrope.",
+    estado: "en_revision",
+    ruta: "/es",
+    revisar: [
+      "Logo nuevo en la navegación, el footer, los mockups del hero y el wizard de contacto; cambia solo entre tema claro y oscuro.",
+      "Acento azul señal en enlaces, foco y chips; bloques oscuros en azul tinta.",
+      "Favicon, ícono de iPhone e imagen para redes con el logo nuevo.",
+      "Todo el texto en Manrope: Inter ya no se carga.",
+    ],
+    notas: ["Pedido por Javier el 2026-10-11: «haz el cambio del landing page entero a este logo, colores y todo»."],
+    actualizado: "2026-10-11",
+  },
 ];

@@ -1,6 +1,6 @@
 /* ---------- Paleta ⌘K ---------- */
 .cp { margin: 0 auto; padding: 0; border: 0; background: transparent; color: var(--fg); width: min(640px, 100vw - 2 * var(--gutter)); max-width: none; top: clamp(16px, 12vh, 120px); max-height: calc(100dvh - 32px); overflow: visible; z-index: var(--z-palette); }
-.cp::backdrop { background: rgba(11, 13, 20, 0.5); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: cp-fondo var(--dur-base) var(--ease-out) both; }
+.cp::backdrop { background: rgba(11, 29, 58, 0.5); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); animation: cp-fondo var(--dur-base) var(--ease-out) both; }
 .cp:not([data-open])::backdrop { animation: cp-fondo var(--dur-fast) var(--ease-out) reverse both; }
 .cp-panel { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; max-height: min(560px, calc(100dvh - 32px)); background: var(--surface); border: var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-float); overflow: hidden; transform-origin: 50% 0; animation: cp-in var(--dur-base) var(--ease-out) both; }
 .cp:not([data-open]) .cp-panel { animation: cp-out var(--dur-fast) var(--ease-out) both; }

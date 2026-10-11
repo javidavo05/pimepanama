@@ -9,6 +9,7 @@ import { Eyebrow, LetterChip, Lines } from "@/components/ui/primitives";
 import { CONTACTO, CONTACTO_PREVIEW } from "../../../content/home";
 import { SITE, type Lang } from "../../../content/site";
 import "./contact-wizard.css";
+import { Logo } from "@/components/ui/logo";
 
 type Estado = "editando" | "enviando" | "listo" | "error";
 const CHIP: Record<string, string> = { erp: "ER", crm: "CR", saas: "SA", portal: "PO", ia: "IA", "no-se": "?" };
@@ -70,7 +71,7 @@ export function ContactWizard({ lang, industrias }: { lang: Lang; industrias: st
   const Preview = (
     <aside className="cw-doc" data-theme="ink" data-motion="morph" aria-live="polite">
       <div className="cw-doc-head">
-        <span className="cw-doc-brand"><i aria-hidden="true" />PIME</span>
+        <span className="cw-doc-brand"><Logo height={16} /></span>
         <span className="caps">{pv.eyebrow}</span>
       </div>
       <div className="cw-doc-body">

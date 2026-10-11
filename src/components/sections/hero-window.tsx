@@ -7,6 +7,7 @@ import { LetterChip, Pill } from "@/components/ui/primitives";
 import { AreaChart, Calendar, Funnel, Gantt, HBars, Heat, Ring, Stacked } from "./charts";
 import { HOME, type Ventana } from "../../../content/home";
 import type { Lang } from "../../../content/site";
+import { Logo } from "@/components/ui/logo";
 
 const money = (v: number) => `US$ ${v.toLocaleString("es-PA").replace(/[.,]/g, " ")}`;
 
@@ -172,7 +173,7 @@ export function HeroWindow({ lang }: { lang: Lang }) {
     <div className="hw" data-motion="hero-window" role="region" aria-label={v.demo}>
       <div className="hw-frame">
         <div className="hw-chrome">
-          <div className="hw-brand"><span className="hw-logo" /><span>PIME</span><span className="hw-app">{v.app}</span></div>
+          <div className="hw-brand"><Logo height={16} /><span className="hw-app">{v.app}</span></div>
           <div className="hw-crumbs"><span>{v.menu[vista].label}</span><span className="on">{v.hoy}</span></div>
           <div className="hw-search"><span className="hw-search-ico" /><span>{v.buscar}</span><kbd>⌘K</kbd></div>
           <span className="hw-user">{v.usuario}</span>

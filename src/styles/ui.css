@@ -40,7 +40,7 @@
 .btn.accent:hover { background: var(--accent-ink); }
 .btn.sm { min-height: 40px; padding: 0 var(--s-4); font-size: var(--text-sm); }
 [data-theme="ink"] .btn.primary { background: var(--white); color: var(--ink); }
-[data-theme="ink"] .btn.primary:hover { background: #E9EBF2; }
+[data-theme="ink"] .btn.primary:hover { background: #E4ECFA; }
 .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .btn .arrow { transition: transform var(--dur-fast) var(--ease-out); }
 .btn:hover .arrow { transform: translateX(4px); }

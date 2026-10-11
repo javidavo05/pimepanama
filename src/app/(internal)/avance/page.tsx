@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ETIQUETA_ESTADO, PASOS } from "../../../../content/avance";
 import "./avance.css";
+import { Logo } from "@/components/ui/logo";
 
 export const metadata: Metadata = { title: "Avance · Pime v2", robots: { index: false } };
 
@@ -14,8 +15,7 @@ export default function Avance() {
     <main className="av" data-motion="avance">
       <header className="av-head">
         <div className="av-brand">
-          <Image src="/brand/logo_icon.png" alt="" width={16} height={20} />
-          PIME
+          <Logo height={24} />
         </div>
         <div className="av-eyebrow">Sitio nuevo · tablero de avance</div>
         <h1>Cada parte se aprueba antes de seguir</h1>

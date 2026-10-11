@@ -21,7 +21,7 @@ export function ThemeToggle({ lang, compact }: { lang: Lang; compact?: boolean }
     if (t === "auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", t);
     // La barra del navegador del teléfono sigue al tema elegido (los <meta theme-color> con media solo siguen al sistema)
     const oscuro = t === "dark" || (t === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
-    document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((m) => { m.content = oscuro ? "#0B0D14" : "#FCFCFD"; });
+    document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]').forEach((m) => { m.content = oscuro ? "#08142A" : "#FCFDFE"; });
   };
   const l = L[lang];
   return (

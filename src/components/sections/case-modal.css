@@ -1,6 +1,6 @@
 /* ---------- Pop-up de caso ---------- */
 .cm { margin: auto; padding: 0; border: 0; background: transparent; color: var(--fg); width: min(1120px, 100vw - 2 * var(--gutter)); max-width: none; max-height: calc(100dvh - 2 * var(--s-6)); overflow: visible; }
-.cm::backdrop { background: rgba(11, 13, 20, 0.62); animation: cm-fondo var(--dur-base) var(--ease-out) both; }
+.cm::backdrop { background: rgba(11, 29, 58, 0.62); animation: cm-fondo var(--dur-base) var(--ease-out) both; }
 .cm[data-cerrando]::backdrop { animation: cm-fondo var(--dur-fast) var(--ease-out) reverse both; }
 .cm-panel { display: grid; grid-template-rows: auto minmax(0, 1fr); max-height: calc(100dvh - 2 * var(--s-6)); background: var(--surface); border: var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-float); overflow: hidden; animation: cm-subir var(--dur-slow) var(--ease-out) both; transform-origin: 50% 40%; }
 .cm[data-cerrando] .cm-panel { animation: cm-salir var(--dur-fast) var(--ease-out) both; }

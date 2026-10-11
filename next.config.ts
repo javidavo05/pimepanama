@@ -14,10 +14,18 @@ const nextConfig: NextConfig = {
     const CMS = process.env.CMS_ORIGIN ?? "https://pimepanama-wt62.vercel.app";
     const prefijos = ["empresa", "admin", "firmar", "agendar", "resume", "api"];
     return {
-      afterFiles: prefijos.flatMap((p) => [
-        { source: `/${p}`, destination: `${CMS}/${p}` },
-        { source: `/${p}/:path*`, destination: `${CMS}/${p}/:path*` },
-      ]),
+      afterFiles: [
+        ...prefijos.flatMap((p) => [
+          { source: `/${p}`, destination: `${CMS}/${p}` },
+          { source: `/${p}/:path*`, destination: `${CMS}/${p}/:path*` },
+        ]),
+        // Archivos públicos del CMS que pide /empresa (app instalable, íconos, logo de correos y PDFs, sistema de
+        // diseño de contratos). Van después de los archivos propios: si este sitio tiene el archivo, gana el suyo.
+        ...["/logo-pime.png", "/pime-icon.svg", "/pime-logo.svg", "/manifest.webmanifest", "/sw-empresa.js", "/offline-empresa.html"].map(
+          (f) => ({ source: f, destination: `${CMS}${f}` }),
+        ),
+        ...["icons", "design-system", "brand", "fonts/pdf"].map((d) => ({ source: `/${d}/:path*`, destination: `${CMS}/${d}/:path*` })),
+      ],
       fallback: [{ source: "/_next/:path*", destination: `${CMS}/_next/:path*` }],
     };
   },

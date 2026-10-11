@@ -11,7 +11,7 @@ import { LANGS, type Lang } from "../../../../content/site";
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://pimepanama.com";
 
 /** Barra del navegador del teléfono del color del sitio, según el esquema del sistema; el selector de tema la ajusta. */
-export const viewport: Viewport = { themeColor: [{ media: "(prefers-color-scheme: light)", color: "#FCFCFD" }, { media: "(prefers-color-scheme: dark)", color: "#0B0D14" }], width: "device-width", initialScale: 1, viewportFit: "cover" };
+export const viewport: Viewport = { themeColor: [{ media: "(prefers-color-scheme: light)", color: "#FCFDFE" }, { media: "(prefers-color-scheme: dark)", color: "#08142A" }], width: "device-width", initialScale: 1, viewportFit: "cover" };
 const META = {
   es: { titulo: "Pime Panamá · ERP y CRM a medida", descripcion: "Diseñamos y programamos ERP, CRM y plataformas a medida desde cero para empresas en Panamá, con precio cerrado por fase y tres meses de garantía." },
   en: { titulo: "Pime Panamá · Custom ERP and CRM", descripcion: "We design and code custom ERP, CRM and platforms from scratch for companies in Panama, with a fixed price per phase and a three-month warranty." },

@@ -10,6 +10,7 @@ import { RailMeter } from "@/components/motion/rail-meter";
 import { CAPACIDADES } from "../../../content/home";
 import type { Lang } from "../../../content/site";
 import "./capabilities.css";
+import { Logo } from "@/components/ui/logo";
 
 const ESCENAS = [EscenaERP, EscenaCRM, EscenaSaaS, EscenaPortal, EscenaIA];
 
@@ -58,7 +59,7 @@ export function Capabilities({ lang }: { lang: Lang }) {
         <div className="caps-sticky">
           <div className="caps-frame">
             <div className="caps-frame-bar">
-              <span className="hw-logo" /><span className="caps-frame-t">{c.items[activa].titulo}</span>
+              <Logo variant="simbolo" height={16} /><span className="caps-frame-t">{c.items[activa].titulo}</span>
               <span className="caps-dots" aria-hidden="true">{c.items.map((_, i) => <i key={i} className={i === activa ? "on" : ""} />)}</span>
             </div>
             <div className="caps-scenes">

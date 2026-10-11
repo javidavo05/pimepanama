@@ -49,5 +49,4 @@
 .logo-row { display: flex; align-items: center; gap: var(--s-3); }
 .logo-row img { width: 24px; height: 30px; }
 .logo-row .wm { font-family: var(--font-display); font-weight: var(--w-display); font-size: var(--text-lg); letter-spacing: var(--tracking-tight); }
-.logo-mono { filter: grayscale(1) brightness(0.2); }
-[data-theme="ink"] .logo-mono { filter: grayscale(1) brightness(10); }
+.logo-mono { --logo-1: var(--fg); --logo-2: var(--fg); --logo-3: var(--fg); --logo-word: var(--fg); }

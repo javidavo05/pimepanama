@@ -75,7 +75,7 @@
 .cv { display: grid; gap: var(--s-2); align-content: start; font-size: 10px; color: var(--fg); background: var(--surface); border: var(--border); border-radius: var(--r-sm); padding: var(--s-3); min-width: 0; }
 .cv-bar { display: flex; align-items: center; gap: var(--s-2); font-weight: var(--w-semibold); padding-bottom: var(--s-2); border-bottom: var(--border); }
 .cv-bar > span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cv-bar > i { width: 8px; height: 10px; background: var(--accent); clip-path: polygon(50% 0, 100% 0, 50% 100%, 0 100%); border-radius: 1px; }
+.cv-bar > svg { flex: none; }
 .cv-pill { display: inline-flex; align-items: center; min-height: 18px; padding: 0 var(--s-2); border-radius: var(--r-pill); background: var(--ink); color: var(--white); font-size: 9px; font-weight: var(--w-label); white-space: nowrap; }
 .cv-pill.ok { background: var(--ok-soft); color: var(--ok); } .cv-pill.run { background: var(--run-soft); color: var(--run); }
 .cv-grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); }

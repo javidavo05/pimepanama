@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Image from "next/image";
+import { Logo } from "@/components/ui/logo";
 import { Button } from "@/components/ui/button";
 import { TextLink } from "@/components/ui/text-link";
 import { TiltCard } from "@/components/ui/tilt-card";
@@ -13,18 +13,18 @@ import "./sistema.css";
 export const metadata: Metadata = { title: "Sistema visual · Pime v2", robots: { index: false } };
 
 const PALETA = [
-  { k: "ink", c: "#0B0D14", r: "Texto, bloques oscuros, botón primario" },
-  { k: "ink-soft", c: "#1B1F2B", r: "Texto en listas y tablas" },
-  { k: "slate", c: "#4B5468", r: "Párrafos y bajadas" },
-  { k: "slate-light", c: "#8A93A6", r: "Metadatos, cabeceras de tabla" },
-  { k: "line", c: "#E7E9EF", r: "Bordes y separadores" },
-  { k: "panel", c: "#F5F6F9", r: "Tarjetas y notas" },
-  { k: "paper", c: "#FCFCFD", r: "Fondo de página" },
+  { k: "ink", c: "#0B1D3A", r: "Azul tinta: texto, bloques oscuros, botón primario, base del logo" },
+  { k: "ink-soft", c: "#1C2B48", r: "Texto en listas y tablas" },
+  { k: "slate", c: "#4A5A78", r: "Párrafos y bajadas" },
+  { k: "slate-light", c: "#5E6B85", r: "Metadatos, cabeceras de tabla" },
+  { k: "line", c: "#E4E8F0", r: "Bordes y separadores" },
+  { k: "panel", c: "#F4F6FA", r: "Tarjetas y notas" },
+  { k: "paper", c: "#FCFDFE", r: "Fondo de página" },
   { k: "white", c: "#FFFFFF", r: "Superficie elevada" },
-  { k: "accent", c: "#2306D4", r: "Eyebrows, enlaces, foco, chips. Menos del 5 % de la pantalla" },
-  { k: "accent-ink", c: "#15037F", r: "Hover de enlaces, texto sobre acento suave" },
-  { k: "accent-soft", c: "#E9E6FB", r: "Fondo de pills en curso y selección" },
-  { k: "accent-on-dark", c: "#8E7BFF", r: "Acento sobre tinta" },
+  { k: "accent", c: "#1F5BFF", r: "Azul señal: eyebrows, enlaces, foco, chips. Capa media del logo" },
+  { k: "accent-ink", c: "#1546D6", r: "Hover de enlaces, texto sobre acento suave" },
+  { k: "accent-soft", c: "#E8EEFF", r: "Fondo de pills en curso y selección" },
+  { k: "accent-on-dark", c: "#6FA8FF", r: "Azul cielo: acento sobre tinta, cima del logo" },
   { k: "ok", c: "#176B45", r: "Estado correcto" },
   { k: "run", c: "#8A4B00", r: "Estado en curso" },
   { k: "bad", c: "#A52A22", r: "Error" },
@@ -35,11 +35,11 @@ const TIPOS: { rol: string; cls: string; fam: string; peso: string; size: string
   { rol: "H1 sección", cls: "t-1", fam: "Manrope", peso: "800", size: "clamp 32→56", track: "−0.02em", sample: "Un precio, todo incluido" },
   { rol: "H2 bloque", cls: "t-2", fam: "Manrope", peso: "800", size: "clamp 28→40", track: "−0.02em", sample: "Centralizar lo que hoy está disperso" },
   { rol: "H3 tarjeta", cls: "t-3", fam: "Manrope", peso: "700", size: "20", track: "−0.01em", sample: "Panel administrativo con permisos por rol" },
-  { rol: "Bajada", cls: "lead", fam: "Inter", peso: "400", size: "20", track: "0", sample: "El valor no es una lista de módulos: es que nadie tenga que armar el proceso por su cuenta." },
-  { rol: "Cuerpo", cls: "body", fam: "Inter", peso: "400", size: "16 / 1.7", track: "0", sample: "Hoy el cliente busca por separado el vehículo, el financiamiento, el seguro y el resto. Cada paso es una conversación distinta, sin visibilidad del conjunto." },
-  { rol: "Texto chico", cls: "small", fam: "Inter", peso: "400", size: "14", track: "0", sample: "Valores aproximados, a cargo del propietario y sujetos al precio vigente de cada proveedor." },
-  { rol: "Cabecera / label", cls: "caps", fam: "Inter", peso: "700", size: "12", track: "+0.06em", sample: "Plazo estimado" },
-  { rol: "Metadato", cls: "meta", fam: "Inter", peso: "500", size: "12", track: "0", sample: "Documento confidencial · 02 / 14" },
+  { rol: "Bajada", cls: "lead", fam: "Manrope", peso: "400", size: "20", track: "0", sample: "El valor no es una lista de módulos: es que nadie tenga que armar el proceso por su cuenta." },
+  { rol: "Cuerpo", cls: "body", fam: "Manrope", peso: "400", size: "16 / 1.7", track: "0", sample: "Hoy el cliente busca por separado el vehículo, el financiamiento, el seguro y el resto. Cada paso es una conversación distinta, sin visibilidad del conjunto." },
+  { rol: "Texto chico", cls: "small", fam: "Manrope", peso: "400", size: "14", track: "0", sample: "Valores aproximados, a cargo del propietario y sujetos al precio vigente de cada proveedor." },
+  { rol: "Cabecera / label", cls: "caps", fam: "Manrope", peso: "700", size: "12", track: "+0.06em", sample: "Plazo estimado" },
+  { rol: "Metadato", cls: "meta", fam: "Manrope", peso: "500", size: "12", track: "0", sample: "Documento confidencial · 02 / 14" },
 ];
 
 const ESPACIO = [4, 8, 12, 16, 24, 32, 48, 64, 96, 128];
@@ -65,11 +65,11 @@ export default function Sistema() {
   return (
     <main className="wrap sys" data-motion="sistema">
       <header className="sys-head">
-        <div className="logo-row"><Image src="/brand/logo_icon.png" alt="" width={24} height={30} /><span className="wm">PIME</span></div>
+        <div className="logo-row"><Logo height={32} /></div>
         <Eyebrow eager>02 · Sistema visual</Eyebrow>
         <Lines eager as="h1" className="t-1" lines={["Papel, tinta y", "un solo acento"]} />
         <AccentRule eager delay={300} />
-        <p className="lead eager-rise" style={{ "--delay": "200ms" } as React.CSSProperties}>Todo sale del sistema de propuestas comerciales de Pime: documentos blancos, serios, con Manrope e Inter y un acento que ocupa menos del cinco por ciento de la página.</p>
+        <p className="lead eager-rise" style={{ "--delay": "200ms" } as React.CSSProperties}>Todo sale del sistema de propuestas comerciales de Pime: documentos blancos, serios, con Manrope y un acento que ocupa menos del cinco por ciento de la página.</p>
         <div className="row">
           <TextLink href="/avance">Volver al tablero</TextLink>
           <ToggleReduced />
@@ -83,14 +83,14 @@ export default function Sistema() {
           <p className="lead">Extraído de los 37 archivos de design-system. El documento completo es docs/01-referencia.md.</p>
         </header>
         <ol className="sys-ref" data-reveal="rise-row">
-          <li style={{ "--i": 0 } as React.CSSProperties}><b>Papel y tinta.</b> Fondo blanco, texto #0B0D14, gris para el cuerpo. El color es un acento, «no un papel tapiz».</li>
+          <li style={{ "--i": 0 } as React.CSSProperties}><b>Papel y tinta.</b> Fondo blanco, texto azul tinta #0B1D3A, gris para el cuerpo. El color es un acento, «no un papel tapiz».</li>
           <li style={{ "--i": 1 } as React.CSSProperties}><b>Portada clara, nunca oscura ni neón.</b> Decisión de marca registrada en la guía. El primer pantallazo del sitio es claro.</li>
           <li style={{ "--i": 2 } as React.CSSProperties}><b>Un bloque oscuro por documento.</b> Cifras clave y cierre. En el sitio: cifras y footer.</li>
-          <li style={{ "--i": 3 } as React.CSSProperties}><b>Jerarquía por tamaño y peso.</b> Manrope 800 con −0.02em para títulos y cifras; Inter para todo lo demás. El acento nunca va en el titular.</li>
+          <li style={{ "--i": 3 } as React.CSSProperties}><b>Jerarquía por tamaño y peso.</b> Manrope 800 con −0.02em para títulos y cifras; Manrope 400 a 700 para todo lo demás. El acento nunca va en el titular.</li>
           <li style={{ "--i": 4 } as React.CSSProperties}><b>Densidad editorial.</b> Filas con separador de 1 px, tarjetas de fondo panel sin sombra, radios de 8, 10 y 12 px. Nunca 0.</li>
           <li style={{ "--i": 5 } as React.CSSProperties}><b>Iconografía por letras.</b> Chips cuadrados con una o dos letras, chips numerados en círculo, cuadrados de 4 mm como viñeta. No hay íconos de librería.</li>
           <li style={{ "--i": 6 } as React.CSSProperties}><b>Sin fotos.</b> El producto se explica con tablas, filas y chips. En el sitio la UI de producto se construye con esas mismas piezas.</li>
-          <li style={{ "--i": 7 } as React.CSSProperties}><b>Acento derivado del logo.</b> La referencia usa #0586FE y #552EFF, prohibidos por mandato. El acento es #2306D4, el solape de los dos triángulos del logo. Aprobado el 8 de octubre.</li>
+          <li style={{ "--i": 7 } as React.CSSProperties}><b>Marca nueva, «Capas abiertas».</b> Desde el 11 de octubre el logo y la paleta salen del manual de marca (design-system/brand/manual.html), línea Normal: azul tinta, azul señal y azul cielo. El sitio usa solo la línea Normal; la Premium (negro y oro) es para clientes premium.</li>
         </ol>
       </section>
 
@@ -109,8 +109,8 @@ export default function Sistema() {
                 <div className="hex num">{p.c}</div>
                 <div className="r">{p.r}</div>
                 <div className="cr">
-                  <span className="meta num">papel {contrast(p.c, "#FCFCFD")}</span>
-                  <span className="meta num">tinta {contrast(p.c, "#0B0D14")}</span>
+                  <span className="meta num">papel {contrast(p.c, "#FCFDFE")}</span>
+                  <span className="meta num">tinta {contrast(p.c, "#0B1D3A")}</span>
                 </div>
               </div>
             </div>
@@ -121,16 +121,16 @@ export default function Sistema() {
           <span>#0586FE (azul), #552EFF (púrpura) y cualquier gradiente entre ambos. No existen como token ni como valor suelto en el código.</span>
         </div>
         <div className="row">
-          <div className="logo-row"><Image src="/brand/logo_icon.png" alt="Logo de Pime" width={24} height={30} /><span className="wm">PIME</span><span className="meta">color</span></div>
-          <div className="logo-row"><Image className="logo-mono" src="/brand/logo_icon.png" alt="Logo de Pime en monocromo" width={24} height={30} /><span className="wm">PIME</span><span className="meta">monocromo</span></div>
+          <div className="logo-row"><Logo height={28} title="Logo de Pime" /><span className="meta">color</span></div>
+          <div className="logo-row logo-mono"><Logo height={28} title="Logo de Pime en un solo color" /><span className="meta">un solo color</span></div>
         </div>
       </section>
 
       <section className="sys-sec" id="tipografia">
         <header>
           <Eyebrow>Tipografía</Eyebrow>
-          <h2 className="t-2">Manrope para hablar, Inter para explicar</h2>
-          <p className="lead">Dos fuentes variables autohospedadas, 73 KB en total, con fallback ajustado para que nada salte al cargar.</p>
+          <h2 className="t-2">Una sola familia: Manrope</h2>
+          <p className="lead">Una fuente variable autohospedada, con fallback ajustado para que nada salte al cargar.</p>
         </header>
         <div data-reveal="rise-row">
           {TIPOS.map((t, i) => (

@@ -1,25 +1,28 @@
-/* Tokens de Pime v2. Fuente: docs/01-referencia.md.
+/* Tokens de Pime v2. Fuente: manual de marca (design-system/brand/manual.html), línea Normal · Azul tinta.
    Prohibidos por mandato: #0586FE, #552EFF y cualquier gradiente azul→púrpura. */
 :root {
-  /* ---------- Color: neutros de la referencia ---------- */
-  --ink: #0B0D14;
-  --ink-soft: #1B1F2B;
-  --slate: #4B5468;
-  --slate-light: #667087; /* ref. #8A93A6, oscurecido a 4.8:1 sobre papel para AA */
-  --line: #E7E9EF;
-  --line-strong: #C9CFDA;
-  --paper: #FCFCFD;
-  --panel: #F5F6F9;
+  /* ---------- Color: neutros (manual de marca, línea Normal) ---------- */
+  --ink: #0B1D3A;          /* azul tinta */
+  --ink-soft: #1C2B48;
+  --slate: #4A5A78;
+  --slate-light: #5E6B85;  /* manual #8792A8, oscurecido a 5.4:1 sobre blanco para AA */
+  --line: #E4E8F0;
+  --line-strong: #C5CEDD;
+  --paper: #FCFDFE;
+  --panel: #F4F6FA;
   --white: #FFFFFF;
 
-  /* ---------- Color: acento (solape del logo) ---------- */
-  --accent: #2306D4;
-  --accent-ink: #15037F;
-  --accent-soft: #E9E6FB;
-  --accent-on-dark: #8E7BFF;
+  /* ---------- Color: acento (capa media del logo) ---------- */
+  --accent: #1F5BFF;       /* azul señal, 5.3:1 sobre blanco */
+  --accent-ink: #1546D6;
+  --accent-soft: #E8EEFF;
+  --accent-on-dark: #6FA8FF;
   --on-accent: #FFFFFF;
-  --accent-2: #8E7BFF;   /* segundo paso secuencial (gráficas) */
-  --accent-3: #CFC8F6;   /* tercer paso secuencial (gráficas) */
+  --accent-2: #6FA8FF;     /* azul cielo: segundo paso secuencial (gráficas) */
+  --accent-3: #C9DCFF;     /* tercer paso secuencial (gráficas) */
+
+  /* ---------- Logo: colores de las tres capas y el nombre ---------- */
+  --logo-1: #0B1D3A; --logo-2: #1F5BFF; --logo-3: #6FA8FF; --logo-word: #0B1D3A;
 
   /* ---------- Color: estados ---------- */
   --ok: #176B45; --ok-soft: #DDF1E6;
@@ -45,7 +48,7 @@
 
   /* ---------- Tipografía ---------- */
   --font-display: "Manrope", "Manrope Fallback", system-ui, sans-serif;
-  --font-body: "Inter", "Inter Fallback", system-ui, sans-serif;
+  --font-body: "Manrope", "Manrope Fallback", system-ui, sans-serif; /* una sola familia (manual de marca) */
   --text-xs: 12px;
   --text-sm: 14px;
   --text-md: 16px;
@@ -101,7 +104,7 @@
   /* ---------- Líneas y sombras ---------- */
   --hair: 1px;
   --rule: 1.4px;
-  --shadow-float: 0 24px 64px rgba(11, 13, 20, 0.16);
+  --shadow-float: 0 24px 64px rgba(11, 29, 58, 0.16);
   --shadow-none: none;
 
   /* ---------- Capas ---------- */
@@ -143,30 +146,31 @@
 /* ---------- Tema oscuro: sigue al sistema, o se fuerza con data-theme ---------- */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-  --bg: #0B0D14;
-  --surface: #11141D;
-  --surface-2: #171B26;
-  --paper: #0B0D14;
-  --panel: #171B26;
-  --white: #0B0D14;        /* inverso: lo que era blanco sobre tinta ahora es tinta sobre claro */
-  --ink: #F2F3F7;          /* la "tinta" pasa a ser clara: botones, pills y chips la usan de fondo */
-  --ink-soft: #D9DCE5;
-  --slate: #AEB4C2;
-  --slate-light: #7C8496;
-  --line: #242A38;
-  --line-strong: #363D4E;
-  --fg: #F2F3F7;
-  --fg-2: #AEB4C2;
-  --fg-3: #7C8496;
-  --border: 1px solid #242A38;
-  --border-strong: 1.4px solid #F2F3F7;
-  --accent: #8E7BFF;
-  --accent-ink: #B7ABFF;
-  --accent-soft: rgba(142, 123, 255, 0.16);
-  --accent-on-dark: #B7ABFF;
-  --on-accent: #0B0D14;
-  --accent-2: #B7ABFF;
-  --accent-3: #D9D3FF;
+  --bg: #08142A;
+  --surface: #0E1C36;
+  --surface-2: #142542;
+  --paper: #08142A;
+  --panel: #142542;
+  --white: #08142A;        /* inverso: lo que era blanco sobre tinta ahora es tinta sobre claro */
+  --ink: #F2F5FA;          /* la "tinta" pasa a ser clara: botones, pills y chips la usan de fondo */
+  --ink-soft: #D6DEEA;
+  --slate: #AFBACD;
+  --slate-light: #8494AE;
+  --line: #1F2F4D;
+  --line-strong: #33466A;
+  --fg: #F2F5FA;
+  --fg-2: #AFBACD;
+  --fg-3: #8494AE;
+  --border: 1px solid #1F2F4D;
+  --border-strong: 1.4px solid #F2F5FA;
+  --accent: #6FA8FF;
+  --accent-ink: #9CC3FF;
+  --accent-soft: rgba(111, 168, 255, 0.16);
+  --accent-on-dark: #9CC3FF;
+  --on-accent: #0B1D3A;
+  --accent-2: #9CC3FF;
+  --accent-3: #C9DCFF;
+  --logo-1: #FFFFFF; --logo-2: #4C7DFF; --logo-3: #6FA8FF; --logo-word: #FFFFFF;
   --ok: #5BCF93; --ok-soft: rgba(91, 207, 147, 0.16);
   --run: #F0B45B; --run-soft: rgba(240, 180, 91, 0.16);
   --bad: #FF8A80; --bad-soft: rgba(255, 138, 128, 0.16);
@@ -175,30 +179,31 @@
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0B0D14;
-  --surface: #11141D;
-  --surface-2: #171B26;
-  --paper: #0B0D14;
-  --panel: #171B26;
-  --white: #0B0D14;        /* inverso: lo que era blanco sobre tinta ahora es tinta sobre claro */
-  --ink: #F2F3F7;          /* la "tinta" pasa a ser clara: botones, pills y chips la usan de fondo */
-  --ink-soft: #D9DCE5;
-  --slate: #AEB4C2;
-  --slate-light: #7C8496;
-  --line: #242A38;
-  --line-strong: #363D4E;
-  --fg: #F2F3F7;
-  --fg-2: #AEB4C2;
-  --fg-3: #7C8496;
-  --border: 1px solid #242A38;
-  --border-strong: 1.4px solid #F2F3F7;
-  --accent: #8E7BFF;
-  --accent-ink: #B7ABFF;
-  --accent-soft: rgba(142, 123, 255, 0.16);
-  --accent-on-dark: #B7ABFF;
-  --on-accent: #0B0D14;
-  --accent-2: #B7ABFF;
-  --accent-3: #D9D3FF;
+  --bg: #08142A;
+  --surface: #0E1C36;
+  --surface-2: #142542;
+  --paper: #08142A;
+  --panel: #142542;
+  --white: #08142A;        /* inverso: lo que era blanco sobre tinta ahora es tinta sobre claro */
+  --ink: #F2F5FA;          /* la "tinta" pasa a ser clara: botones, pills y chips la usan de fondo */
+  --ink-soft: #D6DEEA;
+  --slate: #AFBACD;
+  --slate-light: #8494AE;
+  --line: #1F2F4D;
+  --line-strong: #33466A;
+  --fg: #F2F5FA;
+  --fg-2: #AFBACD;
+  --fg-3: #8494AE;
+  --border: 1px solid #1F2F4D;
+  --border-strong: 1.4px solid #F2F5FA;
+  --accent: #6FA8FF;
+  --accent-ink: #9CC3FF;
+  --accent-soft: rgba(111, 168, 255, 0.16);
+  --accent-on-dark: #9CC3FF;
+  --on-accent: #0B1D3A;
+  --accent-2: #9CC3FF;
+  --accent-3: #C9DCFF;
+  --logo-1: #FFFFFF; --logo-2: #4C7DFF; --logo-3: #6FA8FF; --logo-word: #FFFFFF;
   --ok: #5BCF93; --ok-soft: rgba(91, 207, 147, 0.16);
   --run: #F0B45B; --run-soft: rgba(240, 180, 91, 0.16);
   --bad: #FF8A80; --bad-soft: rgba(255, 138, 128, 0.16);
@@ -232,29 +237,30 @@
 
 /* Bloque oscuro: invierte los roles sin cambiar los tokens base */
 [data-theme="ink"] {
-  --bg: #0B0D14;
-  --surface: #141825;
-  --surface-2: #1B2030;
-  --paper: #0B0D14;
-  --panel: #1B2030;
+  --bg: #0B1D3A;
+  --surface: #13264A;
+  --surface-2: #1A2F57;
+  --paper: #0B1D3A;
+  --panel: #1A2F57;
   --fg: #FFFFFF;
   --fg-2: rgba(255, 255, 255, 0.72);
   --fg-3: rgba(255, 255, 255, 0.56);
   --ink: #FFFFFF;
-  --white: #0B0D14;
+  --white: #0B1D3A;
   --line: rgba(255, 255, 255, 0.12);
   --line-strong: rgba(255, 255, 255, 0.24);
   --border: 1px solid rgba(255, 255, 255, 0.12);
   --border-strong: 1.4px solid rgba(255, 255, 255, 0.6);
-  --accent: #8E7BFF;
-  --accent-ink: #B7ABFF;
-  --accent-soft: rgba(142, 123, 255, 0.16);
-  --on-accent: #0B0D14;
+  --accent: #6FA8FF;
+  --accent-ink: #9CC3FF;
+  --accent-soft: rgba(111, 168, 255, 0.16);
+  --on-accent: #0B1D3A;
+  --logo-1: #FFFFFF; --logo-2: #4C7DFF; --logo-3: #6FA8FF; --logo-word: #FFFFFF;
   color-scheme: dark;
 }
 /* En tema oscuro el bloque de tinta se distingue por un tono más profundo y sus líneas */
-:root[data-theme="dark"] [data-theme="ink"] { --bg: #06080E; --paper: #06080E; border-block: 1px solid #242A38; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) [data-theme="ink"] { --bg: #06080E; --paper: #06080E; border-block: 1px solid #242A38; } }
+:root[data-theme="dark"] [data-theme="ink"] { --bg: #050E1F; --paper: #050E1F; border-block: 1px solid #1F2F4D; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) [data-theme="ink"] { --bg: #050E1F; --paper: #050E1F; border-block: 1px solid #1F2F4D; } }
 
 /* Simulación de prefers-reduced-motion desde /avance/sistema */
 :root[data-reduced-motion] {

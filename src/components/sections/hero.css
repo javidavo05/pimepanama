@@ -36,7 +36,6 @@
 /* Cabecera */
 .hw-chrome { display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-4); padding: var(--s-3) var(--s-4); border-bottom: var(--border); background: var(--paper); }
 .hw-brand { display: flex; align-items: center; gap: var(--s-2); font-family: var(--font-display); font-weight: var(--w-display); font-size: var(--text-sm); }
-.hw-logo { width: 14px; height: 18px; background: var(--accent); clip-path: polygon(50% 0, 100% 0, 50% 100%, 0 100%); border-radius: 2px; }
 .hw-app { font-family: var(--font-body); font-weight: var(--w-medium); color: var(--fg-3); }
 .hw-crumbs { display: none; gap: var(--s-2); color: var(--fg-3); }
 .hw-crumbs span + span::before { content: "/"; margin-right: var(--s-2); color: var(--line-strong); }
