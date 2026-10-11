@@ -3,6 +3,7 @@ import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { datosHoy, type ItemAgenda } from "@/lib/motor/hoy";
 import { BotonCobrar } from "@/components/empresa/cobrar/asistente-cobrar";
+import { BotonCalendario } from "@/components/empresa/calendario/asistente-calendario";
 import { LazyDashboardRevenueChart as DashboardRevenueChart } from "@/components/empresa/revenue-chart-lazy";
 import { buildMonthlyRevenue, buildYearlyRevenue } from "@/lib/revenue-helpers";
 import { PAID_INVOICE_REVENUE_SELECT, paidInvoiceWhere, effectiveInvoiceAmount } from "@/lib/invoice-revenue";
@@ -99,9 +100,16 @@ export default async function HoyPage() {
             <h2 className={h2}>Tu día</h2>
             <Link href="/empresa/tareas" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">Tareas</Link>
           </div>
+          {d.calendario.estado === "sin" && (
+            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-brand/5 px-4 py-3">
+              <p className="text-sm text-fg-mute">Suma tus eventos de Google Calendar a tu día.</p>
+              <BotonCalendario etiqueta="Conectar" className="inline-flex items-center min-h-11 px-4 rounded-lg bg-brand text-on-brand text-sm font-semibold" />
+            </div>
+          )}
+          {d.calendario.estado === "error" && <p className="mt-2 text-sm text-danger">No pude leer tu Google Calendar: {d.calendario.error} <Link href="/empresa/configuracion" className="underline font-semibold">Revisar</Link></p>}
           {d.tareasAtrasadas > 0 && <p className="mt-2 text-sm text-warn font-semibold">{d.tareasAtrasadas} {d.tareasAtrasadas === 1 ? "tarea atrasada" : "tareas atrasadas"} de días anteriores</p>}
           {d.agenda.length === 0 ? (
-            <div className="mt-4 rounded-xl bg-fill p-4 text-sm text-fg-dim">No tienes nada agendado para hoy. Las tareas que venzan hoy, tus citas, reuniones y cobros del día aparecen aquí. Pronto también tu Google Calendar.</div>
+            <div className="mt-4 rounded-xl bg-fill p-4 text-sm text-fg-dim">No tienes nada agendado para hoy. Las tareas que venzan hoy, tus citas, reuniones y cobros del día aparecen aquí. </div>
           ) : (
             <ol className="mt-4 space-y-1">
               {d.agenda.map((a) => {

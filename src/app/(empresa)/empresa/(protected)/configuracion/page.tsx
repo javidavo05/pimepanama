@@ -7,6 +7,7 @@ import Link from "@/components/empresa/link";
 import { ThemeToggleCards } from "@/components/empresa/theme/theme-toggle";
 import { PasskeysSettings } from "@/components/empresa/passkeys-settings";
 import { CuentasGithub } from "@/components/empresa/github/cuentas-github";
+import { CalendarioConfig } from "@/components/empresa/calendario/asistente-calendario";
 
 export const metadata = { title: "Configuración — Pime Suite" };
 
@@ -46,6 +47,8 @@ export default async function ConfiguracionPage() {
         </div>
         <span className="text-fg-faint text-sm">→</span>
       </Link>
+
+      <CalendarioConfig />
 
       <CuentasGithub />
 

@@ -9,6 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { pagadoEfectivo } from "@/lib/portal/saldo";
 import { avanceDeProyecto } from "@/lib/portal/avance";
 import { fasesVigentes } from "@/lib/portal/datos";
+import { eventosDelEquipo } from "@/lib/calendario/datos";
 
 const DIA = 86_400_000;
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -29,7 +30,8 @@ export async function datosHoy(userId: string, ahora = new Date()) {
   const mes = new Date(Date.UTC(new Date(ahora.getTime() - 5 * 3600_000).getUTCFullYear(), new Date(ahora.getTime() - 5 * 3600_000).getUTCMonth(), 1, 5));
   const mesPasado = new Date(Date.UTC(mes.getUTCFullYear(), mes.getUTCMonth() - 1, 1, 5));
 
-  const [facturas, pagos, entradas, tareas, citas, reuniones, sistemas, tickets, borradores, porConfirmar, ordenes, proyectos] = await Promise.all([
+  const [calendario, facturas, pagos, entradas, tareas, citas, reuniones, sistemas, tickets, borradores, porConfirmar, ordenes, proyectos] = await Promise.all([
+    eventosDelEquipo(userId, hoy, manana),
     prisma.document.findMany({
       where: { userId, type: "FACTURA", status: { notIn: ["DRAFT", "CANCELLED", "PAID"] } },
       select: { id: true, number: true, title: true, status: true, total: true, amountPaid: true, dueDate: true, clientId: true, clientName: true, client: { select: { name: true, company: true } }, paymentSchedules: { where: { status: { in: ["PENDING", "OVERDUE"] } }, select: { id: true, description: true, amount: true, dueDate: true } } },
@@ -88,6 +90,7 @@ export async function datosHoy(userId: string, ahora = new Date()) {
     ...reuniones.map((m) => ({ id: `reu-${m.id}`, hora: m.meetingDate, todoElDia: false, tipo: "reunion" as const, titulo: m.title, detalle: m.project?.name ?? null, href: `/empresa/reuniones/${m.id}` })),
     ...tareas.filter((t) => t.dueDate && t.dueDate >= hoy).map((t) => ({ id: `tarea-${t.id}`, hora: t.allDay ? null : t.dueDate, todoElDia: t.allDay, tipo: "tarea" as const, titulo: t.title, detalle: t.project?.name ?? null, href: t.projectId ? `/empresa/proyectos/${t.projectId}?tab=tareas` : "/empresa/tareas" })),
     ...cuotasHoy,
+    ...calendario.eventos.map((e) => ({ id: `cal-${e.id}`, hora: e.todoElDia ? null : e.inicio, todoElDia: e.todoElDia, tipo: "evento" as const, titulo: e.titulo, detalle: e.lugar ? `Calendario · ${e.lugar}` : "Calendario", href: null })),
   ].sort((a, b) => (a.hora ? a.hora.getTime() : 0) - (b.hora ? b.hora.getTime() : 0));
 
   const sinResponder = tickets.filter((t) => t.lastClientActivityAt && (!t.lastPimeActivityAt || t.lastClientActivityAt > t.lastPimeActivityAt));
@@ -100,6 +103,7 @@ export async function datosHoy(userId: string, ahora = new Date()) {
     sistemas: sistemas.map((s) => ({ id: s.id, nombre: s.name, cliente: nombre(s.client), estado: s.status, desde: s.statusChangedAt })),
     tickets: { sinResponder: sinResponder.slice(0, 5).map((t) => ({ id: t.id, numero: t.number, titulo: t.title, cliente: nombre(t.client), urgente: t.priority === "urgente" || t.priority === "alta" })), urgentes: urgentes.length, abiertos: tickets.length },
     agenda,
+    calendario: { estado: calendario.estado, error: calendario.error ?? null },
     tareasAtrasadas: atrasadas.length,
     decisiones: [
       ...porConfirmar.map((p) => ({ id: `pago-${p.id}`, titulo: `Pago reportado por ${nombre(p.client)}`, detalle: `USD ${Number(p.amount).toFixed(2)} · confírmalo`, href: p.clientId ? `/empresa/clientes/${p.clientId}` : "/empresa/dinero" })),

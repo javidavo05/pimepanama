@@ -281,6 +281,10 @@ model EmpresaUser {
   monitoredSystems      MonitoredSystem[]
   githubAccounts        GithubAccount[]
   assistantActions      AssistantAction[]
+  /// Dirección secreta iCal de Google Calendar, cifrada (migración 0044).
+  calendarIcsEnc        String?
+  calendarCheckedAt     DateTime?
+  calendarError         String?
   activityActed         ActivityEvent[]          @relation("ActivityActorEmpresa")
   /// PAT de GitHub cifrado (AES-256-GCM). Es del usuario, no del proyecto: un
   /// token sirve para todos sus repos.

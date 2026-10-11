@@ -56,3 +56,4 @@ Todas las migraciones se corren manualmente en **Supabase → SQL Editor**.
 | 0041 | `0041_tarifas_y_envios.sql` | Tarifas por línea Normal $40 y Premium $30 (antes 30/20) + CompanyConfig.clientEmailsEnabled (envíos a clientes apagados por defecto) | 2026-10-11 | ✅ Aplicado |
 | 0042 | `0042_verificacion_github.sql` | Project.githubCheck + githubCheckAt — estado del proyecto verificado con GitHub (commits, milestones, issues, PRs) | 2026-10-11 | ✅ Aplicado |
 | 0043 | `0043_asistente.sql` | AssistantAction — registro de lo que propone y hace el asistente (factura, tarea, nota, pago), con confirmación y deshacer | 2026-10-11 | ✅ Aplicado |
+| 0044 | `0044_calendario.sql` | EmpresaUser.calendarIcsEnc/calendarCheckedAt/calendarError — Google Calendar por dirección secreta iCal, cifrada, solo lectura | 2026-10-11 | ✅ Aplicado |
