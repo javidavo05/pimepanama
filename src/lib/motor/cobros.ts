@@ -83,9 +83,10 @@ export type Cobro =
   | { tipo: "horas"; clientId: string }
   | { tipo: "monto"; clientId: string; projectId?: string | null; concepto: string; monto: number };
 
-async function crearFactura(u: Equipo, p: { clientId: string; projectId?: string | null; titulo: string; lineas: { description: string; unitPrice: number }[]; cuotas?: { description: string; amount: number; dueDate: Date }[] }) {
+async function crearFactura(u: Equipo, p: { clientId: string; projectId?: string | null; titulo: string; lineas: { description: string; unitPrice: number }[]; cuotas?: { description: string; amount: number; dueDate: Date }[]; sinImpuesto?: boolean }) {
   const c = await prisma.client.findFirstOrThrow({ where: { id: p.clientId, userId: u.id } });
-  const impuesto = Number(u.config?.taxRatePercent ?? 0) || 0;
+  // Un plan de pagos es un monto cerrado: sus cuotas suman el total, no se le agrega impuesto encima.
+  const impuesto = p.sinImpuesto ? 0 : Number(u.config?.taxRatePercent ?? 0) || 0;
   const subtotal = r2(p.lineas.reduce((a, l) => a + l.unitPrice, 0));
   const taxAmount = r2((subtotal * impuesto) / 100);
   const doc = await prisma.$transaction(async (tx) => {
@@ -133,7 +134,7 @@ export async function crearCobro(u: Equipo, cobro: Cobro): Promise<{ id: string;
       ...(plan.downPayment > 0 ? [{ description: "Abono inicial", amount: plan.downPayment, dueDate: new Date() }] : []),
       ...plan.rows.map((r) => ({ description: r.description, amount: r.amount, dueDate: new Date(`${r.dueDate}T12:00:00Z`) })),
     ];
-    const d = await crearFactura(u, { clientId, projectId: p.id, titulo: p.name, lineas: [{ description: p.name, unitPrice: (p.financingPlan as FinancingPlan).total }], cuotas });
+    const d = await crearFactura(u, { clientId, projectId: p.id, titulo: p.name, lineas: [{ description: p.name, unitPrice: (p.financingPlan as FinancingPlan).total }], cuotas, sinImpuesto: true });
     await registrarEvento({ userId: u.id, clientId, projectId: p.id, entityType: "factura", entityId: d.id, kind: "factura_plan", title: `Factura ${d.number} del proyecto con ${cuotas.length} pagos`, visibility: "interno" });
     return { id: d.id, number: d.number };
   }
