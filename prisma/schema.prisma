@@ -265,6 +265,20 @@ model EmpresaUser {
   watchedThreads        WatchedThread[]
   deviceTokens          DeviceToken[]
   passkeys              Passkey[]
+  clientUsers           ClientUser[]
+  invitationsCreated    ClientInvitation[]
+  changeOrders          ChangeOrder[]
+  tickets               Ticket[]                 @relation("TicketTenant")
+  ticketsOpened         Ticket[]                 @relation("TicketOpenedByEmpresa")
+  ticketMessages        TicketMessage[]
+  ticketAttachments     TicketAttachment[]
+  timeEntries           TimeEntry[]              @relation("TimeEntryTenant")
+  timeEntriesWorked     TimeEntry[]              @relation("TimeEntryWorker")
+  payments              Payment[]                @relation("PaymentTenant")
+  paymentsRecorded      Payment[]                @relation("PaymentRecordedBy")
+  approvals             Approval[]
+  activityEvents        ActivityEvent[]          @relation("ActivityTenant")
+  activityActed         ActivityEvent[]          @relation("ActivityActorEmpresa")
   /// PAT de GitHub cifrado (AES-256-GCM). Es del usuario, no del proyecto: un
   /// token sirve para todos sus repos.
   githubTokenEnc        String?
@@ -293,6 +307,19 @@ model Client {
   contracts          Contract[]
   meetings           Meeting[]
   convertedFromLeads Lead[]
+  /// Línea de marca: "normal" (azul tinta) o "premium" (negro y oro). Define tarifa y documentos.
+  brandLine          String          @default("normal")
+  /// Tarifa por hora propia; si es null se usa la de la línea en CompanyConfig.
+  hourlyRate         Decimal?        @db.Decimal(10, 2)
+  portalEnabled      Boolean         @default(false)
+  archivedAt         DateTime?
+  portalUsers        ClientUser[]
+  changeOrders       ChangeOrder[]
+  tickets            Ticket[]
+  timeEntries        TimeEntry[]
+  payments           Payment[]
+  approvals          Approval[]
+  activityEvents     ActivityEvent[]
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
@@ -400,6 +427,12 @@ model CompanyConfig {
   footerNotes_es       String?
   bookingAutoLead      Boolean       @default(true)
   signingMailAccountId String?
+  hourlyRateNormal      Decimal       @default(30) @db.Decimal(10, 2)
+  hourlyRatePremium     Decimal       @default(20) @db.Decimal(10, 2)
+  timeRoundingMinutes   Int           @default(15)
+  timeMinimumMinutes    Int           @default(30)
+  estimateApprovalHours Decimal       @default(2) @db.Decimal(6, 2)
+  warrantyDays          Int           @default(90)
   users                EmpresaUser[]
   documents            Document[]
   createdAt            DateTime      @default(now())
@@ -455,6 +488,9 @@ model Document {
   tasks            Task[]
   auditLogs        DocumentAuditLog[]
   meetings         Meeting[]          @relation("MeetingBitacora")
+  phasesInvoiced   ProjectPhase[]
+  timeEntries      TimeEntry[]
+  payments         Payment[]
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
@@ -516,6 +552,14 @@ model Project {
   contracts       Contract[]
   tasks           Task[]
   sections        ProjectSection[]
+  /// "nuevo" | "modificacion" | "soporte"
+  kind            String          @default("nuevo")
+  portalVisible   Boolean         @default(true)
+  phases          ProjectPhase[]
+  changeOrders    ChangeOrder[]
+  tickets         Ticket[]
+  timeEntries     TimeEntry[]
+  activityEvents  ActivityEvent[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
@@ -1216,4 +1260,310 @@ model MeetingActionItem {
   @@index([meetingId])
   @@index([meetingId, sortOrder])
   @@index([taskId])
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Pime Clientes (migración 0038_portal_clientes.sql)
+// Estados como String con CHECK en la base: los valores válidos están en
+// src/lib/portal/estados.ts.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/// Persona del cliente con acceso a su cuenta. Nunca es EmpresaUser.
+model ClientUser {
+  id                 String             @id @default(cuid())
+  userId             String
+  user               EmpresaUser        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId           String
+  client             Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  email              String
+  fullName           String?
+  /// "principal" | "miembro"
+  role               String             @default("principal")
+  /// "invitado" | "activo" | "revocado"
+  status             String             @default("invitado")
+  supabaseUid        String?            @unique
+  invitedAt          DateTime?
+  activatedAt        DateTime?
+  lastLoginAt        DateTime?
+  revokedAt          DateTime?
+  invitations        ClientInvitation[]
+  decidedOrders      ChangeOrder[]
+  ticketsOpened      Ticket[]
+  ticketMessages     TicketMessage[]
+  ticketAttachments  TicketAttachment[]
+  paymentsReported   Payment[]
+  approvals          Approval[]
+  activityEvents     ActivityEvent[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@index([userId])
+}
+
+model ClientInvitation {
+  id                     String       @id @default(cuid())
+  clientUserId           String
+  clientUser             ClientUser   @relation(fields: [clientUserId], references: [id], onDelete: Cascade)
+  tokenHash              String       @unique
+  expiresAt              DateTime
+  usedAt                 DateTime?
+  createdByEmpresaUserId String?
+  createdBy              EmpresaUser? @relation(fields: [createdByEmpresaUserId], references: [id])
+  createdAt              DateTime     @default(now())
+
+  @@index([clientUserId])
+}
+
+model ChangeOrder {
+  id                    String         @id @default(cuid())
+  userId                String
+  user                  EmpresaUser    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId             String
+  project               Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  clientId              String
+  client                Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  ticketId              String?
+  ticket                Ticket?        @relation(fields: [ticketId], references: [id])
+  /// OC-0001, lo pone la base
+  number                String         @unique @default(dbgenerated("('OC-'::text || lpad((nextval('change_order_number_seq'::regclass))::text, 4, '0'::text))"))
+  title                 String
+  description           String?
+  /// "borrador" | "enviada" | "aprobada" | "rechazada" | "cancelada"
+  status                String         @default("borrador")
+  total                 Decimal        @default(0) @db.Decimal(12, 2)
+  sentAt                DateTime?
+  decidedAt             DateTime?
+  decidedByClientUserId String?
+  decidedBy             ClientUser?    @relation(fields: [decidedByClientUserId], references: [id])
+  decisionComment       String?
+  phases                ProjectPhase[]
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  @@index([projectId])
+  @@index([clientId, status])
+}
+
+/// Fase de un proyecto: de aquí salen la propuesta, la cotización, el avance y la factura.
+model ProjectPhase {
+  id              String       @id @default(cuid())
+  projectId       String
+  project         Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  changeOrderId   String?
+  changeOrder     ChangeOrder? @relation(fields: [changeOrderId], references: [id])
+  sortOrder       Int          @default(0)
+  name            String
+  description     String?
+  price           Decimal      @default(0) @db.Decimal(12, 2)
+  /// "al_aprobar" | "al_iniciar" | "al_entregar" | "sin_cobro"
+  billingPoint    String       @default("al_entregar")
+  /// "pendiente" | "en_curso" | "en_revision" | "hecha"
+  status          String       @default("pendiente")
+  progress        Decimal      @default(0) @db.Decimal(5, 2)
+  /// "manual" | "github"
+  progressSource  String       @default("manual")
+  githubMilestone Int?
+  estimatedDays   Int?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  invoiceId       String?
+  invoice         Document?    @relation(fields: [invoiceId], references: [id])
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([projectId, sortOrder])
+  @@index([changeOrderId])
+}
+
+model Ticket {
+  id                    String             @id @default(cuid())
+  userId                String
+  user                  EmpresaUser        @relation("TicketTenant", fields: [userId], references: [id], onDelete: Cascade)
+  clientId              String
+  client                Client             @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  projectId             String?
+  project               Project?           @relation(fields: [projectId], references: [id])
+  /// TK-0001, lo pone la base
+  number                String             @unique @default(dbgenerated("('TK-'::text || lpad((nextval('ticket_number_seq'::regclass))::text, 4, '0'::text))"))
+  /// "soporte" | "cambio" | "nuevo" | "incidente"
+  kind                  String             @default("soporte")
+  title                 String
+  /// "abierto" | "en_revision" | "esperando_cliente" | "en_progreso" | "resuelto" | "cerrado"
+  status                String             @default("abierto")
+  /// "baja" | "normal" | "alta" | "urgente"
+  priority              String             @default("normal")
+  /// "portal" | "empresa" | "sistema"
+  source                String             @default("portal")
+  openedByClientUserId  String?
+  openedByClient        ClientUser?        @relation(fields: [openedByClientUserId], references: [id])
+  openedByEmpresaUserId String?
+  openedByEmpresa       EmpresaUser?       @relation("TicketOpenedByEmpresa", fields: [openedByEmpresaUserId], references: [id])
+  estimatedMinutes      Int?
+  /// "no_requiere" | "pendiente" | "aprobado" | "rechazado"
+  estimateStatus        String             @default("no_requiere")
+  isWarranty            Boolean            @default(false)
+  lastClientActivityAt  DateTime?
+  lastPimeActivityAt    DateTime?
+  resolvedAt            DateTime?
+  closedAt              DateTime?
+  messages              TicketMessage[]
+  attachments           TicketAttachment[]
+  timeEntries           TimeEntry[]
+  changeOrders          ChangeOrder[]
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+
+  @@index([userId, status])
+  @@index([clientId, createdAt(sort: Desc)])
+  @@index([projectId])
+}
+
+model TicketMessage {
+  id            String             @id @default(cuid())
+  ticketId      String
+  ticket        Ticket             @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  /// "cliente" | "pime" | "sistema"
+  authorType    String
+  clientUserId  String?
+  clientUser    ClientUser?        @relation(fields: [clientUserId], references: [id])
+  empresaUserId String?
+  empresaUser   EmpresaUser?       @relation(fields: [empresaUserId], references: [id])
+  body          String
+  /// Nota interna del equipo: nunca se muestra al cliente.
+  internal      Boolean            @default(false)
+  attachments   TicketAttachment[]
+  createdAt     DateTime           @default(now())
+
+  @@index([ticketId, createdAt])
+}
+
+model TicketAttachment {
+  id                      String         @id @default(cuid())
+  ticketId                String
+  ticket                  Ticket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  messageId               String?
+  message                 TicketMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  r2Key                   String
+  fileName                String
+  contentType             String
+  sizeBytes               Int
+  uploadedByClientUserId  String?
+  uploadedByClient        ClientUser?    @relation(fields: [uploadedByClientUserId], references: [id])
+  uploadedByEmpresaUserId String?
+  uploadedByEmpresa       EmpresaUser?   @relation(fields: [uploadedByEmpresaUserId], references: [id])
+  createdAt               DateTime       @default(now())
+
+  @@index([ticketId])
+}
+
+/// Horas trabajadas. minutes = real; billedMinutes = cobrado tras redondear; amount = billedMinutes/60 × rate.
+model TimeEntry {
+  id            String       @id @default(cuid())
+  userId        String
+  user          EmpresaUser  @relation("TimeEntryTenant", fields: [userId], references: [id], onDelete: Cascade)
+  clientId      String
+  client        Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  ticketId      String?
+  ticket        Ticket?      @relation(fields: [ticketId], references: [id])
+  projectId     String?
+  project       Project?     @relation(fields: [projectId], references: [id])
+  empresaUserId String?
+  worker        EmpresaUser? @relation("TimeEntryWorker", fields: [empresaUserId], references: [id])
+  workDate      DateTime     @default(now()) @db.Date
+  minutes       Int
+  billedMinutes Int
+  rate          Decimal      @db.Decimal(10, 2)
+  amount        Decimal      @db.Decimal(12, 2)
+  billable      Boolean      @default(true)
+  note          String?
+  invoiceId     String?
+  invoice       Document?    @relation(fields: [invoiceId], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([clientId, workDate])
+  @@index([ticketId])
+  @@index([invoiceId])
+}
+
+/// Un pago real, con fecha, método y referencia. Document.amountPaid es la suma de los confirmados.
+model Payment {
+  id                      String       @id @default(cuid())
+  userId                  String
+  user                    EmpresaUser  @relation("PaymentTenant", fields: [userId], references: [id], onDelete: Cascade)
+  clientId                String?
+  client                  Client?      @relation(fields: [clientId], references: [id])
+  documentId              String?
+  document                Document?    @relation(fields: [documentId], references: [id])
+  amount                  Decimal      @db.Decimal(12, 2)
+  paidAt                  DateTime     @default(now()) @db.Date
+  /// "transferencia" | "yappy" | "tarjeta" | "efectivo" | "cheque" | "otro"
+  method                  String       @default("transferencia")
+  reference               String?
+  receiptR2Key            String?
+  /// "confirmado" | "por_confirmar" | "rechazado"
+  status                  String       @default("confirmado")
+  note                    String?
+  reportedByClientUserId  String?
+  reportedBy              ClientUser?  @relation(fields: [reportedByClientUserId], references: [id])
+  recordedByEmpresaUserId String?
+  recordedBy              EmpresaUser? @relation("PaymentRecordedBy", fields: [recordedByEmpresaUserId], references: [id])
+  confirmedAt             DateTime?
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
+
+  @@index([documentId])
+  @@index([clientId, paidAt(sort: Desc)])
+  @@index([userId, status])
+}
+
+/// Decisión del cliente. Se agrega, nunca se edita ni se borra (trigger en la base).
+model Approval {
+  id           String      @id @default(cuid())
+  userId       String
+  user         EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId     String
+  client       Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  /// "orden_de_cambio" | "estimado" | "propuesta" | "fase"
+  entityType   String
+  entityId     String
+  /// "aprobado" | "rechazado" | "solicita_cambios"
+  decision     String
+  clientUserId String?
+  clientUser   ClientUser? @relation(fields: [clientUserId], references: [id])
+  comment      String?
+  ip           String?
+  userAgent    String?
+  createdAt    DateTime    @default(now())
+
+  @@index([clientId])
+}
+
+/// Línea de tiempo del cliente. visibility "cliente" se ve en su cuenta; "interno" solo en /empresa.
+model ActivityEvent {
+  id                 String       @id @default(cuid())
+  userId             String
+  user               EmpresaUser  @relation("ActivityTenant", fields: [userId], references: [id], onDelete: Cascade)
+  clientId           String
+  client             Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  projectId          String?
+  project            Project?     @relation(fields: [projectId], references: [id])
+  entityType         String
+  entityId           String?
+  kind               String
+  title              String
+  detail             String?
+  /// "interno" | "cliente"
+  visibility         String       @default("interno")
+  /// "cliente" | "pime" | "sistema" | "github"
+  actorType          String       @default("pime")
+  actorClientUserId  String?
+  actorClient        ClientUser?  @relation(fields: [actorClientUserId], references: [id])
+  actorEmpresaUserId String?
+  actorEmpresa       EmpresaUser? @relation("ActivityActorEmpresa", fields: [actorEmpresaUserId], references: [id])
+  createdAt          DateTime     @default(now())
+
+  @@index([clientId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
 }
