@@ -4,6 +4,8 @@ import type { AuthenticationResponseJSON } from "@simplewebauthn/server";
 import { withEmpresaRoute } from "@/app/api/empresa/_route";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { consumeChallenge, verifyPasskeyAssertion } from "@/lib/passkeys";
+import { cookies } from "next/headers";
+import { MFA_COOKIE, cookieMarca, marcaVerificada } from "@/lib/auth/mfa";
 
 export const runtime = "nodejs";
 
@@ -51,6 +53,14 @@ export const POST = withEmpresaRoute(async (request) => {
   if (otpError) {
     console.error("[passkeys/login] verifyOtp", otpError);
     return NextResponse.json({ error: "No se pudo iniciar la sesión." }, { status: 500 });
+  }
+
+  // La huella o la llave ya son una segunda prueba (algo que tienes + tu cara o tu dedo): la sesión
+  // queda verificada para la doble verificación obligatoria del equipo.
+  const { data: sesion } = await supabase.auth.getClaims();
+  const sid = sesion?.claims?.session_id as string | undefined;
+  if (sid && sesion?.claims?.sub) {
+    (await cookies()).set(MFA_COOKIE, marcaVerificada(sesion.claims.sub, sid), cookieMarca);
   }
 
   return NextResponse.json({ ok: true });

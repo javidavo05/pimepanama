@@ -5,6 +5,31 @@ import { createServerClient } from "@supabase/ssr";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // ── /cliente: cuenta del cliente ────────────────────────────────────────
+  // Públicas: entrar, activar la invitación, pedir y elegir contraseña nueva. Lo demás exige sesión;
+  // qué cliente es y si está activo lo decide getPortalUser en cada página.
+  const PUBLICAS_CLIENTE = ["/cliente/acceso", "/cliente/activar", "/cliente/recuperar", "/cliente/nueva-clave"];
+  if (pathname === "/cliente" || pathname.startsWith("/cliente/")) {
+    if (PUBLICAS_CLIENTE.some((p) => pathname === p || pathname.startsWith(p + "/"))) return NextResponse.next();
+    const res = NextResponse.next({ request });
+    const sb = createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+      cookies: {
+        getAll() { return request.cookies.getAll(); },
+        setAll(cs) {
+          cs.forEach(({ name, value }) => request.cookies.set(name, value));
+          cs.forEach(({ name, value, options }) => res.cookies.set(name, value, options));
+        },
+      },
+    });
+    const { data } = await sb.auth.getClaims();
+    if (!data?.claims) {
+      const r = NextResponse.redirect(new URL("/cliente/acceso", request.url));
+      res.cookies.getAll().forEach(({ name, value, ...o }) => r.cookies.set(name, value, o));
+      return r;
+    }
+    return res;
+  }
+
   // ── /empresa auth guard ──────────────────────────────────────────────────
   if (pathname === "/empresa/login") {
     return NextResponse.next();

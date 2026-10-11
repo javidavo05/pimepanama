@@ -374,3 +374,68 @@ export function getPromotionalEmail(params: {
     html: shell({ preheader: title, content: body, lang: locale }),
   };
 }
+
+// ─── Pime Clientes: correos de la cuenta del cliente ────────────────────────
+// Mismo armazón que el resto (banda de tres capas, logo, botón sólido). Sin firma
+// personal: los envía el sistema.
+
+/** Invitación a la cuenta del cliente. El enlace es de un solo uso y vence en 7 días. */
+export function getPortalInvitationEmail(params: { name?: string | null; company: string; link: string; invitedBy?: string | null }) {
+  const saludo = params.name ? `Hola, ${params.name}` : "Hola";
+  const content = [
+    eyebrow("Tu cuenta en Pime"),
+    heading(`${saludo}`),
+    paragraph(`${esc(params.invitedBy || "El equipo de Pime")} te invitó a la cuenta de <strong style="color:${C.ink};">${esc(params.company)}</strong>. Ahí vas a ver en qué fase va cada proyecto, abrir tickets de soporte con capturas, aprobar cambios y revisar tus facturas y pagos.`),
+    button(params.link, "Crear mi contraseña"),
+    paragraph(`El enlace funciona una sola vez y vence en 7 días. Si no esperabas esta invitación, ignora este correo.`, 20),
+    spacer(),
+  ].join("");
+  return {
+    subject: `Tu cuenta de ${params.company} en Pime`,
+    html: shell({ preheader: `Crea tu contraseña para entrar a la cuenta de ${params.company}.`, content, lang: "es" }),
+  };
+}
+
+/** Restablecer contraseña (pedido por el cliente desde afuera o por Pime desde su ficha). */
+export function getPortalPasswordResetEmail(params: { name?: string | null; link: string }) {
+  const content = [
+    eyebrow("Restablecer contraseña"),
+    heading(params.name ? `Hola, ${params.name}` : "Hola"),
+    paragraph(`Recibimos un pedido para cambiar la contraseña de tu cuenta en Pime. Toca el botón y elige una nueva.`),
+    button(params.link, "Elegir una contraseña nueva"),
+    paragraph(`El enlace funciona una sola vez y vence en una hora. Si no lo pediste tú, ignora este correo: tu contraseña sigue igual.`, 20),
+    spacer(),
+  ].join("");
+  return { subject: "Cambia tu contraseña de Pime", html: shell({ preheader: "Elige una contraseña nueva para tu cuenta.", content, lang: "es" }) };
+}
+
+/** Aviso al cliente: Pime respondió o cambió el estado de su ticket. */
+export function getPortalTicketUpdateEmail(params: { name?: string | null; number: string; title: string; status: string; message?: string | null; link: string }) {
+  const content = [
+    eyebrow(`Ticket ${params.number}`),
+    heading(params.title),
+    detailPanel([
+      { label: "Estado", value: esc(params.status) },
+      ...(params.message ? [{ label: "Mensaje de Pime", value: nl2br(params.message.slice(0, 1200)) }] : []),
+    ]),
+    button(params.link, "Ver el ticket"),
+    spacer(),
+  ].join("");
+  return { subject: `${params.number} · ${params.status}`, html: shell({ preheader: `${params.title} — ${params.status}`, content, lang: "es" }) };
+}
+
+/** Aviso interno a Pime: un cliente abrió un ticket o escribió en uno. */
+export function getPimeTicketAlertEmail(params: { client: string; person?: string | null; number: string; title: string; kind: string; message: string; attachments: number; link: string }) {
+  const content = [
+    eyebrow(`Ticket ${params.number} · ${params.kind}`),
+    heading(params.title),
+    detailPanel([
+      { label: "Cliente", value: `${esc(params.client)}${params.person ? ` · ${esc(params.person)}` : ""}` },
+      { label: "Mensaje", value: nl2br(params.message.slice(0, 1500)) },
+      ...(params.attachments ? [{ label: "Adjuntos", value: `${params.attachments} ${params.attachments === 1 ? "imagen" : "imágenes"}` }] : []),
+    ]),
+    button(params.link, "Abrir en /empresa"),
+    spacer(),
+  ].join("");
+  return { subject: `[${params.client}] ${params.number} · ${params.title}`, html: shell({ preheader: params.message.slice(0, 120), content, lang: "es" }) };
+}

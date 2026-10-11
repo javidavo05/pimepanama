@@ -1,12 +1,11 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { createSupabaseServerClient } from "./server";
-import { prisma } from "@/lib/prisma";
-import type { EmpresaUser, CompanyConfig } from "@prisma/client";
+import { resolverEquipo, type EmpresaUserWithConfig } from "@/lib/auth/equipo";
+import { MFA_COOKIE, sesionVerificada } from "@/lib/auth/mfa";
 
-export type EmpresaUserWithConfig = EmpresaUser & {
-  config: CompanyConfig | null;
-};
+export type { EmpresaUserWithConfig };
 
 // cache() dedupes this across layout + page within the same request — sin
 // esto, cada página protegida repetía la llamada a Supabase auth.getUser()
@@ -22,23 +21,16 @@ export const getEmpresaUser = cache(async (): Promise<EmpresaUserWithConfig> => 
     redirect("/empresa/login");
   }
 
-  const empresaUser = await prisma.empresaUser.findUnique({
-    where: { supabaseUid: claims.sub },
-    include: { config: true },
-  });
+  const r = await resolverEquipo(claims as { sub: string; email?: string; user_metadata?: Record<string, unknown> });
+  if (r.estado === "cliente") redirect("/cliente");
+  if (r.estado === "sin_acceso") redirect("/empresa/sin-acceso");
 
-  if (!empresaUser) {
-    // Authenticated with Supabase but no EmpresaUser record yet — auto-provision
-    const newUser = await prisma.empresaUser.create({
-      data: {
-        supabaseUid: claims.sub,
-        email: claims.email!,
-        fullName: (claims.user_metadata?.full_name as string | undefined) ?? null,
-      },
-      include: { config: true },
-    });
-    return newUser;
+  // Doble verificación obligatoria para el equipo (código de la app, huella o llave).
+  const marca = (await cookies()).get(MFA_COOKIE)?.value;
+  if (!sesionVerificada(claims, marca)) {
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    redirect(aal?.nextLevel === "aal2" ? "/empresa/verificar" : "/empresa/activar-2fa");
   }
 
-  return empresaUser;
+  return r.user;
 });

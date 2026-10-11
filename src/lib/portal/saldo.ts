@@ -2,7 +2,7 @@
  * Saldo de un cliente con Pime: lo facturado (facturas no canceladas ni en borrador) menos lo pagado
  * (pagos confirmados). Los pagos «por confirmar» se muestran aparte y todavía no bajan la deuda.
  */
-type Factura = { id: string; status: string; total: unknown };
+type Factura = { id: string; status: string; total: unknown; amountPaid?: unknown };
 type Pago = { documentId?: string | null; amount: unknown; status: string };
 
 const n = (v: unknown) => {
@@ -13,9 +13,18 @@ const r2 = (x: number) => Math.round(x * 100) / 100;
 
 export const FACTURA_CUENTA = (status: string) => status !== "CANCELLED" && status !== "DRAFT" && status !== "REJECTED";
 
+/**
+ * Lo pagado de cada factura es el mayor entre la suma de sus pagos confirmados y Document.amountPaid:
+ * los pagos registrados antes del portal solo viven en amountPaid. Los pagos confirmados sin factura
+ * (anticipos) se suman aparte.
+ */
 export function saldoCliente(facturas: Factura[], pagos: Pago[]) {
-  const facturado = r2(facturas.filter((f) => FACTURA_CUENTA(f.status)).reduce((a, f) => a + n(f.total), 0));
-  const pagado = r2(pagos.filter((p) => p.status === "confirmado").reduce((a, p) => a + n(p.amount), 0));
+  const vivas = facturas.filter((f) => FACTURA_CUENTA(f.status));
+  const facturado = r2(vivas.reduce((a, f) => a + n(f.total), 0));
+  const ids = new Set(facturas.map((f) => f.id));
+  const porFactura = vivas.reduce((a, f) => a + Math.max(pagadoDeFactura(f.id, pagos), n(f.amountPaid)), 0);
+  const sueltos = pagos.filter((p) => p.status === "confirmado" && (!p.documentId || !ids.has(p.documentId))).reduce((a, p) => a + n(p.amount), 0);
+  const pagado = r2(porFactura + sueltos);
   const porConfirmar = r2(pagos.filter((p) => p.status === "por_confirmar").reduce((a, p) => a + n(p.amount), 0));
   return { facturado, pagado, porConfirmar, pendiente: r2(Math.max(0, facturado - pagado)) };
 }

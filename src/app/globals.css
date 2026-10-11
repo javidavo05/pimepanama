@@ -323,6 +323,124 @@ html[data-theme="light"] {
   }
 }
 
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Cuenta del cliente (/cliente). Siempre clara: es un producto que el cliente
+   abre de día para revisar avance y pagos. Usa los mismos tokens que /empresa,
+   así los componentes sirven en los dos lados. Un cliente Premium la ve en la
+   línea Premium del manual (negro y oro).
+   ══════════════════════════════════════════════════════════════════════════ */
+.portal-app {
+  --c-canvas: 244 246 250;
+  --c-panel: 255 255 255;
+  --c-panel-2: 255 255 255;
+  --c-panel-3: 236 240 247;
+  --c-pop: 255 255 255;
+
+  --c-fg: 11 29 58;
+  --c-fg-soft: 28 43 72;
+  --c-fg-mute: 46 61 92;
+  --c-fg-dim: 74 90 120;
+  /* Rampa neutra del tema claro, monótona y con suelo AA: hasta `fg-ghost`
+     todo pasa 4.5:1 sobre el canvas. `fg-trace` queda por debajo a propósito —
+     es el paso de los placeholders (ver la regla ::placeholder más abajo) y no
+     debe usarse para texto o controles con significado. */
+  --c-fg-faint: 94 107 133;
+  --c-fg-ghost: 99 112 138;
+  --c-fg-trace: 140 152 172;
+
+  --c-line: 228 232 240;
+  --c-line-mid: 214 220 230;
+  --c-line-loud: 197 206 221;
+
+  --c-fill: 246 248 251;
+  --c-fill-2: 238 241 247;
+  --c-fill-3: 228 233 241;
+
+  /* Estos tonos están resueltos contra el fondo real sobre el que caen, no
+     elegidos a ojo: `--c-brand` lleva texto blanco encima (4.60:1) y los `-fg`
+     caen sobre su propio tinte al 10-18 % (>= 4.6:1). Ver la auditoría en
+     scripts/theme-contrast-audit.js. */
+  --c-brand: 31 91 255;
+  --c-brand-hi: 21 70 214;
+  --c-brand-fg: 21 70 214;
+  --c-on-brand: 255 255 255;
+  --c-on-accent: 11 29 58;
+  --c-on-solid: 255 255 255;
+
+  --c-sand: 111 168 255;
+  --c-sand-lt: 156 195 255;
+  /* 130 95 30 y no un arena más vivo: el texto arena suele ir sobre `bg-sand/10`,
+     y sobre ese fondo tintado el valor anterior (138 101 32) daba 4.42:1, justo
+     por debajo de AA. Aquí da 4.86:1 sobre el tinte y 5.83:1 sobre blanco. */
+  --c-sand-fg: 21 70 214;
+  --c-iris: 91 63 214;
+  --c-iris-fg: 84 51 201;
+  --c-azure: 31 91 255;
+  --c-sky: 26 84 222;
+
+  --c-ok: 18 113 54;
+  /* En oscuro los `-soft` son la variante más clara del par. En claro eso los
+     dejaría bajo AA sobre su propio tinte (el ámbar caía a 2.25:1), así que aquí
+     son la variante *más oscura*: el rol se conserva, el tono se invierte. */
+  --c-ok-soft: 14 106 48;
+  --c-warn: 164 76 9;
+  --c-warn-soft: 141 77 4;
+  --c-danger: 186 32 32;
+  --c-danger-soft: 167 48 48;
+
+  --c-ok-solid: 21 128 61;
+  --c-warn-solid: 180 83 9;
+  --c-danger-solid: 185 28 28;
+
+  --c-knob: 255 255 255;
+  --c-info: 29 78 216;
+  --c-info-soft: 31 84 200;
+  --c-grape: 126 34 206;
+  --c-grape-soft: 126 44 201;
+  --c-emerald2: 4 116 84;
+  --c-mint: 14 122 82;
+  --c-amber2: 161 98 7;
+  --c-flame: 194 65 12;
+  --c-tangerine: 194 65 12;
+
+  --panel-shadow: 0 1px 2px rgba(11, 29, 58, 0.04), 0 1px 3px rgba(11, 29, 58, 0.06);
+  --app-scheme: light;
+  color-scheme: light;
+  background-color: rgb(var(--c-canvas));
+  color: rgb(var(--c-fg-soft));
+  min-height: 100dvh;
+}
+.portal-app :where(*) { border-color: rgb(var(--c-line)); }
+.portal-app :where(.bg-panel) { box-shadow: var(--panel-shadow); }
+.portal-app ::placeholder { color: rgb(var(--c-fg-trace)); }
+.portal-app[data-linea="premium"] {
+  --c-canvas: 248 246 241;
+  --c-panel-3: 244 240 233;
+  --c-fg: 10 10 10;
+  --c-fg-soft: 31 29 26;
+  --c-fg-mute: 58 54 48;
+  --c-fg-dim: 87 82 74;
+  --c-fg-faint: 105 98 88;
+  --c-fg-ghost: 112 105 95;
+  --c-fg-trace: 160 152 140;
+  --c-line: 236 231 222;
+  --c-line-mid: 224 217 205;
+  --c-line-loud: 205 196 181;
+  --c-fill: 250 248 244;
+  --c-fill-2: 244 240 233;
+  --c-fill-3: 236 231 222;
+  --c-brand: 10 10 10;
+  --c-brand-hi: 38 36 33;
+  --c-brand-fg: 138 100 32;
+  --c-on-brand: 255 255 255;
+  --c-sand: 227 194 122;
+  --c-sand-lt: 236 211 156;
+  --c-sand-fg: 138 100 32;
+  --c-on-accent: 10 10 10;
+  --panel-shadow: 0 1px 2px rgba(10, 10, 10, 0.04), 0 1px 3px rgba(10, 10, 10, 0.06);
+}
+
 /* ══════════════════════════════════════════════════════════════════════════
    Cajón revelado — el menú del celular no se superpone: se REVELA.
    ──────────────────────────────────────────────────────────────────────────
