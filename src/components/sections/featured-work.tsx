@@ -13,8 +13,8 @@ import type { Lang } from "../../../content/site";
 import "./featured-work.css";
 
 const COPY = {
-  es: { eyebrow: "04 · Trabajo", titulo: ["Sistemas que hoy", "operan empresas reales"], bajada: "Once casos en producción, cada uno con su tablero real recreado con datos de muestra. Cada tarjeta abre el sistema aquí mismo, con su ficha y su enlace público.", ver: "Ver el caso", todos: "Ver todo el portfolio", hint: "Bajá para recorrerlos", hintM: "Deslice para ver los once →" },
-  en: { eyebrow: "04 · Work", titulo: ["Systems that run", "real companies today"], bajada: "Eleven cases in production, each with its real dashboard recreated with sample data. Each card opens the system right here, with its page and public link.", ver: "View case", todos: "See the whole portfolio", hint: "Scroll to browse", hintM: "Swipe to see all eleven →" },
+  es: { eyebrow: "04 · Trabajo", titulo: ["Sistemas que hoy", "operan empresas reales"], bajada: "Once casos en producción, cada uno con su tablero real recreado con datos de muestra. Cada tarjeta abre el sistema aquí mismo, con su ficha y su enlace público.", ver: "Ver el caso", todos: "Ver más casos del portfolio", hint: "Bajá para recorrerlos", hintM: "Deslice para ver los once →" },
+  en: { eyebrow: "04 · Work", titulo: ["Systems that run", "real companies today"], bajada: "Eleven cases in production, each with its real dashboard recreated with sample data. Each card opens the system right here, with its page and public link.", ver: "View case", todos: "See more portfolio cases", hint: "Scroll to browse", hintM: "Swipe to see all eleven →" },
 };
 
 function Card({ c, lang, i, n }: { c: Caso; lang: Lang; i: number; n: number }) {

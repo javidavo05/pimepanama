@@ -6,8 +6,8 @@ import { LANGS, type Lang } from "../../../../../content/site";
 import "./lista.css";
 
 const T = {
-  es: { eyebrow: "Portfolio", titulo: "Sistemas que operan empresas reales", bajada: "Todos los sistemas entregados que se pueden mostrar, con su tablero recreado con datos de muestra. Filtre por industria o por tipo." },
-  en: { eyebrow: "Portfolio", titulo: "Systems that run real companies", bajada: "Every delivered system we can show, with its dashboard recreated with sample data. Filter by industry or type." },
+  es: { eyebrow: "Portfolio", titulo: "Sistemas que operan empresas reales", bajada: "Una parte de los sistemas entregados: los que se pueden mostrar, con su tablero recreado con datos de muestra. Filtre por industria o por tipo." },
+  en: { eyebrow: "Portfolio", titulo: "Systems that run real companies", bajada: "A part of the delivered systems: the ones we can show, with their dashboards recreated with sample data. Filter by industry or type." },
 };
 
 export default async function Portfolio({ params }: { params: Promise<{ lang: Lang }> }) {

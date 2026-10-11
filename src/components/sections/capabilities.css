@@ -149,8 +149,9 @@
   .caps-apoyo { font-size: var(--text-sm); }
   /* La pantalla de cada tarjeta NO desliza por dentro: un scroll vertical anidado se traga el gesto horizontal y el
      carrusel «no agarra». Se recorta a una altura fija con un fundido abajo; la tarjeta entera es lo que se desliza. */
-  .caps-scene-inline { position: relative; max-height: 300px; overflow: hidden; padding: var(--s-3); border-radius: var(--r-md); background: var(--paper); touch-action: pan-x pan-y; }
-  .caps-scene-inline::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 64px; background: linear-gradient(to bottom, transparent, var(--paper)); pointer-events: none; }
+  .caps-scene-inline { padding: var(--s-3); border-radius: var(--r-md); background: var(--paper); touch-action: pan-x pan-y; }
+  /* En la tarjeta solo van los dos primeros bloques de la pantalla (cabecera y cifras): nada queda cortado a medias */
+  .caps-scene-inline .cs > :nth-child(n+3) { display: none; }
   .caps-steps { touch-action: pan-x pan-y; }
   .caps-hint { display: flex; justify-content: space-between; gap: var(--s-4); padding: 0 var(--gutter); }
 }

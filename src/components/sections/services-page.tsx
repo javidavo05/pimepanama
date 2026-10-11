@@ -72,7 +72,7 @@ export function ServicesPage({ lang }: { lang: Lang }) {
         <section className="sv-no" data-theme="ink">
           <div className="wrap sv-no-in">
             <div data-reveal="rise"><Eyebrow>{t.noHacemos}</Eyebrow><ul className="sv-no-list">{t.noHacemosItems.map((x) => <li key={x}><LetterChip>✕</LetterChip><span>{x}</span></li>)}</ul></div>
-            <div className="sv-no-cta" data-reveal="rise" style={{ "--delay": "120ms" } as React.CSSProperties}><Button href={t.ctaTodos.href} variant="accent" arrow>{t.ctaTodos.label}</Button><Link href={`/${lang}/portfolio`} className="link tap">{lang === "es" ? "Ver todos los sistemas" : "See all systems"}</Link></div>
+            <div className="sv-no-cta" data-reveal="rise" style={{ "--delay": "120ms" } as React.CSSProperties}><Button href={t.ctaTodos.href} variant="accent" arrow>{t.ctaTodos.label}</Button><Link href={`/${lang}/portfolio`} className="link tap">{lang === "es" ? "Ver más sistemas entregados" : "See more delivered systems"}</Link></div>
           </div>
         </section>
       </CaseModalProvider>
