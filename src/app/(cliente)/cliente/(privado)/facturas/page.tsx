@@ -18,7 +18,7 @@ export default async function FacturasCliente() {
     <>
       <Encabezado eyebrow="Tu cuenta con Pime" titulo="Facturas y pagos" detalle="Lo facturado, lo que pagaste y lo que falta, con cada factura en PDF." />
       <div className="grid gap-4 sm:grid-cols-3">
-        <Tarjeta><p className="text-fg-dim text-sm">Por pagar</p><p className="text-fg text-3xl font-bold tabular-nums tracking-tight">{dinero(saldo.pendiente)}</p></Tarjeta>
+        <Tarjeta><p className="text-fg-dim text-sm">Por pagar</p><p className="text-fg text-3xl font-bold tabular-nums tracking-tight">{dinero(saldo.pendiente)}</p>{saldo.sinFacturar > 0 && <p className="text-fg-dim text-xs mt-1">Incluye {dinero(saldo.sinFacturar)} de fases en curso sin factura todavía.</p>}</Tarjeta>
         <Tarjeta><p className="text-fg-dim text-sm">Pagado</p><p className="text-fg text-3xl font-bold tabular-nums tracking-tight">{dinero(saldo.pagado)}</p></Tarjeta>
         <Tarjeta><p className="text-fg-dim text-sm">Facturado</p><p className="text-fg text-3xl font-bold tabular-nums tracking-tight">{dinero(saldo.facturado)}</p></Tarjeta>
       </div>

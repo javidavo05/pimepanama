@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { REGLAS_POR_DEFECTO as R, minutosCobrados, montoDe, tarifaDe, requiereAprobacion, enGarantia, calcularEntrada, reglasDe, formatoHoras } from "./horas";
 import { avanceDeProyecto, faseActual } from "./avance";
-import { saldoCliente, pagadoDeFactura, estadoPorPago } from "./saldo";
+import { saldoCliente, pagadoDeFactura, estadoPorPago, faltaDeFases } from "./saldo";
 
 test("redondeo: bloques de 15 y mínimo 30", () => {
   assert.equal(minutosCobrados(0, R), 0);
@@ -75,7 +75,7 @@ test("avance pesado por precio y fase actual", () => {
 test("saldo: facturado menos pagos confirmados", () => {
   const facturas = [{ id: "f1", status: "SENT", total: "1000" }, { id: "f2", status: "CANCELLED", total: 500 }, { id: "f3", status: "PARTIALLY_PAID", total: 300 }];
   const pagos = [{ documentId: "f1", amount: 400, status: "confirmado" }, { documentId: "f1", amount: 100, status: "por_confirmar" }, { documentId: "f3", amount: 300, status: "confirmado" }];
-  assert.deepEqual(saldoCliente(facturas, pagos), { facturado: 1300, pagado: 700, porConfirmar: 100, pendiente: 600 });
+  assert.deepEqual(saldoCliente(facturas, pagos), { facturado: 1300, sinFacturar: 0, pagado: 700, porConfirmar: 100, pendiente: 600 });
   assert.equal(pagadoDeFactura("f1", pagos), 400);
   assert.equal(estadoPorPago(1000, 400), "PARTIALLY_PAID");
   assert.equal(estadoPorPago(300, 300), "PAID");
@@ -83,11 +83,28 @@ test("saldo: facturado menos pagos confirmados", () => {
 });
 
 test("saldo: factura marcada PAID sin amountPaid cuenta como pagada", () => {
-  assert.deepEqual(saldoCliente([{ id: "v", status: "PAID", total: 1000, amountPaid: null }], []), { facturado: 1000, pagado: 1000, porConfirmar: 0, pendiente: 0 });
+  assert.deepEqual(saldoCliente([{ id: "v", status: "PAID", total: 1000, amountPaid: null }], []), { facturado: 1000, sinFacturar: 0, pagado: 1000, porConfirmar: 0, pendiente: 0 });
 });
 
 test("saldo: pagos viejos que solo viven en amountPaid y anticipos sin factura", () => {
   const facturas = [{ id: "f1", status: "PAID", total: 500, amountPaid: "500" }, { id: "f2", status: "PARTIALLY_PAID", total: 800, amountPaid: 200 }];
   const pagos = [{ documentId: "f2", amount: 300, status: "confirmado" }, { documentId: null, amount: 100, status: "confirmado" }];
-  assert.deepEqual(saldoCliente(facturas, pagos), { facturado: 1300, pagado: 900, porConfirmar: 0, pendiente: 400 });
+  assert.deepEqual(saldoCliente(facturas, pagos), { facturado: 1300, sinFacturar: 0, pagado: 900, porConfirmar: 0, pendiente: 400 });
+});
+
+test("saldo: las fases iniciadas sin factura se deben aunque no tengan factura", () => {
+  const facturas = [{ id: "f1", status: "SENT", total: 1000 }, { id: "fb", status: "DRAFT", total: 900 }];
+  const fases = [
+    { id: "a", status: "en_curso", price: 2200, invoiceId: null, invoice: null }, // se debe completa
+    { id: "b", status: "pendiente", price: 800, invoice: null }, // no ha iniciado: no se debe
+    { id: "c", status: "hecha", price: 1000, invoiceId: "f1", invoice: { status: "SENT" } }, // cuenta por su factura, no dos veces
+    { id: "d", status: "en_revision", price: 900, invoiceId: "fb", invoice: { status: "DRAFT" } }, // factura en borrador: cuenta por la fase
+    { id: "e", status: "en_curso", price: 500, billingPoint: "sin_cobro", invoice: null }, // no se cobra
+  ];
+  const pagos = [{ documentId: "f1", amount: 400, status: "confirmado" }, { documentId: null, phaseId: "a", amount: 300, status: "confirmado" }];
+  // facturado 1000 + sin facturar (2200 + 900) − pagado (400 + 300) = 3400
+  assert.deepEqual(saldoCliente(facturas, pagos, fases), { facturado: 1000, sinFacturar: 3100, pagado: 700, porConfirmar: 0, pendiente: 3400 });
+  assert.deepEqual(faltaDeFases(fases, pagos).map((x) => [x.fase.id, x.falta]), [["a", 1900], ["d", 900]]);
+  // Sin fases, el saldo es el de siempre.
+  assert.equal(saldoCliente(facturas, pagos).pendiente, 300);
 });

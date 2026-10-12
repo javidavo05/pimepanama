@@ -5,11 +5,19 @@
  */
 import { prisma } from "@/lib/prisma";
 import { avanceDeProyecto, faseActual } from "./avance";
-import { saldoCliente, FACTURA_CUENTA } from "./saldo";
+import { saldoCliente, FACTURA_CUENTA, FASE_INICIADA } from "./saldo";
 import { TICKET_ABIERTOS } from "./estados";
 
 /** Fases que cuentan: las del proyecto y las de órdenes de cambio ya aprobadas. */
 export const fasesVigentes = { OR: [{ changeOrderId: null }, { changeOrder: { status: "aprobada" } }] };
+
+/** Lo de una fase que hace falta para saber si se debe sin factura (saldo.ts → fasesCobrables). */
+export const FASE_COBRABLE = { id: true, status: true, price: true, billingPoint: true, invoiceId: true, invoice: { select: { status: true } } } as const;
+
+/** Fases que pueden deberse: vigentes, ya iniciadas, de proyectos no cancelados cuyo cliente principal es este. */
+export const fasesDelClientePorCobrar = (clientId: string) => ({
+  AND: [fasesVigentes, { status: { in: [...FASE_INICIADA] } }, { project: { status: { not: "CANCELLED" as const }, clientId } }],
+});
 
 /** Proyectos visibles para el cliente: los suyos por el vínculo nuevo o por el campo heredado. */
 export const proyectosDelCliente = (clientId: string) => ({
@@ -19,14 +27,14 @@ export const proyectosDelCliente = (clientId: string) => ({
 });
 
 export async function datosInicio(clientId: string) {
-  const [proyectos, facturas, pagos, ordenes, tickets, eventos] = await Promise.all([
+  const [proyectos, facturas, pagos, ordenes, tickets, eventos, fasesSinFactura] = await Promise.all([
     prisma.project.findMany({
       where: proyectosDelCliente(clientId),
       select: { id: true, name: true, kind: true, status: true, updatedAt: true, phases: { where: fasesVigentes, orderBy: { sortOrder: "asc" }, select: { id: true, name: true, status: true, progress: true, price: true, sortOrder: true, billingPoint: true } } },
       orderBy: { updatedAt: "desc" },
     }),
     prisma.document.findMany({ where: { clientId, type: "FACTURA" }, select: { id: true, status: true, total: true, amountPaid: true, dueDate: true, number: true } }),
-    prisma.payment.findMany({ where: { clientId }, select: { documentId: true, amount: true, status: true } }),
+    prisma.payment.findMany({ where: { clientId }, select: { documentId: true, phaseId: true, amount: true, status: true } }),
     prisma.changeOrder.findMany({ where: { clientId, status: "enviada" }, select: { id: true, number: true, title: true, total: true, sentAt: true } }),
     prisma.ticket.findMany({
       where: { clientId, status: { in: TICKET_ABIERTOS } },
@@ -34,11 +42,12 @@ export async function datosInicio(clientId: string) {
       orderBy: { updatedAt: "desc" },
     }),
     prisma.activityEvent.findMany({ where: { clientId, visibility: "cliente" }, orderBy: { createdAt: "desc" }, take: 6, select: { id: true, title: true, detail: true, createdAt: true, kind: true } }),
+    prisma.projectPhase.findMany({ where: fasesDelClientePorCobrar(clientId), select: FASE_COBRABLE }),
   ]);
 
   const proyectosConAvance = proyectos.map((p) => ({ ...p, avance: avanceDeProyecto(p.phases), actual: faseActual(p.phases) }));
   const activos = proyectosConAvance.filter((p) => p.status === "ACTIVE" || p.status === "PAUSED");
-  const saldo = saldoCliente(facturas, pagos);
+  const saldo = saldoCliente(facturas, pagos, fasesSinFactura);
   const proximo = facturas
     .filter((f) => FACTURA_CUENTA(f.status) && f.status !== "PAID" && f.dueDate)
     .sort((a, b) => a.dueDate!.getTime() - b.dueDate!.getTime())[0] ?? null;
@@ -87,15 +96,16 @@ export async function ticketDelCliente(clientId: string, id: string) {
 }
 
 export async function facturasDelCliente(clientId: string) {
-  const [facturas, pagos] = await Promise.all([
+  const [facturas, pagos, fases] = await Promise.all([
     prisma.document.findMany({
       where: { clientId, type: "FACTURA", status: { notIn: ["DRAFT", "CANCELLED"] } },
       orderBy: { issueDate: "desc" },
       select: { id: true, number: true, title: true, status: true, total: true, amountPaid: true, issueDate: true, dueDate: true, currency: true },
     }),
-    prisma.payment.findMany({ where: { clientId }, orderBy: { paidAt: "desc" }, select: { id: true, documentId: true, amount: true, paidAt: true, method: true, reference: true, status: true } }),
+    prisma.payment.findMany({ where: { clientId }, orderBy: { paidAt: "desc" }, select: { id: true, documentId: true, phaseId: true, amount: true, paidAt: true, method: true, reference: true, status: true } }),
+    prisma.projectPhase.findMany({ where: fasesDelClientePorCobrar(clientId), select: FASE_COBRABLE }),
   ]);
-  return { facturas, pagos, saldo: saldoCliente(facturas, pagos) };
+  return { facturas, pagos, saldo: saldoCliente(facturas, pagos, fases) };
 }
 
 export async function ordenDelCliente(clientId: string, id: string) {

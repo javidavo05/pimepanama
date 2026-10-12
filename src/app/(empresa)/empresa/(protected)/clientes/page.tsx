@@ -2,7 +2,8 @@ import Link from "@/components/empresa/link";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { saldoCliente } from "@/lib/portal/saldo";
-import { dinero } from "@/lib/portal/datos";
+import { dinero, fasesVigentes, FASE_COBRABLE } from "@/lib/portal/datos";
+import { FASE_INICIADA } from "@/lib/portal/saldo";
 import { TICKET_ABIERTOS } from "@/lib/portal/estados";
 import { PageHeader, btn } from "@/components/empresa/page-header";
 
@@ -40,7 +41,9 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
     select: {
       id: true, name: true, company: true, email: true, brandLine: true, internal: true, updatedAt: true,
       documents: { where: { type: "FACTURA" }, select: { id: true, status: true, total: true, amountPaid: true } },
-      payments: { select: { documentId: true, amount: true, status: true } },
+      payments: { select: { documentId: true, phaseId: true, amount: true, status: true } },
+      // Fases iniciadas sin factura: se deben igual (saldo.ts).
+      projects: { where: { status: { not: "CANCELLED" } }, select: { phases: { where: { AND: [fasesVigentes, { status: { in: [...FASE_INICIADA] } }] }, select: FASE_COBRABLE } } },
       tickets: { where: { status: { in: TICKET_ABIERTOS } }, select: { id: true } },
       portalUsers: { where: { status: { not: "revocado" } }, select: { status: true } },
       _count: { select: { projects: { where: { status: "ACTIVE" } }, projectLinks: { where: { project: { status: "ACTIVE" } } } } },
@@ -53,7 +56,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
   ]);
   const todas = clientes.map((c) => ({
     ...c,
-    saldo: saldoCliente(c.documents, c.payments),
+    saldo: saldoCliente(c.documents, c.payments, c.projects.flatMap((p) => p.phases)),
     proyectos: Math.max(c._count.projects, c._count.projectLinks),
     movimiento: Math.max(c.updatedAt.getTime(), ...[mDocs, mPagos, mTickets, mProyectos].map((m) => m.get(c.id) ?? 0)),
   }));

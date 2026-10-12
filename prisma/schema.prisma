@@ -584,6 +584,7 @@ model Project {
   githubAccount   GithubAccount?  @relation(fields: [githubAccountId], references: [id])
   platforms       Platform[]
   expenses        Expense[]
+  payments        Payment[]
   /// Requisitos de «Qué le falta» marcados «No aplica» (migración 0047): no cuentan en el porcentaje.
   linkWaived      String[]        @default([])
   createdAt       DateTime        @default(now())
@@ -1439,6 +1440,7 @@ model ProjectPhase {
   completedAt     DateTime?
   invoiceId       String?
   invoice         Document?    @relation(fields: [invoiceId], references: [id])
+  payments        Payment[]
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -1566,6 +1568,11 @@ model Payment {
   client                  Client?      @relation(fields: [clientId], references: [id])
   documentId              String?
   document                Document?    @relation(fields: [documentId], references: [id])
+  /// Proyecto y fase del pago (migración 0051): se descuenta de ahí.
+  projectId               String?
+  project                 Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  phaseId                 String?
+  phase                   ProjectPhase? @relation(fields: [phaseId], references: [id], onDelete: SetNull)
   amount                  Decimal      @db.Decimal(12, 2)
   paidAt                  DateTime     @default(now()) @db.Date
   /// "transferencia" | "yappy" | "tarjeta" | "efectivo" | "cheque" | "otro"
@@ -1584,6 +1591,8 @@ model Payment {
   updatedAt               DateTime     @updatedAt
 
   @@index([documentId])
+  @@index([projectId])
+  @@index([phaseId])
   @@index([clientId, paidAt(sort: Desc)])
   @@index([userId, status])
 }
@@ -1726,7 +1735,7 @@ model AssistantAction {
   id         String      @id @default(cuid())
   userId     String
   user       EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
-  /// "factura" | "tarea" | "nota" | "pago"
+  /// Qué hizo o propone: "pago", "fase", "factura", "tarea", "proyecto"… (formato libre en minúsculas, 0051)
   kind       String
   payload    Json
   summary    String

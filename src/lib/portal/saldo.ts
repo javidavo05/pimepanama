@@ -1,9 +1,13 @@
 /**
- * Saldo de un cliente con Pime: lo facturado (facturas no canceladas ni en borrador) menos lo pagado
- * (pagos confirmados). Los pagos «por confirmar» se muestran aparte y todavía no bajan la deuda.
+ * Saldo de un cliente con Pime: lo facturado (facturas no canceladas ni en borrador) más lo que se debe de
+ * fases ya iniciadas que todavía no tienen factura, menos lo pagado (pagos confirmados). La factura es
+ * opcional: una fase en curso se debe desde que inicia. Una fase con factura viva cuenta por su factura,
+ * nunca dos veces. Los pagos «por confirmar» se muestran aparte y todavía no bajan la deuda.
  */
 type Factura = { id: string; status: string; total: unknown; amountPaid?: unknown };
-type Pago = { documentId?: string | null; amount: unknown; status: string };
+type Pago = { documentId?: string | null; phaseId?: string | null; amount: unknown; status: string };
+/** Fase con su factura (si tiene). billingPoint «sin_cobro» no se cobra. */
+export type FaseCobrable = { id: string; status: string; price: unknown; billingPoint?: string | null; invoiceId?: string | null; invoice?: { status: string } | null };
 
 const n = (v: unknown) => {
   const x = Number(v);
@@ -18,7 +22,7 @@ export const FACTURA_CUENTA = (status: string) => status !== "CANCELLED" && stat
  * los pagos registrados antes del portal solo viven en amountPaid. Los pagos confirmados sin factura
  * (anticipos) se suman aparte.
  */
-export function saldoCliente(facturas: Factura[], pagos: Pago[]) {
+export function saldoCliente(facturas: Factura[], pagos: Pago[], fases: FaseCobrable[] = []) {
   const vivas = facturas.filter((f) => FACTURA_CUENTA(f.status));
   const facturado = r2(vivas.reduce((a, f) => a + n(f.total), 0));
   const ids = new Set(facturas.map((f) => f.id));
@@ -26,7 +30,25 @@ export function saldoCliente(facturas: Factura[], pagos: Pago[]) {
   const sueltos = pagos.filter((p) => p.status === "confirmado" && (!p.documentId || !ids.has(p.documentId))).reduce((a, p) => a + n(p.amount), 0);
   const pagado = r2(porFactura + sueltos);
   const porConfirmar = r2(pagos.filter((p) => p.status === "por_confirmar").reduce((a, p) => a + n(p.amount), 0));
-  return { facturado, pagado, porConfirmar, pendiente: r2(Math.max(0, facturado - pagado)) };
+  // Los pagos sin factura de una fase ya están en «sueltos»: aquí va el precio bruto para no restarlos dos veces.
+  const sinFacturar = r2(fasesCobrables(fases).reduce((a, f) => a + n(f.price), 0));
+  return { facturado, sinFacturar, pagado, porConfirmar, pendiente: r2(Math.max(0, facturado + sinFacturar - pagado)) };
+}
+
+/** Estados en los que una fase ya se debe: desde que inicia. */
+export const FASE_INICIADA = ["en_curso", "en_revision", "hecha"] as const;
+
+/** Fases que se deben sin factura: iniciadas, con precio, que se cobran y sin factura viva (no hay, o es borrador o anulada). */
+export function fasesCobrables<F extends FaseCobrable>(fases: F[]): F[] {
+  return fases.filter((f) => (FASE_INICIADA as readonly string[]).includes(f.status) && n(f.price) > 0.005 && f.billingPoint !== "sin_cobro" && !(f.invoice ? FACTURA_CUENTA(f.invoice.status) : false));
+}
+
+/** Lo que falta de cada fase iniciada sin factura: su precio menos los pagos confirmados ligados a la fase sin factura. */
+export function faltaDeFases<F extends FaseCobrable>(fases: F[], pagos: Pago[]): { fase: F; pagado: number; falta: number }[] {
+  return fasesCobrables(fases).map((fase) => {
+    const pagado = r2(pagos.filter((p) => p.phaseId === fase.id && !p.documentId && p.status === "confirmado").reduce((a, p) => a + n(p.amount), 0));
+    return { fase, pagado, falta: r2(Math.max(0, n(fase.price) - pagado)) };
+  }).filter((x) => x.falta > 0.005);
 }
 
 /**

@@ -93,6 +93,7 @@ export default async function InicioCliente() {
               <div className="rounded-xl bg-fill px-4 py-3"><dt className="text-fg-dim">Pagado</dt><dd className="text-fg font-semibold tabular-nums">{dinero(d.saldo.pagado)}</dd></div>
               <div className="rounded-xl bg-fill px-4 py-3"><dt className="text-fg-dim">Facturado</dt><dd className="text-fg font-semibold tabular-nums">{dinero(d.saldo.facturado)}</dd></div>
             </dl>
+            {d.saldo.sinFacturar > 0 && <p className="text-sm text-fg-dim">Incluye <b className="text-fg tabular-nums">{dinero(d.saldo.sinFacturar)}</b> de fases en curso que todavía no tienen factura.</p>}
             {d.saldo.porConfirmar > 0 && <p className="text-sm text-fg-dim">Pagos reportados esperando confirmación: <b className="text-fg tabular-nums">{dinero(d.saldo.porConfirmar)}</b></p>}
             {d.proximo ? (
               <p className="text-sm text-fg-dim">Próximo vencimiento: <b className="text-fg">{d.proximo.number ?? "Factura"}</b> el {fechaCorta(d.proximo.dueDate)}</p>

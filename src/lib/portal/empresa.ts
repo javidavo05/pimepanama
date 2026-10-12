@@ -156,28 +156,53 @@ export async function recalcularFactura(documentId: string) {
   await prisma.document.update({ where: { id: doc.id }, data: { amountPaid: pagado, ...(estado ? { status: estado } : doc.status === "PAID" || doc.status === "PARTIALLY_PAID" ? { status: "SENT" } : {}) } });
 }
 
-/** Pago registrado por Pime (confirmado) o confirmación/rechazo de uno reportado por el cliente. */
-export async function registrarPago(u: Equipo, input: { clientId: string; documentId?: string | null; monto: number; fecha: string; metodo: string; referencia?: string | null; nota?: string | null }) {
+/**
+ * Pago registrado por Pime (confirmado). Todo pago queda con su factura emitida en la cuenta del cliente
+ * (motor/pagos.ts): la que se indicó, la de su fase o proyecto, o una nueva por el monto. No se envía nada.
+ * facturaCreada = true si la factura nació por este pago.
+ */
+export async function registrarPago(u: Equipo, input: { clientId: string; documentId?: string | null; projectId?: string | null; phaseId?: string | null; monto: number; fecha: string; metodo: string; referencia?: string | null; nota?: string | null; conItbms?: boolean }) {
   const cliente = await prisma.client.findFirst({ where: { id: input.clientId, userId: u.id }, select: { id: true } });
   if (!cliente) throw new Error("No encontré ese cliente.");
-  if (input.documentId) {
-    const f = await prisma.document.findFirst({ where: { id: input.documentId, userId: u.id, clientId: cliente.id, type: "FACTURA" }, select: { id: true } });
+  let projectId = input.projectId || null;
+  const phaseId = input.phaseId || null;
+  if (phaseId) {
+    const f = await prisma.projectPhase.findFirst({ where: { id: phaseId, project: { userId: u.id } }, select: { projectId: true } });
+    if (!f) throw new Error("No encontré esa fase.");
+    projectId = f.projectId;
+  } else if (projectId && !(await prisma.project.findFirst({ where: { id: projectId, userId: u.id }, select: { id: true } }))) throw new Error("No encontré ese proyecto.");
+  let documentId = input.documentId || null;
+  let facturaCreada = false;
+  if (documentId) {
+    const f = await prisma.document.findFirst({ where: { id: documentId, userId: u.id, clientId: cliente.id, type: "FACTURA" }, select: { id: true, status: true } });
     if (!f) throw new Error("Esa factura no es de este cliente.");
+    // Si llega un pago a una factura en borrador, se emite: queda en la cuenta del cliente.
+    if (f.status === "DRAFT") await prisma.document.update({ where: { id: f.id }, data: { status: "SENT" } });
+  } else {
+    const { facturaParaPago } = await import("@/lib/motor/pagos");
+    const f = await facturaParaPago(u, { clientId: cliente.id, projectId, phaseId, monto: input.monto, fecha: input.fecha, conItbms: input.conItbms });
+    documentId = f.id; facturaCreada = f.creada;
   }
   // Si la factura tenía pagos viejos solo en amountPaid, se pasan primero a una fila para no perderlos.
-  if (input.documentId) await migrarPagoViejo(u.id, input.documentId);
-  const p = await prisma.payment.create({ data: { userId: u.id, clientId: cliente.id, documentId: input.documentId || null, amount: input.monto, paidAt: new Date(`${input.fecha}T12:00:00Z`), method: input.metodo, reference: input.referencia || null, note: input.nota || null, status: "confirmado", recordedByEmpresaUserId: u.id, confirmedAt: new Date() } });
-  if (input.documentId) await recalcularFactura(input.documentId);
-  await registrarEvento({ userId: u.id, clientId: cliente.id, entityType: "pago", entityId: p.id, kind: "pago_confirmado", title: `Pago recibido: ${dinero(input.monto)}`, visibility: "cliente", actorType: "pime", actorEmpresaUserId: u.id });
-  return p;
+  if (!facturaCreada) await migrarPagoViejo(u.id, documentId);
+  const p = await prisma.payment.create({ data: { userId: u.id, clientId: cliente.id, documentId, projectId, phaseId, amount: input.monto, paidAt: new Date(`${input.fecha}T12:00:00Z`), method: input.metodo, reference: input.referencia || null, note: input.nota || null, status: "confirmado", recordedByEmpresaUserId: u.id, confirmedAt: new Date() } });
+  await recalcularFactura(documentId);
+  await registrarEvento({ userId: u.id, clientId: cliente.id, projectId, entityType: "pago", entityId: p.id, kind: "pago_confirmado", title: `Pago recibido: ${dinero(input.monto)}`, visibility: "cliente", actorType: "pime", actorEmpresaUserId: u.id });
+  return { ...p, facturaCreada };
 }
 
 export async function decidirPagoReportado(u: Equipo, paymentId: string, confirmar: boolean, nota?: string | null) {
   const p = await prisma.payment.findFirst({ where: { id: paymentId, userId: u.id, status: "por_confirmar" } });
   if (!p) throw new Error("Ese pago ya no espera confirmación.");
   if (p.documentId) await migrarPagoViejo(u.id, p.documentId);
-  await prisma.payment.update({ where: { id: p.id }, data: { status: confirmar ? "confirmado" : "rechazado", confirmedAt: confirmar ? new Date() : null, recordedByEmpresaUserId: u.id, note: nota || p.note } });
-  if (p.documentId) await recalcularFactura(p.documentId);
+  // Confirmado sin factura: se le emite la suya (todo pago queda con factura en la cuenta del cliente).
+  let documentId = p.documentId;
+  if (confirmar && !documentId && p.clientId) {
+    const { facturaParaPago } = await import("@/lib/motor/pagos");
+    documentId = (await facturaParaPago(u, { clientId: p.clientId, projectId: p.projectId, phaseId: p.phaseId, monto: Number(p.amount), fecha: p.paidAt.toISOString().slice(0, 10) })).id;
+  }
+  await prisma.payment.update({ where: { id: p.id }, data: { status: confirmar ? "confirmado" : "rechazado", confirmedAt: confirmar ? new Date() : null, recordedByEmpresaUserId: u.id, note: nota || p.note, documentId } });
+  if (documentId) await recalcularFactura(documentId);
   if (p.clientId) await registrarEvento({ userId: u.id, clientId: p.clientId, entityType: "pago", entityId: p.id, kind: confirmar ? "pago_confirmado" : "pago_rechazado", title: confirmar ? `Confirmamos tu pago de ${dinero(p.amount)}` : `No encontramos el pago de ${dinero(p.amount)}`, detail: confirmar ? null : nota || "Revisa la referencia y vuelve a reportarlo.", visibility: "cliente", actorType: "pime", actorEmpresaUserId: u.id });
 }
 

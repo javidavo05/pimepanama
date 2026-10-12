@@ -63,3 +63,4 @@ Todas las migraciones se corren manualmente en **Supabase → SQL Editor**.
 | 0048 | `0048_empresa_interna_y_gastos_por_proyecto.sql` | Client.internal (la empresa interna Pime Panamá: fuera de cobros, ingresos, portal y correos) + Expense.projectId (FK SET NULL, índice): gastos por proyecto/producto | 2026-10-12 | ✅ Aplicado |
 | 0049 | `0049_tickets_internos.sql` | Ticket.kind admite bug, mejora y tarea (tickets internos de los productos de la empresa) además de soporte, cambio, nuevo e incidente | 2026-10-12 | ✅ Aplicado |
 | 0050 | `0050_asistente_fases.sql` | AssistantAction.kind acepta «fase»: el asistente propone una fase con su factura y los pagos ya recibidos | 2026-10-12 | ✅ Aplicado |
+| 0051 | `0051_asistente_total_pagos_por_fase.sql` | Payment.projectId/phaseId (FK SET NULL, índices): de qué proyecto o fase es cada pago. AssistantAction.kind pasa de lista cerrada a formato libre en minúsculas (el asistente hace de todo) | 2026-10-12 | ✅ Aplicado |

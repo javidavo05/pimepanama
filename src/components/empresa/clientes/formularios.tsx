@@ -228,7 +228,7 @@ export function PagoForm({ clientId, facturas }: { clientId: string; facturas: {
       <input type="hidden" name="clientId" value={clientId} />
       <div><label htmlFor="p-doc" className={etiqueta}>Factura · saldo pendiente</label>
         <select id="p-doc" name="documentId" value={doc} onChange={(e) => setDoc(e.target.value)} className={`${campo} field-select pr-8`}>
-          {facturas.map((f) => <option key={f.id} value={f.id}>{f.etiqueta}</option>)}<option value="">Anticipo sin factura</option>
+          {facturas.map((f) => <option key={f.id} value={f.id}>{f.etiqueta}</option>)}<option value="">Pago aparte (se emite su factura)</option>
         </select></div>
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
         <div><label htmlFor="p-monto" className={etiqueta}>Monto</label><input id="p-monto" name="monto" inputMode="decimal" required key={doc} defaultValue={falta ? falta.toFixed(2) : ""} className={campo} /></div>

@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { SIN_INTERNOS } from "@/lib/clientes/interno";
 import { INVOICE_PARTIAL_SCHEDULE_DESC, QUOTE_BALANCE_SCHEDULE_DESC } from "@/lib/quote-balance";
+import { faltaDeFases, FASE_INICIADA } from "@/lib/portal/saldo";
+import { fasesVigentes, FASE_COBRABLE } from "@/lib/portal/datos";
 
 /**
  * Fuente de verdad única de Cuentas por Cobrar.
@@ -18,11 +20,14 @@ import { INVOICE_PARTIAL_SCHEDULE_DESC, QUOTE_BALANCE_SCHEDULE_DESC } from "@/li
  *    aporta solo la porción NO facturada, vía su cuota de saldo.
  *  - Las cuotas legacy "saldo por pago parcial" se ignoran: ese saldo ya vive
  *    en la propia factura.
+ *  - Una fase iniciada (en curso, en revisión o hecha) sin factura viva se debe
+ *    igual: aporta su precio menos los pagos de la fase que no tienen factura.
+ *    Con factura viva cuenta por su factura, nunca dos veces.
  */
 
 export const OPEN_INVOICE_STATUSES = ["DRAFT", "SENT", "ACCEPTED", "PARTIALLY_PAID"] as const;
 
-export type ReceivableKind = "invoice" | "quote" | "schedule";
+export type ReceivableKind = "invoice" | "quote" | "schedule" | "phase";
 
 export type ReceivableItem = {
   id: string;
@@ -38,6 +43,8 @@ export type ReceivableItem = {
   documentId: string;
   documentType: "FACTURA" | "COTIZACION";
   scheduleId: string | null;
+  /** Fase iniciada sin factura (kind "phase"); documentId va vacío. */
+  phaseId?: string | null;
   projectName: string | null;
   currency: string;
   /** Cobrar este ítem emitirá una factura nueva (no hay una detrás todavía). */
@@ -91,6 +98,18 @@ function fetchSchedules(userId: string) {
   return prisma.paymentSchedule.findMany({
     where: { userId, status: { in: ["PENDING", "OVERDUE"] }, document: SIN_INTERNOS },
     orderBy: { createdAt: "asc" },
+  });
+}
+
+function fetchPhases(userId: string) {
+  return prisma.projectPhase.findMany({
+    where: { AND: [fasesVigentes, { status: { in: [...FASE_INICIADA] } }, { project: { userId, status: { not: "CANCELLED" }, NOT: { client: { is: { internal: true } } } } }] },
+    orderBy: { sortOrder: "asc" },
+    select: {
+      ...FASE_COBRABLE, name: true, startedAt: true,
+      payments: { where: { status: "confirmado", documentId: null }, select: { documentId: true, phaseId: true, amount: true, status: true } },
+      project: { select: { id: true, name: true, client: { select: { name: true, company: true } } } },
+    },
   });
 }
 
@@ -216,7 +235,7 @@ export async function getReceivables(
   userId: string,
   now: Date = new Date()
 ): Promise<ReceivablesResult> {
-  const [allDocs, rawSchedules] = await Promise.all([fetchDocs(userId), fetchSchedules(userId)]);
+  const [allDocs, rawSchedules, phases] = await Promise.all([fetchDocs(userId), fetchSchedules(userId), fetchPhases(userId)]);
 
   const { schedules } = await reconcileInMemory(userId, allDocs, rawSchedules);
 
@@ -295,6 +314,30 @@ export async function getReceivables(
       currency: doc.currency,
       willCreateInvoice: isQuote,
       href: `/empresa/${isQuote ? "cotizaciones" : "facturas"}/${sc.documentId}`,
+    });
+  }
+
+  for (const { fase, pagado, falta } of faltaDeFases(phases, phases.flatMap((f) => f.payments))) {
+    const c = fase.project.client;
+    items.push({
+      id: `fase-${fase.id}`,
+      kind: "phase",
+      label: `Fase ${fase.name}`,
+      client: c ? clientLabel(c.name, c.company) : "",
+      amount: falta,
+      documentTotal: Number(fase.price),
+      amountPaid: pagado,
+      dueDate: null,
+      daysLeft: null,
+      status: "PENDING",
+      documentId: "",
+      documentType: "FACTURA",
+      scheduleId: null,
+      phaseId: fase.id,
+      projectName: fase.project.name,
+      currency: "USD",
+      willCreateInvoice: true,
+      href: `/empresa/proyectos/${fase.project.id}?tab=fases`,
     });
   }
 

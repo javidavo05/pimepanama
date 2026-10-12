@@ -43,6 +43,7 @@ async function mkInvoice(total: number, opts: { dueInDays?: number; status?: "DR
   });
 }
 
+const round = (n: number) => Math.round(n * 100) / 100;
 async function arTotal() { return (await getReceivables(userId)).total; }
 async function arItems() { return (await getReceivables(userId)).items; }
 
@@ -259,18 +260,42 @@ async function main() {
   check("sigue habiendo una sola cuota", tras.length, 1);
   check("y conserva el mismo id (el botón Cobrar no se rompe)", tras[0].id, antesId);
 
+  // ── 13. Fase iniciada sin factura: se debe igual, y con factura cuenta una vez ─
+  console.log("\n13. Fases iniciadas sin factura cuentan en Por Cobrar");
+  const base13 = await arTotal();
+  const cli = await prisma.client.create({ data: { userId, name: `${TAG} cliente fases` } });
+  const proj = await prisma.project.create({ data: { userId, clientId: cli.id, name: `${TAG} proyecto` } });
+  const fPend = await prisma.projectPhase.create({ data: { projectId: proj.id, name: "Fase pendiente", price: 900, status: "pendiente" } });
+  const fCurso = await prisma.projectPhase.create({ data: { projectId: proj.id, name: "Fase en curso", price: 1200, status: "en_curso" } });
+  check("la pendiente no cuenta; la en curso sí (+1200)", round(await arTotal() - base13), 1200);
+  const itemFase = (await arItems()).find((i) => i.phaseId === fCurso.id);
+  check("aparece como fase sin factura", itemFase?.kind, "phase");
+  await prisma.payment.create({ data: { userId, clientId: cli.id, phaseId: fCurso.id, amount: 200, method: "otro", status: "confirmado" } });
+  check("un pago de la fase sin factura la baja (+1000)", round(await arTotal() - base13), 1000);
+  await prisma.payment.deleteMany({ where: { phaseId: fCurso.id } });
+  const fFase = await prisma.document.create({ data: { type: "FACTURA", status: "SENT", number: `TFASE-${Date.now()}`, title: `${TAG} fase`, clientId: cli.id, clientName: cli.name, content: {}, total: 1200, userId, projectId: proj.id } });
+  await prisma.projectPhase.update({ where: { id: fCurso.id }, data: { invoiceId: fFase.id } });
+  check("con factura viva cuenta una sola vez (+1200)", round(await arTotal() - base13), 1200);
+  check("y ya no como fase", (await arItems()).some((i) => i.phaseId === fCurso.id), false);
+  await prisma.projectPhase.update({ where: { id: fPend.id }, data: { status: "hecha" } });
+  check("la que pasa a hecha suma su precio (+2100)", round(await arTotal() - base13), 2100);
+
   console.log(`\n${"─".repeat(60)}\nRESULTADO: ${pass} ✓   ${fail} ✗\n${"─".repeat(60)}`);
   return before;
 }
 
 async function cleanup() {
   if (!userId) return;
+  await prisma.payment.deleteMany({ where: { userId } });
+  await prisma.projectPhase.deleteMany({ where: { project: { userId } } });
+  await prisma.project.deleteMany({ where: { userId } });
   await prisma.paymentSchedule.deleteMany({ where: { userId } });
   await prisma.task.deleteMany({ where: { userId } });
   await prisma.expense.deleteMany({ where: { userId } });
   await prisma.documentAuditLog.deleteMany({ where: { document: { userId } } });
   await prisma.document.updateMany({ where: { userId }, data: { linkedDocumentId: null } });
   await prisma.document.deleteMany({ where: { userId } });
+  await prisma.client.deleteMany({ where: { userId } });
   await prisma.empresaUser.delete({ where: { id: userId } });
   console.log("\nLimpieza: usuario de prueba y todos sus datos eliminados.");
 }
