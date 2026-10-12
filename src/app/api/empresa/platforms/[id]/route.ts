@@ -1,57 +1,31 @@
 import { NextResponse } from "next/server";
+import { withEmpresaIdRoute } from "@/app/api/empresa/_route";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
-import { normEmail, normSlot } from "@/lib/platforms-seed";
+import { datosDePlataforma, DatosInvalidos, serializarPlataforma } from "@/lib/platforms/datos";
 
 export const runtime = "nodejs";
 
-const PATCH_FIELDS = [
-  "name", "accessUrl", "supabaseEmail", "supabaseSlot",
-  "vercelEmail", "vercelSlot", "linkUrl", "githubEmail",
-  "brevoEmail", "notes", "sortOrder",
-] as const;
-
-const EMAIL_FIELDS = new Set(["supabaseEmail", "vercelEmail", "githubEmail", "brevoEmail"]);
-const SLOT_FIELDS = new Set(["supabaseSlot", "vercelSlot"]);
-
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const PATCH = withEmpresaIdRoute(async (req, { params }) => {
+  const { id } = await params;
+  const user = await requireEmpresaUser(req);
+  const existing = await prisma.platform.findFirst({ where: { id, userId: user.id } });
+  if (!existing) return NextResponse.json({ error: "Esa plataforma ya no existe." }, { status: 404 });
+  const body = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   try {
-    const { id } = await params;
-    const user = await requireEmpresaUser(request);
-    const existing = await prisma.platform.findFirst({ where: { id, userId: user.id } });
-    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-    const data = await request.json();
-    const update: Record<string, unknown> = {};
-    for (const key of PATCH_FIELDS) {
-      if (!(key in data)) continue;
-      let value = data[key];
-      if (EMAIL_FIELDS.has(key)) {
-        value = normEmail(value == null ? null : String(value));
-      } else if (SLOT_FIELDS.has(key)) {
-        value = normSlot(value);
-      }
-      update[key] = value;
-    }
-
-    const platform = await prisma.platform.update({ where: { id }, data: update });
-    return NextResponse.json(platform);
-  } catch (err) {
-    if (err instanceof Response) return err;
-    return NextResponse.json({ error: "Error" }, { status: 500 });
+    const data = await datosDePlataforma(user.id, body, existing);
+    const platform = await prisma.platform.update({ where: { id }, data });
+    return NextResponse.json(serializarPlataforma(platform));
+  } catch (e) {
+    if (e instanceof DatosInvalidos) return NextResponse.json({ error: e.message }, { status: 400 });
+    throw e;
   }
-}
+});
 
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    const { id } = await params;
-    const user = await requireEmpresaUser(request);
-    const existing = await prisma.platform.findFirst({ where: { id, userId: user.id } });
-    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    await prisma.platform.delete({ where: { id } });
-    return NextResponse.json({ ok: true });
-  } catch (err) {
-    if (err instanceof Response) return err;
-    return NextResponse.json({ error: "Error" }, { status: 500 });
-  }
-}
+export const DELETE = withEmpresaIdRoute(async (req, { params }) => {
+  const { id } = await params;
+  const user = await requireEmpresaUser(req);
+  const { count } = await prisma.platform.deleteMany({ where: { id, userId: user.id } });
+  if (!count) return NextResponse.json({ error: "Esa plataforma ya no existe." }, { status: 404 });
+  return NextResponse.json({ ok: true });
+});

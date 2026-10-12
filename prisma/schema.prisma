@@ -259,6 +259,7 @@ model EmpresaUser {
   tasks                 Task[]
   platforms             Platform[]
   platformAccounts      PlatformAccount[]
+  platformApiCache      PlatformApiCache[]
   expenses              Expense[]
   meetings              Meeting[]
   pushSubscriptions     PushSubscription[]
@@ -330,6 +331,7 @@ model Client {
   approvals          Approval[]
   activityEvents     ActivityEvent[]
   systems            MonitoredSystem[]
+  platforms          Platform[]
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
@@ -577,6 +579,7 @@ model Project {
   githubCheck     Json?
   githubCheckAt   DateTime?
   githubAccount   GithubAccount?  @relation(fields: [githubAccountId], references: [id])
+  platforms       Platform[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
@@ -860,11 +863,26 @@ model Platform {
   notes             String?
   confidentialVault String?
   sortOrder         Int         @default(0)
+  /// Cliente dueño de la plataforma y, si aplica, el proyecto (migración 0045).
+  clientId           String?
+  client             Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  projectId          String?
+  project            Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  /// Repo real: cuenta de GitHub con acceso + "owner/nombre".
+  githubAccountId    String?
+  githubAccount      GithubAccount? @relation(fields: [githubAccountId], references: [id], onDelete: SetNull)
+  githubRepo         String?
+  vercelProjectId    String?
+  vercelProjectName  String?
+  supabaseProjectRef String?
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
   @@index([userId])
   @@index([userId, sortOrder])
+  @@index([clientId])
+  @@index([projectId])
+  @@index([githubAccountId])
 }
 
 /// Plan de una cuenta de Supabase o Vercel (correo + proveedor). Sin fila = gratis.
@@ -876,12 +894,37 @@ model PlatformAccount {
   provider  String
   /// En minúsculas, igual que Platform.supabaseEmail / vercelEmail.
   email     String
-  /// "FREE" (2 proyectos) | "PRO" (sin límite)
-  plan      String      @default("FREE")
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  /// "FREE" (Vercel Hobby 200 proyectos, Supabase Free 2) | "PRO" (sin límite)
+  plan          String      @default("FREE")
+  /// "api" si lo dijo la API al verificar el token, "manual" si lo marcó el usuario.
+  planSource    String      @default("manual")
+  /// Token cifrado (encryptGithubToken). Nunca sale del servidor.
+  tokenEnc      String?
+  /// Nombre de la cuenta según la API (usuario de Vercel, organización de Supabase).
+  label         String?
+  /// Vercel: equipo con el que se listan los proyectos.
+  teamId        String?
+  /// Supabase: organización.
+  orgSlug       String?
+  lastCheckedAt DateTime?
+  lastError     String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   @@unique([userId, provider, email])
+}
+
+/// Caché en servidor de GitHub, Vercel y Supabase (migración 0045). Vale 30 min como mínimo.
+model PlatformApiCache {
+  id        String      @id @default(cuid())
+  userId    String
+  user      EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  key       String
+  data      Json?
+  error     String?
+  fetchedAt DateTime    @default(now())
+
+  @@unique([userId, key])
 }
 
 // ─── Por pagar (gastos) ──────────────────────────────────────────────────────
@@ -1665,6 +1708,7 @@ model GithubAccount {
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   projects      Project[]
+  platforms     Platform[]
 }
 
 /// Acción propuesta o hecha por el asistente (migración 0043).

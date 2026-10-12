@@ -1,557 +1,164 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  accountKey,
-  buildSlotInventories,
-  clampPlatformSlot,
-  DEFAULT_SLOT_CAPACITY,
-  normalizePlatformEmail,
-  type AccountStatus,
-  type EmailSlotInventory,
-  type SlotProvider,
-} from "@/lib/platform-slots";
-import { PlatformConfidentialVault } from "@/components/empresa/platform-confidential-vault";
-import { hasPlatformVault } from "@/lib/platform-vault-shared";
-import { Icon, ICON } from "@/components/empresa/tasks/task-parts";
-import { PageHeader, btn } from "@/components/empresa/page-header";
+/**
+ * Platforms: dónde vive cada sistema de los clientes.
+ *
+ *   Plataformas — agrupadas por cliente, con búsqueda y filtros (sin cliente, cuenta llena, con problemas).
+ *                 Cada fila dice lo esencial; al abrirla, el detalle con datos en vivo y la bóveda.
+ *   Cuentas     — GitHub, Vercel y Supabase: token, plan y uso real por cuenta.
+ *
+ * Nada se consulta solo: lo vivo sale de la caché del servidor (30 min) y se pide al abrir o al actualizar.
+ */
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "@/components/empresa/link";
+import { PageHeader, btn } from "@/components/empresa/page-header";
+import { Icon, ICON } from "@/components/empresa/tasks/task-parts";
+import { accountKey, normalizePlatformEmail, SUPABASE_FREE_SLOTS, usageLabel } from "@/lib/platform-slots";
+import type { PlatformsData } from "@/lib/platforms/cargar";
+import type { ProviderAccount, SerializedPlatform } from "@/lib/platforms/tipos";
+import { AsistentePlataforma } from "./asistente-plataforma";
+import { CuentasPanel } from "./cuentas-panel";
+import { cuentaLlena, inventarios, problemasDe, puntaje, type Problema } from "./modelo";
+import { PlataformaDetalle } from "./plataforma-detalle";
+import { byName, Dot, hace, hostOf, LOCAL_ICON, pedirJson, supabaseEstado, vercelEstado, type Tone } from "./ui";
 
-export type SerializedPlatform = {
-  id: string;
-  name: string;
-  accessUrl: string | null;
-  supabaseEmail: string | null;
-  supabaseSlot: number | null;
-  vercelEmail: string | null;
-  vercelSlot: number | null;
-  linkUrl: string | null;
-  githubEmail: string | null;
-  brevoEmail: string | null;
-  notes: string | null;
-  hasConfidential: boolean;
-  sortOrder: number;
-};
+type Tab = "plataformas" | "cuentas";
+type Filtro = "todas" | "sin-cliente" | "llena" | "problemas";
 
-interface PlatformsBoardProps {
-  initialPlatforms: SerializedPlatform[];
-  /** Claves `proveedor:correo` de las cuentas con plan Pro. */
-  initialProAccounts: string[];
-}
-
-type PlatformApiRow = Omit<SerializedPlatform, "hasConfidential"> & {
-  confidentialVault?: string | null;
-  hasConfidential?: boolean;
-};
-
-type Tab = "proyectos" | "cuentas";
-
-const PROVIDER_LABEL: Record<SlotProvider, string> = {
-  supabase: "Supabase",
-  vercel: "Vercel",
-};
-
-const LOCAL_ICON = {
-  copy: "M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z",
-  lock: "M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z",
-  search: "M21 21l-5.2-5.2M17 10a7 7 0 11-14 0 7 7 0 0114 0z",
-  alert: "M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z",
-};
-
-function toSerializedPlatform(p: PlatformApiRow): SerializedPlatform {
-  return {
-    id: p.id,
-    name: p.name,
-    accessUrl: p.accessUrl,
-    supabaseEmail: p.supabaseEmail,
-    supabaseSlot: p.supabaseSlot,
-    vercelEmail: p.vercelEmail,
-    vercelSlot: p.vercelSlot,
-    linkUrl: p.linkUrl,
-    githubEmail: p.githubEmail,
-    brevoEmail: p.brevoEmail,
-    notes: p.notes,
-    hasConfidential: p.hasConfidential ?? hasPlatformVault(p.confidentialVault),
-    sortOrder: p.sortOrder,
-  };
-}
-
-function byName(a: { name: string }, b: { name: string }) {
-  return a.name.localeCompare(b.name, "es", { sensitivity: "base" });
-}
-
-/** "https://www.bleiydavo.com/" → "bleiydavo.com" */
-function hostOf(url: string | null) {
-  if (!url) return null;
-  try {
-    return new URL(url.includes("://") ? url : `https://${url}`).hostname.replace(/^www\./, "");
-  } catch {
-    return url;
-  }
-}
-
-function hrefOf(url: string) {
-  return url.includes("://") ? url : `https://${url}`;
-}
-
-function scoreMatch(p: SerializedPlatform, q: string): number {
-  const name = p.name.toLowerCase();
-  if (name === q) return 100;
-  if (name.startsWith(q)) return 80;
-  if (name.includes(q)) return 65;
-  const haystack = [p.accessUrl, p.linkUrl, p.supabaseEmail, p.vercelEmail, p.githubEmail, p.brevoEmail, p.notes]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-  return haystack.includes(q) ? 40 : 0;
-}
-
-// ─── Piezas chicas ───────────────────────────────────────────────────────────
-
-function CopyButton({ value, label }: { value: string; label: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        navigator.clipboard
-          .writeText(value)
-          .then(() => {
-            setCopied(true);
-            window.setTimeout(() => setCopied(false), 1500);
-          })
-          .catch(() => {});
-      }}
-      aria-label={`Copiar ${label}`}
-      title={copied ? "Copiado" : `Copiar ${label}`}
-      className="w-11 h-11 lg:w-8 lg:h-8 shrink-0 inline-flex items-center justify-center rounded-md text-fg-ghost hover:text-fg-mute hover:bg-fill transition-colors"
-    >
-      <Icon d={copied ? ICON.check : LOCAL_ICON.copy} className={`w-4 h-4 ${copied ? "text-ok" : ""}`} />
-    </button>
-  );
-}
-
-// ─── Código de color de las cuentas ─────────────────────────────────────────
-// Verde: le queda espacio · Rojo: llena · Rojo sólido: excedida · Azul: Pro.
-
-const STATUS_BOX: Record<AccountStatus, string> = {
-  space: "border-line bg-panel",
-  full: "border-danger/40 bg-danger/5",
-  over: "border-danger bg-danger/10",
-  pro: "border-brand/40 bg-brand/5",
-};
-
-const STATUS_BADGE: Record<AccountStatus, string> = {
-  space: "border-ok/30 bg-ok/10 text-ok",
-  full: "border-danger/30 bg-danger/10 text-danger",
-  over: "border-danger bg-danger-solid text-on-solid",
-  pro: "border-brand/30 bg-brand/10 text-brand-fg",
-};
-
-const STATUS_DOT: Record<AccountStatus, string> = {
-  space: "bg-ok",
-  full: "bg-danger",
-  over: "bg-danger",
-  pro: "bg-brand",
-};
-
-function statusLabel(inv: EmailSlotInventory) {
-  switch (inv.status) {
-    case "pro":
-      return "Pro · sin límite";
-    case "over":
-      return `Excedida · ${inv.used} de ${inv.capacity}`;
-    case "full":
-      return `Llena · ${inv.used} de ${inv.capacity}`;
-    default:
-      return inv.available === 1 ? "1 libre" : `${inv.available} libres`;
-  }
-}
-
-function StatusBadge({ inv }: { inv: EmailSlotInventory }) {
-  return (
-    <span className={`inline-flex items-center px-2 min-h-6 rounded-md border text-xs font-medium tabular-nums whitespace-nowrap ${STATUS_BADGE[inv.status]}`}>
-      {statusLabel(inv)}
-    </span>
-  );
-}
-
-/** Correo + cupo + estado de la cuenta, compacto para la fila de la lista. */
-function AccountCell({ email, slot, inv }: { email: string | null; slot: number | null; inv?: EmailSlotInventory }) {
-  if (!email) return <span className="text-fg-ghost text-sm">—</span>;
-  const n = clampPlatformSlot(slot);
-  const status = inv?.status ?? "space";
-  let text: string;
-  if (status === "pro") text = "Cuenta Pro";
-  else if (n == null) text = status === "over" ? "Sin cupo · cuenta excedida" : "Sin número de cupo";
-  else if (status === "over") text = `Cupo ${n} · cuenta excedida`;
-  else if (status === "full") text = `Cupo ${n} de ${DEFAULT_SLOT_CAPACITY} · llena`;
-  else text = `Cupo ${n} de ${DEFAULT_SLOT_CAPACITY} · queda espacio`;
-  const tone =
-    status === "pro" ? "text-brand-fg" : status === "space" ? (n == null ? "text-warn" : "text-fg-faint") : "text-danger";
-  return (
-    <div className="min-w-0">
-      <p className="text-fg-soft text-sm truncate" title={email}>{email}</p>
-      <p className={`flex items-center gap-2 text-xs tabular-nums ${tone} ${status === "over" ? "font-medium" : ""}`}>
-        <span aria-hidden className={`w-2 h-2 rounded-full shrink-0 ${STATUS_DOT[status]}`} />
-        <span className="truncate">{text}</span>
-      </p>
-    </div>
-  );
-}
-
-function DetailRow({
-  label,
-  value,
-  href,
+export function PlatformsBoard({
+  data,
+  abrir,
+  nueva,
+  clienteNueva,
+  tabInicial,
 }: {
-  label: string;
-  value: string | null;
-  href?: boolean;
+  data: PlatformsData;
+  abrir?: string | null;
+  nueva?: boolean;
+  clienteNueva?: string | null;
+  tabInicial?: Tab;
 }) {
-  return (
-    <div className="grid grid-cols-[88px_minmax(0,1fr)_44px] lg:grid-cols-[88px_minmax(0,1fr)_32px] items-center gap-2 min-h-8">
-      <dt className="text-fg-faint text-xs">{label}</dt>
-      <dd className="min-w-0">
-        {!value ? (
-          <span className="text-fg-ghost text-sm">—</span>
-        ) : href ? (
-          <a
-            href={hrefOf(value)}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-brand-fg text-sm hover:underline truncate block"
-            title={value}
-          >
-            {hostOf(value)}
-          </a>
-        ) : (
-          <span className="text-fg-soft text-sm truncate block" title={value}>{value}</span>
-        )}
-      </dd>
-      {value ? <CopyButton value={value} label={label} /> : <span />}
-    </div>
-  );
-}
-
-function SlotPill({ n, occupant }: { n: number; occupant: string | null }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-1 min-w-0 max-w-full px-2 min-h-8 rounded-md border text-xs ${
-        occupant ? "border-line bg-fill text-fg-soft" : "border-ok/30 bg-ok/10 text-ok"
-      }`}
-    >
-      <span className="tabular-nums text-fg-faint shrink-0">{n}</span>
-      <span className="truncate">{occupant ?? "Libre"}</span>
-    </span>
-  );
-}
-
-function AccountBox({
-  inv,
-  busy,
-  onTogglePro,
-}: {
-  inv: EmailSlotInventory;
-  busy: boolean;
-  onTogglePro: (pro: boolean) => void;
-}) {
-  const all = [...inv.bySlot.entries()].sort((x, y) => x[0] - y[0]).map(([, r]) => r.platformName);
-  return (
-    <div className={`rounded-lg border p-3 space-y-2 ${STATUS_BOX[inv.status]}`}>
-      <div className="flex items-center justify-between gap-2">
-        <StatusBadge inv={inv} />
-        <button
-          type="button"
-          role="switch"
-          aria-checked={inv.pro}
-          aria-label={`Plan Pro de ${inv.email} en ${PROVIDER_LABEL[inv.provider]}`}
-          disabled={busy}
-          onClick={() => onTogglePro(!inv.pro)}
-          className="-my-2 min-h-11 inline-flex items-center gap-2 text-xs text-fg-dim hover:text-fg disabled:opacity-50"
-        >
-          Pro
-          <span aria-hidden className={`flex w-8 h-5 p-1 rounded-full transition-colors ${inv.pro ? "bg-brand" : "bg-fill-3"}`}>
-            <span className={`w-3 h-3 rounded-full bg-white shadow transition-transform ${inv.pro ? "translate-x-3" : ""}`} />
-          </span>
-        </button>
-      </div>
-      {inv.pro ? (
-        <div className="flex flex-wrap gap-2">
-          {[...all, ...inv.unassigned.map((u) => u.platformName)].map((name) => (
-            <span key={name} className="inline-flex items-center px-2 min-h-8 rounded-md border border-line bg-fill text-xs text-fg-soft">
-              {name}
-            </span>
-          ))}
-        </div>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 gap-2">
-            {Array.from({ length: inv.capacity }, (_, i) => i + 1).map((n) => (
-              <SlotPill key={n} n={n} occupant={inv.bySlot.get(n)?.platformName ?? null} />
-            ))}
-          </div>
-          {inv.unassigned.length > 0 && (
-            <p className={`text-xs ${inv.status === "over" ? "text-danger font-medium" : "text-warn"}`}>
-              {inv.status === "over" ? "De más: " : "Sin número: "}
-              {inv.unassigned.map((u) => u.platformName).join(", ")}
-            </p>
-          )}
-        </>
-      )}
-    </div>
-  );
-}
-
-// ─── Tablero ────────────────────────────────────────────────────────────────
-
-export function PlatformsBoard({ initialPlatforms, initialProAccounts }: PlatformsBoardProps) {
-  const [platforms, setPlatforms] = useState(initialPlatforms);
-  const [proAccounts, setProAccounts] = useState(() => new Set(initialProAccounts));
-  const [tab, setTab] = useState<Tab>("proyectos");
+  const router = useRouter();
+  const [platforms, setPlatforms] = useState(data.platforms);
+  const [accounts, setAccounts] = useState(data.accounts);
+  const [tab, setTab] = useState<Tab>(tabInicial ?? "plataformas");
   const [query, setQuery] = useState("");
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<Partial<SerializedPlatform>>({});
-  const [busy, setBusy] = useState(false);
+  const [filtro, setFiltro] = useState<Filtro>("todas");
+  const [expandedId, setExpandedId] = useState<string | null>(abrir ?? null);
+  const [wizard, setWizard] = useState(!!nueva);
   const [error, setError] = useState<string | null>(null);
-  const [showAdd, setShowAdd] = useState(false);
-  const [newName, setNewName] = useState("");
+  const abrirRef = useRef<HTMLDivElement | null>(null);
 
-  const inventories = useMemo(
-    () => buildSlotInventories(platforms, DEFAULT_SLOT_CAPACITY, proAccounts),
-    [platforms, proAccounts]
+  // Lo que manda el servidor (router.refresh) es la verdad.
+  useEffect(() => setPlatforms(data.platforms), [data.platforms]);
+  useEffect(() => setAccounts(data.accounts), [data.accounts]);
+
+  useEffect(() => {
+    if (abrir) abrirRef.current?.scrollIntoView({ block: "start" });
+  }, [abrir]);
+
+  const inv = useMemo(() => inventarios(platforms, accounts), [platforms, accounts]);
+  const accountByKey = useMemo(() => new Map(accounts.map((a) => [accountKey(a.provider, a.email), a])), [accounts]);
+  const clientById = useMemo(() => new Map(data.clients.map((c) => [c.id, c])), [data.clients]);
+
+  const problemas = useMemo(() => {
+    const m = new Map<string, Problema[]>();
+    for (const p of platforms) m.set(p.id, problemasDe(p, inv, accountByKey, data.live[p.id]));
+    return m;
+  }, [platforms, inv, accountByKey, data.live]);
+
+  const counts = useMemo(
+    () => ({
+      todas: platforms.length,
+      "sin-cliente": platforms.filter((p) => !p.clientId).length,
+      llena: platforms.filter((p) => cuentaLlena(p, inv)).length,
+      problemas: platforms.filter((p) => (problemas.get(p.id)?.length ?? 0) > 0).length,
+    }),
+    [platforms, inv, problemas]
   );
 
-  const inventoryByKey = useMemo(() => {
-    const map = new Map<string, EmailSlotInventory>();
-    for (const item of [...inventories.supabase, ...inventories.vercel]) {
-      map.set(`${item.provider}:${item.email}`, item);
-    }
-    return map;
-  }, [inventories]);
-
-  /** Una fila por correo, con sus cupos en Supabase y en Vercel lado a lado. */
-  const accounts = useMemo(() => {
-    const emails = new Set([...inventories.supabase, ...inventories.vercel].map((i) => i.email));
-    return [...emails]
-      .sort()
-      .map((email) => ({
-        email,
-        supabase: inventoryByKey.get(`supabase:${email}`),
-        vercel: inventoryByKey.get(`vercel:${email}`),
-      }));
-  }, [inventories, inventoryByKey]);
+  const cuentasConProblema =
+    accounts.filter((a) => (a.hasToken && a.lastError) || inv.byKey.get(accountKey(a.provider, a.email))?.status === "over").length +
+    data.githubAccounts.filter((g) => g.error).length;
 
   const knownEmails = useMemo(() => {
-    const set = new Set<string>();
-    for (const p of platforms) {
-      for (const e of [p.supabaseEmail, p.vercelEmail, p.githubEmail, p.brevoEmail]) {
-        if (e) set.add(normalizePlatformEmail(e));
-      }
-    }
-    return [...set].sort();
-  }, [platforms]);
+    const s = new Set<string>();
+    for (const p of platforms) for (const e of [p.supabaseEmail, p.vercelEmail, p.githubEmail, p.brevoEmail]) if (e) s.add(normalizePlatformEmail(e));
+    for (const a of accounts) s.add(a.email);
+    return [...s].sort();
+  }, [platforms, accounts]);
 
-  const freeSupabase = inventories.supabase.reduce((s, i) => s + i.available, 0);
-  const freeVercel = inventories.vercel.reduce((s, i) => s + i.available, 0);
-
-  /** Lo que de verdad hay que arreglar: cupos sin número o repetidos. */
-  const issues = useMemo(() => {
-    const list: string[] = [];
-    for (const item of [...inventories.supabase, ...inventories.vercel]) {
-      if (item.pro) continue;
-      if (item.status === "over") {
-        const names = [...item.bySlot.values(), ...item.unassigned].map((r) => r.platformName);
-        list.push(
-          `${item.email} en ${PROVIDER_LABEL[item.provider]} tiene ${item.used} proyectos (${names.join(", ")}) y el plan gratis admite ${item.capacity}. Márcala como Pro o mueve uno a otra cuenta.`
-        );
-        continue;
-      }
-      for (const u of item.unassigned) {
-        list.push(`${u.platformName} no tiene número de cupo en ${PROVIDER_LABEL[item.provider]} (${item.email})`);
-      }
-      for (const c of item.conflicts) {
-        list.push(`${c.platforms.join(" y ")} comparten el cupo ${c.slot} en ${PROVIDER_LABEL[item.provider]} (${item.email})`);
-      }
-    }
-    return list;
-  }, [inventories]);
-
-  const visible = useMemo(() => {
+  /** Plataformas visibles, agrupadas por cliente (los sin cliente al final). */
+  const grupos = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return [...platforms].sort(byName);
-    return platforms
-      .map((p) => ({ p, score: scoreMatch(p, q) }))
-      .filter(({ score }) => score > 0)
-      .sort((a, b) => b.score - a.score || byName(a.p, b.p))
-      .map(({ p }) => p);
-  }, [platforms, query]);
-
-  function toggleExpanded(id: string) {
-    if (editingId === id) return;
-    setExpandedId((cur) => (cur === id ? null : id));
-    setEditingId(null);
-  }
-
-  function startEdit(p: SerializedPlatform) {
-    setExpandedId(p.id);
-    setEditingId(p.id);
-    setDraft({ ...p });
-    setError(null);
-  }
-
-  async function request(input: string, init: RequestInit, failMsg: string) {
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch(input, init);
-      if (!res.ok) {
-        setError(failMsg);
-        return null;
-      }
-      return await res.json();
-    } catch {
-      setError(`${failMsg} Revisa la conexión.`);
-      return null;
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function saveEdit(id: string) {
-    const updated = (await request(
-      `/api/empresa/platforms/${id}`,
-      { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(draft) },
-      "No se pudieron guardar los cambios."
-    )) as PlatformApiRow | null;
-    if (!updated) return;
-    setPlatforms((list) => list.map((p) => (p.id === id ? toSerializedPlatform(updated) : p)));
-    setEditingId(null);
-  }
-
-  async function addPlatform() {
-    const name = newName.trim();
-    if (!name) return;
-    const created = (await request(
-      "/api/empresa/platforms",
-      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name }) },
-      "No se pudo crear la plataforma."
-    )) as PlatformApiRow | null;
-    if (!created) return;
-    const p = toSerializedPlatform(created);
-    setPlatforms((list) => [...list, p]);
-    setNewName("");
-    setShowAdd(false);
-    setQuery("");
-    setTab("proyectos");
-    // Recién creada solo tiene nombre: se abre directo para completar sus datos.
-    startEdit(p);
-  }
-
-  async function removePlatform(p: SerializedPlatform) {
-    if (!window.confirm(`¿Eliminar ${p.name}? Se borran sus accesos y su información confidencial.`)) return;
-    const ok = await request(`/api/empresa/platforms/${p.id}`, { method: "DELETE" }, "No se pudo eliminar la plataforma.");
-    if (!ok) return;
-    setPlatforms((list) => list.filter((item) => item.id !== p.id));
-    setEditingId(null);
-    setExpandedId(null);
-  }
-
-  async function setPlan(provider: SlotProvider, email: string, pro: boolean) {
-    const key = accountKey(provider, email);
-    const apply = (on: boolean) =>
-      setProAccounts((prev) => {
-        const next = new Set(prev);
-        if (on) next.add(key);
-        else next.delete(key);
-        return next;
-      });
-    apply(pro);
-    const ok = await request(
-      "/api/empresa/platforms/accounts",
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider, email, plan: pro ? "PRO" : "FREE" }),
-      },
-      "No se pudo cambiar el plan de la cuenta."
+    let list = platforms.filter((p) =>
+      filtro === "sin-cliente" ? !p.clientId : filtro === "llena" ? cuentaLlena(p, inv) : filtro === "problemas" ? (problemas.get(p.id)?.length ?? 0) > 0 : true
     );
-    if (!ok) apply(!pro);
-  }
+    if (q) {
+      list = list
+        .map((p) => {
+          const c = p.clientId ? clientById.get(p.clientId) : undefined;
+          const proj = c?.projects.find((x) => x.id === p.projectId)?.name;
+          return { p, s: puntaje(p, q, [c?.name ?? "", proj ?? ""]) };
+        })
+        .filter((x) => x.s > 0)
+        .sort((a, b) => b.s - a.s)
+        .map((x) => x.p);
+    } else list = [...list].sort(byName);
 
-  async function syncCupos() {
-    const data = await request("/api/empresa/platforms/sync", { method: "POST" }, "No se pudieron sincronizar los cupos.");
-    if (data && Array.isArray(data.platforms)) {
-      setPlatforms(data.platforms.map((p: PlatformApiRow) => toSerializedPlatform(p)));
+    const map = new Map<string, SerializedPlatform[]>();
+    for (const p of list) {
+      const k = p.clientId && clientById.has(p.clientId) ? p.clientId : "";
+      map.set(k, [...(map.get(k) ?? []), p]);
     }
+    return [...map.entries()]
+      .map(([id, items]) => ({ id, nombre: id ? clientById.get(id)!.name : "Sin cliente", archived: id ? clientById.get(id)!.archived : false, items }))
+      .sort((a, b) => (a.id === "" ? 1 : b.id === "" ? -1 : a.nombre.localeCompare(b.nombre, "es", { sensitivity: "base" })));
+  }, [platforms, filtro, query, inv, problemas, clientById]);
+
+  const visibles = grupos.reduce((s, g) => s + g.items.length, 0);
+
+  async function setPlan(provider: "vercel" | "supabase", email: string, plan: "FREE" | "PRO") {
+    const key = accountKey(provider, email);
+    const prev = accounts;
+    setAccounts((list) => {
+      const found = list.some((a) => accountKey(a.provider, a.email) === key);
+      const base: ProviderAccount = { id: null, provider, email: normalizePlatformEmail(email), plan, planSource: "manual", hasToken: false, label: null, lastError: null, lastCheckedAt: null, liveUsed: null, fetchedAt: null };
+      return found ? list.map((a) => (accountKey(a.provider, a.email) === key ? { ...a, plan, planSource: "manual" } : a)) : [...list, base];
+    });
+    const r = await pedirJson("/api/empresa/platforms/accounts", { method: "PUT", body: JSON.stringify({ provider, email, plan }) });
+    if (r.error !== undefined) {
+      setAccounts(prev);
+      setError(`No se pudo cambiar el plan: ${r.error}`);
+    } else router.refresh();
   }
 
-  /** Cupos de un correo en un proveedor, sin contar la plataforma que se edita. */
-  function slotOccupants(provider: SlotProvider, email: string | null | undefined, selfId: string) {
-    const inv = email ? inventoryByKey.get(`${provider}:${normalizePlatformEmail(email)}`) : undefined;
-    const out = new Map<number, string>();
-    if (!inv) return out;
-    for (const [n, ref] of inv.bySlot) if (ref.platformId !== selfId) out.set(n, ref.platformName);
-    return out;
-  }
-
-  // ─── Render ────────────────────────────────────────────────────────────────
+  const filtros: { key: Filtro; label: string; tone?: Tone }[] = [
+    { key: "todas", label: "Todas" },
+    { key: "sin-cliente", label: "Sin cliente" },
+    { key: "llena", label: "Cuenta llena" },
+    { key: "problemas", label: "Con problemas", tone: "danger" },
+  ];
 
   return (
     <div>
-      {/* Encabezado */}
       <PageHeader
         className="mb-6"
         title="Platforms"
-        description="Accesos, cuentas de Supabase y Vercel y enlaces de cada proyecto."
+        description="Dónde vive cada sistema de tus clientes: repo, hosting, base de datos y accesos."
         actions={
           <>
-            <Link href="/empresa/sistemas" className={btn.secondary}>Estado de los sistemas</Link>
-            <button type="button" onClick={() => setShowAdd((v) => !v)} aria-expanded={showAdd} className={btn.primary}>
+            <Link href="/empresa/sistemas" className={btn.secondary}>
+              Estado de los sistemas
+            </Link>
+            <button type="button" onClick={() => setWizard(true)} className={btn.primary}>
               <Icon d={ICON.plus} />
               Nueva plataforma
             </button>
           </>
         }
       />
-
-      {showAdd && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void addPlatform();
-          }}
-          className="bg-panel border border-line rounded-xl p-4 mb-6 flex flex-col sm:flex-row gap-2"
-        >
-          <label htmlFor="new-platform" className="sr-only">Nombre de la plataforma</label>
-          <input
-            id="new-platform"
-            autoFocus
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            placeholder="Nombre del proyecto, p. ej. Academyx"
-            className="flex-1 min-w-0 bg-panel-2 border border-line-mid rounded-lg px-3 min-h-11 text-base text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40"
-          />
-          <div className="flex gap-2">
-            <button
-              type="submit"
-              disabled={busy || !newName.trim()}
-              className="flex-1 sm:flex-none px-4 min-h-11 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
-            >
-              {busy ? "Creando…" : "Crear y completar datos"}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowAdd(false)}
-              className="px-4 min-h-11 text-fg-dim hover:text-fg text-sm rounded-lg"
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
-      )}
 
       {error && (
         <div role="alert" className="mb-4 flex items-center justify-between gap-4 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2 text-sm text-danger">
@@ -562,25 +169,12 @@ export function PlatformsBoard({ initialPlatforms, initialProAccounts }: Platfor
         </div>
       )}
 
-      {issues.length > 0 && (
-        <div className="mb-6 rounded-xl border border-warn/30 bg-warn/10 px-4 py-3">
-          <p className="flex items-center gap-2 text-warn text-sm font-medium">
-            <Icon d={LOCAL_ICON.alert} />
-            {issues.length === 1 ? "1 cuenta por revisar" : `${issues.length} cuentas por revisar`}
-          </p>
-          <ul className="mt-1 pl-6 space-y-1 text-sm text-fg-soft list-disc marker:text-warn/60">
-            {issues.map((msg) => <li key={msg}>{msg}</li>)}
-          </ul>
-        </div>
-      )}
-
-      {/* Pestañas */}
-      <div role="tablist" aria-label="Vistas de plataformas" className="flex gap-6 border-b border-line mb-4">
+      <div role="tablist" aria-label="Vistas de Platforms" className="flex gap-6 border-b border-line mb-4">
         {(
           [
-            { key: "proyectos", label: "Proyectos", count: platforms.length },
-            { key: "cuentas", label: "Cuentas y cupos", count: accounts.length },
-          ] as { key: Tab; label: string; count: number }[]
+            { key: "plataformas", label: "Plataformas", count: platforms.length, alert: 0 },
+            { key: "cuentas", label: "Cuentas", count: accounts.length + data.githubAccounts.length, alert: cuentasConProblema },
+          ] as { key: Tab; label: string; count: number; alert: number }[]
         ).map((t) => (
           <button
             key={t.key}
@@ -594,453 +188,309 @@ export function PlatformsBoard({ initialPlatforms, initialProAccounts }: Platfor
           >
             {t.label}
             <span className="text-xs text-fg-faint tabular-nums">{t.count}</span>
+            {t.alert > 0 && (
+              <span className="inline-flex items-center gap-1 text-xs text-danger tabular-nums" title={`${t.alert} con problemas`}>
+                <Dot tone="danger" />
+                {t.alert}
+                <span className="sr-only">con problemas</span>
+              </span>
+            )}
           </button>
         ))}
       </div>
 
-      {tab === "proyectos" ? (
+      {tab === "cuentas" ? (
+        <CuentasPanel accounts={accounts} githubAccounts={data.githubAccounts} inv={inv} onRefresh={() => router.refresh()} onPlan={setPlan} />
+      ) : (
         <>
-          <div className="relative mb-4">
-            <Icon d={LOCAL_ICON.search} className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-fg-ghost pointer-events-none" />
-            <label htmlFor="platform-search" className="sr-only">Buscar plataforma</label>
-            <input
-              id="platform-search"
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === "Escape" && setQuery("")}
-              placeholder="Buscar por proyecto, dominio o correo…"
-              autoComplete="off"
-              className="w-full bg-panel border border-line-mid rounded-lg pl-8 pr-4 min-h-11 text-base text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40 transition-colors"
-            />
+          <div className="space-y-3 mb-4">
+            <div className="relative">
+              <Icon d={LOCAL_ICON.search} className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-fg-ghost pointer-events-none" />
+              <label htmlFor="platform-search" className="sr-only">
+                Buscar plataforma
+              </label>
+              <input
+                id="platform-search"
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Escape" && setQuery("")}
+                placeholder="Buscar por plataforma, cliente, dominio, repo o correo…"
+                autoComplete="off"
+                className="w-full bg-panel border border-line-mid rounded-lg pl-8 pr-4 min-h-11 text-base text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40 transition-colors"
+              />
+            </div>
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar plataformas">
+              {filtros.map((f) => {
+                const n = counts[f.key];
+                const on = filtro === f.key;
+                const alert = f.tone === "danger" && n > 0;
+                return (
+                  <button
+                    key={f.key}
+                    type="button"
+                    aria-pressed={on}
+                    onClick={() => setFiltro(f.key)}
+                    className={`inline-flex items-center gap-2 min-h-11 sm:min-h-8 px-3 rounded-full border text-xs font-medium transition-colors ${
+                      on ? "border-brand/50 bg-brand/10 text-fg" : "border-line-mid text-fg-dim hover:text-fg"
+                    }`}
+                  >
+                    {alert && <Dot tone="danger" />}
+                    {f.label}
+                    <span className={`tabular-nums ${alert ? "text-danger" : "text-fg-faint"}`}>{n}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {platforms.length === 0 ? (
             <div className="bg-panel border border-line rounded-xl px-6 py-12 text-center">
               <p className="text-fg-mute font-medium">Todavía no hay plataformas</p>
-              <p className="text-fg-dim text-sm mt-1">
-                Registra cada proyecto con su dominio y las cuentas de Supabase y Vercel donde vive.
+              <p className="text-fg-dim text-sm mt-1 max-w-md mx-auto">
+                Registra cada sistema con su cliente, su repo, su hosting y su base. Con las cuentas conectadas, Pime lo llena desde las listas reales.
               </p>
-              <button
-                type="button"
-                onClick={() => setShowAdd(true)}
-                className="mt-6 px-4 min-h-11 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-colors"
-              >
+              <button type="button" onClick={() => setWizard(true)} className={`${btn.primary} mt-6`}>
                 Registrar la primera plataforma
               </button>
             </div>
-          ) : visible.length === 0 ? (
+          ) : visibles === 0 ? (
             <div className="bg-panel border border-line rounded-xl px-6 py-12 text-center">
-              <p className="text-fg-mute font-medium">Nada coincide con «{query.trim()}»</p>
-              <p className="text-fg-dim text-sm mt-1">Se busca en el nombre, los dominios y los correos de cada plataforma.</p>
+              <p className="text-fg-mute font-medium">
+                {query.trim()
+                  ? `Nada coincide con «${query.trim()}»`
+                  : filtro === "sin-cliente"
+                    ? "Todas las plataformas tienen cliente"
+                    : filtro === "llena"
+                      ? "Ninguna cuenta está llena"
+                      : "Ninguna plataforma tiene problemas"}
+              </p>
+              <p className="text-fg-dim text-sm mt-1">
+                {query.trim() ? "Se busca en el nombre, el cliente, los dominios, el repo y los correos." : "Nada que hacer aquí por ahora."}
+              </p>
               <button
                 type="button"
-                onClick={() => setQuery("")}
-                className="mt-6 px-4 min-h-11 border border-line-mid text-fg-soft hover:text-fg text-sm rounded-lg transition-colors"
+                onClick={() => {
+                  setQuery("");
+                  setFiltro("todas");
+                }}
+                className={`${btn.secondary} mt-6`}
               >
                 Ver las {platforms.length} plataformas
               </button>
             </div>
           ) : (
-            <div className="bg-panel border border-line rounded-xl overflow-hidden">
-              <div className="hidden lg:grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_32px] gap-4 px-4 py-2 border-b border-line text-xs uppercase tracking-wider text-fg-faint">
-                <span>Proyecto</span>
-                <span>Supabase</span>
-                <span>Vercel</span>
+            <div className="space-y-6">
+              <div aria-hidden className="hidden lg:grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_32px] gap-4 px-4 -mb-4 text-xs uppercase tracking-wider text-fg-faint">
+                <span>Plataforma</span>
                 <span>GitHub</span>
+                <span>Vercel</span>
+                <span>Supabase</span>
                 <span />
               </div>
-              {visible.map((p) => {
-                const open = expandedId === p.id;
-                const editing = editingId === p.id;
-                const host = hostOf(p.accessUrl ?? p.linkUrl);
-                return (
-                  <div key={p.id} className="border-b border-line last:border-b-0">
-                    <button
-                      type="button"
-                      onClick={() => toggleExpanded(p.id)}
-                      aria-expanded={open}
-                      className={`w-full text-left px-4 py-3 grid grid-cols-[minmax(0,1fr)_32px] lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_32px] gap-x-4 gap-y-2 items-center transition-colors ${
-                        open ? "bg-fill" : "hover:bg-fill"
-                      }`}
-                    >
-                      <div className="min-w-0">
-                        <p className="text-fg text-sm font-medium flex items-center gap-2 min-w-0">
-                          <span className="truncate">{p.name}</span>
-                          {p.hasConfidential && (
-                            <span title="Tiene información confidencial" className="text-fg-faint shrink-0">
-                              <Icon d={LOCAL_ICON.lock} className="w-4 h-4" />
-                              <span className="sr-only">Tiene información confidencial</span>
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-fg-faint text-xs truncate">{host ?? "Sin dominio"}</p>
-                      </div>
-                      <Icon
-                        d={ICON.chevronDown}
-                        className={`w-4 h-4 text-fg-ghost justify-self-end lg:order-last transition-transform ${open ? "rotate-180" : ""}`}
-                      />
-                      {/* En móvil, las cuentas van debajo del nombre en dos columnas */}
-                      <div className="col-span-2 lg:col-span-1 grid grid-cols-2 lg:contents gap-4">
-                        <div className="min-w-0">
-                          <p className="lg:hidden text-xs text-fg-faint mb-1">Supabase</p>
-                          <AccountCell
-                            email={p.supabaseEmail}
-                            slot={p.supabaseSlot}
-                            inv={p.supabaseEmail ? inventoryByKey.get(accountKey("supabase", p.supabaseEmail)) : undefined}
+              {grupos.map((g) => (
+                <section key={g.id || "sin"} aria-labelledby={`grupo-${g.id || "sin"}`}>
+                  <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-2 px-1">
+                    <h2 id={`grupo-${g.id || "sin"}`} className="min-w-0 text-fg text-sm font-semibold [overflow-wrap:anywhere]">
+                      {g.id ? (
+                        <Link href={`/empresa/clientes/${g.id}`} className="hover:underline">
+                          {g.nombre}
+                        </Link>
+                      ) : (
+                        g.nombre
+                      )}
+                      <span className="ml-2 text-xs font-normal text-fg-faint tabular-nums">{g.items.length}</span>
+                      {g.archived && <span className="ml-2 text-xs font-normal text-fg-faint">archivado</span>}
+                    </h2>
+                    {!g.id && <p className="text-xs text-fg-dim">Asígnalas a su cliente para verlas en su ficha.</p>}
+                  </header>
+                  <div className="bg-panel border border-line rounded-xl overflow-hidden">
+                    {g.items.map((p) => {
+                      const open = expandedId === p.id;
+                      return (
+                        <div key={p.id} ref={p.id === abrir ? abrirRef : undefined} className="border-b border-line last:border-b-0 scroll-mt-24">
+                          <Fila
+                            p={p}
+                            open={open}
+                            onToggle={() => setExpandedId((cur) => (cur === p.id ? null : p.id))}
+                            projectName={p.clientId ? clientById.get(p.clientId)?.projects.find((x) => x.id === p.projectId)?.name ?? null : null}
+                            problemas={problemas.get(p.id) ?? []}
+                            inv={inv}
+                            live={data.live[p.id]}
                           />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="lg:hidden text-xs text-fg-faint mb-1">Vercel</p>
-                          <AccountCell
-                            email={p.vercelEmail}
-                            slot={p.vercelSlot}
-                            inv={p.vercelEmail ? inventoryByKey.get(accountKey("vercel", p.vercelEmail)) : undefined}
-                          />
-                        </div>
-                        <div className="min-w-0 hidden lg:block">
-                          {p.githubEmail ? (
-                            <p className="text-fg-soft text-sm truncate" title={p.githubEmail}>{p.githubEmail}</p>
-                          ) : (
-                            <span className="text-fg-ghost text-sm">—</span>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-
-                    {open && (
-                      <div className="px-4 pb-4 pt-2 bg-fill">
-                        {editing ? (
-                          <EditForm
-                            draft={draft}
-                            setDraft={setDraft}
-                            knownEmails={knownEmails}
-                            occupants={(provider, email) => slotOccupants(provider, email, p.id)}
-                            isPro={(provider, email) => !!email && proAccounts.has(accountKey(provider, email))}
-                            busy={busy}
-                            onSave={() => void saveEdit(p.id)}
-                            onCancel={() => setEditingId(null)}
-                            onDelete={() => void removePlatform(p)}
-                          />
-                        ) : (
-                          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div className="space-y-4">
-                              <section>
-                                <h3 className="text-xs uppercase tracking-wider text-fg-faint mb-1">Enlaces</h3>
-                                <dl>
-                                  <DetailRow label="Acceso" value={p.accessUrl} href />
-                                  {p.linkUrl && p.linkUrl !== p.accessUrl && <DetailRow label="Link" value={p.linkUrl} href />}
-                                </dl>
-                              </section>
-                              <section>
-                                <h3 className="text-xs uppercase tracking-wider text-fg-faint mb-1">Cuentas</h3>
-                                <dl>
-                                  <DetailRow label="Supabase" value={p.supabaseEmail} />
-                                  <DetailRow label="Vercel" value={p.vercelEmail} />
-                                  <DetailRow label="GitHub" value={p.githubEmail} />
-                                  <DetailRow label="Brevo" value={p.brevoEmail} />
-                                </dl>
-                              </section>
-                              {p.notes && (
-                                <section>
-                                  <h3 className="text-xs uppercase tracking-wider text-fg-faint mb-1">Notas</h3>
-                                  <p className="text-sm text-fg-soft whitespace-pre-line leading-relaxed">{p.notes}</p>
-                                </section>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => startEdit(p)}
-                                className="inline-flex items-center gap-2 px-4 min-h-11 border border-line-mid text-fg-soft hover:text-fg text-sm rounded-lg transition-colors"
-                              >
-                                <Icon d={ICON.pencil} />
-                                Editar datos
-                              </button>
+                          {open && (
+                            <div className="px-4 pb-4 pt-2 bg-fill">
+                              <PlataformaDetalle
+                                p={p}
+                                live={data.live[p.id]}
+                                problemas={problemas.get(p.id) ?? []}
+                                ctx={{ clients: data.clients, githubAccounts: data.githubAccounts, accounts, inv, knownEmails }}
+                                onSaved={(u) => {
+                                  setPlatforms((list) => list.map((x) => (x.id === u.id ? u : x)));
+                                  router.refresh();
+                                }}
+                                onDeleted={(id) => {
+                                  setPlatforms((list) => list.filter((x) => x.id !== id));
+                                  setExpandedId(null);
+                                  router.refresh();
+                                }}
+                              />
                             </div>
-                            <PlatformConfidentialVault
-                              platformId={p.id}
-                              hasConfidential={p.hasConfidential}
-                              onUpdated={(hasConfidential) =>
-                                setPlatforms((list) =>
-                                  list.map((item) => (item.id === p.id ? { ...item, hasConfidential } : item))
-                                )
-                              }
-                            />
-                          </div>
-                        )}
-                      </div>
-                    )}
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </>
-      ) : (
-        <>
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-            <div className="min-w-0 space-y-2">
-              <p className="text-sm text-fg-dim">
-                En el plan gratis cada correo admite {DEFAULT_SLOT_CAPACITY} proyectos por proveedor.{" "}
-                <span className="text-ok tabular-nums">
-                  Libres: {freeSupabase} en Supabase · {freeVercel} en Vercel
-                </span>
-              </p>
-              <ul aria-label="Código de color" className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-fg-dim">
-                {(
-                  [
-                    ["space", "1 libre", "le queda espacio"],
-                    ["full", "Llena", "usa sus 2 cupos"],
-                    ["over", "Excedida", "más proyectos de los que admite"],
-                    ["pro", "Pro", "sin límite"],
-                  ] as [AccountStatus, string, string][]
-                ).map(([st, tag, label]) => (
-                  <li key={st} className="flex items-center gap-2">
-                    <span className={`inline-flex items-center px-2 min-h-6 rounded-md border font-medium ${STATUS_BADGE[st]}`}>{tag}</span>
-                    {label}
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void syncCupos()}
-              className="px-4 min-h-11 border border-line-mid text-fg-soft hover:text-fg text-sm rounded-lg transition-colors disabled:opacity-50"
-            >
-              {busy ? "Sincronizando…" : "Sincronizar cupos"}
-            </button>
-          </div>
-
-          {accounts.length === 0 ? (
-            <div className="bg-panel border border-line rounded-xl px-6 py-12 text-center">
-              <p className="text-fg-mute font-medium">Ninguna plataforma tiene cuenta asignada</p>
-              <p className="text-fg-dim text-sm mt-1">
-                Al poner el correo de Supabase o Vercel en una plataforma, aquí ves cuántos cupos le quedan.
-              </p>
-            </div>
-          ) : (
-            <div className="bg-panel border border-line rounded-xl overflow-hidden">
-              <div className="hidden md:grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-4 px-4 py-2 border-b border-line text-xs uppercase tracking-wider text-fg-faint">
-                <span>Correo</span>
-                <span>Supabase</span>
-                <span>Vercel</span>
-              </div>
-              {accounts.map((a) => (
-                <div
-                  key={a.email}
-                  className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-x-4 gap-y-2 px-4 py-3 border-b border-line last:border-b-0 items-start"
-                >
-                  <div className="flex items-center gap-1 min-w-0 md:min-h-11">
-                    <p className="text-fg text-sm truncate" title={a.email}>{a.email}</p>
-                    <CopyButton value={a.email} label="correo" />
-                  </div>
-                  {(["supabase", "vercel"] as const).map((provider) => {
-                    const inv = a[provider];
-                    return (
-                      <div key={provider} className="min-w-0">
-                        <p className="md:hidden text-xs text-fg-faint mb-1">{PROVIDER_LABEL[provider]}</p>
-                        {inv ? (
-                          <AccountBox inv={inv} busy={busy} onTogglePro={(pro) => void setPlan(provider, a.email, pro)} />
-                        ) : (
-                          <span className="text-fg-ghost text-sm">Sin uso</span>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+                </section>
               ))}
             </div>
           )}
         </>
       )}
+
+      <AsistentePlataforma
+        abierto={wizard}
+        onCerrar={() => {
+          setWizard(false);
+          router.refresh();
+        }}
+        clients={data.clients}
+        githubAccounts={data.githubAccounts}
+        accounts={accounts}
+        inv={inv}
+        platforms={platforms}
+        clienteInicial={clienteNueva}
+        onRefresh={() => router.refresh()}
+        onCreado={(p) => {
+          setPlatforms((list) => (list.some((x) => x.id === p.id) ? list.map((x) => (x.id === p.id ? p : x)) : [...list, p]));
+          setTab("plataformas");
+          setFiltro("todas");
+          setQuery("");
+          setExpandedId(p.id);
+        }}
+      />
     </div>
   );
 }
 
-// ─── Formulario de edición ──────────────────────────────────────────────────
+// ─── Fila ───────────────────────────────────────────────────────────────────
 
-const inputCls =
-  "w-full bg-panel border border-line-mid rounded-lg px-3 min-h-11 text-base text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40";
+type Servicio = { label: string; main: string | null; sub: string | null; tone: Tone; linked: boolean };
 
-function EditForm({
-  draft,
-  setDraft,
-  knownEmails,
-  occupants,
-  isPro,
-  busy,
-  onSave,
-  onCancel,
-  onDelete,
+function servicios(p: SerializedPlatform, inv: ReturnType<typeof inventarios>, live: PlatformsData["live"][string] | undefined): Servicio[] {
+  const v = vercelEstado(live?.vercelState);
+  const s = supabaseEstado(live?.supabaseStatus);
+  const vInv = p.vercelEmail ? inv.byKey.get(accountKey("vercel", p.vercelEmail)) : undefined;
+  const sInv = p.supabaseEmail ? inv.byKey.get(accountKey("supabase", p.supabaseEmail)) : undefined;
+  const slot = sInv && !sInv.pro ? sInv.platforms.find((r) => r.platformId === p.id)?.slot ?? null : null;
+  const accTone = (st: string | undefined): Tone => (st === "over" ? "danger" : st === "full" ? "warn" : "ok");
+
+  return [
+    {
+      label: "GitHub",
+      main: p.githubRepo ? p.githubRepo.split("/").pop()! : p.githubEmail,
+      sub: p.githubRepo ? (live?.githubPushedAt ? `push ${hace(live.githubPushedAt)}` : p.githubRepo.split("/")[0]) : p.githubEmail ? "sin repo elegido" : null,
+      tone: p.githubRepo ? "ok" : "mute",
+      linked: !!(p.githubRepo || p.githubEmail),
+    },
+    {
+      label: "Vercel",
+      main: p.vercelProjectName ?? p.vercelEmail,
+      sub: v ? `${v.label}${live?.vercelDeployedAt ? ` · ${hace(live.vercelDeployedAt)}` : ""}` : vInv ? `cuenta ${usageLabel(vInv)}` : null,
+      tone: v ? v.tone : p.vercelEmail ? accTone(vInv?.status) : "mute",
+      linked: !!p.vercelEmail,
+    },
+    {
+      label: "Supabase",
+      main: p.supabaseEmail,
+      sub: s ? `${s.label}${slot ? ` · cupo ${slot} de ${SUPABASE_FREE_SLOTS}` : ""}` : sInv?.pro ? "cuenta Pro" : slot ? `cupo ${slot} de ${SUPABASE_FREE_SLOTS}` : p.supabaseEmail ? "sin número de cupo" : null,
+      tone: s ? s.tone : p.supabaseEmail ? (slot ? accTone(sInv?.status) : "warn") : "mute",
+      linked: !!p.supabaseEmail,
+    },
+  ];
+}
+
+function Fila({
+  p,
+  open,
+  onToggle,
+  projectName,
+  problemas,
+  inv,
+  live,
 }: {
-  draft: Partial<SerializedPlatform>;
-  setDraft: React.Dispatch<React.SetStateAction<Partial<SerializedPlatform>>>;
-  knownEmails: string[];
-  occupants: (provider: SlotProvider, email: string | null | undefined) => Map<number, string>;
-  isPro: (provider: SlotProvider, email: string | null | undefined) => boolean;
-  busy: boolean;
-  onSave: () => void;
-  onCancel: () => void;
-  onDelete: () => void;
+  p: SerializedPlatform;
+  open: boolean;
+  onToggle: () => void;
+  projectName: string | null;
+  problemas: Problema[];
+  inv: ReturnType<typeof inventarios>;
+  live: PlatformsData["live"][string] | undefined;
 }) {
-  const set = (key: keyof SerializedPlatform, value: string | number | null) =>
-    setDraft((prev) => ({ ...prev, [key]: value }));
-
-  function textField(key: "name" | "accessUrl" | "linkUrl" | "githubEmail" | "brevoEmail", label: string, placeholder: string, email = false) {
-    const id = `edit-${key}`;
-    return (
-      <div>
-        <label htmlFor={id} className="block text-xs text-fg-faint mb-1">{label}</label>
-        <input
-          id={id}
-          type={email ? "email" : "text"}
-          list={email ? "platform-emails" : undefined}
-          value={(draft[key] as string | null) ?? ""}
-          onChange={(e) => set(key, e.target.value || null)}
-          placeholder={placeholder}
-          className={inputCls}
-        />
-      </div>
-    );
-  }
-
-  function accountField(provider: SlotProvider) {
-    const emailKey = provider === "supabase" ? "supabaseEmail" : "vercelEmail";
-    const slotKey = provider === "supabase" ? "supabaseSlot" : "vercelSlot";
-    const email = draft[emailKey] ?? null;
-    const taken = occupants(provider, email);
-    const slot = clampPlatformSlot(draft[slotKey] ?? null);
-    const id = `edit-${emailKey}`;
-
-    return (
-      <fieldset className="rounded-lg border border-line p-3 space-y-3">
-        <legend className="px-1 text-xs text-fg-faint">{PROVIDER_LABEL[provider]}</legend>
-        <div>
-          <label htmlFor={id} className="block text-xs text-fg-faint mb-1">Correo de la cuenta</label>
-          <input
-            id={id}
-            type="email"
-            list="platform-emails"
-            value={email ?? ""}
-            onChange={(e) => {
-              const value = e.target.value || null;
-              setDraft((prev) => {
-                const next = { ...prev, [emailKey]: value };
-                // Si el cupo actual está tomado en la cuenta nueva, se propone el primero libre.
-                const occ = occupants(provider, value);
-                const cur = clampPlatformSlot(prev[slotKey] ?? null);
-                if (value && (cur == null || occ.has(cur))) {
-                  const free = Array.from({ length: DEFAULT_SLOT_CAPACITY }, (_, i) => i + 1).find((n) => !occ.has(n));
-                  next[slotKey] = free ?? cur;
-                }
-                return next;
-              });
-            }}
-            placeholder="cuenta@gmail.com"
-            className={inputCls}
-          />
-        </div>
-        {email && isPro(provider, email) && (
-          <p className="flex items-center gap-2 text-xs text-brand-fg">
-            <span aria-hidden className="w-2 h-2 rounded-full bg-brand" />
-            Cuenta Pro: sin límite de proyectos, no necesita número de cupo.
-          </p>
-        )}
-        {email && !isPro(provider, email) && (
-          <div>
-            <p className="text-xs text-fg-faint mb-1">Cupo en esa cuenta</p>
-            <div role="radiogroup" aria-label={`Cupo en ${PROVIDER_LABEL[provider]}`} className="grid grid-cols-2 gap-2">
-              {Array.from({ length: DEFAULT_SLOT_CAPACITY }, (_, i) => i + 1).map((n) => {
-                const other = taken.get(n);
-                const selected = slot === n;
-                return (
-                  <button
-                    key={n}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    onClick={() => set(slotKey, n)}
-                    className={`min-h-11 px-3 rounded-lg border text-left text-sm transition-colors ${
-                      selected
-                        ? other
-                          ? "border-danger/50 bg-danger/10 text-fg"
-                          : "border-brand/50 bg-brand/10 text-fg"
-                        : "border-line-mid text-fg-soft hover:bg-fill-2"
-                    }`}
-                  >
-                    <span className="tabular-nums font-medium">Cupo {n}</span>
-                    <span className={`block text-xs truncate ${other ? (selected ? "text-danger" : "text-fg-faint") : "text-ok"}`}>
-                      {other ? `Ocupado por ${other}` : "Libre"}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-            {taken.size >= DEFAULT_SLOT_CAPACITY && (
-              <p className="text-xs text-warn mt-1">
-                Esta cuenta ya tiene {DEFAULT_SLOT_CAPACITY} proyectos. Usa otro correo, libera un cupo o márcala como Pro en «Cuentas y cupos».
-              </p>
-            )}
-          </div>
-        )}
-      </fieldset>
-    );
-  }
-
+  const host = hostOf(p.accessUrl ?? p.linkUrl);
+  const svc = servicios(p, inv, live);
+  const grave = problemas.some((x) => x.grave);
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        onSave();
-      }}
-      className="space-y-4"
+    <button
+      type="button"
+      onClick={onToggle}
+      aria-expanded={open}
+      className={`w-full text-left px-4 py-3 grid grid-cols-[minmax(0,1fr)_32px] lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_32px] gap-x-4 gap-y-2 items-center transition-colors ${
+        open ? "bg-fill" : "hover:bg-fill"
+      }`}
     >
-      <datalist id="platform-emails">
-        {knownEmails.map((e) => <option key={e} value={e} />)}
-      </datalist>
+      <div className="min-w-0">
+        <p className="text-fg text-sm font-medium flex items-center gap-2 min-w-0">
+          <span className="truncate">{p.name}</span>
+          {p.hasConfidential && (
+            <span title="Tiene información confidencial" className="text-fg-faint shrink-0">
+              <Icon d={LOCAL_ICON.lock} className="w-4 h-4" />
+              <span className="sr-only">Tiene información confidencial</span>
+            </span>
+          )}
+          {problemas.length > 0 && (
+            <span className={`inline-flex items-center gap-1 shrink-0 text-xs ${grave ? "text-danger" : "text-warn"}`} title={problemas.map((x) => x.texto).join("\n")}>
+              <Icon d={LOCAL_ICON.alert} className="w-4 h-4" />
+              <span className="sr-only">{problemas.length === 1 ? "1 problema" : `${problemas.length} problemas`}</span>
+            </span>
+          )}
+        </p>
+        <p className="text-fg-faint text-xs truncate">{[host ?? "Sin enlace", projectName].filter(Boolean).join(" · ")}</p>
+      </div>
+      <Icon d={ICON.chevronDown} className={`w-4 h-4 text-fg-ghost justify-self-end lg:order-last transition-transform ${open ? "rotate-180" : ""}`} />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {textField("name", "Nombre", "Nombre del proyecto")}
-        {textField("accessUrl", "Acceso (URL del sitio o panel)", "https://…")}
-        {textField("linkUrl", "Link (si es distinto del acceso)", "https://…")}
-        {textField("githubEmail", "Cuenta de GitHub", "cuenta@gmail.com", true)}
-        {accountField("supabase")}
-        {accountField("vercel")}
-        {textField("brevoEmail", "Cuenta de Brevo", "cuenta@gmail.com", true)}
-        <div className="md:col-span-2">
-          <label htmlFor="edit-notes" className="block text-xs text-fg-faint mb-1">Notas</label>
-          <textarea
-            id="edit-notes"
-            rows={3}
-            value={draft.notes ?? ""}
-            onChange={(e) => set("notes", e.target.value || null)}
-            placeholder="Lo que conviene recordar de este proyecto"
-            className={`${inputCls} py-2 resize-y`}
-          />
+      {/* Teléfono y tablet: un renglón con el estado de los tres servicios. */}
+      <ul className="col-span-2 flex flex-wrap gap-x-4 gap-y-1 lg:hidden" aria-label="Servicios">
+        {svc.map((s) => (
+          <li key={s.label} className={`flex items-center gap-2 text-xs min-w-0 ${s.linked ? "text-fg-dim" : "text-fg-faint"}`}>
+            <Dot tone={s.tone} />
+            <span>{s.label}</span>
+            {s.linked && s.sub && <span className="truncate max-w-[10rem] text-fg-faint">{s.sub}</span>}
+            {!s.linked && <span className="sr-only">sin conectar</span>}
+          </li>
+        ))}
+      </ul>
+
+      {/* Computadora: una columna por servicio. */}
+      {svc.map((s) => (
+        <div key={s.label} className="hidden lg:block min-w-0">
+          {s.linked ? (
+            <>
+              <p className="text-fg-soft text-sm truncate" title={s.main ?? undefined}>
+                {s.main}
+              </p>
+              {s.sub && (
+                <p className="flex items-center gap-2 text-xs text-fg-faint min-w-0">
+                  <Dot tone={s.tone} />
+                  <span className="truncate">{s.sub}</span>
+                </p>
+              )}
+            </>
+          ) : (
+            <span className="text-fg-ghost text-sm">—</span>
+          )}
         </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <button
-          type="submit"
-          disabled={busy || !String(draft.name ?? "").trim()}
-          className="px-4 min-h-11 bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold rounded-lg transition-colors disabled:opacity-50"
-        >
-          {busy ? "Guardando…" : "Guardar cambios"}
-        </button>
-        <button type="button" onClick={onCancel} className="px-4 min-h-11 text-fg-dim hover:text-fg text-sm rounded-lg">
-          Cancelar
-        </button>
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={busy}
-          className="ml-auto inline-flex items-center gap-2 px-4 min-h-11 text-danger hover:bg-danger/10 text-sm rounded-lg transition-colors disabled:opacity-50"
-        >
-          <Icon d={ICON.trash} />
-          Eliminar plataforma
-        </button>
-      </div>
-    </form>
+      ))}
+    </button>
   );
 }

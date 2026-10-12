@@ -13,6 +13,8 @@ import { ZonaLinea } from "@/components/empresa/clientes/zona-linea";
 import { EstadoSistemaPill } from "@/components/empresa/sistemas/estado";
 import { BotonCobrar } from "@/components/empresa/cobrar/asistente-cobrar";
 import { prisma } from "@/lib/prisma";
+import { plataformasDeCliente } from "@/lib/platforms/cliente";
+import { PlataformasCliente } from "@/components/empresa/clientes/plataformas-cliente";
 
 export const metadata = { title: "Cliente — Pime Suite" };
 
@@ -27,9 +29,10 @@ const tiempo = (d: Date) => {
 export default async function FichaCliente({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const u = await getEmpresaUser();
-  const [f, todos] = await Promise.all([
+  const [f, todos, plataformas] = await Promise.all([
     fichaCliente(u.id, id),
     prisma.client.findMany({ where: { userId: u.id, archivedAt: null }, orderBy: { name: "asc" }, select: { id: true, name: true, company: true } }),
+    plataformasDeCliente(u.id, id),
   ]);
   if (!f) notFound();
   const clientesCobro = todos.map((x) => ({ id: x.id, nombre: x.company || x.name }));
@@ -122,6 +125,8 @@ export default async function FichaCliente({ params }: { params: Promise<{ id: s
               </ul>
             ) : <p className="mt-3 text-sm text-fg-dim">Sin proyectos. Crea uno con sus fases y precios: de ahí salen la propuesta, las facturas y el avance que ve el cliente.</p>}
           </section>
+
+          <PlataformasCliente clientId={c.id} plataformas={plataformas} className={card} h2={h2} />
 
           <section className={card}>
             <div className="flex items-center justify-between gap-3"><h2 className={h2}>Facturas</h2><BotonCobrar clientes={clientesCobro} clienteInicial={c.id} etiqueta="Cobrar" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline" /></div>
