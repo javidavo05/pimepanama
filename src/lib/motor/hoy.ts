@@ -5,6 +5,7 @@
  *   verde = lo que entró
  * Todo en hora de Panamá (UTC−5) y con el mismo cálculo de saldo que la ficha y el proyecto.
  */
+import { SIN_INTERNOS } from "@/lib/clientes/interno";
 import { prisma } from "@/lib/prisma";
 import { pagadoEfectivo } from "@/lib/portal/saldo";
 import { avanceDeProyecto } from "@/lib/portal/avance";
@@ -33,11 +34,11 @@ export async function datosHoy(userId: string, ahora = new Date()) {
   const [calendario, facturas, pagos, entradas, tareas, citas, reuniones, sistemas, tickets, borradores, porConfirmar, ordenes, proyectos] = await Promise.all([
     eventosDelEquipo(userId, hoy, manana),
     prisma.document.findMany({
-      where: { userId, type: "FACTURA", status: { notIn: ["DRAFT", "CANCELLED", "PAID"] } },
+      where: { userId, type: "FACTURA", status: { notIn: ["DRAFT", "CANCELLED", "PAID"] }, ...SIN_INTERNOS },
       select: { id: true, number: true, title: true, status: true, total: true, amountPaid: true, dueDate: true, clientId: true, clientName: true, client: { select: { name: true, company: true } }, paymentSchedules: { where: { status: { in: ["PENDING", "OVERDUE"] } }, select: { id: true, description: true, amount: true, dueDate: true } } },
     }),
-    prisma.payment.findMany({ where: { userId, status: "confirmado", documentId: { not: null } }, select: { documentId: true, amount: true, status: true } }),
-    prisma.payment.findMany({ where: { userId, status: "confirmado", paidAt: { gte: mesPasado } }, select: { amount: true, paidAt: true } }),
+    prisma.payment.findMany({ where: { userId, status: "confirmado", documentId: { not: null }, ...SIN_INTERNOS }, select: { documentId: true, amount: true, status: true } }),
+    prisma.payment.findMany({ where: { userId, status: "confirmado", paidAt: { gte: mesPasado }, ...SIN_INTERNOS }, select: { amount: true, paidAt: true } }),
     prisma.task.findMany({ where: { userId, completed: false, dueDate: { lt: manana } }, orderBy: { dueDate: "asc" }, take: 40, select: { id: true, title: true, dueDate: true, allDay: true, projectId: true, project: { select: { name: true } } } }),
     prisma.booking.findMany({ where: { userId, startTime: { gte: hoy, lt: manana }, status: { notIn: ["CANCELLED"] } }, orderBy: { startTime: "asc" }, select: { id: true, startTime: true, attendeeName: true, eventType: { select: { title: true } } } }),
     prisma.meeting.findMany({ where: { userId, meetingDate: { gte: hoy, lt: manana } }, orderBy: { meetingDate: "asc" }, select: { id: true, title: true, meetingDate: true, project: { select: { name: true } } } }),

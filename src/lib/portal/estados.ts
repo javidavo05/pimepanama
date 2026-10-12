@@ -15,6 +15,20 @@ export const TICKET_TIPO_LABEL: Record<TicketTipo, string> = {
   incidente: "Alerta del sistema",
 };
 
+/** Tickets del equipo para los productos de la empresa interna (migración 0049). */
+export const TICKET_TIPOS_INTERNOS = ["bug", "mejora", "tarea", "incidente"] as const;
+export type TicketTipoInterno = (typeof TICKET_TIPOS_INTERNOS)[number];
+export const TICKET_TIPO_INTERNO_LABEL: Record<TicketTipoInterno, string> = {
+  bug: "Error",
+  mejora: "Mejora",
+  tarea: "Tarea",
+  incidente: "Incidente",
+};
+/** Cómo se llama un tipo de ticket, sea de cliente o interno. */
+export function etiquetaTipoTicket(kind: string): string {
+  return (TICKET_TIPO_LABEL as Record<string, string>)[kind] ?? (TICKET_TIPO_INTERNO_LABEL as Record<string, string>)[kind] ?? kind;
+}
+
 export const TICKET_ESTADOS = ["abierto", "en_revision", "esperando_cliente", "en_progreso", "resuelto", "cerrado"] as const;
 export type TicketEstado = (typeof TICKET_ESTADOS)[number];
 /** Cómo lo lee el cliente: siempre dice quién tiene la pelota. */

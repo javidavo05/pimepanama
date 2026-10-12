@@ -13,7 +13,7 @@ import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { invitarPersona, enviarRecuperacion } from "@/lib/portal/invitaciones";
 import { registrarEvento } from "@/lib/portal/eventos";
 import { decidirPagoReportado, facturarHoras, fijarEstimado, registrarHoras, registrarPago, responderComoPime, avanceDeFaseEvento, sugerirGarantia, clientePrincipal } from "@/lib/portal/empresa";
-import { FASE_COBRO, FASE_ESTADOS, PAGO_METODOS, PROYECTO_TIPOS, TICKET_PRIORIDADES, TICKET_TIPOS, esUno } from "@/lib/portal/estados";
+import { FASE_COBRO, FASE_ESTADOS, PAGO_METODOS, PROYECTO_TIPOS, TICKET_PRIORIDADES, TICKET_TIPOS, TICKET_TIPOS_INTERNOS, esUno } from "@/lib/portal/estados";
 import { dinero } from "@/lib/portal/datos";
 import { getSiteUrl } from "@/lib/site-url";
 
@@ -103,18 +103,23 @@ export async function quitarAccesoAction(_: Estado, form: FormData): Promise<Est
 export async function crearTicketEquipoAction(_: Estado, form: FormData): Promise<Estado> {
   const u = await getEmpresaUser();
   const clientId = txt(form.get("clientId"), 60);
-  const c = await prisma.client.findFirst({ where: { id: clientId, userId: u.id }, select: { id: true } });
+  const c = await prisma.client.findFirst({ where: { id: clientId, userId: u.id }, select: { id: true, internal: true } });
   if (!c) return { error: "Elige un cliente." };
   const titulo = txt(form.get("titulo"), 160), detalle = txt(form.get("detalle"), 8000);
   const tipo = txt(form.get("tipo"), 20) || "soporte", prioridad = txt(form.get("prioridad"), 20) || "normal";
   if (!titulo) return { error: "Escribe el título del ticket." };
-  if (!esUno(TICKET_TIPOS, tipo) || !esUno(TICKET_PRIORIDADES, prioridad)) return { error: "Tipo o prioridad no válidos." };
-  const projectId = txt(form.get("projectId"), 60) || null;
+  // La empresa interna usa los tipos del equipo (error, mejora, tarea, incidente).
+  if (!(c.internal ? esUno(TICKET_TIPOS_INTERNOS, tipo) : esUno(TICKET_TIPOS, tipo)) || !esUno(TICKET_PRIORIDADES, prioridad)) return { error: "Tipo o prioridad no válidos." };
+  const projectIdPedido = txt(form.get("projectId"), 60) || null;
+  // El proyecto tiene que ser del cliente elegido.
+  const projectId = projectIdPedido
+    ? (await prisma.project.findFirst({ where: { id: projectIdPedido, userId: u.id, OR: [{ clientId }, { clients: { some: { clientId } } }] }, select: { id: true } }))?.id ?? null
+    : null;
   const t = await prisma.ticket.create({
     data: { userId: u.id, clientId, projectId, kind: tipo, priority: prioridad, title: titulo, source: "empresa", openedByEmpresaUserId: u.id, status: "en_revision", lastPimeActivityAt: new Date(),
       messages: detalle ? { create: { authorType: "pime", empresaUserId: u.id, body: detalle, internal: form.get("interno") === "1" } } : undefined },
   });
-  await registrarEvento({ userId: u.id, clientId, projectId, entityType: "ticket", entityId: t.id, kind: "ticket_abierto", title: `Abrimos el ticket ${t.number}: ${titulo}`, visibility: "cliente", actorEmpresaUserId: u.id });
+  await registrarEvento({ userId: u.id, clientId, projectId, entityType: "ticket", entityId: t.id, kind: "ticket_abierto", title: `Abrimos el ticket ${t.number}: ${titulo}`, visibility: c.internal ? "interno" : "cliente", actorEmpresaUserId: u.id });
   refrescar(clientId);
   redirect(`/empresa/tickets/${t.id}`);
 }

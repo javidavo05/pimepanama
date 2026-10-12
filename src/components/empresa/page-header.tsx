@@ -72,7 +72,7 @@ export function PageHeader({
 export const seg = {
   group: "grid grid-flow-col auto-cols-fr gap-1 p-1 bg-fill border border-line rounded-xl sm:inline-grid",
   item: (active: boolean) =>
-    `inline-flex items-center justify-center gap-2 min-h-10 sm:min-h-9 px-3 rounded-lg text-sm font-medium transition-colors ${
+    `inline-flex items-center justify-center gap-2 min-h-11 sm:min-h-9 px-3 rounded-lg text-sm font-medium transition-colors ${
       active ? "bg-panel text-fg shadow-sm" : "text-fg-dim hover:text-fg"
     }`,
 };

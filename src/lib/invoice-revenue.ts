@@ -1,3 +1,4 @@
+import { SIN_INTERNOS } from "@/lib/clientes/interno";
 /**
  * Fuente de verdad económica: facturas pagadas (PAID) o parcialmente pagadas
  * (PARTIALLY_PAID). Las cotizaciones aceptadas no cuentan como ingreso — evita
@@ -61,6 +62,8 @@ export function paidInvoiceWhere(userId: string) {
     type: "FACTURA" as const,
     status: { in: ["PAID", "PARTIALLY_PAID"] as ("PAID" | "PARTIALLY_PAID")[] },
     total: { not: null },
+    // Lo facturado a la empresa interna no es ingreso.
+    ...SIN_INTERNOS,
   };
 }
 

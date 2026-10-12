@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { reglasDe, tarifaDe, formatoHoras } from "@/lib/portal/horas";
 import { sugerirGarantia } from "@/lib/portal/empresa";
 import { dinero } from "@/lib/portal/datos";
-import { TICKET_ESTADO_LABEL, TICKET_TIPO_LABEL, type TicketEstado, type TicketTipo } from "@/lib/portal/estados";
+import { TICKET_ESTADO_LABEL, etiquetaTipoTicket, type TicketEstado } from "@/lib/portal/estados";
 import { EstimarTicket, GarantiaToggle, HorasForm, ResponderTicket } from "@/components/empresa/clientes/formularios";
 import { ZonaLinea } from "@/components/empresa/clientes/zona-linea";
 
@@ -41,7 +41,7 @@ export default async function TicketEquipo({ params }: { params: Promise<{ id: s
         <Link href={`/empresa/clientes/${t.client.id}`} className="truncate hover:text-fg-mute">{t.client.company || t.client.name}</Link>
       </nav>
       <header className={card}>
-        <p className="text-fg-dim text-xs font-semibold uppercase tracking-widest">{t.number} · {TICKET_TIPO_LABEL[t.kind as TicketTipo] ?? t.kind} · {t.source === "portal" ? "desde su cuenta" : t.source === "sistema" ? "alerta del sistema" : "abierto por Pime"}</p>
+        <p className="text-fg-dim text-xs font-semibold uppercase tracking-widest">{t.number} · {etiquetaTipoTicket(t.kind)} · {t.source === "portal" ? "desde su cuenta" : t.source === "sistema" ? "alerta del sistema" : "abierto por Pime"}</p>
         <h1 className="mt-1 text-fg text-2xl font-semibold tracking-tight break-words">{t.title}</h1>
         <p className="mt-2 flex flex-wrap gap-2 text-xs">
           <span className="rounded-full px-2.5 py-1 font-semibold bg-brand/10 text-brand-fg">{TICKET_ESTADO_LABEL[t.status as TicketEstado] ?? t.status}</span>

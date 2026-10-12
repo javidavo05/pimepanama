@@ -79,3 +79,17 @@ test("completitud: si todo está marcado «No aplica», queda en 100 %", () => {
   assert.equal(c.aplican, 0);
   assert.equal(c.pct, 100);
 });
+
+test("completitud: producto de la empresa interna ⇒ cotización, cobro y portal no aplican solos", () => {
+  const interno: DatosCompletitud = { ...vacio, clientes: [{ id: "pime" }], interno: true };
+  const c = completitudProyecto(interno);
+  for (const k of ["acuerdo", "cobro", "portal"]) {
+    const r = c.requisitos.find((x) => x.key === k)!;
+    assert.ok(r.auto, k);
+    assert.equal(r.accion, r.ok ? null : r.accion);
+  }
+  assert.equal(c.aplican, 6); // cliente, fases, repo, vercel, supabase, reunión
+  assert.ok(!c.faltan.some((r) => ["acuerdo", "cobro", "portal"].includes(r.key)));
+  // El mismo proyecto sin la marca de interno sí los exige.
+  assert.equal(completitudProyecto({ ...interno, interno: false }).aplican, 9);
+});

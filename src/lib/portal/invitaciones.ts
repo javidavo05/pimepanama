@@ -29,8 +29,10 @@ export async function invitarPersona(opts: {
 }): Promise<ResultadoInvitacion> {
   const email = opts.email.trim().toLowerCase();
   if (!correoValido(email)) return { ok: false, error: "Escribe un correo válido." };
-  const client = await prisma.client.findFirst({ where: { id: opts.clientId, userId: opts.empresaUserId }, select: { id: true, name: true, company: true } });
+  const client = await prisma.client.findFirst({ where: { id: opts.clientId, userId: opts.empresaUserId }, select: { id: true, name: true, company: true, internal: true } });
   if (!client) return { ok: false, error: "No encontré ese cliente." };
+  // La empresa interna somos nosotros: no tiene cuenta de cliente ni recibe correos.
+  if (client.internal) return { ok: false, error: "Es la empresa interna: no lleva cuenta de cliente." };
   const equipo = await prisma.empresaUser.findFirst({ where: { email: { equals: email, mode: "insensitive" } }, select: { id: true } });
   if (equipo) return { ok: false, error: "Ese correo es de una cuenta del equipo Pime. Usa otro correo para el cliente." };
 

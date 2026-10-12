@@ -18,12 +18,14 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
     const month = searchParams.get("month");
+    const projectId = searchParams.get("projectId");
     const range = parseMonth(month);
 
     const expenses = await prisma.expense.findMany({
       where: {
         userId: user.id,
         ...(status ? { status: status as never } : {}),
+        ...(projectId ? { projectId } : {}),
         ...(range
           ? {
               OR: [
@@ -48,6 +50,10 @@ export async function POST(request: Request) {
     const user = await requireEmpresaUser(request);
     const data = await request.json();
     const status = data.status ?? "PENDING";
+    // El proyecto (producto) del gasto tiene que ser del mismo equipo.
+    const projectId = typeof data.projectId === "string" && data.projectId
+      ? (await prisma.project.findFirst({ where: { id: data.projectId, userId: user.id }, select: { id: true } }))?.id ?? null
+      : null;
     const expense = await prisma.expense.create({
       data: {
         userId: user.id,
@@ -61,6 +67,7 @@ export async function POST(request: Request) {
         isRecurring: Boolean(data.isRecurring),
         vendor: data.vendor ?? null,
         notes: data.notes ?? null,
+        projectId,
       },
     });
     return NextResponse.json(expense, { status: 201 });

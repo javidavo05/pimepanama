@@ -16,6 +16,7 @@ import { prisma } from "@/lib/prisma";
 import { plataformasDeCliente } from "@/lib/platforms/cliente";
 import { PlataformasCliente } from "@/components/empresa/clientes/plataformas-cliente";
 import { FichaTabs } from "@/components/empresa/clientes/ficha-tabs";
+import { totalesGastos } from "@/lib/gastos/totales";
 
 export const metadata = { title: "Cliente — Pime Suite" };
 
@@ -33,11 +34,22 @@ export default async function FichaCliente({ params, searchParams }: { params: P
   const u = await getEmpresaUser();
   const [f, todos, plataformas] = await Promise.all([
     fichaCliente(u.id, id),
-    prisma.client.findMany({ where: { userId: u.id, archivedAt: null }, orderBy: { name: "asc" }, select: { id: true, name: true, company: true } }),
+    prisma.client.findMany({ where: { userId: u.id, archivedAt: null, internal: false }, orderBy: { name: "asc" }, select: { id: true, name: true, company: true } }),
     // Si falla, la pestaña Plataformas lo dice; el resto de la ficha sigue.
     plataformasDeCliente(u.id, id).catch(() => null),
   ]);
   if (!f) notFound();
+  // Empresa interna: su dinero son los gastos de sus productos, no cobros.
+  const interna = f.cliente.internal;
+  const gastos = interna
+    ? await prisma.expense.findMany({
+        where: { userId: u.id, project: { OR: [{ clientId: id }, { clients: { some: { clientId: id } } }] } },
+        select: { projectId: true, title: true, vendor: true, amount: true, status: true, isRecurring: true, paidAt: true, dueDate: true, createdAt: true },
+      }).catch(() => null)
+    : [];
+  const aGasto = (g: NonNullable<typeof gastos>[number]) => ({ ...g, amount: Number(g.amount) });
+  const totalInterna = totalesGastos((gastos ?? []).map(aGasto));
+  const porProducto = f.proyectos.map((p) => ({ id: p.id, nombre: p.name, t: totalesGastos((gastos ?? []).filter((g) => g.projectId === p.id).map(aGasto)) }));
   const clientesCobro = todos.map((x) => ({ id: x.id, nombre: x.company || x.name }));
   const c = f.cliente;
   const premium = c.brandLine === "premium";
@@ -59,26 +71,41 @@ export default async function FichaCliente({ params, searchParams }: { params: P
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${premium ? "bg-sand/15 text-sand-fg" : "bg-brand/10 text-brand-fg"}`}>{premium ? "Premium" : "Normal"} · {dinero(f.tarifa)}/h</span>
-              <span className={`rounded-full px-3 py-1 text-xs font-semibold ${cuenta[1]}`}>{cuenta[0]}</span>
+              {interna ? (
+                <span className="rounded-full px-3 py-1 text-xs font-semibold bg-fill-2 text-fg-mute">Interna · nuestros productos</span>
+              ) : (
+                <>
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${premium ? "bg-sand/15 text-sand-fg" : "bg-brand/10 text-brand-fg"}`}>{premium ? "Premium" : "Normal"} · {dinero(f.tarifa)}/h</span>
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${cuenta[1]}`}>{cuenta[0]}</span>
+                </>
+              )}
             </div>
             <h1 className="text-fg text-2xl font-semibold tracking-tight break-words">{c.company || c.name}</h1>
             <p className="text-fg-dim text-sm break-words">{[c.company ? c.name : null, c.email, c.phone, c.ruc ? `RUC ${c.ruc}` : null].filter(Boolean).join(" · ") || "Sin datos de contacto"}</p>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:justify-end">
             <Link href={`/empresa/tickets/nuevo?clientId=${c.id}`} className={btn.primary}>+ Ticket</Link>
-            <BotonCobrar clientes={clientesCobro} clienteInicial={c.id} etiqueta="Cobrar" className={btn.secondary} />
+            {interna ? (
+              <Link href="/empresa/por-pagar?nuevo=1" className={btn.secondary}>+ Gasto</Link>
+            ) : (
+              <BotonCobrar clientes={clientesCobro} clienteInicial={c.id} etiqueta="Cobrar" className={btn.secondary} />
+            )}
             <Link href={`/empresa/proyectos/nuevo?clientId=${c.id}`} className={btn.secondary}>+ Proyecto</Link>
             <Link href={`/empresa/clientes/${c.id}/editar`} className={btn.secondary}>Editar</Link>
           </div>
         </div>
         <dl className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
-          {[
+          {(interna ? [
+            ["Gastos este mes", dinero(totalInterna.mes), totalInterna.mes > 0 ? "text-fg" : "text-fg-dim"],
+            ["Gastos este año", dinero(totalInterna.anio), totalInterna.anio > 0 ? "text-fg" : "text-fg-dim"],
+            ["Recurrente al mes", dinero(totalInterna.recurrenteMensual), totalInterna.recurrenteMensual > 0 ? "text-fg" : "text-fg-dim"],
+            ["Tickets abiertos", String(f.abiertos.length), f.abiertos.length ? "text-brand-fg" : "text-fg-dim"],
+          ] : [
             ["Por cobrar", dinero(f.saldo.pendiente), f.saldo.pendiente > 0 ? "text-fg" : "text-fg-dim"],
             ["Pagado", dinero(f.saldo.pagado), "text-ok"],
             ["Horas por facturar", porFacturar ? `${dinero(porFacturar)} · ${formatoHoras(minutosPorFacturar)}` : "—", porFacturar ? "text-sand-fg" : "text-fg-dim"],
             ["Tickets abiertos", String(f.abiertos.length), f.abiertos.length ? "text-brand-fg" : "text-fg-dim"],
-          ].map(([k, v, cls]) => (
+          ]).map(([k, v, cls]) => (
             <div key={k} className="rounded-xl bg-fill px-4 py-3 min-w-0"><dt className="text-fg-dim text-xs">{k}</dt><dd className={`font-semibold font-mono text-base truncate ${cls}`}>{v}</dd></div>
           ))}
         </dl>
@@ -112,6 +139,44 @@ export default async function FichaCliente({ params, searchParams }: { params: P
                             </ul>
                           </section>
                         )}
+
+              {interna && (
+                <section className={card}>
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className={h2}>Gastos por producto</h2>
+                    <Link href="/empresa/por-pagar?nuevo=1" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">+ Gasto</Link>
+                  </div>
+                  {gastos === null ? (
+                    <p className="mt-2 text-sm text-danger" role="alert">No se pudieron cargar los gastos. Recarga la página.</p>
+                  ) : !porProducto.length ? (
+                    <p className="mt-2 text-sm text-fg-dim">Sin productos todavía. Crea un proyecto por producto y sus gastos se suman aquí.</p>
+                  ) : (
+                    <>
+                      <div className="mt-3 hidden sm:grid grid-cols-[minmax(0,1fr)_repeat(3,7rem)] gap-3 text-xs text-fg-dim">
+                        <span>Producto</span><span className="text-right">Este mes</span><span className="text-right">Este año</span><span className="text-right">Recurrente/mes</span>
+                      </div>
+                      <ul className="mt-1 divide-y divide-line">
+                        {porProducto.map((p) => (
+                          <li key={p.id}>
+                            <Link href={`/empresa/proyectos/${p.id}?tab=dinero`} className="grid grid-cols-3 gap-x-3 gap-y-1 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg sm:grid-cols-[minmax(0,1fr)_repeat(3,7rem)] sm:items-center">
+                              <span className="col-span-3 sm:col-span-1 text-fg text-sm font-medium truncate">{p.nombre}</span>
+                              {[["Mes", p.t.mes], ["Año", p.t.anio], ["Recurrente", p.t.recurrenteMensual]].map(([k, v]) => (
+                                <span key={k as string} className="font-mono text-sm sm:text-right tabular-nums">
+                                  <span className="sm:hidden text-fg-dim text-xs font-sans">{k} </span>
+                                  <span className={(v as number) > 0 ? "text-fg" : "text-fg-faint"}>{dinero(v as number)}</span>
+                                </span>
+                              ))}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                      {totalInterna.cantidad === 0 && (
+                        <p className="mt-3 text-sm text-fg-dim">Todavía no hay gastos anotados. Registra lo que cuesta cada producto —hosting, base de datos, dominios— y aquí ves cuánto gasta cada uno.</p>
+                      )}
+                    </>
+                  )}
+                </section>
+              )}
 
               <section className={card}>
                 <h2 className={h2}>Lo urgente</h2>
@@ -288,7 +353,11 @@ export default async function FichaCliente({ params, searchParams }: { params: P
                   ))}
                 </ul>
               )}
-              <div className="mt-4"><InvitarForm clientId={c.id} email={c.email} nombre={c.name} hayPrincipal={!!principal} /></div>
+              {interna ? (
+                <p className="mt-2 text-sm text-fg-dim">Es la empresa interna: no lleva cuenta de cliente ni recibe correos. Sus productos se manejan desde Proyectos y Tickets.</p>
+              ) : (
+                <div className="mt-4"><InvitarForm clientId={c.id} email={c.email} nombre={c.name} hayPrincipal={!!principal} /></div>
+              )}
             </section>
           </div>
         ),

@@ -11,6 +11,9 @@ import {
   type MonthlySummary,
 } from "@/lib/ledger";
 import { btn, seg } from "@/components/empresa/page-header";
+import { sugerirGasto } from "@/lib/gastos/sugerir";
+
+const CAMPO = "w-full min-w-0 min-h-11 bg-panel border border-line-mid rounded-lg px-3 py-2 text-base sm:text-sm text-fg focus:outline-none focus:border-brand";
 
 export type SerializedExpense = {
   id: string;
@@ -24,13 +27,19 @@ export type SerializedExpense = {
   isRecurring: boolean;
   vendor: string | null;
   notes: string | null;
+  projectId: string | null;
   createdAt: string;
 };
+
+type ProyectoOpcion = { id: string; name: string; interno: boolean };
 
 interface PorPagarClientProps {
   initialExpenses: SerializedExpense[];
   summary: MonthlySummary;
   ledgerEntries: LedgerEntry[];
+  proyectos: ProyectoOpcion[];
+  /** Precarga desde un proyecto: ?proyecto=<id>&nuevo=1&titulo=… */
+  inicial?: { projectId: string; abrir: boolean; titulo: string };
 }
 
 type Tab = "gastos" | "libro";
@@ -52,6 +61,8 @@ export function PorPagarClient({
   initialExpenses,
   summary: initialSummary,
   ledgerEntries: initialLedger,
+  proyectos,
+  inicial,
 }: PorPagarClientProps) {
   const router = useRouter();
   const expenses = initialExpenses;
@@ -59,18 +70,38 @@ export function PorPagarClient({
   const ledger = initialLedger;
   const [tab, setTab] = useState<Tab>("gastos");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("PENDING");
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(!!inicial?.abrir);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const nombreProyecto = useMemo(() => new Map(proyectos.map((p) => [p.id, p.name])), [proyectos]);
 
-  const [form, setForm] = useState({
-    title: "",
-    amount: "",
-    category: "OTRO" as ExpenseCategory,
-    dueDate: "",
-    vendor: "",
-    isRecurring: false,
-    notes: "",
-  });
+  const vacio = () => {
+    const titulo = inicial?.titulo ?? "";
+    const s = sugerirGasto(titulo);
+    return {
+      title: titulo,
+      amount: "",
+      category: (s?.category ?? "OTRO") as ExpenseCategory,
+      dueDate: "",
+      vendor: s?.vendor ?? "",
+      isRecurring: false,
+      notes: "",
+      projectId: inicial?.projectId ?? "",
+    };
+  };
+  const [form, setForm] = useState(vacio);
+  // Categoría y proveedor se sugieren por el título mientras no se hayan tocado a mano.
+  const [tocado, setTocado] = useState({ category: false, vendor: false });
+
+  function cambiarTitulo(title: string) {
+    const s = sugerirGasto(title);
+    setForm((f) => ({
+      ...f,
+      title,
+      ...(s && !tocado.category ? { category: s.category as ExpenseCategory } : {}),
+      ...(s?.vendor && !tocado.vendor ? { vendor: s.vendor } : {}),
+    }));
+  }
 
   const filtered = useMemo(() => {
     if (statusFilter === "ALL") return expenses;
@@ -94,7 +125,11 @@ export function PorPagarClient({
   }
 
   async function createExpense() {
-    if (!form.title.trim() || !form.amount) return;
+    if (!form.title.trim() || !form.amount) {
+      setError("Escribe qué es y el monto.");
+      return;
+    }
+    setError(null);
     setBusy(true);
     try {
       const res = await fetch("/api/empresa/expenses", {
@@ -108,10 +143,15 @@ export function PorPagarClient({
           vendor: form.vendor || null,
           isRecurring: form.isRecurring,
           notes: form.notes || null,
+          projectId: form.projectId || null,
         }),
       });
-      if (!res.ok) return;
-      setForm({ title: "", amount: "", category: "OTRO", dueDate: "", vendor: "", isRecurring: false, notes: "" });
+      if (!res.ok) {
+        setError("No se pudo guardar el gasto. Revisa la conexión y vuelve a intentar.");
+        return;
+      }
+      setForm({ ...vacio(), title: "", projectId: form.projectId });
+      setTocado({ category: false, vendor: false });
       setShowForm(false);
       refreshData();
     } finally {
@@ -191,8 +231,9 @@ export function PorPagarClient({
       {tab === "gastos" && (
         <>
           <div className="flex flex-col gap-3 sm:flex-row-reverse sm:items-center sm:justify-between">
-            <button type="button" onClick={() => setShowForm((v) => !v)} aria-expanded={showForm} className={btn.primary}>
-              + Gasto
+            {/* Con el formulario abierto, su «Guardar» es la acción principal: este botón pasa a cerrarlo. */}
+            <button type="button" onClick={() => setShowForm((v) => !v)} aria-expanded={showForm} className={showForm ? btn.secondary : btn.primary}>
+              {showForm ? "Cerrar formulario" : "+ Gasto"}
             </button>
             <div className={seg.group} aria-label="Filtrar por estado">
               {(["ALL", "PENDING", "PAID"] as StatusFilter[]).map((f) => (
@@ -212,63 +253,110 @@ export function PorPagarClient({
           {showForm && (
             <div className="bg-fill border border-line rounded-xl p-4 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <input
-                  placeholder="Título (ej. Vercel Pro)"
-                  value={form.title}
-                  onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                  className="bg-panel border border-line-mid rounded-lg px-3 py-2 text-sm text-fg"
-                />
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="Monto USD"
-                  value={form.amount}
-                  onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
-                  className="bg-panel border border-line-mid rounded-lg px-3 py-2 text-sm text-fg"
-                />
-                <select
-                  value={form.category}
-                  onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as ExpenseCategory }))}
-                  className="bg-panel border border-line-mid rounded-lg px-3 py-2 text-sm text-fg"
-                >
-                  {EXPENSE_CATEGORIES.map((c) => (
-                    <option key={c} value={c}>{getCategoryLabel(c)}</option>
-                  ))}
-                </select>
-                <input
-                  type="date"
-                  value={form.dueDate}
-                  onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
-                  className="bg-panel border border-line-mid rounded-lg px-3 py-2 text-sm text-fg"
-                />
-                <input
-                  placeholder="Proveedor (opcional)"
-                  value={form.vendor}
-                  onChange={(e) => setForm((f) => ({ ...f, vendor: e.target.value }))}
-                  className="bg-panel border border-line-mid rounded-lg px-3 py-2 text-sm text-fg sm:col-span-2"
-                />
+                <label className="sm:col-span-2 block">
+                  <span className="block text-fg-dim text-xs mb-1">Proyecto</span>
+                  <select
+                    value={form.projectId}
+                    onChange={(e) => setForm((f) => ({ ...f, projectId: e.target.value }))}
+                    className={`${CAMPO} field-select pr-8`}
+                  >
+                    <option value="">Gasto general de la empresa</option>
+                    {proyectos.some((x) => x.interno) && (
+                      <optgroup label="Productos de Pime">
+                        {proyectos.filter((x) => x.interno).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                      </optgroup>
+                    )}
+                    {proyectos.some((x) => !x.interno) && (
+                      <optgroup label="Proyectos de clientes">
+                        {proyectos.filter((x) => !x.interno).map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                      </optgroup>
+                    )}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="block text-fg-dim text-xs mb-1">Qué es</span>
+                  <input
+                    placeholder="Vercel Pro, dominio, Supabase…"
+                    value={form.title}
+                    onChange={(e) => cambiarTitulo(e.target.value)}
+                    className={CAMPO}
+                  />
+                </label>
+                <label className="block">
+                  <span className="block text-fg-dim text-xs mb-1">Monto en USD</span>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.01"
+                    placeholder="0.00"
+                    value={form.amount}
+                    onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
+                    className={CAMPO}
+                  />
+                </label>
+                <label className="block">
+                  <span className="block text-fg-dim text-xs mb-1">Categoría</span>
+                  <select
+                    value={form.category}
+                    onChange={(e) => {
+                      setTocado((t) => ({ ...t, category: true }));
+                      setForm((f) => ({ ...f, category: e.target.value as ExpenseCategory }));
+                    }}
+                    className={`${CAMPO} field-select pr-8`}
+                  >
+                    {EXPENSE_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>{getCategoryLabel(c)}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="block text-fg-dim text-xs mb-1">Vence o se pagó</span>
+                  <input
+                    type="date"
+                    value={form.dueDate}
+                    onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
+                    className={CAMPO}
+                  />
+                </label>
+                <label className="block sm:col-span-2">
+                  <span className="block text-fg-dim text-xs mb-1">Proveedor</span>
+                  <input
+                    placeholder="Opcional"
+                    value={form.vendor}
+                    onChange={(e) => {
+                      setTocado((t) => ({ ...t, vendor: true }));
+                      setForm((f) => ({ ...f, vendor: e.target.value }));
+                    }}
+                    className={CAMPO}
+                  />
+                </label>
               </div>
-              <label className="flex items-center gap-2 text-sm text-fg-dim">
+              <label className="flex items-center gap-3 min-h-11 text-sm text-fg-dim">
                 <input
                   type="checkbox"
                   checked={form.isRecurring}
                   onChange={(e) => setForm((f) => ({ ...f, isRecurring: e.target.checked }))}
+                  className="h-5 w-5"
                 />
-                Gasto recurrente (mensual)
+                Se paga cada mes
               </label>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={createExpense}
-                className="px-4 py-2 bg-ok-solid hover:bg-ok-solid/85 text-on-solid text-sm rounded-lg disabled:opacity-50"
-              >
-                Guardar gasto
+              {error && <p className="text-danger text-sm" role="alert">{error}</p>}
+              <button type="button" disabled={busy} onClick={createExpense} className={btn.primary}>
+                {busy ? "Guardando…" : form.projectId ? `Guardar gasto de ${nombreProyecto.get(form.projectId) ?? "este proyecto"}` : "Guardar gasto"}
               </button>
             </div>
           )}
 
           {grouped.length === 0 ? (
-            <p className="text-fg-faint text-sm text-center py-12">Sin gastos registrados.</p>
+            <div className="bg-panel border border-line rounded-2xl px-6 py-12 text-center">
+              <p className="text-fg-mute font-medium">{statusFilter === "ALL" ? "Todavía no hay gastos" : statusFilter === "PENDING" ? "Nada pendiente de pagar" : "Ningún gasto pagado todavía"}</p>
+              <p className="text-fg-dim text-sm mt-1 max-w-md mx-auto">Anota lo que cuesta cada producto —hosting, base de datos, dominios, herramientas— y cada proyecto muestra cuánto gasta al mes y al año.</p>
+              {!showForm && (
+                <button type="button" onClick={() => setShowForm(true)} className={`${btn.secondary} mt-6`}>
+                  Registrar el primer gasto
+                </button>
+              )}
+            </div>
           ) : (
             grouped.map(([monthKey, items]) => (
               <div key={monthKey}>
@@ -290,6 +378,9 @@ export function PorPagarClient({
                           {exp.isRecurring && (
                             <span className="text-[10px] text-brand-fg">↻ recurrente</span>
                           )}
+                          {exp.projectId && nombreProyecto.get(exp.projectId) && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-brand/10 text-brand-fg">{nombreProyecto.get(exp.projectId)}</span>
+                          )}
                         </div>
                         {exp.vendor && <p className="text-fg-faint text-xs mt-0.5">{exp.vendor}</p>}
                         {exp.dueDate && (
@@ -304,7 +395,7 @@ export function PorPagarClient({
                           type="button"
                           disabled={busy}
                           onClick={() => togglePaid(exp)}
-                          className={`px-3 py-1.5 text-xs rounded-lg border transition-colors ${
+                          className={`min-h-11 sm:min-h-9 px-3 text-xs rounded-lg border transition-colors ${
                             exp.status === "PAID"
                               ? "bg-ok/10 border-ok/25 text-ok"
                               : "bg-warn/10 border-warn/25 text-warn hover:bg-warn/20"
@@ -315,7 +406,8 @@ export function PorPagarClient({
                         <button
                           type="button"
                           onClick={() => removeExpense(exp.id)}
-                          className="text-fg-ghost hover:text-danger text-sm px-1"
+                          aria-label={`Eliminar ${exp.title}`}
+                          className="inline-flex items-center justify-center w-11 h-11 sm:w-9 sm:h-9 rounded-lg text-fg-ghost hover:text-danger text-sm"
                         >
                           ×
                         </button>

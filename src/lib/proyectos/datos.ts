@@ -12,7 +12,8 @@ export async function datosCompletitud(userId: string, projectIds?: string[]): P
     select: {
       id: true, clientId: true, totalBudget: true, repoOwner: true, repoName: true, githubCheck: true,
       portalVisible: true, financingPlan: true, linkWaived: true,
-      clients: { select: { clientId: true } },
+      clients: { select: { clientId: true, client: { select: { internal: true } } } },
+      client: { select: { internal: true } },
       phases: { where: fasesVigentes, select: { price: true } },
       platforms: { select: { id: true, vercelProjectId: true, supabaseProjectRef: true } },
       documents: { where: { type: { in: ["COTIZACION", "FACTURA"] }, status: { not: "CANCELLED" } }, select: { type: true, status: true } },
@@ -41,6 +42,7 @@ export async function datosCompletitud(userId: string, projectIds?: string[]): P
           facturas: p.documents.filter((d) => d.type === "FACTURA" && d.status !== "DRAFT").length,
           planDeCobro: p.financingPlan != null,
           waived: p.linkWaived,
+          interno: p.clients.some((c) => c.client.internal) || (!p.clients.length && !!p.client?.internal),
         } satisfies DatosCompletitud,
       ];
     }),

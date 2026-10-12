@@ -21,7 +21,7 @@ export default async function HoyPage() {
   const user = await getEmpresaUser();
   const [d, clientes, pagadas] = await Promise.all([
     datosHoy(user.id),
-    prisma.client.findMany({ where: { userId: user.id, archivedAt: null }, orderBy: { name: "asc" }, select: { id: true, name: true, company: true } }),
+    prisma.client.findMany({ where: { userId: user.id, archivedAt: null, internal: false }, orderBy: { name: "asc" }, select: { id: true, name: true, company: true } }),
     prisma.document.findMany({ where: paidInvoiceWhere(user.id), select: PAID_INVOICE_REVENUE_SELECT, orderBy: { issueDate: "asc" } }),
   ]);
   const filas = pagadas.map((x) => ({ issueDate: x.issueDate, ...effectiveInvoiceAmount(x) }));

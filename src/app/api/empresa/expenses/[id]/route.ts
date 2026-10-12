@@ -22,6 +22,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (data.isRecurring !== undefined) update.isRecurring = Boolean(data.isRecurring);
     if (data.vendor !== undefined) update.vendor = data.vendor;
     if (data.notes !== undefined) update.notes = data.notes;
+    if (data.projectId !== undefined) {
+      update.projectId = data.projectId
+        ? (await prisma.project.findFirst({ where: { id: data.projectId, userId: user.id }, select: { id: true } }))?.id ?? null
+        : null;
+    }
 
     if (data.status !== undefined) {
       update.status = data.status;

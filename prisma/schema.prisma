@@ -322,6 +322,9 @@ model Client {
   /// Tarifa por hora propia; si es null se usa la de la línea en CompanyConfig.
   hourlyRate         Decimal?        @db.Decimal(10, 2)
   portalEnabled      Boolean         @default(false)
+  /// La propia empresa (Pime Panamá) para sus productos internos (migración 0048): no suma a cobros ni
+  /// ingresos, no tiene cuenta de cliente ni recibe correos.
+  internal           Boolean         @default(false)
   archivedAt         DateTime?
   portalUsers        ClientUser[]
   changeOrders       ChangeOrder[]
@@ -580,6 +583,7 @@ model Project {
   githubCheckAt   DateTime?
   githubAccount   GithubAccount?  @relation(fields: [githubAccountId], references: [id])
   platforms       Platform[]
+  expenses        Expense[]
   /// Requisitos de «Qué le falta» marcados «No aplica» (migración 0047): no cuentan en el porcentaje.
   linkWaived      String[]        @default([])
   createdAt       DateTime        @default(now())
@@ -963,11 +967,15 @@ model Expense {
   isRecurring Boolean         @default(false)
   vendor      String?
   notes       String?
+  /// Proyecto (producto) al que pertenece el gasto (migración 0048).
+  projectId   String?
+  project     Project?        @relation(fields: [projectId], references: [id], onDelete: SetNull)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
   @@index([userId, status])
   @@index([userId, dueDate])
+  @@index([projectId])
 }
 
 // ─── Mail Hub ────────────────────────────────────────────────────────────────

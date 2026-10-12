@@ -6,7 +6,10 @@
  * da por verificado solo si la última verificación con GitHub quedó guardada sin error (Project.githubCheck).
  *
  * Un requisito marcado «No aplica» (Project.linkWaived, migración 0047) no cuenta en el porcentaje.
- * El del portal deja de aplicar solo cuando el proyecto es interno (sin cliente marcado «No aplica»).
+ * Algunos dejan de aplicar solos («auto»):
+ * - el portal, cuando el proyecto no tiene cliente y se marcó «No aplica»;
+ * - cotización o contrato, plan de cobro y portal, cuando el cliente es la empresa interna (Client.internal):
+ *   un producto propio no se cotiza, no se cobra ni tiene cuenta de cliente.
  */
 
 export const REQUISITOS = ["cliente", "fases", "acuerdo", "repo", "vercel", "supabase", "reunion", "portal", "cobro"] as const;
@@ -36,7 +39,12 @@ export type DatosCompletitud = {
   facturas: number;
   planDeCobro: boolean;
   waived: string[];
+  /** El proyecto es de la empresa interna (algún cliente con Client.internal). */
+  interno?: boolean;
 };
+
+/** Requisitos que no aplican a un producto de la empresa interna. */
+export const NO_APLICAN_A_INTERNOS: readonly RequisitoKey[] = ["acuerdo", "cobro", "portal"];
 
 export type Requisito = {
   key: RequisitoKey;
@@ -66,7 +74,7 @@ export function completitudProyecto(d: DatosCompletitud): Completitud {
   const conVercel = d.plataformas.find((p) => p.vercel) ?? null;
   const conSupabase = d.plataformas.find((p) => p.supabase) ?? null;
   const verificado = !!d.repo && !!d.githubCheck && !d.githubCheck.error;
-  const interno = waived.has("cliente");
+  const sinCliente = waived.has("cliente");
   const nuevaPlataforma = `/empresa/platforms?nueva=1&proyecto=${d.id}`;
   const abrirPlataforma = (id: string) => `/empresa/platforms?abrir=${id}`;
 
@@ -155,7 +163,7 @@ export function completitudProyecto(d: DatosCompletitud): Completitud {
   ];
 
   const requisitos: Requisito[] = base.map((r) => {
-    const auto = r.key === "portal" && interno;
+    const auto = (r.key === "portal" && sinCliente) || (!!d.interno && NO_APLICAN_A_INTERNOS.includes(r.key));
     const w = waived.has(r.key) && r.waivable;
     return { ...r, waived: w, auto, accion: r.ok ? null : r.accion };
   });

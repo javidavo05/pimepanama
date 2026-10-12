@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { SIN_INTERNOS } from "@/lib/clientes/interno";
 import { INVOICE_PARTIAL_SCHEDULE_DESC, QUOTE_BALANCE_SCHEDULE_DESC } from "@/lib/quote-balance";
 
 /**
@@ -80,7 +81,7 @@ type SchedRow = Awaited<ReturnType<typeof fetchSchedules>>[number];
 
 function fetchDocs(userId: string) {
   return prisma.document.findMany({
-    where: { userId, type: { in: ["FACTURA", "COTIZACION"] } },
+    where: { userId, type: { in: ["FACTURA", "COTIZACION"] }, ...SIN_INTERNOS },
     select: DOC_SELECT,
     orderBy: [{ dueDate: "asc" }, { issueDate: "asc" }],
   });
@@ -88,7 +89,7 @@ function fetchDocs(userId: string) {
 
 function fetchSchedules(userId: string) {
   return prisma.paymentSchedule.findMany({
-    where: { userId, status: { in: ["PENDING", "OVERDUE"] } },
+    where: { userId, status: { in: ["PENDING", "OVERDUE"] }, document: SIN_INTERNOS },
     orderBy: { createdAt: "asc" },
   });
 }
