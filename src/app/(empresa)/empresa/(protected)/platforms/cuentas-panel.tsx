@@ -171,7 +171,7 @@ export function CuentasPanel({
               const i = inv.byKey.get(accountKey(provider, a.email));
               const key = a.id ?? a.email;
               return (
-                <li key={key} className="grid gap-4 px-4 py-4 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] lg:items-start">
+                <li key={key} className="grid gap-4 px-4 py-4 lg:grid-cols-2 xl:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_auto] lg:items-start">
                   <div className="min-w-0 space-y-1">
                     <div className="flex items-center gap-2 min-w-0">
                       <p className="text-fg text-sm font-semibold truncate" title={a.email}>
@@ -186,7 +186,7 @@ export function CuentasPanel({
                     {i ? <Uso inv={i} /> : null}
                     {i ? <Cupos inv={i} /> : null}
                   </div>
-                  <div className="grid grid-cols-2 gap-2 lg:flex lg:flex-wrap lg:items-center lg:justify-end">
+                  <div className="grid grid-cols-2 gap-2 lg:col-span-2 xl:col-span-1 lg:flex lg:flex-wrap lg:items-center lg:justify-end">
                     <button
                       type="button"
                       role="switch"
