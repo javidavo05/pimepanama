@@ -47,6 +47,8 @@ export function AsistenteChat() {
   useEffect(() => { try { const g = sessionStorage.getItem(CLAVE); if (g) setMsgs((JSON.parse(g) as Msg[]).map((m) => ({ ...m, acciones: m.acciones ?? m.propuestas, propuestas: undefined }))); } catch { /* sin almacenamiento */ } }, []);
   useEffect(() => { try { sessionStorage.setItem(CLAVE, JSON.stringify(msgs.slice(-30))); } catch { /* sin almacenamiento */ } }, [msgs]);
   useEffect(() => { lista.current?.scrollTo({ top: lista.current.scrollHeight, behavior: "smooth" }); }, [msgs, pensando]);
+  // Al abrir, lo último a la vista (las tarjetas por confirmar suelen estar al final).
+  useEffect(() => { if (abierto) requestAnimationFrame(() => lista.current?.scrollTo({ top: lista.current.scrollHeight })); }, [abierto]);
   // La caja crece con lo que se escribe o dicta, hasta su tope (max-h en CSS); de ahí en adelante se desplaza.
   useLayoutEffect(() => {
     const el = caja.current;
@@ -245,7 +247,7 @@ function Tarjetas({ acciones, onDecidir, onConfirmarTodo, onAbrir }: { acciones:
               <h3 className={`text-xs font-semibold ${g.clave === "hecho" ? "text-ok" : g.clave === "error" ? "text-danger" : "text-brand-fg"}`}>{g.titulo}{g.xs.length > 1 ? ` · ${g.xs.length}` : ""}</h3>
             </header>
             <ul className="divide-y divide-line">
-              {g.xs.map((a) => <Fila key={a.id} a={a} onDecidir={onDecidir} onAbrir={onAbrir} />)}
+              {g.xs.map((a) => <Fila key={a.id} a={a} secundario={pendientes.length > 1} onDecidir={onDecidir} onAbrir={onAbrir} />)}
             </ul>
             {pendientes.length > 1 && (
               <div className="border-t border-line p-3">
@@ -261,7 +263,8 @@ function Tarjetas({ acciones, onDecidir, onConfirmarTodo, onAbrir }: { acciones:
   );
 }
 
-function Fila({ a, onDecidir, onAbrir }: { a: Accion; onDecidir: (p: Accion, x: "confirmar" | "cancelar" | "deshacer") => void; onAbrir: () => void }) {
+/** Con varias por confirmar, la acción principal es «Confirmar las N» y cada fila confirma en secundario. */
+function Fila({ a, secundario, onDecidir, onAbrir }: { a: Accion; secundario: boolean; onDecidir: (p: Accion, x: "confirmar" | "cancelar" | "deshacer") => void; onAbrir: () => void }) {
   const apagada = a.estado === "deshecha" || a.estado === "cancelada";
   return (
     <li className="space-y-2 px-4 py-3">
@@ -272,7 +275,7 @@ function Fila({ a, onDecidir, onAbrir }: { a: Accion; onDecidir: (p: Accion, x: 
       {a.estado === "propuesta" && (
         <div className="grid grid-cols-2 gap-2">
           <button type="button" disabled={a.ocupado} onClick={() => onDecidir(a, "cancelar")} className="min-h-11 rounded-xl border border-line-mid text-sm font-semibold text-fg-mute hover:text-fg disabled:opacity-50">Cancelar</button>
-          <button type="button" disabled={a.ocupado} onClick={() => onDecidir(a, "confirmar")} className="min-h-11 rounded-xl bg-brand text-on-brand text-sm font-semibold hover:bg-brand-hi disabled:opacity-50">{a.ocupado ? "Haciendo…" : "Confirmar"}</button>
+          <button type="button" disabled={a.ocupado} onClick={() => onDecidir(a, "confirmar")} className={`min-h-11 rounded-xl text-sm font-semibold disabled:opacity-50 ${secundario ? "border border-brand/40 text-brand-fg hover:bg-fill" : "bg-brand text-on-brand hover:bg-brand-hi"}`}>{a.ocupado ? "Haciendo…" : "Confirmar"}</button>
         </div>
       )}
       {a.estado === "hecha" && (

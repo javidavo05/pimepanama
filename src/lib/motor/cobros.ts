@@ -105,6 +105,7 @@ async function crearFactura(u: Equipo, p: { clientId: string; projectId?: string
   const impuesto = p.sinImpuesto ? 0 : Number(u.config?.taxRatePercent ?? 0) || 0;
   const subtotal = r2(p.lineas.reduce((a, l) => a + l.unitPrice, 0));
   const taxAmount = r2((subtotal * impuesto) / 100);
+  // Emitida con la fecha del pago; el saldo que quede vence desde hoy, no desde esa fecha (si no, nacería vencida).
   const emision = p.emitida?.fecha && /^\d{4}-\d{2}-\d{2}$/.test(p.emitida.fecha) ? new Date(`${p.emitida.fecha}T12:00:00Z`) : new Date();
   const doc = await prisma.$transaction(async (tx) => {
     const number = await siguienteNumero(u.id, "FACTURA", u.config?.invoicePrefix ?? "FAC", tx);
@@ -114,7 +115,7 @@ async function crearFactura(u: Equipo, p: { clientId: string; projectId?: string
         clientName: c.name, clientEmail: c.email, clientCompany: c.company, clientAddress: c.address, clientRuc: c.ruc,
         content: { currency: "USD", lineItems: p.lineas.map((l) => ({ description: l.description, quantity: 1, unitPrice: l.unitPrice, taxPercent: impuesto, discount: 0 })), ...(p.emitida?.origenPago ? { origenPago: true } : {}) },
         subtotal, taxAmount, total: r2(subtotal + taxAmount), currency: "USD",
-        issueDate: emision, dueDate: p.cuotas?.length ? p.cuotas[p.cuotas.length - 1].dueDate : new Date(emision.getTime() + (u.config?.paymentTermsDays ?? 15) * 86_400_000),
+        issueDate: emision, dueDate: p.cuotas?.length ? p.cuotas[p.cuotas.length - 1].dueDate : new Date(Math.max(emision.getTime(), Date.now()) + (u.config?.paymentTermsDays ?? 15) * 86_400_000),
       },
     });
     if (p.cuotas?.length) await tx.paymentSchedule.createMany({ data: p.cuotas.map((q) => ({ userId: u.id, documentId: d.id, description: q.description, amount: q.amount, dueDate: q.dueDate })) });
