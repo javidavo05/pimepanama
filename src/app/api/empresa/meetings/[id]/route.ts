@@ -46,7 +46,7 @@ export const GET = withEmpresaIdRoute(async (req, { params }) => {
 export const PATCH = withEmpresaIdRoute(async (req, { params }) => {
   const user = await requireEmpresaUser(req);
   const { id } = await params;
-  const existing = await prisma.meeting.findFirst({ where: { id, userId: user.id }, select: { id: true } });
+  const existing = await prisma.meeting.findFirst({ where: { id, userId: user.id }, select: { id: true, clientId: true } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
@@ -74,10 +74,12 @@ export const PATCH = withEmpresaIdRoute(async (req, { params }) => {
     } else {
       const project = await prisma.project.findFirst({
         where: { id: body.projectId, userId: user.id },
-        select: { id: true },
+        select: { id: true, clientId: true },
       });
       if (!project) return NextResponse.json({ error: "Proyecto no encontrado" }, { status: 404 });
       data.projectId = project.id;
+      // Asignada de un toque (desde la lista): si la reunión no tenía cliente, hereda el del proyecto.
+      if (body.clientId === undefined && !existing.clientId && project.clientId) data.clientId = project.clientId;
     }
   }
 

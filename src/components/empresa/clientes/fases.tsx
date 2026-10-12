@@ -37,8 +37,8 @@ export function FaseFila({ projectId, f, indice }: { projectId: string; f: FaseV
       </form>
       <Msg e={eA} />
       <div className="flex flex-wrap gap-2">
-        <button type="button" className="text-xs font-semibold text-fg-dim hover:text-fg min-h-10 px-2" onClick={() => setEditar((v) => !v)}>{editar ? "Cerrar edición" : "Editar fase"}</button>
-        {f.invoiceId ? <Link href={`/empresa/facturas/${f.invoiceId}`} className="text-xs font-semibold text-brand-fg min-h-10 px-2 inline-flex items-center">Factura {f.invoiceNumber}</Link>
+        <button type="button" className="text-xs font-semibold text-fg-dim hover:text-fg min-h-11 sm:min-h-10 px-2" onClick={() => setEditar((v) => !v)}>{editar ? "Cerrar edición" : "Editar fase"}</button>
+        {f.invoiceId ? <Link href={`/empresa/facturas/${f.invoiceId}`} className="text-xs font-semibold text-brand-fg min-h-11 sm:min-h-10 px-2 inline-flex items-center">Factura {f.invoiceNumber}</Link>
           : f.price > 0 && <form action={aF}><input type="hidden" name="faseId" value={f.id} /><button className="text-xs font-semibold text-sand-fg hover:underline min-h-10 px-2" disabled={pF}>Facturar esta fase</button></form>}
         {!f.invoiceId && <form action={aB}><input type="hidden" name="faseId" value={f.id} /><button className="text-xs font-semibold text-fg-faint hover:text-danger min-h-10 px-2" disabled={pB}>Borrar</button></form>}
       </div>
@@ -128,7 +128,7 @@ export function SincronizarGithub({ projectId, repo }: { projectId: string; repo
     <form action={a} className="flex flex-wrap items-center gap-3">
       <input type="hidden" name="projectId" value={projectId} />
       <span className="text-xs text-fg-dim">GitHub: <span className="font-mono text-fg-mute">{repo}</span></span>
-      <button className="text-xs font-semibold text-brand-fg hover:underline min-h-10" disabled={p}>{p ? "Sincronizando…" : "Sincronizar avance ahora"}</button>
+      <button className="text-xs font-semibold text-brand-fg hover:underline min-h-11 sm:min-h-10" disabled={p}>{p ? "Sincronizando…" : "Sincronizar avance ahora"}</button>
       <Msg e={e} />
     </form>
   );

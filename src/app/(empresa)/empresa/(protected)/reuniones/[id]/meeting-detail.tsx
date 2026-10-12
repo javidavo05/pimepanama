@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "@/components/empresa/link";
+import { AsignarProyecto } from "@/components/empresa/reuniones/asignar-proyecto";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { formatDuration, formatTimestamp } from "@/lib/meetings/transcript";
@@ -68,6 +69,8 @@ interface MeetingDetailProps {
   technical: TechnicalMinutes | null;
   /** El proyecto tiene repositorio conectado y la IA vio el código real */
   hasRepo: boolean;
+  /** Proyecto sugerido cuando la reunión no tiene (por cliente, título o notas). */
+  sugerido?: { id: string; name: string; motivo: string } | null;
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -149,6 +152,7 @@ export function MeetingDetail({
   executive,
   technical,
   hasRepo,
+  sugerido,
 }: MeetingDetailProps) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>(
@@ -367,6 +371,14 @@ export function MeetingDetail({
                   )}
                   {client ? ` · ${client.name}` : ""}
                 </p>
+                {!project && (
+                  <AsignarProyecto
+                    meetingId={meeting.id}
+                    proyectos={projects}
+                    sugerido={sugerido}
+                    className="mt-3"
+                  />
+                )}
               </>
             )}
           </div>

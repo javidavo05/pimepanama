@@ -83,6 +83,7 @@ export function AsistentePlataforma({
   inv,
   platforms,
   clienteInicial,
+  proyectoInicial,
   onCreado,
   onRefresh,
 }: {
@@ -94,6 +95,8 @@ export function AsistentePlataforma({
   inv: Inventarios;
   platforms: SerializedPlatform[];
   clienteInicial?: string | null;
+  /** Proyecto elegido de entrada (del cliente inicial), cuando se llega desde un proyecto. */
+  proyectoInicial?: string | null;
   onCreado: (p: SerializedPlatform) => void;
   onRefresh: () => void;
 }) {
@@ -112,17 +115,17 @@ export function AsistentePlataforma({
   const proyecto = cliente?.projects.find((p) => p.id === d.projectId) ?? null;
   const nombres = useMemo(() => [d.name, proyecto?.name ?? "", cliente?.name ?? ""].filter(Boolean), [d.name, proyecto?.name, cliente?.name]);
 
-  // Al abrir: cliente de la URL (desde la ficha) y su proyecto si tiene uno solo.
+  // Al abrir: cliente de la URL (desde la ficha) y su proyecto: el de la URL o, si tiene uno solo, ese.
   useEffect(() => {
     if (!abierto) return;
     const c = clienteInicial ? clients.find((x) => x.id === clienteInicial) : undefined;
-    const p = c?.projects.length === 1 ? c.projects[0] : undefined;
+    const p = (proyectoInicial ? c?.projects.find((x) => x.id === proyectoInicial) : undefined) ?? (c?.projects.length === 1 ? c.projects[0] : undefined);
     setD({ ...VACIO, clientId: c?.id ?? "", projectId: p?.id ?? "", name: p?.name ?? c?.name ?? "" });
     setPaso(1);
     setCreada(null);
     setError(null);
     propuesto.current = new Set();
-  }, [abierto, clienteInicial, clients]);
+  }, [abierto, clienteInicial, proyectoInicial, clients]);
 
   function elegirCliente(clientId: string) {
     const c = clients.find((x) => x.id === clientId);

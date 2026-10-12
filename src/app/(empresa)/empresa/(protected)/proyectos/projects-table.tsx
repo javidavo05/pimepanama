@@ -14,6 +14,8 @@ export interface ProjectRow {
   total: number;
   endDate: string | null;
   next: { title: string; dueDate: string; allDay: boolean } | null;
+  /** «Qué le falta»: porcentaje de enlace y cuántos requisitos faltan (null si no se pudo calcular). */
+  enlace: { pct: number; faltan: number } | null;
 }
 
 type Scope = "current" | "closed" | "all";
@@ -35,11 +37,15 @@ export function ProjectsTable({ rows }: { rows: ProjectRow[] }) {
   const current = rows.filter((r) => IN_PROGRESS.has(r.status));
   const closed = rows.filter((r) => !IN_PROGRESS.has(r.status));
   const [scope, setScope] = useState<Scope>(current.length > 0 ? "current" : "all");
-  const shown = scope === "current" ? current : scope === "closed" ? closed : rows;
+  // Para enlazar todos los proyectos de una pasada: solo los incompletos, el que menos tiene primero.
+  const [incompletos, setIncompletos] = useState(false);
+  const enScope = scope === "current" ? current : scope === "closed" ? closed : rows;
+  const faltantes = enScope.filter((r) => r.enlace && r.enlace.faltan > 0);
+  const shown = incompletos ? [...faltantes].sort((a, b) => a.enlace!.pct - b.enlace!.pct) : enScope;
 
   return (
     <div>
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <Segmented
           label="Mostrar proyectos"
           value={scope}
@@ -50,9 +56,25 @@ export function ProjectsTable({ rows }: { rows: ProjectRow[] }) {
             { value: "all", label: "Todos", count: rows.length },
           ]}
         />
+        <button
+          type="button"
+          aria-pressed={incompletos}
+          onClick={() => setIncompletos((v) => !v)}
+          className={`inline-flex items-center gap-2 min-h-11 sm:min-h-10 px-3 rounded-lg border text-sm font-medium transition-colors ${
+            incompletos ? "border-brand/40 bg-brand/10 text-brand-fg" : "border-line text-fg-dim hover:text-fg-mute"
+          }`}
+        >
+          Incompletos
+          <span className="text-xs tabular-nums text-fg-faint">{faltantes.length}</span>
+        </button>
       </div>
 
-      {shown.length === 0 ? (
+      {shown.length === 0 && incompletos ? (
+        <div className="bg-panel border border-line rounded-xl px-6 py-12 text-center">
+          <p className="text-fg-mute font-medium">Todos tienen lo que necesitan</p>
+          <p className="text-fg-dim text-sm mt-1">Cliente, acuerdo, código, plataforma, reuniones y cobro enlazados, o marcados «No aplica».</p>
+        </div>
+      ) : shown.length === 0 ? (
         <div className="bg-panel border border-line rounded-xl px-6 py-12 text-center">
           <p className="text-fg-mute font-medium">
             {scope === "current" ? "No hay proyectos en curso" : "No hay proyectos cerrados"}
@@ -88,8 +110,18 @@ export function ProjectsTable({ rows }: { rows: ProjectRow[] }) {
                   </span>
                   <div className="min-w-0">
                     <p className="text-sm font-medium text-fg truncate group-hover:text-brand-fg transition-colors">{r.name}</p>
-                    <p className={`text-xs truncate ${r.clients.length ? "text-fg-dim" : "text-warn"}`}>
-                      {r.clients.length ? r.clients.join(" · ") : "Sin cliente asignado"}
+                    <p className="text-xs truncate">
+                      {r.enlace && (
+                        <span
+                          className={`tabular-nums ${r.enlace.faltan ? "text-warn" : "text-ok"}`}
+                          title={r.enlace.faltan ? `Le faltan ${r.enlace.faltan} cosas por enlazar` : "Tiene todo enlazado"}
+                        >
+                          {r.enlace.pct} % enlazado ·{" "}
+                        </span>
+                      )}
+                      <span className={r.clients.length ? "text-fg-dim" : "text-warn"}>
+                        {r.clients.length ? r.clients.join(" · ") : "Sin cliente asignado"}
+                      </span>
                     </p>
                   </div>
                 </div>

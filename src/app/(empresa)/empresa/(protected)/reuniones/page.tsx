@@ -2,7 +2,10 @@ import Link from "@/components/empresa/link";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { formatDuration } from "@/lib/meetings/transcript";
-import { meetingSearchFilter } from "@/lib/meetings/search";
+import { meetingSearchFilter, SIN_PROYECTO } from "@/lib/meetings/search";
+import { proyectosCandidatos } from "@/lib/proyectos/candidatos";
+import { MOTIVO_LABEL, sugerirProyecto } from "@/lib/proyectos/sugerir-proyecto";
+import { AsignarProyecto } from "@/components/empresa/reuniones/asignar-proyecto";
 import { MEETING_STATUS_COLOR, MEETING_STATUS_LABEL } from "./status";
 import { MeetingsFilters } from "./meetings-filters";
 import { DeleteMeetingButton } from "./delete-meeting-button";
@@ -21,7 +24,9 @@ export default async function ReunionesPage({
   const filters = await searchParams;
   const filtering = Boolean(filters.q || filters.projectId || filters.clientId || filters.status);
 
-  const [meetings, pendingSync, projects, clients] = await Promise.all([
+  const soloSinProyecto = filters.projectId === SIN_PROYECTO;
+
+  const [meetings, pendingSync, projects, clients, sinProyecto, candidatos] = await Promise.all([
     prisma.meeting.findMany({
       where: meetingSearchFilter(user.id, filters),
       include: {
@@ -45,7 +50,18 @@ export default async function ReunionesPage({
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
+    prisma.meeting.count({ where: { userId: user.id, projectId: null } }),
+    proyectosCandidatos(user.id),
   ]);
+
+  // Para asignar: primero los proyectos en curso, después los cerrados.
+  const enCurso = (s: string) => (s === "ACTIVE" || s === "PAUSED" ? 0 : 1);
+  const opciones = [...candidatos].sort((a, b) => enCurso(a.status) - enCurso(b.status)).map((p) => ({ id: p.id, name: p.name }));
+  const sugerenciaDe = (m: { title: string; clientId: string | null; manualContext: string | null }) => {
+    const s = sugerirProyecto(m, candidatos);
+    const p = s && candidatos.find((x) => x.id === s.projectId);
+    return s && p ? { id: p.id, name: p.name, motivo: MOTIVO_LABEL[s.motivo] } : null;
+  };
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -74,9 +90,28 @@ export default async function ReunionesPage({
 
       <PendingOfflineMeetings />
 
-      <MeetingsFilters projects={projects} clients={clients} />
+      {sinProyecto > 0 && !soloSinProyecto && (
+        <div className="mb-4 flex flex-col gap-3 rounded-2xl border border-warn/30 bg-warn/[0.06] p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-fg-mute min-w-0">
+            <span className="font-semibold text-warn">
+              {sinProyecto} {sinProyecto === 1 ? "reunión sin proyecto" : "reuniones sin proyecto"}
+            </span>
+            {" "}· no suman contexto a su proyecto ni cuentan en lo que le falta.
+          </p>
+          <Link href={`/empresa/reuniones?projectId=${SIN_PROYECTO}`} className={`${btn.secondary} shrink-0`}>
+            Asignarles proyecto
+          </Link>
+        </div>
+      )}
 
-      {meetings.length === 0 && filtering ? (
+      <MeetingsFilters projects={projects} clients={clients} sinProyecto={sinProyecto} />
+
+      {meetings.length === 0 && soloSinProyecto ? (
+        <div className="bg-panel border border-line rounded-2xl p-12 text-center">
+          <p className="text-fg-dim font-medium">Todas las reuniones tienen proyecto</p>
+          <p className="text-fg-faint text-sm mt-1">Cada una suma su contexto a las siguientes reuniones de su proyecto.</p>
+        </div>
+      ) : meetings.length === 0 && filtering ? (
         <div className="bg-panel border border-line rounded-2xl p-12 text-center">
           <p className="text-fg-dim font-medium">Ninguna reunión coincide con esa búsqueda</p>
           <p className="text-fg-faint text-sm mt-1">
@@ -104,7 +139,8 @@ export default async function ReunionesPage({
             // El enlace y el botón de borrar van lado a lado dentro de la tarjeta:
             // un botón anidado en un <a> navega al pulsarlo, y encimado sobre el
             // enlace tapaba el título en el celular.
-            <div key={m.id} className="min-w-0 bg-panel border border-line hover:border-line-mid rounded-xl flex items-start transition-all">
+            <div key={m.id} className={`min-w-0 bg-panel border hover:border-line-mid rounded-xl transition-all ${m.project ? "border-line" : "border-warn/30"}`}>
+            <div className="flex items-start min-w-0">
             <Link
               href={`/empresa/reuniones/${m.id}`}
               className="flex-1 min-w-0 p-4 sm:p-6 pr-2 sm:pr-2 flex items-start gap-4 group"
@@ -122,7 +158,7 @@ export default async function ReunionesPage({
                   </span>
                 </div>
                 <p className="text-fg-dim text-sm truncate">
-                  {m.project ? m.project.name : <span className="text-warn">Sin proyecto — no acumula contexto</span>}
+                  {m.project ? m.project.name : <span className="text-warn">Sin proyecto</span>}
                   {m.client ? ` · ${m.client.name}` : ""}
                 </p>
                 <div className="flex items-center gap-4 mt-2 flex-wrap">
@@ -173,6 +209,15 @@ export default async function ReunionesPage({
               </svg>
             </Link>
             <DeleteMeetingButton id={m.id} title={m.title} />
+            </div>
+            {!m.project && (
+              <AsignarProyecto
+                meetingId={m.id}
+                proyectos={opciones}
+                sugerido={sugerenciaDe(m)}
+                className="border-t border-line px-4 sm:px-6 py-3"
+              />
+            )}
             </div>
           ))}
         </div>

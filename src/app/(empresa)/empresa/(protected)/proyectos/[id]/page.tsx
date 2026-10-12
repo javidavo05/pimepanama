@@ -6,15 +6,46 @@ import type { FinancingPlan } from "@/lib/financing";
 import { loadTaskWorkspace } from "@/lib/tasks";
 import { TaskWorkspace } from "@/components/empresa/tasks/task-workspace";
 import { ProjectTasks } from "@/components/empresa/tasks/project-tasks";
-import { ProjectDetailClient } from "./project-detail-client";
-import { FasesPanel } from "./fases-panel";
+import { ProjectDetailClient, type Tab } from "./project-detail-client";
+import { cargarFases, FasesPanel, OrdenesPanel } from "./fases-panel";
+import { MeetingsPanel } from "./meetings-panel";
+import { QueLeFalta } from "./que-le-falta";
 import { ZonaLinea } from "@/components/empresa/clientes/zona-linea";
 import { DineroProyecto } from "@/components/empresa/cobrar/dinero-proyecto";
 import { VerificacionGithubCard } from "@/components/empresa/cobrar/verificacion-github";
+import { EnlazarReuniones } from "@/components/empresa/reuniones/enlazar-reunion";
 import type { VerificacionGithub } from "@/lib/motor/verificar-github";
+import { datosCompletitud } from "@/lib/proyectos/datos";
+import { completitudProyecto } from "@/lib/proyectos/completitud";
+import { proyectosCandidatos } from "@/lib/proyectos/candidatos";
+import { MOTIVO_LABEL, sugerirProyecto } from "@/lib/proyectos/sugerir-proyecto";
+import { dinero } from "@/lib/portal/datos";
+import { formatoHoras } from "@/lib/portal/horas";
+import { TICKET_ESTADO_LABEL, type TicketEstado } from "@/lib/portal/estados";
+import { fechaCorta } from "@/lib/format-datetime";
+import { estadoRepo } from "@/lib/github/estado-repo";
 
 export const dynamic = "force-dynamic";
 
+const card = "bg-panel border border-line rounded-2xl p-4 sm:p-6 min-w-0";
+const h2 = "text-fg text-base font-semibold tracking-tight";
+const enlace = "inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline shrink-0";
+
+/** Una sección cuyo dato no cargó: lo dice y el resto del proyecto sigue. */
+function NoCargo({ titulo }: { titulo: string }) {
+  return (
+    <section className={card} role="alert">
+      <h2 className={h2}>{titulo}</h2>
+      <p className="mt-2 text-sm text-danger">No se pudo cargar. Recarga la página; si sigue, revisa la conexión con la base.</p>
+    </section>
+  );
+}
+
+/**
+ * Detalle del proyecto: «Qué le falta» arriba y el resto en pestañas.
+ * ?tab=resumen|tareas|reuniones|fases|dinero|repo|tickets|clientes — Resumen por defecto.
+ * ?orden=nueva&ticket=<id> (desde un ticket) abre Dinero con la orden de cambio a la vista.
+ */
 export default async function ProyectoDetailPage({
   params,
   searchParams,
@@ -25,11 +56,13 @@ export default async function ProyectoDetailPage({
   const [{ id }, { tab, orden, ticket }] = await Promise.all([params, searchParams]);
   const user = await getEmpresaUser();
 
-  const [project, allClients, workspace] = await Promise.all([
+  // Lo secundario falla por su cuenta (.catch → null): su pestaña lo dice y el resto del proyecto se ve.
+  const [project, allClients, workspace, fases, datos, tickets, horas, plataformas, sinProyecto, candidatos, cuentasGithub, tokenPropio] = await Promise.all([
     prisma.project.findFirst({
       where: { id, userId: user.id },
       include: {
         client: { select: { id: true, name: true, company: true } },
+        githubAccount: { select: { login: true } },
         clients: { include: { client: { select: { id: true, name: true, company: true } } } },
         deliverables: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
         meetings: {
@@ -49,6 +82,35 @@ export default async function ProyectoDetailPage({
     }),
     prisma.client.findMany({ where: { userId: user.id }, orderBy: { name: "asc" } }),
     loadTaskWorkspace(user.id, id),
+    cargarFases(id, user.id).catch(() => null),
+    datosCompletitud(user.id, [id]).catch(() => null),
+    prisma.ticket.findMany({
+      where: { userId: user.id, projectId: id },
+      orderBy: { updatedAt: "desc" },
+      take: 30,
+      select: { id: true, number: true, title: true, status: true, updatedAt: true, lastClientActivityAt: true, lastPimeActivityAt: true },
+    }).catch(() => null),
+    prisma.timeEntry.findMany({
+      where: { userId: user.id, projectId: id },
+      orderBy: { workDate: "desc" },
+      take: 20,
+      select: { id: true, workDate: true, billedMinutes: true, amount: true, note: true, invoiceId: true, ticket: { select: { number: true } } },
+    }).catch(() => null),
+    prisma.platform.findMany({
+      where: { userId: user.id, projectId: id },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, accessUrl: true, githubRepo: true, vercelProjectId: true, vercelProjectName: true, supabaseProjectRef: true },
+    }).catch(() => null),
+    prisma.meeting.findMany({
+      where: { userId: user.id, projectId: null },
+      orderBy: { meetingDate: "desc" },
+      take: 50,
+      select: { id: true, title: true, clientId: true, manualContext: true, meetingDate: true },
+    }).catch(() => null),
+    proyectosCandidatos(user.id).catch(() => []),
+    // Para el panel del repo: ¿hay con qué leer GitHub? (cuentas guardadas o el token propio)
+    prisma.githubAccount.count({ where: { userId: user.id } }).catch(() => 0),
+    prisma.empresaUser.findUnique({ where: { id: user.id }, select: { githubTokenEnc: true } }).catch(() => null),
   ]);
 
   if (!project) notFound();
@@ -61,8 +123,12 @@ export default async function ProyectoDetailPage({
       ? [project.client]
       : [];
 
+  // El mapa del repo no viaja al navegador entero: el panel recibe solo su resumen (estadoRepo).
+  const { repoSnapshot: _mapa, ...sinMapa } = project;
+  void _mapa;
+  const repoInicial = estadoRepo(project, cuentasGithub > 0 || Boolean(tokenPropio?.githubTokenEnc));
   const serialized = {
-    ...project,
+    ...sinMapa,
     totalBudget: project.totalBudget != null ? Number(project.totalBudget) : null,
     startDate: project.startDate?.toISOString() ?? null,
     endDate: project.endDate?.toISOString() ?? null,
@@ -112,6 +178,28 @@ export default async function ProyectoDetailPage({
 
   const lineaCliente = await prisma.client.findFirst({ where: { id: { in: projectClients.map((c) => c.id) }, brandLine: "premium" }, select: { brandLine: true } });
 
+  // «Qué le falta» y el punto de aviso de cada pestaña con algo pendiente.
+  const d = datos?.get(id);
+  const completitud = d ? completitudProyecto(d) : null;
+  const alertas: Partial<Record<Tab, boolean>> = {};
+  for (const r of completitud?.faltan ?? []) alertas[r.accion?.tipo === "pestana" ? r.accion.tab : "repo"] = true;
+
+  // Reuniones sin proyecto que parecen de este (por cliente, título o notas), primero; el resto, a elegir.
+  const sugeridas: { id: string; title: string; fecha: string; motivo: string | null }[] = [];
+  const otras: typeof sugeridas = [];
+  for (const m of sinProyecto ?? []) {
+    const s = sugerirProyecto(m, candidatos);
+    const fila = { id: m.id, title: m.title, fecha: fechaCorta(m.meetingDate.toISOString()), motivo: s ? MOTIVO_LABEL[s.motivo] : null };
+    (s?.projectId === id ? sugeridas : otras).push(fila);
+  }
+
+  const clienteId = projectClients[0]?.id ?? null;
+  const ticketsAbiertos = (tickets ?? []).filter((t) => t.status !== "resuelto" && t.status !== "cerrado").length;
+  const horasTotal = (horas ?? []).reduce((a, h) => a + Number(h.amount), 0);
+  const minutosTotal = (horas ?? []).reduce((a, h) => a + h.billedMinutes, 0);
+  const repo = project.repoOwner && project.repoName ? `${project.repoOwner}/${project.repoName}` : null;
+  const initialTab = orden === "nueva" || ticket ? "dinero" : (tab ?? "resumen");
+
   return (
     <ZonaLinea linea={lineaCliente?.brandLine}>
     <div className="max-w-6xl mx-auto">
@@ -127,18 +215,112 @@ export default async function ProyectoDetailPage({
         <span className="text-fg-dim truncate min-w-0 max-w-xs">{project.name}</span>
       </div>
 
-      <FasesPanel projectId={project.id} userId={user.id} ordenNueva={orden === "nueva"} ticketId={ticket} />
-
       <TaskWorkspace tasks={workspace.tasks} projects={workspace.projects}>
         <ProjectDetailClient
           project={serialized}
           allClients={allClients}
-          initialTab={tab === "tareas" ? "tareas" : "resumen"}
+          initialTab={initialTab}
+          alertas={alertas}
+          repoInicial={repoInicial}
+          counts={{ reuniones: project.meetings.length, tickets: ticketsAbiertos }}
+          queLeFalta={d ? <QueLeFalta projectId={project.id} datos={d} /> : <div className="mb-6"><NoCargo titulo="Qué le falta" /></div>}
           tasksPanel={<ProjectTasks projectId={project.id} />}
-          dineroPanel={<>
-            <DineroProyecto userId={user.id} projectId={project.id} clienteId={projectClients[0]?.id ?? null} clientes={allClients.filter((c) => !c.archivedAt).map((c) => ({ id: c.id, nombre: c.company || c.name }))} />
-            <VerificacionGithubCard projectId={project.id} repo={project.repoOwner && project.repoName ? `${project.repoOwner}/${project.repoName}` : null} check={(project.githubCheck as unknown as VerificacionGithub | null) ?? null} checkAt={project.githubCheckAt} />
-          </>}
+          reunionesPanel={
+            <div className="space-y-6">
+              <MeetingsPanel projectId={project.id} meetings={serialized.meetings} />
+              {sinProyecto ? <EnlazarReuniones projectId={project.id} sugeridas={sugeridas} otras={otras} /> : <NoCargo titulo="Reuniones sin proyecto" />}
+            </div>
+          }
+          fasesPanel={fases ? <FasesPanel p={fases} /> : <NoCargo titulo="Fases, avance y cobro" />}
+          dineroPanel={<DineroProyecto userId={user.id} projectId={project.id} clienteId={clienteId} clientes={allClients.filter((c) => !c.archivedAt).map((c) => ({ id: c.id, nombre: c.company || c.name }))} />}
+          ordenesPanel={fases ? <OrdenesPanel p={fases} ordenNueva={orden === "nueva"} ticketId={ticket} /> : <NoCargo titulo="Órdenes de cambio" />}
+          horasPanel={
+            horas ? (
+              <section className={card}>
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className={h2}>Horas</h2>
+                  {clienteId && <Link href={`/empresa/clientes/${clienteId}?tab=facturas`} className={enlace}>Registrar horas</Link>}
+                </div>
+                {horas.length ? (
+                  <>
+                    <p className="mt-1 text-fg-dim text-sm tabular-nums">{formatoHoras(minutosTotal)} · {dinero(horasTotal)}{horas.length === 20 ? " (las últimas 20)" : ""}</p>
+                    <ul className="mt-3 space-y-2 text-xs text-fg-dim">
+                      {horas.map((h) => (
+                        <li key={h.id} className="flex justify-between gap-3">
+                          <span className="min-w-0 truncate">{fechaCorta(h.workDate.toISOString())} · {h.ticket?.number ?? "General"}{h.note ? ` · ${h.note}` : ""}</span>
+                          <span className="font-mono shrink-0">{dinero(Number(h.amount))}{h.invoiceId ? " · facturada" : ""}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="mt-2 text-sm text-fg-dim">Sin horas en este proyecto. Se registran desde un ticket o desde la ficha del cliente, y se cobran con «Facturar horas».</p>
+                )}
+              </section>
+            ) : <NoCargo titulo="Horas" />
+          }
+          repoExtra={
+            <>
+              {repo && (
+                <div id="verificar-github" tabIndex={-1} className="scroll-mt-4 outline-none">
+                  <VerificacionGithubCard projectId={project.id} repo={repo} check={(project.githubCheck as unknown as VerificacionGithub | null) ?? null} checkAt={project.githubCheckAt} />
+                </div>
+              )}
+              {plataformas ? (
+                <section className={card}>
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 className={h2}>Plataformas</h2>
+                    <Link href={`/empresa/platforms?nueva=1&proyecto=${project.id}`} className={enlace}>+ Plataforma</Link>
+                  </div>
+                  {plataformas.length ? (
+                    <ul className="mt-3 divide-y divide-line">
+                      {plataformas.map((pl) => (
+                        <li key={pl.id}>
+                          <Link href={`/empresa/platforms?abrir=${pl.id}`} className="flex items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-fg text-sm font-medium [overflow-wrap:anywhere]">{pl.name}</span>
+                              <span className="block text-fg-dim text-xs [overflow-wrap:anywhere]">
+                                {[pl.githubRepo ?? "sin repo", pl.vercelProjectId ? `Vercel ${pl.vercelProjectName ?? "enlazado"}` : "sin Vercel", pl.supabaseProjectRef ? `Supabase ${pl.supabaseProjectRef}` : "sin Supabase"].join(" · ")}
+                              </span>
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-2 text-sm text-fg-dim">Sin plataforma. Registra dónde vive el sistema —repo, Vercel y Supabase— y Pime vigila cuentas, cupos y accesos.</p>
+                  )}
+                </section>
+              ) : <NoCargo titulo="Plataformas" />}
+            </>
+          }
+          ticketsPanel={
+            tickets ? (
+              <section className={`${card} max-w-4xl`}>
+                <div className="flex items-center justify-between gap-3">
+                  <h2 className={h2}>Tickets</h2>
+                  <Link href={`/empresa/tickets/nuevo${clienteId ? `?clientId=${clienteId}` : ""}`} className={enlace}>+ Ticket</Link>
+                </div>
+                {tickets.length ? (
+                  <ul className="mt-3 divide-y divide-line">
+                    {tickets.map((t) => (
+                      <li key={t.id}>
+                        <Link href={`/empresa/tickets/${t.id}`} className="flex items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-fg text-sm font-medium truncate">{t.title}</span>
+                            <span className="block text-fg-dim text-xs">{t.number} · {fechaCorta(t.updatedAt.toISOString())}{t.lastClientActivityAt && (!t.lastPimeActivityAt || t.lastClientActivityAt > t.lastPimeActivityAt) ? " · el cliente escribió" : ""}</span>
+                          </span>
+                          <span className={`rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${t.status === "abierto" ? "bg-warn/10 text-warn" : t.status === "resuelto" || t.status === "cerrado" ? "bg-fill-2 text-fg-dim" : "bg-brand/10 text-brand-fg"}`}>{TICKET_ESTADO_LABEL[t.status as TicketEstado] ?? t.status}</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-3 text-sm text-fg-dim">Sin tickets de este proyecto. Cuando el cliente pida algo desde su cuenta, o lo abras tú, aparece aquí.</p>
+                )}
+              </section>
+            ) : <NoCargo titulo="Tickets" />
+          }
         />
       </TaskWorkspace>
     </div>

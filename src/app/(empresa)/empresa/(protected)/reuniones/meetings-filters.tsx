@@ -3,12 +3,15 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { MEETING_STATUS_LABEL } from "./status";
+import { SIN_PROYECTO } from "@/lib/meetings/search";
 
 const STATUSES = ["READY", "TRANSCRIBED", "PROCESSING", "RECORDING", "DRAFT", "FAILED"];
 
 interface MeetingsFiltersProps {
   projects: { id: string; name: string }[];
   clients: { id: string; name: string }[];
+  /** Cuántas reuniones no tienen proyecto (para la opción «Sin proyecto»). */
+  sinProyecto?: number;
 }
 
 /**
@@ -21,7 +24,7 @@ interface MeetingsFiltersProps {
  * El estado vive en la URL para que una búsqueda se pueda compartir y para que
  * volver desde el detalle no borre el filtro.
  */
-export function MeetingsFilters({ projects, clients }: MeetingsFiltersProps) {
+export function MeetingsFilters({ projects, clients, sinProyecto = 0 }: MeetingsFiltersProps) {
   const router = useRouter();
   const params = useSearchParams();
   const [q, setQ] = useState(params.get("q") ?? "");
@@ -51,7 +54,7 @@ export function MeetingsFilters({ projects, clients }: MeetingsFiltersProps) {
   }, [q]);
 
   const selectClass =
-    "field-select w-full min-w-0 lg:w-auto min-h-11 sm:min-h-10 bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none";
+    "field-select w-full min-w-0 min-h-11 sm:min-h-10 bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none";
 
   return (
     <div className="space-y-2 mb-4">
@@ -62,8 +65,9 @@ export function MeetingsFilters({ projects, clients }: MeetingsFiltersProps) {
         className="w-full min-h-11 sm:min-h-10 bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm placeholder:text-fg-trace focus:border-brand/50 focus:outline-none"
       />
       {/* Filtros en columnas iguales de dos; el que queda solo en su fila se
-          estira. Desde lg (con espacio de sobra) van en una fila. */}
-      <div className="grid grid-cols-2 gap-2 [&>*:last-child:nth-child(odd)]:col-span-2 lg:flex lg:flex-wrap">
+          estira. Desde lg van en una fila de tres columnas iguales más «Limpiar»:
+          un nombre de proyecto largo ya no ensancha su filtro ni baja a «Limpiar». */}
+      <div className="grid grid-cols-2 gap-2 [&>*:last-child:nth-child(odd)]:col-span-2 lg:grid-cols-[repeat(3,minmax(0,1fr))_auto] lg:[&>*:last-child:nth-child(odd)]:col-span-1">
         <select
           aria-label="Filtrar por proyecto"
           value={projectId}
@@ -71,6 +75,9 @@ export function MeetingsFilters({ projects, clients }: MeetingsFiltersProps) {
           className={selectClass}
         >
           <option value="">Todo proyecto</option>
+          {(sinProyecto > 0 || projectId === SIN_PROYECTO) && (
+            <option value={SIN_PROYECTO}>Sin proyecto</option>
+          )}
           {projects.map((p) => (
             <option key={p.id} value={p.id}>
               {p.name}

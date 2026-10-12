@@ -580,6 +580,8 @@ model Project {
   githubCheckAt   DateTime?
   githubAccount   GithubAccount?  @relation(fields: [githubAccountId], references: [id])
   platforms       Platform[]
+  /// Requisitos de «Qué le falta» marcados «No aplica» (migración 0047): no cuentan en el porcentaje.
+  linkWaived      String[]        @default([])
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 

@@ -31,12 +31,14 @@ export function PlatformsBoard({
   abrir,
   nueva,
   clienteNueva,
+  proyectoNueva,
   tabInicial,
 }: {
   data: PlatformsData;
   abrir?: string | null;
   nueva?: boolean;
   clienteNueva?: string | null;
+  proyectoNueva?: string | null;
   tabInicial?: Tab;
 }) {
   const router = useRouter();
@@ -356,6 +358,7 @@ export function PlatformsBoard({
         inv={inv}
         platforms={platforms}
         clienteInicial={clienteNueva}
+        proyectoInicial={proyectoNueva}
         onRefresh={() => router.refresh()}
         onCreado={(p) => {
           setPlatforms((list) => (list.some((x) => x.id === p.id) ? list.map((x) => (x.id === p.id ? p : x)) : [...list, p]));

@@ -12,6 +12,8 @@ import { parseTechnicalMinutes } from "@/lib/meetings/technical";
 import { loadTaskWorkspace } from "@/lib/tasks";
 import { TaskWorkspace } from "@/components/empresa/tasks/task-workspace";
 import { MeetingDetail } from "./meeting-detail";
+import { proyectosCandidatos } from "@/lib/proyectos/candidatos";
+import { MOTIVO_LABEL, sugerirProyecto } from "@/lib/proyectos/sugerir-proyecto";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +62,13 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
     ...meeting.actionItems.map((i) => i.taskId),
     meeting.nextMeetingTaskId,
   ].filter((x): x is string => Boolean(x));
-  const workspace = await loadTaskWorkspace(user.id, meeting.projectId, linkedTaskIds);
+  const [workspace, candidatos] = await Promise.all([
+    loadTaskWorkspace(user.id, meeting.projectId, linkedTaskIds),
+    // Sin proyecto: se sugiere uno (por cliente, título o notas) para asignarlo de un toque.
+    meeting.projectId ? Promise.resolve([]) : proyectosCandidatos(user.id),
+  ]);
+  const sug = meeting.projectId ? null : sugerirProyecto(meeting, candidatos);
+  const sugerido = sug ? { id: sug.projectId, name: candidatos.find((p) => p.id === sug.projectId)?.name ?? "", motivo: MOTIVO_LABEL[sug.motivo] } : null;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -77,6 +85,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
         executive={meeting.executiveMinutes as unknown as ExecutiveMinutes | null}
         technical={parseTechnicalMinutes(meeting.technicalMinutes)}
         hasRepo={meeting.project?.repoSnapshot != null}
+        sugerido={sugerido}
       />
       </TaskWorkspace>
     </div>

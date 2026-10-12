@@ -8,6 +8,7 @@ import {
 } from "@/app/(empresa)/empresa/(protected)/reuniones/status";
 import type { ProjectMeeting } from "./types";
 import { fechaCorta } from "@/lib/format-datetime";
+import { btn } from "@/components/empresa/page-header";
 
 /**
  * Reuniones del proyecto: es el hilo de contexto que la IA lee en cada reunión
@@ -23,10 +24,10 @@ export function MeetingsPanel({
   const openItems = meetings.reduce((sum, m) => sum + m.openItemCount, 0);
 
   return (
-    <div className="bg-panel border border-line rounded-2xl p-5">
-      <div className="flex items-center justify-between gap-3 mb-4">
+    <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
         <div className="min-w-0">
-          <h2 className="text-fg font-medium">Reuniones</h2>
+          <h2 className="text-fg text-base font-semibold tracking-tight">Reuniones</h2>
           <p className="text-fg-faint text-xs mt-0.5">
             {meetings.length === 0
               ? "El contexto que la IA usa para entender de qué se habla"
@@ -35,11 +36,8 @@ export function MeetingsPanel({
                 }`}
           </p>
         </div>
-        <Link
-          href={`/empresa/reuniones/nueva?projectId=${projectId}`}
-          className="inline-flex items-center justify-center min-h-11 sm:min-h-8 px-4 sm:px-3 py-1.5 bg-brand hover:bg-brand-hi text-on-brand text-sm sm:text-xs font-semibold rounded-lg transition-all shrink-0"
-        >
-          🎙️ Grabar
+        <Link href={`/empresa/reuniones/nueva?proyecto=${projectId}`} className={`${btn.primary} shrink-0`}>
+          🎙️ Grabar reunión de este proyecto
         </Link>
       </div>
 

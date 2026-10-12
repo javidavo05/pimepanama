@@ -6,7 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { GithubError, parseRepoRef } from "@/lib/github/client";
 import { tokenParaRepo } from "@/lib/github/cuentas";
 import { describeRepoShort } from "@/lib/github/describe";
-import { buildRepoSnapshot, parseRepoSnapshot } from "@/lib/github/snapshot";
+import { estadoRepo } from "@/lib/github/estado-repo";
+import { buildRepoSnapshot } from "@/lib/github/snapshot";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -39,29 +40,8 @@ export const GET = withEmpresaIdRoute(async (req, { params }) => {
   if (!project) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const cuentas = await prisma.githubAccount.count({ where: { userId: user.id } });
 
-  const snapshot = parseRepoSnapshot(project.repoSnapshot);
+  return NextResponse.json(estadoRepo(project, cuentas > 0 || Boolean(user.githubTokenEnc)));
 
-  return NextResponse.json({
-    owner: project.repoOwner,
-    repo: project.repoName,
-    branch: project.repoBranch,
-    syncedAt: project.repoSyncedAt?.toISOString() ?? null,
-    hasToken: cuentas > 0 || Boolean(user.githubTokenEnc),
-    account: project.githubAccount?.login ?? null,
-    summary: snapshot ? describeRepoShort(snapshot) : null,
-    stats: snapshot
-      ? {
-          files: snapshot.totalFiles,
-          pages: snapshot.pages.length,
-          apiRoutes: snapshot.apiRoutes.length,
-          dataModels: snapshot.dataModels.length,
-          dependencies: snapshot.dependencies.length,
-          docs: snapshot.docs.map((d) => d.path),
-          lastCommit: snapshot.commits[0] ?? null,
-          truncated: snapshot.treeTruncated,
-        }
-      : null,
-  });
 });
 
 /** Conecta (o vuelve a leer) el repositorio del proyecto. */

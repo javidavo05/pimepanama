@@ -12,8 +12,9 @@ import { ClientsPanel } from "./clients-panel";
 import { ProjectEditForm, type EditSection } from "./project-edit-form";
 import { DeliverablesPanel } from "./deliverables-panel";
 import { ContractsPanel } from "./contracts-panel";
-import { MeetingsPanel } from "./meetings-panel";
 import { RepoPanel } from "./repo-panel";
+import type { EstadoRepo } from "@/lib/github/estado-repo";
+import { FichaTabs, type FichaTab } from "@/components/empresa/clientes/ficha-tabs";
 import { useTaskStore } from "@/components/empresa/tasks/task-store";
 import {
   PROJECT_STATUS_COLOR,
@@ -41,34 +42,51 @@ const DOC_TYPE_PATH: Record<string, string> = {
   FACTURA: "facturas", COTIZACION: "cotizaciones", BITACORA: "bitacoras", CORREO: "correos",
 };
 
-type Tab = "tareas" | "resumen";
+/** Pestañas del detalle, en orden. «resumen» es la de entrada: sin ?tab= en la URL. */
+export const PESTANAS = ["resumen", "tareas", "reuniones", "fases", "dinero", "repo", "tickets", "clientes"] as const;
+export type Tab = (typeof PESTANAS)[number];
 
 export function ProjectDetailClient({
   project,
   allClients,
   initialTab,
+  queLeFalta,
+  alertas,
+  repoInicial,
+  counts,
   tasksPanel,
+  reunionesPanel,
+  fasesPanel,
   dineroPanel,
+  ordenesPanel,
+  horasPanel,
+  repoExtra,
+  ticketsPanel,
 }: {
   project: Project;
   allClients: Client[];
-  initialTab: Tab;
+  initialTab: string;
+  /** Barra «Qué le falta» (va arriba de las pestañas). */
+  queLeFalta: React.ReactNode;
+  /** Estado del repo ya armado en el servidor (sin llamar a GitHub). */
+  repoInicial?: EstadoRepo | null;
+  /** Pestañas donde hay un requisito pendiente: llevan un punto de aviso. */
+  alertas: Partial<Record<Tab, boolean>>;
+  counts: { reuniones: number; tickets: number };
   tasksPanel: React.ReactNode;
+  reunionesPanel: React.ReactNode;
+  fasesPanel: React.ReactNode;
   /** Dinero del proyecto (servidor): presupuesto, facturado, cobrado, por cobrar y el botón «Cobrar». */
   dineroPanel?: React.ReactNode;
+  ordenesPanel: React.ReactNode;
+  horasPanel: React.ReactNode;
+  /** Verificación con GitHub y plataformas (servidor). */
+  repoExtra: React.ReactNode;
+  ticketsPanel: React.ReactNode;
 }) {
   const router = useRouter();
   const { tasks } = useTaskStore();
   const openTaskCount = tasks.filter((t) => t.projectId === project.id && !t.parentId && !t.completed).length;
-  const [tab, setTab] = useState<Tab>(initialTab);
-
-  function changeTab(next: Tab) {
-    setTab(next);
-    const url = new URL(window.location.href);
-    if (next === "resumen") url.searchParams.delete("tab");
-    else url.searchParams.set("tab", next);
-    window.history.replaceState(null, "", url);
-  }
   const [editing, setEditing] = useState<EditSection | null>(null);
   const [payingId, setPayingId] = useState<string | null>(null);
   const [paidIds, setPaidIds] = useState<Set<string>>(new Set());
@@ -79,9 +97,6 @@ export function ProjectDetailClient({
   const totalScheduled = allSchedules.reduce((s, sc) => s + sc.amount, 0);
   const totalPaid = allSchedules.filter((s) => s.status === "PAID").reduce((s, sc) => s + sc.amount, 0);
   const mainClient = project.clients[0] ?? null;
-  const clientsPanel = (
-    <ClientsPanel projectId={project.id} clients={project.clients} allClients={allClients} />
-  );
   const plan = project.financingPlan;
 
   async function handleMarkPaid(id: string) {
@@ -114,6 +129,17 @@ export function ProjectDetailClient({
       setGeneratingProposal(false);
     }
   }
+
+  const tabs: FichaTab[] = [
+    { key: "resumen", label: "Resumen" },
+    { key: "tareas", label: "Tareas", count: openTaskCount },
+    { key: "reuniones", label: "Reuniones", count: counts.reuniones, alert: alertas.reuniones },
+    { key: "fases", label: "Fases y entregables", count: project.deliverables.filter((d) => !d.completed).length, alert: alertas.fases },
+    { key: "dinero", label: "Dinero", alert: alertas.dinero },
+    { key: "repo", label: "Repo y plataformas", alert: alertas.repo },
+    { key: "tickets", label: "Tickets", count: counts.tickets },
+    { key: "clientes", label: "Clientes", count: project.clients.length, alert: alertas.clientes },
+  ];
 
   return (
     <>
@@ -162,43 +188,17 @@ export function ProjectDetailClient({
         />
       )}
 
-      {/* Sin cliente el proyecto no factura: el aviso va a ancho completo,
-          no escondido en la barra lateral. */}
-      {project.clients.length === 0 && (
-        <div className="mb-6">{clientsPanel}</div>
-      )}
 
-      <div role="tablist" aria-label="Secciones del proyecto" className="flex gap-6 border-b border-line mb-6">
-        {(
-          [
-            { key: "resumen", label: "Resumen" },
-            { key: "tareas", label: "Tareas", count: openTaskCount },
-          ] as { key: Tab; label: string; count?: number }[]
-        ).map((t) => (
-          <button
-            key={t.key}
-            type="button"
-            role="tab"
-            aria-selected={tab === t.key}
-            onClick={() => changeTab(t.key)}
-            className={`-mb-px flex items-center gap-2 min-h-11 border-b-2 text-sm font-medium transition-colors ${
-              tab === t.key ? "border-brand text-fg" : "border-transparent text-fg-dim hover:text-fg-mute"
-            }`}
-          >
-            {t.label}
-            {t.count !== undefined && <span className="text-xs text-fg-faint tabular-nums">{t.count}</span>}
-          </button>
-        ))}
-      </div>
+      {queLeFalta}
 
-      {/* Se oculta en vez de desmontarse: la lista conserva lo que se editó al volver */}
-      <div className={tab === "tareas" ? "" : "hidden"}>{tasksPanel}</div>
-
-      <div className={tab === "resumen" ? "grid grid-cols-1 lg:grid-cols-3 gap-6" : "hidden"}>
-        {/* Main column */}
-        <div className="lg:col-span-2 space-y-6">
-          {dineroPanel}
-
+      <FichaTabs
+        label="Secciones del proyecto"
+        initial={initialTab}
+        tabs={tabs}
+        panels={{
+          resumen: (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+              <div className="lg:col-span-2 space-y-6 min-w-0">
           {/* Description / Scope */}
           <div className="bg-panel border border-line rounded-xl p-6 space-y-4">
             {!project.description && !project.scope ? (
@@ -236,70 +236,67 @@ export function ProjectDetailClient({
             )}
           </div>
 
-          {/* Entregables */}
-          <DeliverablesPanel projectId={project.id} deliverables={project.deliverables} />
-
-          {/* Reuniones — memoria del proyecto */}
-          <RepoPanel projectId={project.id} />
-
-          <MeetingsPanel projectId={project.id} meetings={project.meetings} />
-
-          {/* Contratos */}
-          <ContractsPanel
-            projectId={project.id}
-            projectName={project.name}
-            clientId={mainClient?.id ?? null}
-            defaults={{
-              value: project.totalBudget,
-              startsAt: project.startDate,
-              endsAt: project.endDate,
-              description: project.description,
-            }}
-            contracts={project.contracts}
-          />
-
-          {/* Propuesta comercial (PDF, estilo design-system) */}
-          <div className="bg-panel border border-line rounded-xl overflow-hidden">
-            {/* En el celular el título va arriba y los dos botones debajo, en
-                columnas iguales; desde tablet, todo en una fila. */}
-            <div className="px-4 sm:px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Propuesta comercial</h3>
-              <ActionRow>
-                <button
-                  type="button"
-                  onClick={handleGenerateProposal}
-                  disabled={generatingProposal}
-                  className={btn.secondary}
-                >
-                  {generatingProposal ? "Generando…" : project.hasProposal ? "↻ Regenerar con IA" : "✦ Generar con IA"}
-                </button>
-                {project.hasProposal && (
-                  <PdfDownloadButton
-                    url={`/api/empresa/projects/${project.id}/proposal-pdf`}
-                    filename={`Propuesta-${project.name}.pdf`}
-                    label="Descargar"
-                  />
-                )}
-              </ActionRow>
+              </div>
+              <div className="space-y-4 min-w-0">
+          {/* Fechas y presupuesto */}
+          <div className="bg-panel border border-line rounded-xl p-6 space-y-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-fg-faint text-[10px] uppercase tracking-widest">Resumen</p>
+              <button
+                type="button"
+                onClick={() => setEditing("form")}
+                className={MINI_ACTION}
+              >
+                editar
+              </button>
             </div>
-            {proposalError && (
-              <div className="px-6 pb-4 text-danger text-xs">{proposalError}</div>
-            )}
-            {!project.hasProposal && (
-              <div className="px-6 pb-6 text-fg-faint text-sm">
-                Genera el contenido de la propuesta con IA (portada, fases, inversión y cierre en el estilo de Pime) para poder descargarla.
+            <div>
+              <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Presupuesto</p>
+              {project.totalBudget != null ? (
+                <p className="text-sand-fg font-mono text-lg font-semibold">${fmtUSD(project.totalBudget)}</p>
+              ) : (
+                <p className="text-fg-ghost text-sm">Sin definir</p>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Inicio</p>
+                <p className="text-fg-dim text-sm">
+                  {project.startDate ? fechaCorta(project.startDate) : "—"}
+                </p>
+              </div>
+              <div>
+                <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Fin estimado</p>
+                <p className="text-fg-dim text-sm">
+                  {project.endDate ? fechaCorta(project.endDate) : "—"}
+                </p>
+              </div>
+            </div>
+            {project.aiTags.length > 0 && (
+              <div className="flex flex-wrap gap-1 pt-2 border-t border-line">
+                {project.aiTags.map((t) => (
+                  <span key={t} className="px-2 py-1 text-[10px] rounded border border-line text-fg-dim">{t}</span>
+                ))}
               </div>
             )}
           </div>
 
-          {project.hasProposal && (
-            <PdfPreviewFrame
-              url={`/api/empresa/projects/${project.id}/proposal-pdf`}
-              refreshKey={project.updatedAt}
-              title="Vista previa de la propuesta"
-            />
-          )}
-
+              </div>
+            </div>
+          ),
+          tareas: tasksPanel,
+          reuniones: reunionesPanel,
+          fases: (
+            <div className="space-y-6">
+              {fasesPanel}
+              <DeliverablesPanel projectId={project.id} deliverables={project.deliverables} />
+            </div>
+          ),
+          dinero: (
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+              <div className="lg:col-span-2 space-y-6 min-w-0">
+                {dineroPanel}
+                <div id="acuerdos" tabIndex={-1} className="space-y-6 scroll-mt-4 outline-none">
           {/* Documentos vinculados */}
           <div className="bg-panel border border-line rounded-xl overflow-hidden">
             <div className="px-4 sm:px-6 py-2 sm:py-4 border-b border-line flex items-center justify-between gap-3">
@@ -340,6 +337,21 @@ export function ProjectDetailClient({
             )}
           </div>
 
+          {/* Contratos */}
+          <ContractsPanel
+            projectId={project.id}
+            projectName={project.name}
+            clientId={mainClient?.id ?? null}
+            defaults={{
+              value: project.totalBudget,
+              startsAt: project.startDate,
+              endsAt: project.endDate,
+              description: project.description,
+            }}
+            contracts={project.contracts}
+          />
+
+                </div>
           {/* Plan de pagos */}
           {allSchedules.length > 0 && (
             <div className="bg-panel border border-line rounded-xl overflow-hidden">
@@ -384,55 +396,51 @@ export function ProjectDetailClient({
               </div>
             </div>
           )}
-        </div>
-
-          {/* Sidebar */}
-        <div className="space-y-4">
-          {project.clients.length > 0 && clientsPanel}
-
-          {/* Fechas y presupuesto */}
-          <div className="bg-panel border border-line rounded-xl p-6 space-y-3">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-fg-faint text-[10px] uppercase tracking-widest">Resumen</p>
-              <button
-                type="button"
-                onClick={() => setEditing("form")}
-                className={MINI_ACTION}
-              >
-                editar
-              </button>
+                {ordenesPanel}
+          {/* Propuesta comercial (PDF, estilo design-system) */}
+          <div className="bg-panel border border-line rounded-xl overflow-hidden">
+            {/* En el celular el título va arriba y los dos botones debajo, en
+                columnas iguales; desde tablet, todo en una fila. */}
+            <div className="px-4 sm:px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Propuesta comercial</h3>
+              <ActionRow>
+                <button
+                  type="button"
+                  onClick={handleGenerateProposal}
+                  disabled={generatingProposal}
+                  className={btn.secondary}
+                >
+                  {generatingProposal ? "Generando…" : project.hasProposal ? "↻ Regenerar con IA" : "✦ Generar con IA"}
+                </button>
+                {project.hasProposal && (
+                  <PdfDownloadButton
+                    url={`/api/empresa/projects/${project.id}/proposal-pdf`}
+                    filename={`Propuesta-${project.name}.pdf`}
+                    label="Descargar"
+                  />
+                )}
+              </ActionRow>
             </div>
-            <div>
-              <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Presupuesto</p>
-              {project.totalBudget != null ? (
-                <p className="text-sand-fg font-mono text-lg font-semibold">${fmtUSD(project.totalBudget)}</p>
-              ) : (
-                <p className="text-fg-ghost text-sm">Sin definir</p>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Inicio</p>
-                <p className="text-fg-dim text-sm">
-                  {project.startDate ? fechaCorta(project.startDate) : "—"}
-                </p>
-              </div>
-              <div>
-                <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Fin estimado</p>
-                <p className="text-fg-dim text-sm">
-                  {project.endDate ? fechaCorta(project.endDate) : "—"}
-                </p>
-              </div>
-            </div>
-            {project.aiTags.length > 0 && (
-              <div className="flex flex-wrap gap-1 pt-2 border-t border-line">
-                {project.aiTags.map((t) => (
-                  <span key={t} className="px-2 py-1 text-[10px] rounded border border-line text-fg-dim">{t}</span>
-                ))}
+            {proposalError && (
+              <div className="px-6 pb-4 text-danger text-xs">{proposalError}</div>
+            )}
+            {!project.hasProposal && (
+              <div className="px-6 pb-6 text-fg-faint text-sm">
+                Genera el contenido de la propuesta con IA (portada, fases, inversión y cierre en el estilo de Pime) para poder descargarla.
               </div>
             )}
           </div>
 
+          {project.hasProposal && (
+            <PdfPreviewFrame
+              url={`/api/empresa/projects/${project.id}/proposal-pdf`}
+              refreshKey={project.updatedAt}
+              title="Vista previa de la propuesta"
+            />
+          )}
+
+              </div>
+              <div className="space-y-4 min-w-0">
           {/* Financiación */}
           <div className="bg-panel border border-line rounded-xl p-6 space-y-2">
             <div className="flex items-center justify-between gap-3">
@@ -461,8 +469,24 @@ export function ProjectDetailClient({
               <p className="text-fg-ghost text-sm">Sin plan de financiación.</p>
             )}
           </div>
-        </div>
-      </div>
+                {horasPanel}
+              </div>
+            </div>
+          ),
+          repo: (
+            <div className="space-y-6">
+              <RepoPanel projectId={project.id} inicial={repoInicial} />
+              {repoExtra}
+            </div>
+          ),
+          tickets: ticketsPanel,
+          clientes: (
+            <div className="max-w-2xl">
+              <ClientsPanel projectId={project.id} clients={project.clients} allClients={allClients} />
+            </div>
+          ),
+        }}
+      />
     </>
   );
 }

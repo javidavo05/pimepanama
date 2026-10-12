@@ -5,25 +5,9 @@ import { fechaCorta } from "@/lib/format-datetime";
 import { AsistenteTokenGithub } from "@/components/empresa/github/asistente-token";
 import { fetchLargo } from "@/lib/fetch-largo";
 
-interface RepoState {
-  owner: string | null;
-  repo: string | null;
-  branch: string | null;
-  syncedAt: string | null;
-  hasToken: boolean;
-  account: string | null;
-  summary: string | null;
-  stats: {
-    files: number;
-    pages: number;
-    apiRoutes: number;
-    dataModels: number;
-    dependencies: number;
-    docs: string[];
-    lastCommit: { sha: string; message: string; date: string } | null;
-    truncated: boolean;
-  } | null;
-}
+import type { EstadoRepo } from "@/lib/github/estado-repo";
+
+type RepoState = EstadoRepo;
 
 /**
  * El repositorio del proyecto.
@@ -37,27 +21,32 @@ interface RepoState {
  * pantallas, endpoints, dependencias y las reglas del proyecto— y se vuelve a
  * leer cuando tú lo pides, no en cada análisis.
  */
-export function RepoPanel({ projectId }: { projectId: string }) {
-  const [state, setState] = useState<RepoState | null>(null);
+export function RepoPanel({ projectId, inicial }: { projectId: string; inicial?: RepoState | null }) {
+  // Llega armado del servidor: el panel no aparece vacío para luego saltar de tamaño.
+  const [state, setState] = useState<RepoState | null>(inicial ?? null);
   const [input, setInput] = useState("");
   const [branch, setBranch] = useState("");
   const [asistente, setAsistente] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // Un panel que no carga no rompe el detalle del proyecto: lo dice y ofrece reintentar.
+  const [carga, setCarga] = useState<"cargando" | "lista" | "error">(inicial ? "lista" : "cargando");
 
   const load = useCallback(async () => {
     try {
       const res = await fetch(`/api/empresa/projects/${projectId}/repo`);
-      if (!res.ok) return;
+      if (!res.ok) throw new Error(String(res.status));
       setState(await res.json());
+      setCarga("lista");
     } catch {
-      // Un panel que no carga no debe romper el detalle del proyecto.
+      setCarga((c) => (c === "lista" ? c : "error"));
     }
   }, [projectId]);
 
   useEffect(() => {
-    void load();
+    if (!inicial) void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [load]);
 
   async function connect() {
@@ -105,10 +94,38 @@ export function RepoPanel({ projectId }: { projectId: string }) {
 
   const connected = Boolean(state?.owner && state?.repo);
 
+  if (carga !== "lista") {
+    return (
+      <div id="conectar-repo" tabIndex={-1} className="bg-panel border border-line rounded-2xl p-4 sm:p-6 space-y-3 scroll-mt-4 outline-none" aria-busy={carga === "cargando"}>
+        <h2 className="text-fg text-base font-semibold tracking-tight">Código del proyecto</h2>
+        {carga === "cargando" ? (
+          <div className="space-y-2 animate-pulse motion-reduce:animate-none" aria-label="Cargando el repositorio">
+            <div className="h-4 w-2/3 rounded bg-fill-2" />
+            <div className="h-11 rounded-lg bg-fill" />
+          </div>
+        ) : (
+          <div role="alert" className="space-y-2">
+            <p className="text-danger text-sm">No se pudo leer el estado del repositorio.</p>
+            <button
+              type="button"
+              onClick={() => {
+                setCarga("cargando");
+                void load();
+              }}
+              className="inline-flex items-center min-h-11 sm:min-h-8 text-brand-fg text-sm font-semibold"
+            >
+              Volver a intentar
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-panel border border-line rounded-2xl p-5 space-y-4">
+    <div id="conectar-repo" tabIndex={-1} className="bg-panel border border-line rounded-2xl p-4 sm:p-6 space-y-4 scroll-mt-4 outline-none">
       <div>
-        <h2 className="text-fg font-medium">Código del proyecto</h2>
+        <h2 className="text-fg text-base font-semibold tracking-tight">Código del proyecto</h2>
         <p className="text-fg-faint text-xs mt-0.5">
           {connected
             ? "Lo que la IA lee para analizar cada reunión sobre el sistema real."

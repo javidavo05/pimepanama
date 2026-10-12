@@ -8,17 +8,27 @@
  *   historial: el botón Atrás vuelve a la anterior.
  * - En el teléfono la fila se desliza de lado sin cortarse y cada pestaña mide 44 px; la activa se
  *   desplaza a la vista dentro de su fila (no se mueve la página).
+ * - Desde fuera de las pestañas (p. ej. un botón «Resolver»), `irAPestana(key, ancla?)` cambia de pestaña
+ *   igual que un toque, con su entrada en el historial, y lleva la vista al punto pedido.
  */
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 export type FichaTab = { key: string; label: string; count?: number; alert?: boolean };
 
-export function FichaTabs({ tabs, initial, panels }: { tabs: FichaTab[]; initial: string; panels: Record<string, ReactNode> }) {
+const EVENTO = "ficha-tab";
+
+/** Cambia a la pestaña `key` desde cualquier parte de la página y, si se da, lleva la vista al elemento `#ancla`. */
+export function irAPestana(key: string, ancla?: string) {
+  window.dispatchEvent(new CustomEvent(EVENTO, { detail: { key, ancla } }));
+}
+
+export function FichaTabs({ tabs, initial, panels, label = "Secciones del cliente" }: { tabs: FichaTab[]; initial: string; panels: Record<string, ReactNode>; label?: string }) {
   const valid = (k: string | null | undefined) => (k && tabs.some((t) => t.key === k) ? k : tabs[0].key);
   const [tab, setTab] = useState(() => valid(initial));
   const rowRef = useRef<HTMLDivElement>(null);
   // ¿Queda pestaña escondida a la derecha? Entonces el borde se desvanece: dice «desliza».
   const [masMas, setMasMas] = useState(false);
+  const elegirRef = useRef<(k: string) => void>(() => {});
 
   useEffect(() => {
     const row = rowRef.current;
@@ -41,6 +51,22 @@ export function FichaTabs({ tabs, initial, panels }: { tabs: FichaTab[]; initial
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Pedidos desde fuera (irAPestana): mismo efecto que tocar la pestaña, y luego al punto pedido.
+  useEffect(() => {
+    const onIr = (e: Event) => {
+      const { key, ancla } = (e as CustomEvent<{ key: string; ancla?: string }>).detail;
+      elegirRef.current(key);
+      // Después de que React muestre el panel nuevo: el ancla vive dentro de él.
+      setTimeout(() => {
+        const destino = (ancla && document.getElementById(ancla)) || rowRef.current;
+        destino?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "start" });
+        if (ancla && destino instanceof HTMLElement) destino.focus({ preventScroll: true });
+      }, 50);
+    };
+    window.addEventListener(EVENTO, onIr);
+    return () => window.removeEventListener(EVENTO, onIr);
+  }, []);
+
   // La pestaña activa siempre a la vista dentro de su fila deslizable.
   useEffect(() => {
     const row = rowRef.current;
@@ -54,6 +80,7 @@ export function FichaTabs({ tabs, initial, panels }: { tabs: FichaTab[]; initial
   }, [tab]);
 
   function elegir(next: string) {
+    next = valid(next);
     if (next === tab) return;
     setTab(next);
     const url = new URL(window.location.href);
@@ -61,16 +88,19 @@ export function FichaTabs({ tabs, initial, panels }: { tabs: FichaTab[]; initial
     else url.searchParams.set("tab", next);
     window.history.pushState(null, "", url);
   }
+  useEffect(() => {
+    elegirRef.current = elegir;
+  });
 
   return (
     <div className="space-y-6">
       <div
         ref={rowRef}
-        className={`overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+        className={`scroll-mt-4 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
           masMas ? "[mask-image:linear-gradient(to_right,black_calc(100%-48px),transparent)]" : ""
         }`}
       >
-        <div role="tablist" aria-label="Secciones del cliente" className="flex w-max min-w-full gap-6 border-b border-line pr-12">
+        <div role="tablist" aria-label={label} className="flex w-max min-w-full gap-6 border-b border-line pr-12">
           {tabs.map((t) => (
             <button
               key={t.key}

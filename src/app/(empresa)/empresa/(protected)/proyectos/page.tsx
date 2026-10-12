@@ -6,6 +6,8 @@ import { TaskWorkspace } from "@/components/empresa/tasks/task-workspace";
 import { TaskOverview } from "@/components/empresa/tasks/task-overview";
 import { ProjectsTable, type ProjectRow } from "./projects-table";
 import { PageHeader, btn } from "@/components/empresa/page-header";
+import { datosCompletitud } from "@/lib/proyectos/datos";
+import { completitudProyecto } from "@/lib/proyectos/completitud";
 
 export const metadata = { title: "Proyectos — Pime Suite" };
 export const dynamic = "force-dynamic";
@@ -75,7 +77,7 @@ async function TasksTab({ userId }: { userId: string }) {
 }
 
 async function ProjectsTab({ userId }: { userId: string }) {
-  const [projects, taskCounts, nextTasks] = await Promise.all([
+  const [projects, taskCounts, nextTasks, completitud] = await Promise.all([
     prisma.project.findMany({
       where: { userId },
       include: {
@@ -96,6 +98,8 @@ async function ProjectsTab({ userId }: { userId: string }) {
       orderBy: { dueDate: "asc" },
       distinct: ["projectId"],
     }),
+    // «Qué le falta» de todos los proyectos en una sola consulta; si falla, la lista se ve sin el porcentaje.
+    datosCompletitud(userId).catch(() => null),
   ]);
 
   if (projects.length === 0) {
@@ -135,6 +139,12 @@ async function ProjectsTab({ userId }: { userId: string }) {
       total: done + open,
       endDate: p.endDate?.toISOString() ?? null,
       next: next ? { title: next.title, dueDate: next.dueDate!.toISOString(), allDay: next.allDay } : null,
+      enlace: (() => {
+        const d = completitud?.get(p.id);
+        if (!d) return null;
+        const c = completitudProyecto(d);
+        return { pct: c.pct, faltan: c.faltan.length };
+      })(),
     };
   });
 

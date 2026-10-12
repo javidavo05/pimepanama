@@ -79,6 +79,8 @@ interface MeetingRecorderProps {
   creatorName: string | null;
   /** Preselecciona el proyecto cuando se entra desde el detalle de un proyecto */
   initialProjectId?: string;
+  /** De dónde salió el proyecto precargado: del enlace (?proyecto=) o el último que se usó. */
+  projectPreset?: "enlace" | "ultimo" | null;
   /**
    * Datos que llegan ya decididos, p. ej. desde PIME Guard en la barra de menú
    * de la Mac. Con título, la pantalla abre lista para grabar.
@@ -185,6 +187,7 @@ export function MeetingRecorder({
   clients,
   creatorName,
   initialProjectId,
+  projectPreset = null,
   initialTitle,
   initialSource,
 }: MeetingRecorderProps) {
@@ -193,6 +196,7 @@ export function MeetingRecorder({
   const [phase, setPhase] = useState<Phase>("setup");
   const [title, setTitle] = useState(initialTitle?.slice(0, 200) ?? "");
   const [projectId, setProjectId] = useState(initialProjectId ?? "");
+  const [projectTouched, setProjectTouched] = useState(false);
   const [clientId, setClientId] = useState("");
   // Qué se habla en la reunión y en qué idioma sale la minuta son dos cosas
   // distintas: una reunión bilingüe se redacta igual en un solo idioma.
@@ -1152,7 +1156,7 @@ export function MeetingRecorder({
             <p className="text-fg text-sm font-medium truncate">{title || "Sin título"}</p>
             <p className="text-fg-faint text-xs mt-1">
               {AUDIO_SOURCES.find((s) => s.key === audioSource)?.label}
-              {selectedProject ? ` · ${selectedProject.name}` : ""} · puedes ajustar todo abajo
+              {selectedProject ? ` · ${selectedProject.name}` : " · sin proyecto (queda pendiente)"} · puedes ajustar todo abajo
             </p>
             {error && (
               <p className="text-danger text-xs mt-2" role="alert">
@@ -1221,6 +1225,34 @@ export function MeetingRecorder({
       </div>
 
       <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6 space-y-4">
+        {/* El proyecto va primero: de él salen el contexto que lee la IA y a qué proyecto suma la reunión. */}
+        <div>
+          <label htmlFor="reunion-proyecto" className="block text-fg-mute text-xs uppercase tracking-wider mb-2">Proyecto</label>
+          <select
+            id="reunion-proyecto"
+            value={projectId}
+            onChange={(e) => {
+              setProjectId(e.target.value);
+              setProjectTouched(true);
+            }}
+            className={`field-select w-full bg-canvas border rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base focus:border-brand/50 focus:outline-none ${projectId ? "border-line" : "border-warn/40"}`}
+          >
+            <option value="">Elegir después (queda pendiente)</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <p className={`text-xs mt-1 ${projectId ? "text-fg-ghost" : "text-warn"}`}>
+            {!projectId
+              ? "Queda «Sin proyecto» en la lista de reuniones hasta que se lo asignes; mientras tanto no suma contexto."
+              : projectPreset === "ultimo" && !projectTouched
+                ? "El último que usaste. La IA leerá su alcance, sus entregables y las reuniones anteriores."
+                : "La IA leerá el alcance, los entregables y las reuniones anteriores del proyecto."}
+          </p>
+        </div>
+
         <div>
           <label className="block text-fg-mute text-xs uppercase tracking-wider mb-2">Título</label>
           <input
@@ -1231,28 +1263,8 @@ export function MeetingRecorder({
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-2">Proyecto</label>
-            <select
-              value={projectId}
-              onChange={(e) => setProjectId(e.target.value)}
-              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base focus:border-brand/50 focus:outline-none"
-            >
-              <option value="">Sin proyecto</option>
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <p className="text-fg-ghost text-xs mt-1">
-              {projectId
-                ? "La IA leerá el alcance, los entregables y las reuniones anteriores del proyecto."
-                : "Puedes dejarlo en blanco y asignarle el proyecto después, desde el detalle de la reunión."}
-            </p>
-          </div>
-
+        {/* Cinco campos en dos columnas: el último ocupa la fila entera para que las filas cierren parejas. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:[&>*:last-child:nth-child(odd)]:col-span-2">
           <div>
             <label className="block text-fg-mute text-xs uppercase tracking-wider mb-2">Cliente</label>
             <select

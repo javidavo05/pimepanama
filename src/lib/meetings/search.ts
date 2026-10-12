@@ -9,6 +9,9 @@ const STATUSES: MeetingStatus[] = [
   "FAILED",
 ];
 
+/** Valor del filtro de proyecto que pide las reuniones sin proyecto. */
+export const SIN_PROYECTO = "sin";
+
 export interface MeetingListFilters {
   q?: string;
   projectId?: string;
@@ -29,7 +32,8 @@ export function meetingSearchFilter(
 
   return {
     userId,
-    ...(projectId ? { projectId } : {}),
+    // "sin" = las que todavía no tienen proyecto: no acumulan contexto y hay que asignarlas.
+    ...(projectId === SIN_PROYECTO ? { projectId: null } : projectId ? { projectId } : {}),
     ...(clientId ? { clientId } : {}),
     ...(status && STATUSES.includes(status as MeetingStatus)
       ? { status: status as MeetingStatus }
