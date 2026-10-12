@@ -48,14 +48,32 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 /**
+ * Dominios desde los que se puede usar la huella. pimepanama.com lo sirve
+ * pime-v2 y reenvía /empresa y /api a este proyecto: la petición llega con el
+ * host de Vercel aunque el navegador esté en pimepanama.com, así que el origen
+ * no se compara con el host de la petición sino con esta lista.
+ */
+function allowedHosts(request: Request): Set<string> {
+  const hosts = ["pimepanama.com", new URL(request.url).hostname];
+  const site = process.env.NEXT_PUBLIC_SITE_URL;
+  if (site) {
+    try {
+      hosts.push(new URL(site).hostname);
+    } catch {
+      // URL mal escrita en el entorno: se ignora.
+    }
+  }
+  return new Set(hosts.map((h) => h.replace(/^www\./, "")));
+}
+
+/**
  * RP ID y origen esperado a partir de la petición. El RP ID es el dominio sin
  * www (www redirige al dominio de la app), así la llave sirve en los dos.
  */
 export function relyingParty(request: Request): { rpID: string; origin: string } {
   const origin = request.headers.get("origin") ?? new URL(request.url).origin;
   const host = new URL(origin).hostname.replace(/^www\./, "");
-  const requestHost = new URL(request.url).hostname.replace(/^www\./, "");
-  if (host !== requestHost) throw new Error("Origen no coincide");
+  if (!allowedHosts(request).has(host)) throw new Error(`Origen no permitido: ${host}`);
   return { rpID: host, origin };
 }
 
