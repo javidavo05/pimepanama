@@ -57,3 +57,4 @@ Todas las migraciones se corren manualmente en **Supabase → SQL Editor**.
 | 0042 | `0042_verificacion_github.sql` | Project.githubCheck + githubCheckAt — estado del proyecto verificado con GitHub (commits, milestones, issues, PRs) | 2026-10-11 | ✅ Aplicado |
 | 0043 | `0043_asistente.sql` | AssistantAction — registro de lo que propone y hace el asistente (factura, tarea, nota, pago), con confirmación y deshacer | 2026-10-11 | ✅ Aplicado |
 | 0044 | `0044_calendario.sql` | EmpresaUser.calendarIcsEnc/calendarCheckedAt/calendarError — Google Calendar por dirección secreta iCal, cifrada, solo lectura | 2026-10-11 | ✅ Aplicado |
+| 0046 | `0046_calendario_para_google.sql` | EmpresaUser.calendarFeedToken — dirección .ics de Pime a la que se suscribe Google Calendar (citas, tareas, vencimientos) | 2026-10-12 | ✅ Aplicado |

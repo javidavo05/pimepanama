@@ -285,6 +285,8 @@ model EmpresaUser {
   calendarIcsEnc        String?
   calendarCheckedAt     DateTime?
   calendarError         String?
+  /// Llave de la dirección .ics que Google Calendar lee (migración 0046). Cambiarla revoca la anterior.
+  calendarFeedToken     String?                  @unique
   activityActed         ActivityEvent[]          @relation("ActivityActorEmpresa")
   /// PAT de GitHub cifrado (AES-256-GCM). Es del usuario, no del proyecto: un
   /// token sirve para todos sus repos.

@@ -119,8 +119,8 @@ export function CalendarioConfig() {
     <section className="bg-panel border border-line rounded-2xl p-6 space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-fg text-sm font-semibold">Google Calendar</h2>
-          <p className="text-fg-dim text-xs mt-1">Tus eventos en «Tu día» y en el asistente. Solo lectura.</p>
+          <h2 className="text-fg text-sm font-semibold">Tu Google Calendar en «Tu día»</h2>
+          <p className="text-fg-dim text-xs mt-1">Opcional, al revés: Pime lee tus eventos de Google para mostrarlos en «Tu día» y en el asistente.</p>
         </div>
         {s?.conectado
           ? <button type="button" onClick={() => void quitar()} className="inline-flex items-center min-h-11 px-4 rounded-lg text-sm font-semibold text-fg-dim hover:text-danger">Desconectar</button>

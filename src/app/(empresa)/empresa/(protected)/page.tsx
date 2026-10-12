@@ -3,7 +3,7 @@ import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { datosHoy, type ItemAgenda } from "@/lib/motor/hoy";
 import { BotonCobrar } from "@/components/empresa/cobrar/asistente-cobrar";
-import { BotonCalendario } from "@/components/empresa/calendario/asistente-calendario";
+import { BotonGoogle } from "@/components/empresa/calendario/pime-en-google";
 import { LazyDashboardRevenueChart as DashboardRevenueChart } from "@/components/empresa/revenue-chart-lazy";
 import { buildMonthlyRevenue, buildYearlyRevenue } from "@/lib/revenue-helpers";
 import { PAID_INVOICE_REVENUE_SELECT, paidInvoiceWhere, effectiveInvoiceAmount } from "@/lib/invoice-revenue";
@@ -100,10 +100,10 @@ export default async function HoyPage() {
             <h2 className={h2}>Tu día</h2>
             <Link href="/empresa/tareas" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">Tareas</Link>
           </div>
-          {d.calendario.estado === "sin" && (
+          {!user.calendarFeedToken && (
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-brand/5 px-4 py-3">
-              <p className="text-sm text-fg-mute">Suma tus eventos de Google Calendar a tu día.</p>
-              <BotonCalendario etiqueta="Conectar" className="inline-flex items-center min-h-11 px-4 rounded-lg bg-brand text-on-brand text-sm font-semibold" />
+              <p className="text-sm text-fg-mute">Ve tus citas, tareas y cobros de Pime en tu Google Calendar.</p>
+              <BotonGoogle className="inline-flex items-center min-h-11 px-4 rounded-lg bg-brand text-on-brand text-sm font-semibold" />
             </div>
           )}
           {d.calendario.estado === "error" && <p className="mt-2 text-sm text-danger">No pude leer tu Google Calendar: {d.calendario.error} <Link href="/empresa/configuracion" className="underline font-semibold">Revisar</Link></p>}
