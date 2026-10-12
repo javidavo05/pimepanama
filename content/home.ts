@@ -48,12 +48,12 @@ export const HOME: Record<Lang, {
       eyebrow: "Desarrollo de software a medida · Panamá",
       titulo: ["Software 100\u00a0%\u00a0a\u00a0medida,", "con trato personal"],
       bajada: "Somos un equipo de profesionales en Panamá: diseñamos y programamos su sistema desde cero, usted habla directo con quien lo construye, y paga un precio cerrado por fase con tres meses de garantía.",
-      cta: { href: "/es/contacto", label: "Pedir una propuesta" },
-      secundario: { href: "/es/portfolio", label: "Ver sistemas entregados" },
+      cta: { href: "/agendar", label: "Agendar una llamada gratis" },
+      secundario: { href: "/es/contacto", label: "Pedir una propuesta" },
       metadatos: [
         { k: "Qué hacemos", v: "ERP, CRM, SaaS, portales y sitios web" },
-        { k: "Cómo", v: "100 % a medida, desde cero, sin plantillas" },
         { k: "Con quién", v: "Directo con el equipo que lo programa" },
+        { k: "Precio", v: "Desde USD 40 la hora, cerrado por fase" },
       ],
       ventana: {
         app: "Suite", buscar: "Buscar cliente, módulo o documento", usuario: "JV", hoy: "Miércoles 8 de octubre",
@@ -150,12 +150,12 @@ export const HOME: Record<Lang, {
       eyebrow: "Custom software development · Panama",
       titulo: ["100%\u00a0custom software,", "built for you personally"],
       bajada: "A team of professionals in Panama that designs and codes your system from scratch. Your time zone, priced in US dollars, a fixed price per phase and a three-month warranty — and you talk directly to the people who build it.",
-      cta: { href: "/en/contacto", label: "Request a proposal" },
-      secundario: { href: "/en/portfolio", label: "See delivered systems" },
+      cta: { href: "/agendar?lang=en", label: "Book a free call" },
+      secundario: { href: "/en/contacto", label: "Request a proposal" },
       metadatos: [
         { k: "What we build", v: "ERP, CRM, SaaS, portals and websites" },
-        { k: "For", v: "Companies in the US and Panama" },
-        { k: "Pricing", v: "Fixed price per phase, in US dollars" },
+        { k: "Pricing", v: "From USD 40/hour · fixed price per phase" },
+        { k: "We work in", v: "English and Spanish · your time zone" },
       ],
       ventana: {
         app: "Suite", buscar: "Search client, module or document", usuario: "JV", hoy: "Wednesday, October 8",
@@ -332,7 +332,7 @@ export const INDUSTRIAS_SEC: Record<Lang, { eyebrow: string; titulo: string[]; b
  *  numerados en círculos, nombre y dominio). Teléfono de SITE. */
 export const CIERRE: Record<Lang, { eyebrow: string; titulo: string[]; bajada: string; pasos: { titulo: string; texto: string }[]; cta: { href: string; label: string }; gracias: string }> = {
   es: {
-    eyebrow: "07 · Hablemos",
+    eyebrow: "08 · Hablemos",
     titulo: ["Cuéntenos cómo opera", "hoy su empresa"],
     bajada: "En una conversación de media hora sabemos si un sistema a medida le conviene y qué fase tendría sentido primero.",
     pasos: [
@@ -340,11 +340,11 @@ export const CIERRE: Record<Lang, { eyebrow: string; titulo: string[]; bajada: s
       { titulo: "Reciba una propuesta", texto: "Precio cerrado por fase, alcance claro, sin letra chica." },
       { titulo: "Empiece por lo urgente", texto: "La primera fase se usa desde que se entrega." },
     ],
-    cta: { href: "/es/contacto", label: "Pedir una propuesta" },
+    cta: { href: "/agendar", label: "Agendar una llamada gratis" },
     gracias: "Gracias por la confianza.",
   },
   en: {
-    eyebrow: "07 · Let's talk",
+    eyebrow: "08 · Let's talk",
     titulo: ["Tell us how your", "company runs today"],
     bajada: "In a half-hour conversation we know whether a custom system makes sense for you and which phase should come first.",
     pasos: [
@@ -352,7 +352,7 @@ export const CIERRE: Record<Lang, { eyebrow: string; titulo: string[]; bajada: s
       { titulo: "Get a proposal", texto: "Fixed price per phase, clear scope, no fine print." },
       { titulo: "Start with what's urgent", texto: "The first phase is in use from the day it ships." },
     ],
-    cta: { href: "/en/contacto", label: "Request a proposal" },
+    cta: { href: "/agendar?lang=en", label: "Book a free call" },
     gracias: "Thank you for your trust.",
   },
 };
@@ -360,8 +360,8 @@ export const CIERRE: Record<Lang, { eyebrow: string; titulo: string[]; bajada: s
 /** Footer. Elegido por Javier el 2026-10-09 entre tres direcciones; después pidió quitar el teléfono: todo
  *  contacto entra al sistema de leads del CMS, así que el footer cierra con dos llamadas a la acción. */
 export const FOOTER: Record<Lang, { eyebrow: string; titulo: string; texto: string; cta: { href: string; label: string }; cta2: { href: string; label: string }; nav: string; idioma: { href: string; label: string }; derechos: string; lugar: string }> = {
-  es: { eyebrow: "Hablemos hoy", titulo: "Pida una propuesta", texto: "Cuéntenos su operación en cuatro pasos y recibe una propuesta con precio cerrado por fase.", cta: { href: "/es/contacto", label: "Pedir una propuesta" }, cta2: { href: "/es/contacto?intencion=conversacion", label: "Agendar una conversación" }, nav: "Navegación", idioma: { href: "/en", label: "English" }, derechos: "Todos los derechos reservados", lugar: "Panamá" },
-  en: { eyebrow: "Let's talk today", titulo: "Request a proposal", texto: "Tell us about your operation in four steps and get a proposal with a fixed price per phase.", cta: { href: "/en/contacto", label: "Request a proposal" }, cta2: { href: "/en/contacto?intencion=conversacion", label: "Book a conversation" }, nav: "Navigation", idioma: { href: "/es", label: "Español" }, derechos: "All rights reserved", lugar: "Panama" },
+  es: { eyebrow: "Hablemos hoy", titulo: "Pida una propuesta", texto: "Cuéntenos su operación en cuatro pasos y recibe una propuesta con precio cerrado por fase.", cta: { href: "/es/contacto", label: "Pedir una propuesta" }, cta2: { href: "/agendar", label: "Agendar una llamada" }, nav: "Navegación", idioma: { href: "/en", label: "English" }, derechos: "Todos los derechos reservados", lugar: "Panamá" },
+  en: { eyebrow: "Let's talk today", titulo: "Request a proposal", texto: "Tell us about your operation in four steps and get a proposal with a fixed price per phase.", cta: { href: "/en/contacto", label: "Request a proposal" }, cta2: { href: "/agendar?lang=en", label: "Book a call" }, nav: "Navigation", idioma: { href: "/es", label: "Español" }, derechos: "All rights reserved", lugar: "Panama" },
 };
 
 /** Wizard de contacto (/contacto). Cuatro pasos con opción preseleccionada: nunca un formulario vacío. El

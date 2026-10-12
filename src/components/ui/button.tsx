@@ -34,6 +34,14 @@ export function Button({ children, href, variant = "primary", size = "md", arrow
       {arrow && <span className="arrow" aria-hidden="true">→</span>}
     </>
   );
+  // /agendar, /empresa y /cliente los sirve el CMS (reenvío): navegación completa, no del enrutador de este sitio.
+  if (href && (/^\/(agendar|empresa|cliente)(\/|\?|$)/.test(href) || href.startsWith("http"))) {
+    return (
+      <a href={href} className={cls} data-motion="magnetic" ref={(n) => { ref.current = n; }} onPointerMove={move} onPointerLeave={leave}>
+        {inner}
+      </a>
+    );
+  }
   if (href) {
     return (
       <Link href={href} className={cls} data-motion="magnetic" ref={(n) => { ref.current = n; }} onPointerMove={move} onPointerLeave={leave}>

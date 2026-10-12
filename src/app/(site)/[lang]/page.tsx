@@ -5,6 +5,8 @@ import { FeaturedWork } from "@/components/sections/featured-work";
 import { Process } from "@/components/sections/process";
 import { Industries } from "@/components/sections/industries";
 import { Closing } from "@/components/sections/closing";
+import { Faq } from "@/components/sections/faq";
+import { jsonLdFaq } from "../../../../content/faq";
 import type { Metadata } from "next";
 import type { Lang } from "../../../../content/site";
 import { SEO } from "../../../../content/seo";
@@ -27,7 +29,9 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
       <FeaturedWork lang={lang} />
       <Process lang={lang} />
       <Industries lang={lang} />
+      <Faq lang={lang} />
       <Closing lang={lang} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLdFaq(lang)) }} />
     </main>
   );
 }

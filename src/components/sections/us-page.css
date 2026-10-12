@@ -1,0 +1,23 @@
+.us { padding-top: calc(72px + var(--s-8)); }
+.us-head { display: grid; gap: var(--s-4); justify-items: start; padding-bottom: var(--s-12); }
+.us-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-6); margin-top: var(--s-2); }
+.us-why { display: grid; gap: var(--s-8); padding: var(--section-y) var(--gutter); border-top: var(--border); }
+.us-why-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-6); }
+@media (min-width: 768px) { .us-why-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-8); } }
+.us-why-list li { display: grid; gap: var(--s-3); justify-items: start; padding-top: var(--s-4); border-top: 1px solid var(--line); min-width: 0; }
+.us-why-t { font-family: var(--font-display); font-weight: var(--w-display); font-size: var(--text-lg); letter-spacing: var(--tracking-tight); margin-bottom: var(--s-1); }
+.us-why-list p { color: var(--fg-2); line-height: var(--leading-body); }
+.us-ink { background: var(--bg); color: var(--fg); padding: var(--section-y) 0; }
+.us-ink-in { display: grid; gap: var(--s-8); }
+.us-price { display: grid; gap: var(--s-6); margin: 0; }
+@media (min-width: 640px) { .us-price { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .us-price { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.us-price > div { display: grid; gap: var(--s-2); padding-top: var(--s-4); border-top: 1px solid var(--line-strong); min-width: 0; }
+.us-price dt { font-family: var(--font-display); font-weight: var(--w-display); font-size: clamp(28px, 1.25rem + 1.5vw, 40px); white-space: nowrap; line-height: 1.05; letter-spacing: var(--tracking-display); overflow-wrap: anywhere; }
+.us-price dd { margin: 0; color: var(--fg-2); }
+.us-note { color: var(--fg-2); max-width: 64ch; line-height: var(--leading-body); }
+.us-build { display: grid; gap: var(--s-6); padding: var(--section-y) var(--gutter); }
+.us-build-list { list-style: none; margin: 0; padding: 0; display: grid; }
+.us-build-list li { padding: var(--s-4) 0; border-top: 1px solid var(--line); font-family: var(--font-display); font-weight: var(--w-display); font-size: var(--text-lg); letter-spacing: var(--tracking-tight); }
+.us-build-list li:last-child { border-bottom: 1px solid var(--line); }
+.us-links { display: flex; flex-wrap: wrap; gap: var(--s-6); }

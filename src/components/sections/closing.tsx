@@ -7,13 +7,13 @@ import { CIERRE } from "../../../content/home";
 import type { Lang } from "../../../content/site";
 import "./closing.css";
 
-export function Closing({ lang }: { lang: Lang }) {
+export function Closing({ lang, eyebrow }: { lang: Lang; eyebrow?: string }) {
   const t = CIERRE[lang];
   return (
     <section className="cl" id="contacto" data-theme="ink" data-motion="rise-magnetic" aria-labelledby="cl-title">
       <div className="wrap cl-in">
         <header className="cl-head">
-          <Eyebrow>{t.eyebrow}</Eyebrow>
+          <Eyebrow>{eyebrow ?? t.eyebrow}</Eyebrow>
           <Lines as="h2" className="t-1 cl-t" lines={t.titulo} />
           <span id="cl-title" className="sr-only">{t.titulo.join(" ")}</span>
           <p className="lead" data-reveal="rise" style={{ "--delay": "200ms" } as React.CSSProperties}>{t.bajada}</p>

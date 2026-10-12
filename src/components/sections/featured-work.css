@@ -1,5 +1,5 @@
 /* ---------- Carril fijado ---------- */
-.fw { position: relative; min-width: 0; overflow-x: clip; }
+.fw { position: relative; min-width: 0; overflow-x: clip; --card: 440px; }
 .fw-pin, .fw-head, .fw-head-l, .fw-head-r, .fw-rail-outer, .fw-rail, .fw-rail > li, .fw-card, .fw-link, .fw-visual, .fw-body, .fw-top, .fw-foot { min-width: 0; } /* .fw-rail-outer: sin min-width 0, Chromium ensancha la columna de la grilla al ancho del carril y recorta la cabecera */
 .fw-pin { display: grid; gap: var(--s-8); padding: var(--section-y) 0 var(--s-12); }
 .fw-head { display: grid; gap: var(--s-6); }
@@ -36,13 +36,21 @@
     .fw-head-r .lead { font-size: var(--text-md); max-width: 48ch; }
     .fw-rail-outer { overflow: visible; scroll-snap-type: none; }
     .fw-rail { animation: fw-slide linear both; animation-timeline: --fw; animation-range: contain 4% contain 100%; will-change: transform; }
-    .fw-rail > li { width: 440px; }
+    .fw-rail > li { width: var(--card); }
     .fw-hint { display: inline; }
     /* enfoque: cada tarjeta crece al pasar por el centro, en su tramo del recorrido */
     .fw-card { animation: fw-focus linear both; animation-timeline: --fw; animation-range: contain calc((var(--i) - 1) * 100% / (var(--n) - 1)) contain calc((var(--i) + 1) * 100% / (var(--n) - 1)); }
+   }
+  /* Pantallas bajas (plegable o laptop en horizontal): el carril fijado no cabe entero. Se quita la línea de
+     apoyo y se aprieta el ritmo para que el pie (pista y contador) no quede recortado. */
+  @media (min-width: 1024px) and (max-height: 900px) {
+    .fw { --card: 380px; }
+    .fw-pin { padding-top: calc(72px + var(--s-2)); padding-bottom: var(--s-3); gap: var(--s-4); }
+    .fw-head-r .lead, .fw-foot { display: none; }
+    .fw-body { padding: var(--s-4); }
   }
 }
-@keyframes fw-slide { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(calc(-1 * (var(--n) - 1) * (440px + 24px) + 100vw - 440px - 2 * var(--gutter)), 0, 0); } }
+@keyframes fw-slide { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(calc(-1 * (var(--n) - 1) * (var(--card) + 24px) + 100vw - var(--card) - 2 * var(--gutter)), 0, 0); } }
 @keyframes fw-focus { 0% { scale: 0.97; opacity: 0.55; } 50% { scale: 1; opacity: 1; } 100% { scale: 0.97; opacity: 0.55; } }
 
 /* ---------- Tarjeta ---------- */
