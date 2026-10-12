@@ -78,7 +78,7 @@ export async function opcionesDeCobro(userId: string, clientId: string) {
 }
 
 export type Cobro =
-  | { tipo: "fase"; faseId: string }
+  | { tipo: "fase"; faseId: string; sinImpuesto?: boolean }
   | { tipo: "plan"; projectId: string }
   | { tipo: "horas"; clientId: string }
   | { tipo: "monto"; clientId: string; projectId?: string | null; concepto: string; monto: number };
@@ -119,7 +119,7 @@ export async function crearCobro(u: Equipo, cobro: Cobro): Promise<{ id: string;
     if (f.invoiceId) throw new Error("Esta fase ya tiene factura.");
     const clientId = f.project.clientId ?? f.project.clients[0]?.clientId;
     if (!clientId) throw new Error("El proyecto no tiene cliente.");
-    const d = await crearFactura(u, { clientId, projectId: f.projectId, titulo: `${f.project.name} · ${f.name}`, lineas: [{ description: `${f.project.name}: fase ${f.name}`, unitPrice: Number(f.price) }] });
+    const d = await crearFactura(u, { clientId, projectId: f.projectId, titulo: `${f.project.name} · ${f.name}`, lineas: [{ description: `${f.project.name}: fase ${f.name}`, unitPrice: Number(f.price) }], sinImpuesto: cobro.sinImpuesto });
     await prisma.projectPhase.update({ where: { id: f.id }, data: { invoiceId: d.id } });
     await registrarEvento({ userId: u.id, clientId, projectId: f.projectId, entityType: "factura", entityId: d.id, kind: "factura_fase", title: `Factura ${d.number} de la fase ${f.name} en borrador`, visibility: "interno" });
     return { id: d.id, number: d.number };

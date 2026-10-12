@@ -26,6 +26,13 @@ export const HERRAMIENTAS: Def[] = [
   def("proponer_factura", "Propone una factura en borrador para un cliente por un concepto y monto. Con proyectoId queda dentro de ese proyecto; sin él es una factura aparte del cliente. No la envía a nadie.", { clienteId: { type: "string" }, concepto: { type: "string" }, monto: { type: "number" }, proyectoId: { type: "string" } }, ["clienteId", "concepto", "monto"]),
   def("proponer_tarea", "Propone una tarea, opcionalmente en un proyecto y con fecha de vencimiento (YYYY-MM-DD).", { titulo: { type: "string" }, proyectoId: { type: "string" }, vence: { type: "string" }, detalle: { type: "string" } }, ["titulo"]),
   def("proponer_nota", "Propone una nota interna en la línea de tiempo de un proyecto (no la ve el cliente).", { proyectoId: { type: "string" }, texto: { type: "string" } }, ["proyectoId", "texto"]),
+  def("proponer_fase", "Propone una fase de un proyecto con su precio y, si ya pagaron algo, su factura y los pagos recibidos, todo en una sola propuesta. Usa proyectoId si el proyecto existe; si el cliente no tiene proyecto para esto, manda clienteId y proyectoNuevo (nombre). pagos: lista de {monto, fecha YYYY-MM-DD, metodo opcional}. Con pagos se emite la factura de la fase y cada pago queda abonado a ella. conItbms: true solo si la fase lleva ITBMS encima del precio.", {
+    proyectoId: { type: "string" }, clienteId: { type: "string" }, proyectoNuevo: { type: "string" },
+    nombre: { type: "string" }, precio: { type: "number" }, descripcion: { type: "string" },
+    estado: { type: "string", enum: ["pendiente", "en_curso", "en_revision", "hecha"] },
+    conItbms: { type: "boolean" },
+    pagos: { type: "array", items: { type: "object", properties: { monto: { type: "number" }, fecha: { type: "string" }, metodo: { type: "string" }, referencia: { type: "string" } }, required: ["monto", "fecha"], additionalProperties: false } },
+  }, ["nombre", "precio"]),
   def("proponer_pago", "Propone registrar un pago recibido de un cliente. fecha YYYY-MM-DD; metodo: transferencia, yappy, tarjeta, efectivo, cheque u otro. facturaId opcional.", { clienteId: { type: "string" }, monto: { type: "number" }, fecha: { type: "string" }, metodo: { type: "string" }, referencia: { type: "string" }, facturaId: { type: "string" } }, ["clienteId", "monto", "fecha", "metodo"]),
 ];
 
@@ -43,12 +50,23 @@ export async function ejecutarHerramienta(userId: string, nombreHerr: string, ar
       return r.length ? r.map((x) => ({ clienteId: x.item.id, nombre: nombre(x.item), contacto: x.item.company ? x.item.name : null, linea: x.item.brandLine, coincidencia: Math.round(x.puntaje * 100) })) : { resultado: "No encontré ningún cliente parecido." };
     }
     case "resumen_cliente": {
-      const c = await prisma.client.findFirst({ where: { id: s("clienteId"), userId }, select: { id: true, name: true, company: true, brandLine: true, hourlyRate: true, documents: { where: { type: "FACTURA" }, select: { id: true, number: true, status: true, total: true, amountPaid: true, dueDate: true } }, payments: { select: { documentId: true, amount: true, status: true } }, projects: { where: { status: { not: "CANCELLED" } }, select: { id: true, name: true, status: true } }, tickets: { where: { status: { notIn: ["resuelto", "cerrado"] } }, select: { number: true, title: true } } } });
+      const c = await prisma.client.findFirst({ where: { id: s("clienteId"), userId }, select: { id: true, name: true, company: true, brandLine: true, hourlyRate: true, documents: { where: { type: { in: ["FACTURA", "COTIZACION"] } }, orderBy: { issueDate: "asc" }, select: { id: true, type: true, number: true, title: true, status: true, total: true, amountPaid: true, dueDate: true, issueDate: true, content: true } }, payments: { orderBy: { paidAt: "asc" }, select: { documentId: true, amount: true, status: true, paidAt: true, method: true } }, contracts: { select: { title: true, status: true, projectId: true } }, projects: { where: { status: { not: "CANCELLED" } }, select: { id: true, name: true, status: true } }, projectLinks: { where: { project: { status: { not: "CANCELLED" } } }, select: { project: { select: { id: true, name: true, status: true } } } }, tickets: { where: { status: { notIn: ["resuelto", "cerrado"] } }, select: { number: true, title: true } } } });
       if (!c) return { error: "No encontré ese cliente." };
-      const saldo = saldoCliente(c.documents, c.payments);
+      const facturas = c.documents.filter((d) => d.type === "FACTURA");
+      const saldo = saldoCliente(facturas, c.payments);
       const hoy = new Date();
-      const vencidas = c.documents.filter((d) => d.status !== "PAID" && d.status !== "DRAFT" && d.status !== "CANCELLED" && d.dueDate && d.dueDate < hoy).map((d) => d.number);
-      return { cliente: nombre(c), linea: c.brandLine, facturado: usd(saldo.facturado), pagado: usd(saldo.pagado), porCobrar: usd(saldo.pendiente), facturasVencidas: vencidas, proyectos: c.projects.map((p) => ({ proyectoId: p.id, nombre: p.name, estado: p.status })), ticketsAbiertos: c.tickets };
+      const vencidas = facturas.filter((d) => d.status !== "PAID" && d.status !== "DRAFT" && d.status !== "CANCELLED" && d.dueDate && d.dueDate < hoy).map((d) => d.number);
+      const concepto = (d: { title: string; content: unknown }) => ((d.content as { lineItems?: { description?: string }[] } | null)?.lineItems?.[0]?.description) || d.title;
+      const proyectos = new Map<string, { proyectoId: string; nombre: string; estado: string }>();
+      for (const p of [...c.projects, ...c.projectLinks.map((l) => l.project)]) proyectos.set(p.id, { proyectoId: p.id, nombre: p.name, estado: p.status });
+      return {
+        cliente: nombre(c), linea: c.brandLine, facturado: usd(saldo.facturado), pagado: usd(saldo.pagado), porCobrar: usd(saldo.pendiente), facturasVencidas: vencidas,
+        proyectos: [...proyectos.values()],
+        contratos: c.contracts.map((k) => ({ titulo: k.title, estado: k.status, conProyecto: !!k.projectId })),
+        documentos: c.documents.map((d) => ({ tipo: d.type, numero: d.number, fecha: d.issueDate.toISOString().slice(0, 10), concepto: concepto(d), total: usd(Number(d.total ?? 0)), estado: d.status })),
+        pagosRegistrados: c.payments.filter((p) => p.status === "confirmado").map((p) => ({ fecha: p.paidAt.toISOString().slice(0, 10), monto: usd(Number(p.amount)), metodo: p.method })),
+        ticketsAbiertos: c.tickets,
+      };
     }
     case "buscar_proyecto": {
       const ps = await prisma.project.findMany({ where: { userId, status: { not: "CANCELLED" }, ...(s("clienteId") ? { OR: [{ clientId: s("clienteId") }, { clients: { some: { clientId: s("clienteId") } } }] } : {}) }, select: { id: true, name: true, status: true, client: { select: { name: true, company: true } } } });
@@ -92,6 +110,39 @@ export async function ejecutarHerramienta(userId: string, nombreHerr: string, ar
     const proj = await prisma.project.findFirst({ where: { id: s("proyectoId"), userId }, select: { id: true, name: true } });
     if (!proj) return { error: "No encontré ese proyecto." };
     return crear("nota", { proyectoId: proj.id, texto: s("texto") }, `Nota interna en ${proj.name}: ${s("texto").slice(0, 120)}`);
+  }
+  if (nombreHerr === "proponer_fase") {
+    const precio = Math.round(Number(args.precio) * 100) / 100;
+    if (!s("nombre") || !(precio > 0)) return { error: "Falta el nombre de la fase o su precio." };
+    let proyecto: { id: string | null; nombre: string; clienteId: string | null; clienteNombre: string | null };
+    if (s("proyectoId")) {
+      const p = await prisma.project.findFirst({ where: { id: s("proyectoId"), userId }, select: { id: true, name: true, clientId: true, client: { select: { name: true, company: true } }, clients: { select: { client: { select: { id: true, name: true, company: true } } }, take: 1 } } });
+      if (!p) return { error: "No encontré ese proyecto." };
+      const cl = p.client ? { id: p.clientId, ...p.client } : p.clients[0]?.client ?? null;
+      proyecto = { id: p.id, nombre: p.name, clienteId: cl?.id ?? null, clienteNombre: cl ? nombre(cl) : null };
+    } else {
+      const c = await prisma.client.findFirst({ where: { id: s("clienteId"), userId }, select: { id: true, name: true, company: true } });
+      if (!c || !s("proyectoNuevo")) return { error: "Manda proyectoId, o clienteId y proyectoNuevo para crear el proyecto." };
+      proyecto = { id: null, nombre: s("proyectoNuevo"), clienteId: c.id, clienteNombre: nombre(c) };
+    }
+    const pagosIn = Array.isArray(args.pagos) ? (args.pagos as Record<string, unknown>[]) : [];
+    const metodos = ["transferencia", "yappy", "tarjeta", "efectivo", "cheque", "otro"];
+    const pagos = pagosIn.map((p) => ({ monto: Math.round(Number(p.monto) * 100) / 100, fecha: String(p.fecha ?? ""), metodo: metodos.includes(String(p.metodo ?? "").toLowerCase()) ? String(p.metodo).toLowerCase() : "otro", referencia: typeof p.referencia === "string" ? p.referencia : null }));
+    if (pagos.some((p) => !(p.monto > 0) || !/^\d{4}-\d{2}-\d{2}$/.test(p.fecha))) return { error: "Cada pago necesita monto y fecha (YYYY-MM-DD)." };
+    const conItbms = args.conItbms === true;
+    const tasa = conItbms ? Number((await prisma.companyConfig.findFirst({ where: { users: { some: { id: userId } } }, select: { taxRatePercent: true } }).catch(() => null))?.taxRatePercent ?? 0) : 0;
+    const total = Math.round(precio * (1 + tasa / 100) * 100) / 100;
+    const pagado = Math.round(pagos.reduce((a, p) => a + p.monto, 0) * 100) / 100;
+    if (pagado > total + 0.005) return { error: `Los pagos (${usd(pagado)}) pasan del precio de la fase (${usd(total)}). Revisa los montos.` };
+    if (pagos.length && !proyecto.clienteId) return { error: "Ese proyecto no tiene cliente: no puedo abonarle pagos. Asígnale un cliente primero." };
+    const estado = ["pendiente", "en_curso", "en_revision", "hecha"].includes(s("estado")) ? s("estado") : pagos.length ? "en_curso" : "pendiente";
+    const fechaCorta = (f: string) => new Date(`${f}T12:00:00Z`).toLocaleDateString("es-PA", { day: "numeric", month: "short", timeZone: "UTC" });
+    const resumen = [
+      `Fase «${s("nombre")}» · ${usd(precio)}${conItbms ? " + ITBMS" : ""} · ${estado.replace("_", " ")}`,
+      `${proyecto.id ? "proyecto" : "proyecto nuevo"} ${proyecto.nombre}${proyecto.clienteNombre ? ` de ${proyecto.clienteNombre}` : ""}`,
+      ...(pagos.length ? [`factura de la fase por ${usd(total)}`, `${pagos.length} ${pagos.length === 1 ? "pago" : "pagos"}: ${pagos.map((p) => `${usd(p.monto)} (${fechaCorta(p.fecha)})`).join(", ")}`, `queda ${usd(Math.max(0, total - pagado))}`] : []),
+    ].join(" · ");
+    return crear("fase", { proyectoId: proyecto.id, clienteId: proyecto.clienteId, proyectoNuevo: proyecto.id ? null : proyecto.nombre, nombre: s("nombre"), descripcion: s("descripcion") || null, precio, estado, conItbms, pagos }, resumen);
   }
   if (nombreHerr === "proponer_pago") {
     const c = await prisma.client.findFirst({ where: { id: s("clienteId"), userId }, select: { id: true, name: true, company: true } });
