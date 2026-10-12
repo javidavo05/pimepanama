@@ -114,16 +114,20 @@ export async function ejecutarHerramienta(userId: string, nombreHerr: string, ar
   if (nombreHerr === "proponer_fase") {
     const precio = Math.round(Number(args.precio) * 100) / 100;
     if (!s("nombre") || !(precio > 0)) return { error: "Falta el nombre de la fase o su precio." };
-    let proyecto: { id: string | null; nombre: string; clienteId: string | null; clienteNombre: string | null };
+    let proyecto: { id: string | null; nombre: string; clienteId: string | null; clienteNombre: string | null; contratoId?: string | null };
     if (s("proyectoId")) {
       const p = await prisma.project.findFirst({ where: { id: s("proyectoId"), userId }, select: { id: true, name: true, clientId: true, client: { select: { name: true, company: true } }, clients: { select: { client: { select: { id: true, name: true, company: true } } }, take: 1 } } });
       if (!p) return { error: "No encontré ese proyecto." };
       const cl = p.client ? { id: p.clientId, ...p.client } : p.clients[0]?.client ?? null;
       proyecto = { id: p.id, nombre: p.name, clienteId: cl?.id ?? null, clienteNombre: cl ? nombre(cl) : null };
     } else {
-      const c = await prisma.client.findFirst({ where: { id: s("clienteId"), userId }, select: { id: true, name: true, company: true } });
+      const c = await prisma.client.findFirst({ where: { id: s("clienteId"), userId }, select: { id: true, name: true, company: true, contracts: { where: { projectId: null, status: { in: ["DRAFT", "ACTIVE"] } }, select: { id: true, title: true } } } });
       if (!c || !s("proyectoNuevo")) return { error: "Manda proyectoId, o clienteId y proyectoNuevo para crear el proyecto." };
-      proyecto = { id: null, nombre: s("proyectoNuevo"), clienteId: c.id, clienteNombre: nombre(c) };
+      // El proyecto es el del contrato del cliente: si tiene uno solo sin proyecto, se nombra por él
+      // («Fase 2 Genius» → «Genius») y queda ligado al confirmar.
+      const contrato = c.contracts.length === 1 ? c.contracts[0] : null;
+      const porContrato = contrato?.title.replace(/^\s*fase\s*\d+\s*[·:\-–]?\s*/i, "").trim();
+      proyecto = { id: null, nombre: porContrato || s("proyectoNuevo"), clienteId: c.id, clienteNombre: nombre(c), contratoId: contrato?.id ?? null };
     }
     const pagosIn = Array.isArray(args.pagos) ? (args.pagos as Record<string, unknown>[]) : [];
     const metodos = ["transferencia", "yappy", "tarjeta", "efectivo", "cheque", "otro"];
@@ -139,10 +143,11 @@ export async function ejecutarHerramienta(userId: string, nombreHerr: string, ar
     const fechaCorta = (f: string) => new Date(`${f}T12:00:00Z`).toLocaleDateString("es-PA", { day: "numeric", month: "short", timeZone: "UTC" });
     const resumen = [
       `Fase «${s("nombre")}» · ${usd(precio)}${conItbms ? " + ITBMS" : ""} · ${estado.replace("_", " ")}`,
-      `${proyecto.id ? "proyecto" : "proyecto nuevo"} ${proyecto.nombre}${proyecto.clienteNombre ? ` de ${proyecto.clienteNombre}` : ""}`,
+      `${proyecto.id ? "proyecto" : "proyecto nuevo"} ${proyecto.nombre}${proyecto.clienteNombre ? ` de ${proyecto.clienteNombre}` : ""}${proyecto.contratoId ? " (ligado a su contrato)" : ""}`,
       ...(pagos.length ? [`factura de la fase por ${usd(total)}`, `${pagos.length} ${pagos.length === 1 ? "pago" : "pagos"}: ${pagos.map((p) => `${usd(p.monto)} (${fechaCorta(p.fecha)})`).join(", ")}`, `queda ${usd(Math.max(0, total - pagado))}`] : []),
     ].join(" · ");
-    return crear("fase", { proyectoId: proyecto.id, clienteId: proyecto.clienteId, proyectoNuevo: proyecto.id ? null : proyecto.nombre, nombre: s("nombre"), descripcion: s("descripcion") || null, precio, estado, conItbms, pagos }, resumen);
+    const hecho = await crear("fase", { proyectoId: proyecto.id, clienteId: proyecto.clienteId, proyectoNuevo: proyecto.id ? null : proyecto.nombre, contratoId: proyecto.contratoId ?? null, nombre: s("nombre"), descripcion: s("descripcion") || null, precio, estado, conItbms, pagos }, resumen);
+    return { ...hecho, proyecto: proyecto.nombre, aviso: proyecto.contratoId ? `El proyecto se llama «${proyecto.nombre}» como su contrato; usa ese nombre en tu respuesta.` : undefined };
   }
   if (nombreHerr === "proponer_pago") {
     const c = await prisma.client.findFirst({ where: { id: s("clienteId"), userId }, select: { id: true, name: true, company: true } });

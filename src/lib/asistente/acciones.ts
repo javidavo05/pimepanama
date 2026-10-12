@@ -20,6 +20,7 @@ async function crearFaseConPagos(u: U, actionId: string, p: Record<string, unkno
       const nuevo = await prisma.project.create({ data: { userId: u.id, name: String(p.proyectoNuevo).slice(0, 200), clientId: (p.clienteId as string) || null, status: "ACTIVE" } });
       c.proyectoId = nuevo.id; c.proyectoCreado = true;
       if (p.clienteId) await unirClienteAProyecto(u.id, nuevo.id, String(p.clienteId));
+      if (p.contratoId) await prisma.contract.updateMany({ where: { id: String(p.contratoId), userId: u.id, projectId: null }, data: { projectId: nuevo.id } });
     }
     const ultima = await prisma.projectPhase.aggregate({ where: { projectId: c.proyectoId }, _max: { sortOrder: true } });
     const estado = String(p.estado);
@@ -52,6 +53,7 @@ async function deshacerCreado(userId: string, c: Creado) {
   }
   if (c.faseId) await prisma.projectPhase.deleteMany({ where: { id: c.faseId, project: { userId } } });
   if (c.proyectoCreado && c.proyectoId) {
+    await prisma.contract.updateMany({ where: { projectId: c.proyectoId, userId }, data: { projectId: null } });
     const resto = await prisma.projectPhase.count({ where: { projectId: c.proyectoId } });
     if (!resto) await prisma.project.deleteMany({ where: { id: c.proyectoId, userId } });
   }
