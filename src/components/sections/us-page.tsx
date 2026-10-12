@@ -23,7 +23,7 @@ export function UsPage() {
       </header>
 
       <section className="wrap us-why" aria-labelledby="us-why">
-        <h2 id="us-why" className="t-2" data-reveal="rise">{t.porque.titulo}</h2>
+        <h2 id="us-why" className="t-2 eager-rise" style={{ "--delay": "360ms" } as React.CSSProperties}>{t.porque.titulo}</h2>
         <ol className="us-why-list">
           {t.porque.items.map((x, i) => (
             <li key={x.t} data-reveal="rise" style={{ "--delay": `${i * 80}ms` } as React.CSSProperties}><NumChip n={i + 1} /><div><h3 className="us-why-t">{x.t}</h3><p>{x.x}</p></div></li>
