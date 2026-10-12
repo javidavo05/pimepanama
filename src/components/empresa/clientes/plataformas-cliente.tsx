@@ -43,7 +43,7 @@ export function PlataformasCliente({ clientId, plataformas, className, h2 }: { c
               [
                 "Repo",
                 p.githubRepo ? (
-                  <a href={`https://github.com/${p.githubRepo}`} target="_blank" rel="noopener noreferrer" className="text-brand-fg hover:underline [overflow-wrap:anywhere]">
+                  <a href={`https://github.com/${p.githubRepo}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-11 -my-3 lg:min-h-8 lg:-my-2 text-brand-fg hover:underline [overflow-wrap:anywhere]">
                     {p.githubRepo}
                   </a>
                 ) : (
@@ -73,16 +73,14 @@ export function PlataformasCliente({ clientId, plataformas, className, h2 }: { c
                 <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
                   <div className="min-w-0">
                     <p className="text-fg text-sm font-semibold [overflow-wrap:anywhere]">{p.name}</p>
-                    <p className="text-fg-dim text-xs [overflow-wrap:anywhere]">
-                      {p.project ? `${p.project.name} · ` : ""}
-                      {p.accessUrl ? (
-                        <a href={p.accessUrl.includes("://") ? p.accessUrl : `https://${p.accessUrl}`} target="_blank" rel="noopener noreferrer" className="text-brand-fg hover:underline">
-                          {host(p.accessUrl)}
-                        </a>
-                      ) : (
-                        "Sin enlace"
-                      )}
-                    </p>
+                    {p.project && <p className="text-fg-dim text-xs [overflow-wrap:anywhere]">{p.project.name}</p>}
+                    {p.accessUrl ? (
+                      <a href={p.accessUrl.includes("://") ? p.accessUrl : `https://${p.accessUrl}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center min-h-11 lg:min-h-8 text-xs text-brand-fg hover:underline [overflow-wrap:anywhere]">
+                        {host(p.accessUrl)}
+                      </a>
+                    ) : (
+                      <p className="text-fg-dim text-xs">Sin enlace</p>
+                    )}
                   </div>
                   <Link href={`/empresa/platforms?abrir=${p.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-xs text-brand-fg hover:underline shrink-0">
                     Abrir en Platforms

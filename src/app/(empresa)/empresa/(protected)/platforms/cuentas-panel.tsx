@@ -55,18 +55,18 @@ function Uso({ inv }: { inv: EmailSlotInventory }) {
 function Cupos({ inv }: { inv: EmailSlotInventory }) {
   if (inv.pro || inv.provider !== "supabase") return null;
   return (
-    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-2" aria-label="Cupos">
+    <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2" aria-label="Cupos">
       {Array.from({ length: PLAN_CAPACITY.supabase }, (_, i) => i + 1).map((n) => {
         const who = inv.bySlot.get(n)?.platformName ?? null;
         return (
           <li key={n} className={`flex items-center gap-2 min-w-0 px-3 min-h-8 rounded-md border text-xs ${who ? "border-line bg-fill text-fg-soft" : "border-ok/30 bg-ok/10 text-ok"}`}>
             <span className="tabular-nums text-fg-faint shrink-0">Cupo {n}</span>
-            <span className="truncate">{who ?? "Libre"}</span>
+            <span className="min-w-0 flex-1 truncate">{who ?? "Libre"}</span>
           </li>
         );
       })}
       {inv.unassigned.length > 0 && (
-        <li className="sm:col-span-2 text-xs text-warn">Sin número: {inv.unassigned.map((u) => u.platformName).join(", ")}</li>
+        <li className="sm:col-span-2 lg:col-span-1 text-xs text-warn">Sin número: {inv.unassigned.map((u) => u.platformName).join(", ")}</li>
       )}
     </ul>
   );
@@ -186,7 +186,7 @@ export function CuentasPanel({
                     {i ? <Uso inv={i} /> : null}
                     {i ? <Cupos inv={i} /> : null}
                   </div>
-                  <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+                  <div className="grid grid-cols-2 gap-2 lg:flex lg:flex-wrap lg:items-center lg:justify-end">
                     <button
                       type="button"
                       role="switch"
@@ -194,7 +194,7 @@ export function CuentasPanel({
                       aria-label={`Plan Pro de ${a.email} en ${nombre}`}
                       disabled={busy != null}
                       onClick={() => void onPlan(provider, a.email, a.plan === "PRO" ? "FREE" : "PRO")}
-                      className="inline-flex items-center gap-2 min-h-11 sm:min-h-8 px-2 text-xs text-fg-dim hover:text-fg disabled:opacity-50"
+                      className="inline-flex items-center justify-center lg:justify-start gap-2 min-h-11 sm:min-h-8 px-2 rounded-lg border border-line-mid lg:border-0 text-xs text-fg-dim hover:text-fg disabled:opacity-50"
                       title={a.planSource === "api" ? `${nombre} dice que está en ${PLAN_LABEL[provider][a.plan]}` : "Plan marcado a mano"}
                     >
                       <Badge tone={a.plan === "PRO" ? "brand" : "mute"}>{PLAN_LABEL[provider][a.plan]}</Badge>
@@ -273,7 +273,7 @@ export function CuentasPanel({
                     </p>
                   )}
                 </div>
-                <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:justify-end">
                   <button type="button" className={smallBtn} onClick={() => setGh({ cuenta: g.login })}>
                     Reemplazar token
                   </button>
@@ -281,7 +281,7 @@ export function CuentasPanel({
                     <Icon d={LOCAL_ICON.refresh} className="w-4 h-4" />
                     {busy === `refresh:${g.id}` ? "Actualizando…" : "Actualizar"}
                   </button>
-                  <button type="button" className={quietBtn} disabled={busy != null} onClick={() => void quitarGithub(g)}>
+                  <button type="button" className={`${quietBtn} col-span-2 sm:col-span-1`} disabled={busy != null} onClick={() => void quitarGithub(g)}>
                     {busy === `gh:${g.id}` ? "Quitando…" : "Quitar"}
                   </button>
                 </div>

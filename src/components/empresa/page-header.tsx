@@ -51,8 +51,10 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <div className={`flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between ${className}`}>
-      <div className="min-w-0">
+    // Si título y acciones no caben en una fila (tablet o plegable con la barra lateral), las acciones
+    // bajan a la siguiente en vez de aplastar el título.
+    <div className={`flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between ${className}`}>
+      <div className="min-w-0 sm:flex-1 sm:basis-64">
         {eyebrow}
         <h1 className="text-fg text-2xl font-semibold tracking-tight break-words">{title}</h1>
         {description && <div className="text-fg-dim text-sm mt-1">{description}</div>}

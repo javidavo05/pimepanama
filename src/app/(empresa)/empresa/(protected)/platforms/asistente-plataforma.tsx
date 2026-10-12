@@ -34,6 +34,7 @@ type Draft = {
   supabaseEmail: string;
   supabaseOtro: boolean;
   supabaseProjectRef: string | null;
+  supabaseProjectName: string | null;
   supabaseSlot: number | null;
   accessUrl: string;
   accessTouched: boolean;
@@ -55,6 +56,7 @@ const VACIO: Draft = {
   supabaseEmail: "",
   supabaseOtro: false,
   supabaseProjectRef: null,
+  supabaseProjectName: null,
   supabaseSlot: null,
   accessUrl: "",
   accessTouched: false,
@@ -190,7 +192,7 @@ export function AsistentePlataforma({
     const i = inv.byKey.get(accountKey("supabase", email));
     // Supabase gratis: se propone el primer cupo libre. Correo nuevo: cupo 1.
     const slot = !email ? null : i ? (i.pro ? null : (i.freeSlots[0] ?? null)) : 1;
-    set({ supabaseEmail: email, supabaseOtro: otro, supabaseProjectRef: null, supabaseSlot: slot });
+    set({ supabaseEmail: email, supabaseOtro: otro, supabaseProjectRef: null, supabaseProjectName: null, supabaseSlot: slot });
   }
 
   function aplicarItem(provider: "vercel" | "supabase", key: string | null, item: VercelProjectItem | SupabaseProjectItem | null) {
@@ -202,7 +204,7 @@ export function AsistentePlataforma({
         vercelProjectName: v?.name ?? null,
         accessUrl: prev.accessTouched || !v?.domain ? prev.accessUrl : `https://${v.domain}`,
       }));
-    } else set({ supabaseProjectRef: key });
+    } else set({ supabaseProjectRef: key, supabaseProjectName: item?.name ?? null });
   }
 
   async function guardar() {
@@ -273,8 +275,8 @@ export function AsistentePlataforma({
           Siguiente: {PASOS[paso]}
         </button>
       ) : (
-        <button type="button" className={btnAsistente.principal} disabled={guardando || !d.name.trim()} onClick={() => void guardar()}>
-          <span className="truncate max-w-[16rem]">{guardarLabel}</span>
+        <button type="button" className={`${btnAsistente.principal} min-w-0 text-center`} disabled={guardando || !d.name.trim()} onClick={() => void guardar()}>
+          <span className="min-w-0 [overflow-wrap:anywhere]">{guardarLabel}</span>
         </button>
       )}
     </>
@@ -396,7 +398,7 @@ export function AsistentePlataforma({
     ["Cliente", nombreCliente ? `${nombreCliente}${proyecto ? ` · ${proyecto.name}` : ""}` : "Sin cliente"],
     ["Repo", d.githubRepo],
     ["Vercel", d.vercelEmail.trim() ? `${d.vercelProjectName ?? "sin proyecto elegido"} · ${d.vercelEmail.trim()}` : null],
-    ["Supabase", d.supabaseEmail.trim() ? `${d.supabaseSlot ? `cupo ${d.supabaseSlot} · ` : ""}${d.supabaseEmail.trim()}` : null],
+    ["Supabase", d.supabaseEmail.trim() ? `${d.supabaseProjectName ?? "sin proyecto elegido"} · ${d.supabaseSlot ? `cupo ${d.supabaseSlot} · ` : ""}${d.supabaseEmail.trim()}` : null],
   ];
 
   return (

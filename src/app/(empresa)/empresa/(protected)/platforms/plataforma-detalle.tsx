@@ -38,7 +38,7 @@ function Fila({ label, children }: { label: string; children: React.ReactNode })
 
 function Externo({ href, children }: { href: string; children: React.ReactNode }) {
   return (
-    <a href={hrefOf(href)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 max-w-full text-brand-fg hover:underline min-w-0">
+    <a href={hrefOf(href)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 max-w-full min-h-11 -my-3 lg:min-h-8 lg:-my-2 text-brand-fg hover:underline min-w-0">
       <span className="truncate">{children}</span>
       <Icon d={LOCAL_ICON.external} className="w-4 h-4 shrink-0" />
     </a>
@@ -167,14 +167,14 @@ export function PlataformaDetalle({
           {cliente ? (
             <dl>
               <Fila label="Cliente">
-                <Link href={`/empresa/clientes/${cliente.id}`} className="text-brand-fg hover:underline [overflow-wrap:anywhere]">
+                <Link href={`/empresa/clientes/${cliente.id}`} className="inline-flex items-center min-h-11 -my-3 lg:min-h-8 lg:-my-2 text-brand-fg hover:underline [overflow-wrap:anywhere]">
                   {cliente.name}
                 </Link>
                 {cliente.archived && <span className="text-fg-faint text-xs"> · archivado</span>}
               </Fila>
               <Fila label="Proyecto">
                 {proyecto ? (
-                  <Link href={`/empresa/proyectos/${proyecto.id}`} className="text-brand-fg hover:underline [overflow-wrap:anywhere]">
+                  <Link href={`/empresa/proyectos/${proyecto.id}`} className="inline-flex items-center min-h-11 -my-3 lg:min-h-8 lg:-my-2 text-brand-fg hover:underline [overflow-wrap:anywhere]">
                     {proyecto.name}
                   </Link>
                 ) : (

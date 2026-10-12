@@ -9,7 +9,7 @@
  *
  * Nada se consulta solo: lo vivo sale de la caché del servidor (30 min) y se pide al abrir o al actualizar.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "@/components/empresa/link";
 import { PageHeader, btn } from "@/components/empresa/page-header";
@@ -43,20 +43,16 @@ export function PlatformsBoard({
   const [platforms, setPlatforms] = useState(data.platforms);
   const [accounts, setAccounts] = useState(data.accounts);
   const [tab, setTab] = useState<Tab>(tabInicial ?? "plataformas");
-  const [query, setQuery] = useState("");
+  // ?abrir=<id> (desde la ficha del cliente): se muestra esa plataforma sola y abierta, sin desplazar la página.
+  const [query, setQuery] = useState(() => (abrir ? (data.platforms.find((p) => p.id === abrir)?.name ?? "") : ""));
   const [filtro, setFiltro] = useState<Filtro>("todas");
   const [expandedId, setExpandedId] = useState<string | null>(abrir ?? null);
   const [wizard, setWizard] = useState(!!nueva);
   const [error, setError] = useState<string | null>(null);
-  const abrirRef = useRef<HTMLDivElement | null>(null);
 
   // Lo que manda el servidor (router.refresh) es la verdad.
   useEffect(() => setPlatforms(data.platforms), [data.platforms]);
   useEffect(() => setAccounts(data.accounts), [data.accounts]);
-
-  useEffect(() => {
-    if (abrir) abrirRef.current?.scrollIntoView({ block: "start" });
-  }, [abrir]);
 
   const inv = useMemo(() => inventarios(platforms, accounts), [platforms, accounts]);
   const accountByKey = useMemo(() => new Map(accounts.map((a) => [accountKey(a.provider, a.email), a])), [accounts]);
@@ -220,7 +216,7 @@ export function PlatformsBoard({
                 className="w-full bg-panel border border-line-mid rounded-lg pl-8 pr-4 min-h-11 text-base text-fg placeholder:text-fg-ghost focus:outline-none focus:border-brand/40 transition-colors"
               />
             </div>
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar plataformas">
+            <div className="grid grid-cols-2 gap-2 xl:flex xl:flex-wrap" role="group" aria-label="Filtrar plataformas">
               {filtros.map((f) => {
                 const n = counts[f.key];
                 const on = filtro === f.key;
@@ -231,7 +227,7 @@ export function PlatformsBoard({
                     type="button"
                     aria-pressed={on}
                     onClick={() => setFiltro(f.key)}
-                    className={`inline-flex items-center gap-2 min-h-11 sm:min-h-8 px-3 rounded-full border text-xs font-medium transition-colors ${
+                    className={`inline-flex items-center justify-center xl:justify-start gap-2 min-h-11 sm:min-h-8 px-3 rounded-full whitespace-nowrap border text-xs font-medium transition-colors ${
                       on ? "border-brand/50 bg-brand/10 text-fg" : "border-line-mid text-fg-dim hover:text-fg"
                     }`}
                   >
@@ -293,7 +289,7 @@ export function PlatformsBoard({
                   <header className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 mb-2 px-1">
                     <h2 id={`grupo-${g.id || "sin"}`} className="min-w-0 text-fg text-sm font-semibold [overflow-wrap:anywhere]">
                       {g.id ? (
-                        <Link href={`/empresa/clientes/${g.id}`} className="hover:underline">
+                        <Link href={`/empresa/clientes/${g.id}`} className="inline-flex items-center min-h-11 -my-3 lg:min-h-8 lg:-my-2 hover:underline">
                           {g.nombre}
                         </Link>
                       ) : (
@@ -308,7 +304,7 @@ export function PlatformsBoard({
                     {g.items.map((p) => {
                       const open = expandedId === p.id;
                       return (
-                        <div key={p.id} ref={p.id === abrir ? abrirRef : undefined} className="border-b border-line last:border-b-0 scroll-mt-24">
+                        <div key={p.id} className="border-b border-line last:border-b-0">
                           <Fila
                             p={p}
                             open={open}
