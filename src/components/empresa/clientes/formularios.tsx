@@ -226,7 +226,7 @@ export function PagoForm({ clientId, facturas }: { clientId: string; facturas: {
   return (
     <form ref={form} action={accion} className="space-y-3">
       <input type="hidden" name="clientId" value={clientId} />
-      <div><label htmlFor="p-doc" className={etiqueta}>Factura</label>
+      <div><label htmlFor="p-doc" className={etiqueta}>Factura · saldo pendiente</label>
         <select id="p-doc" name="documentId" value={doc} onChange={(e) => setDoc(e.target.value)} className={`${campo} field-select pr-8`}>
           {facturas.map((f) => <option key={f.id} value={f.id}>{f.etiqueta}</option>)}<option value="">Anticipo sin factura</option>
         </select></div>

@@ -15,6 +15,7 @@ import { BotonCobrar } from "@/components/empresa/cobrar/asistente-cobrar";
 import { prisma } from "@/lib/prisma";
 import { plataformasDeCliente } from "@/lib/platforms/cliente";
 import { PlataformasCliente } from "@/components/empresa/clientes/plataformas-cliente";
+import { FichaTabs } from "@/components/empresa/clientes/ficha-tabs";
 
 export const metadata = { title: "Cliente — Pime Suite" };
 
@@ -26,13 +27,15 @@ const tiempo = (d: Date) => {
   return m < 60 ? `hace ${Math.max(1, m)} min` : m < 1440 ? `hace ${Math.round(m / 60)} h` : fecha(d);
 };
 
-export default async function FichaCliente({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+/** ?tab=resumen|tickets|proyectos|facturas|plataformas|cuenta — Resumen por defecto. */
+export default async function FichaCliente({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
+  const [{ id }, { tab: tabInicial = "resumen" }] = await Promise.all([params, searchParams]);
   const u = await getEmpresaUser();
   const [f, todos, plataformas] = await Promise.all([
     fichaCliente(u.id, id),
     prisma.client.findMany({ where: { userId: u.id, archivedAt: null }, orderBy: { name: "asc" }, select: { id: true, name: true, company: true } }),
-    plataformasDeCliente(u.id, id),
+    // Si falla, la pestaña Plataformas lo dice; el resto de la ficha sigue.
+    plataformasDeCliente(u.id, id).catch(() => null),
   ]);
   if (!f) notFound();
   const clientesCobro = todos.map((x) => ({ id: x.id, nombre: x.company || x.name }));
@@ -81,137 +84,216 @@ export default async function FichaCliente({ params }: { params: Promise<{ id: s
         </dl>
       </header>
 
-      <div className="grid gap-6 xl:grid-cols-3 items-start">
-        <div className="space-y-6 xl:col-span-2 min-w-0">
-          {f.porConfirmar.length > 0 && (
-            <section className={`${card} border-warn/40`}>
-              <h2 className={h2}>Pagos reportados por el cliente</h2>
-              <ul className="mt-4 divide-y divide-line">
-                {f.porConfirmar.map((p) => (
-                  <li key={p.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0 text-sm"><p className="text-fg font-semibold font-mono">{dinero(p.amount)}</p><p className="text-fg-dim">{fecha(p.paidAt)} · {PAGO_METODO_LABEL[p.method as PagoMetodo] ?? p.method}{p.reference ? ` · ref. ${p.reference}` : ""}{p.receiptR2Key ? " · con comprobante" : ""}</p></div>
-                    <PagoPorConfirmar pagoId={p.id} clientId={c.id} />
-                  </li>
-                ))}
-              </ul>
+
+      <FichaTabs
+        initial={tabInicial}
+        tabs={[
+          { key: "resumen", label: "Resumen", alert: f.porConfirmar.length > 0 },
+          { key: "tickets", label: "Tickets", count: f.abiertos.length },
+          { key: "proyectos", label: "Proyectos", count: f.proyectos.length },
+          { key: "facturas", label: "Facturas y pagos", count: facturasAbiertas.length },
+          { key: "plataformas", label: "Plataformas", count: (plataformas?.length ?? 0) + f.sistemas.length },
+          { key: "cuenta", label: "Cuenta", count: f.personas.length },
+        ]}
+        panels={{
+        resumen: (
+          <div className="grid gap-6 xl:grid-cols-3 items-start">
+            <div className="space-y-6 xl:col-span-2 min-w-0">
+                        {f.porConfirmar.length > 0 && (
+                          <section className={`${card} border-warn/40`}>
+                            <h2 className={h2}>Pagos reportados por el cliente</h2>
+                            <ul className="mt-4 divide-y divide-line">
+                              {f.porConfirmar.map((p) => (
+                                <li key={p.id} className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
+                                  <div className="min-w-0 text-sm"><p className="text-fg font-semibold font-mono">{dinero(p.amount)}</p><p className="text-fg-dim">{fecha(p.paidAt)} · {PAGO_METODO_LABEL[p.method as PagoMetodo] ?? p.method}{p.reference ? ` · ref. ${p.reference}` : ""}{p.receiptR2Key ? " · con comprobante" : ""}</p></div>
+                                  <PagoPorConfirmar pagoId={p.id} clientId={c.id} />
+                                </li>
+                              ))}
+                            </ul>
+                          </section>
+                        )}
+
+              <section className={card}>
+                <h2 className={h2}>Lo urgente</h2>
+                {f.abiertos.length === 0 && facturasAbiertas.length === 0 ? (
+                  <p className="mt-3 text-sm text-fg-dim">Nada pendiente: sin tickets abiertos ni facturas por cobrar.</p>
+                ) : (
+                  <div className="mt-3 grid gap-6 lg:grid-cols-2">
+                    <div className="min-w-0">
+                      <p className="text-fg-dim text-xs font-semibold uppercase tracking-wider">Tickets abiertos · {f.abiertos.length}</p>
+                      {f.abiertos.length ? (
+                        <ul className="mt-2 divide-y divide-line">
+                          {f.abiertos.slice(0, 5).map((t) => (
+                            <li key={t.id}><Link href={`/empresa/tickets/${t.id}`} className="flex items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
+                              <span className="min-w-0 flex-1"><span className="block text-fg text-sm font-medium truncate">{t.title}</span><span className="block text-fg-dim text-xs">{t.number} · {tiempo(t.updatedAt)}{t.lastClientActivityAt && (!t.lastPimeActivityAt || t.lastClientActivityAt > t.lastPimeActivityAt) ? " · el cliente escribió" : ""}</span></span>
+                            </Link></li>
+                          ))}
+                        </ul>
+                      ) : <p className="mt-2 text-sm text-fg-dim">Ninguno.</p>}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-fg-dim text-xs font-semibold uppercase tracking-wider">Facturas por cobrar · {facturasAbiertas.length}</p>
+                      {facturasAbiertas.length ? (
+                        <ul className="mt-2 divide-y divide-line">
+                          {facturasAbiertas.slice(0, 5).map((x) => (
+                            <li key={x.id}><Link href={`/empresa/facturas/${x.id}`} className="flex items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
+                              <span className="min-w-0 flex-1"><span className="block text-fg text-sm font-medium truncate">{x.number ?? "Factura"} · {x.title}</span><span className="block text-fg-dim text-xs">{x.dueDate ? `vence ${fecha(x.dueDate)}` : fecha(x.issueDate)}</span></span>
+                              <span className="font-mono text-sm text-fg shrink-0">{dinero(x.falta)}</span>
+                            </Link></li>
+                          ))}
+                        </ul>
+                      ) : <p className="mt-2 text-sm text-fg-dim">Ninguna.</p>}
+                    </div>
+                  </div>
+                )}
+              </section>
+
+                        <section className={card}>
+                          <h2 className={h2}>Línea de tiempo</h2>
+                          {f.eventos.length ? (
+                            <ol className="mt-4 space-y-4">
+                              {f.eventos.map((e) => (
+                                <li key={e.id} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
+                                  <span className={`mt-1.5 h-2 w-2 rounded-full ${e.actorType === "cliente" ? "bg-sand" : e.actorType === "github" ? "bg-ok" : "bg-brand"}`} aria-hidden />
+                                  <div className="min-w-0"><p className="text-fg text-sm break-words">{e.title}{e.visibility === "interno" && <span className="ml-2 text-xs text-fg-faint">(interno)</span>}</p>{e.detail && <p className="text-fg-dim text-xs break-words">{e.detail}</p>}<p className="text-fg-faint text-xs">{tiempo(e.createdAt)}</p></div>
+                                </li>
+                              ))}
+                            </ol>
+                          ) : <p className="mt-3 text-sm text-fg-dim">Cada ticket, aprobación, factura y pago de este cliente queda aquí en orden.</p>}
+                        </section>
+            </div>
+            <aside className="space-y-6 min-w-0">
+              <section className={card}>
+                <div className="flex items-center justify-between gap-3"><h2 className={h2}>Notas internas</h2><Link href={`/empresa/clientes/${c.id}/editar`} className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">Editar</Link></div>
+                {c.notes ? <p className="mt-2 text-sm text-fg-mute whitespace-pre-line">{c.notes}</p> : <p className="mt-2 text-sm text-fg-dim">Sin notas. Lo que conviene recordar de este cliente va aquí; el cliente no lo ve.</p>}
+              </section>
+            </aside>
+          </div>
+        ),
+        tickets: (
+          <div className="space-y-6 max-w-4xl">
+            <section className={card}>
+              <div className="flex items-center justify-between gap-3"><h2 className={h2}>Tickets</h2><Link href={`/empresa/tickets?cliente=${c.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">Ver todos</Link></div>
+              {f.tickets.length ? (
+                <ul className="mt-3 divide-y divide-line">
+                  {f.tickets.slice(0, 8).map((t) => (
+                    <li key={t.id}><Link href={`/empresa/tickets/${t.id}`} className="flex items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
+                      <span className="min-w-0 flex-1"><span className="block text-fg text-sm font-medium truncate">{t.title}</span><span className="block text-fg-dim text-xs">{t.number} · {tiempo(t.updatedAt)}{t.lastClientActivityAt && (!t.lastPimeActivityAt || t.lastClientActivityAt > t.lastPimeActivityAt) ? " · el cliente escribió" : ""}</span></span>
+                      <span className={`rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${t.status === "abierto" ? "bg-warn/10 text-warn" : t.status === "resuelto" || t.status === "cerrado" ? "bg-fill-2 text-fg-dim" : "bg-brand/10 text-brand-fg"}`}>{TICKET_ESTADO_LABEL[t.status as TicketEstado] ?? t.status}</span>
+                    </Link></li>
+                  ))}
+                </ul>
+              ) : <p className="mt-3 text-sm text-fg-dim">Sin tickets. Cuando el cliente abra uno desde su cuenta, aparece aquí y te llega un aviso.</p>}
             </section>
-          )}
+          </div>
+        ),
+        proyectos: (
+          <div className="space-y-6 max-w-4xl">
+                      <section className={card}>
+                        <div className="flex items-center justify-between gap-3"><h2 className={h2}>Proyectos</h2><Link href={`/empresa/proyectos/nuevo?clientId=${c.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">+ Proyecto</Link></div>
+                        {f.proyectos.length ? (
+                          <ul className="mt-3 space-y-3">
+                            {f.proyectos.map((p) => (
+                              <li key={p.id}><Link href={`/empresa/proyectos/${p.id}`} className="block rounded-xl border border-line px-4 py-3 hover:border-line-mid">
+                                <div className="flex items-center justify-between gap-3"><span className="text-fg text-sm font-semibold truncate">{p.name}</span><span className="text-fg font-mono text-sm">{Math.round(p.avance)} %</span></div>
+                                <div className="mt-2 h-1.5 rounded-full bg-fill-3 overflow-hidden"><div className="h-full bg-brand origin-left" style={{ transform: `scaleX(${p.avance / 100})` }} /></div>
+                                <p className="mt-2 text-xs text-fg-dim">{p.status === "ACTIVE" ? "En curso" : p.status === "COMPLETED" ? "Terminado" : p.status === "PAUSED" ? "En pausa" : "Cancelado"}{p.actual ? ` · ahora: ${p.actual.name}` : p.phases.length ? "" : " · sin fases cargadas"}{p._count.changeOrders ? ` · ${p._count.changeOrders} orden(es) esperando al cliente` : ""}</p>
+                              </Link></li>
+                            ))}
+                          </ul>
+                        ) : <p className="mt-3 text-sm text-fg-dim">Sin proyectos. Crea uno con sus fases y precios: de ahí salen la propuesta, las facturas y el avance que ve el cliente.</p>}
+                      </section>
 
-          <section className={card}>
-            <div className="flex items-center justify-between gap-3"><h2 className={h2}>Tickets</h2><Link href={`/empresa/tickets?cliente=${c.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">Ver todos</Link></div>
-            {f.tickets.length ? (
-              <ul className="mt-3 divide-y divide-line">
-                {f.tickets.slice(0, 8).map((t) => (
-                  <li key={t.id}><Link href={`/empresa/tickets/${t.id}`} className="flex items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
-                    <span className="min-w-0 flex-1"><span className="block text-fg text-sm font-medium truncate">{t.title}</span><span className="block text-fg-dim text-xs">{t.number} · {tiempo(t.updatedAt)}{t.lastClientActivityAt && (!t.lastPimeActivityAt || t.lastClientActivityAt > t.lastPimeActivityAt) ? " · el cliente escribió" : ""}</span></span>
-                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold whitespace-nowrap ${t.status === "abierto" ? "bg-warn/10 text-warn" : t.status === "resuelto" || t.status === "cerrado" ? "bg-fill-2 text-fg-dim" : "bg-brand/10 text-brand-fg"}`}>{TICKET_ESTADO_LABEL[t.status as TicketEstado] ?? t.status}</span>
-                  </Link></li>
-                ))}
-              </ul>
-            ) : <p className="mt-3 text-sm text-fg-dim">Sin tickets. Cuando el cliente abra uno desde su cuenta, aparece aquí y te llega un aviso.</p>}
-          </section>
+            <section className={card}>
+              <h2 className={h2}>Contratos</h2>
+              {f.contratos.length > 0 ? (
+                <ul className="mt-2 space-y-1 text-sm">{f.contratos.map((k) => <li key={k.id}><Link href={`/empresa/contratos/${k.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-brand-fg hover:underline">{k.title}</Link> <span className="text-fg-faint text-xs">· {k.signingStatus === "COMPLETED" ? "firmado" : k.signingStatus === "DRAFT" ? "borrador" : "por firmar"}</span></li>)}</ul>
+              ) : <p className="mt-2 text-sm text-fg-dim">Sin contratos. Se generan desde cada proyecto.</p>}
+            </section>
+          </div>
+        ),
+        facturas: (
+          <div className="grid gap-6 xl:grid-cols-3 items-start">
+            <div className="space-y-6 xl:col-span-2 min-w-0">
+              <section className={card}>
+                <div className="flex items-center justify-between gap-3"><h2 className={h2}>Facturas</h2><BotonCobrar clientes={clientesCobro} clienteInicial={c.id} etiqueta="Cobrar" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline" /></div>
+                {f.facturas.length ? (
+                  <ul className="mt-3 divide-y divide-line">
+                    {f.facturas.slice(0, 12).map((x) => (
+                      <li key={x.id}><Link href={`/empresa/facturas/${x.id}`} className="flex items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
+                        <span className="min-w-0 flex-1"><span className="block text-fg text-sm font-medium truncate">{x.number ?? "Factura"} · {x.title}</span><span className="block text-fg-dim text-xs">{fecha(x.issueDate)}{x.falta > 0.005 && x.pagado > 0 ? ` · falta ${dinero(x.falta)}` : ""}</span></span>
+                        <span className="font-mono text-sm text-fg">{dinero(x.total)}</span>
+                        <StatusBadge status={x.status as DocumentStatus} />
+                      </Link></li>
+                    ))}
+                  </ul>
+                ) : <p className="mt-3 text-sm text-fg-dim">Sin facturas todavía.</p>}
+                {f.cotizaciones.length > 0 && <p className="mt-4 text-xs text-fg-dim">{f.cotizaciones.length} cotización(es): {f.cotizaciones.slice(0, 3).map((q) => <Link key={q.id} href={`/empresa/cotizaciones/${q.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-brand-fg hover:underline mr-2">{q.number}</Link>)}</p>}
+              </section>
+            </div>
+            <aside className="space-y-6 min-w-0">
+              <section className={card}>
+                <h2 className={h2}>Registrar un pago</h2>
+                <div className="mt-3"><PagoForm clientId={c.id} facturas={facturasAbiertas.map((x) => ({ id: x.id, etiqueta: `${x.number ?? "Factura"} · ${dinero(x.falta)}`, falta: x.falta }))} /></div>
+              </section>
 
-          <section className={card}>
-            <div className="flex items-center justify-between gap-3"><h2 className={h2}>Proyectos</h2><Link href={`/empresa/proyectos/nuevo?clientId=${c.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">+ Proyecto</Link></div>
-            {f.proyectos.length ? (
-              <ul className="mt-3 space-y-3">
-                {f.proyectos.map((p) => (
-                  <li key={p.id}><Link href={`/empresa/proyectos/${p.id}`} className="block rounded-xl border border-line px-4 py-3 hover:border-line-mid">
-                    <div className="flex items-center justify-between gap-3"><span className="text-fg text-sm font-semibold truncate">{p.name}</span><span className="text-fg font-mono text-sm">{Math.round(p.avance)} %</span></div>
-                    <div className="mt-2 h-1.5 rounded-full bg-fill-3 overflow-hidden"><div className="h-full bg-brand origin-left" style={{ transform: `scaleX(${p.avance / 100})` }} /></div>
-                    <p className="mt-2 text-xs text-fg-dim">{p.status === "ACTIVE" ? "En curso" : p.status === "COMPLETED" ? "Terminado" : p.status === "PAUSED" ? "En pausa" : "Cancelado"}{p.actual ? ` · ahora: ${p.actual.name}` : p.phases.length ? "" : " · sin fases cargadas"}{p._count.changeOrders ? ` · ${p._count.changeOrders} orden(es) esperando al cliente` : ""}</p>
-                  </Link></li>
-                ))}
-              </ul>
-            ) : <p className="mt-3 text-sm text-fg-dim">Sin proyectos. Crea uno con sus fases y precios: de ahí salen la propuesta, las facturas y el avance que ve el cliente.</p>}
-          </section>
-
-          <PlataformasCliente clientId={c.id} plataformas={plataformas} className={card} h2={h2} />
-
-          <section className={card}>
-            <div className="flex items-center justify-between gap-3"><h2 className={h2}>Facturas</h2><BotonCobrar clientes={clientesCobro} clienteInicial={c.id} etiqueta="Cobrar" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline" /></div>
-            {f.facturas.length ? (
-              <ul className="mt-3 divide-y divide-line">
-                {f.facturas.slice(0, 12).map((x) => (
-                  <li key={x.id}><Link href={`/empresa/facturas/${x.id}`} className="flex items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
-                    <span className="min-w-0 flex-1"><span className="block text-fg text-sm font-medium truncate">{x.number ?? "Factura"} · {x.title}</span><span className="block text-fg-dim text-xs">{fecha(x.issueDate)}{x.falta > 0.005 && x.pagado > 0 ? ` · falta ${dinero(x.falta)}` : ""}</span></span>
-                    <span className="font-mono text-sm text-fg">{dinero(x.total)}</span>
-                    <StatusBadge status={x.status as DocumentStatus} />
-                  </Link></li>
-                ))}
-              </ul>
-            ) : <p className="mt-3 text-sm text-fg-dim">Sin facturas todavía.</p>}
-            {f.cotizaciones.length > 0 && <p className="mt-4 text-xs text-fg-dim">{f.cotizaciones.length} cotización(es): {f.cotizaciones.slice(0, 3).map((q) => <Link key={q.id} href={`/empresa/cotizaciones/${q.id}`} className="text-brand-fg hover:underline mr-2">{q.number}</Link>)}</p>}
-          </section>
-
-          <section className={card}>
-            <h2 className={h2}>Línea de tiempo</h2>
-            {f.eventos.length ? (
-              <ol className="mt-4 space-y-4">
-                {f.eventos.map((e) => (
-                  <li key={e.id} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
-                    <span className={`mt-1.5 h-2 w-2 rounded-full ${e.actorType === "cliente" ? "bg-sand" : e.actorType === "github" ? "bg-ok" : "bg-brand"}`} aria-hidden />
-                    <div className="min-w-0"><p className="text-fg text-sm break-words">{e.title}{e.visibility === "interno" && <span className="ml-2 text-xs text-fg-faint">(interno)</span>}</p>{e.detail && <p className="text-fg-dim text-xs break-words">{e.detail}</p>}<p className="text-fg-faint text-xs">{tiempo(e.createdAt)}</p></div>
-                  </li>
-                ))}
-              </ol>
-            ) : <p className="mt-3 text-sm text-fg-dim">Cada ticket, aprobación, factura y pago de este cliente queda aquí en orden.</p>}
-          </section>
-        </div>
-
-        <aside className="space-y-6 min-w-0">
-          <section className={card}>
-            <h2 className={h2}>Cuenta del cliente</h2>
-            {f.personas.length > 0 && (
-              <ul className="mt-3 divide-y divide-line">
-                {f.personas.map((p) => (
-                  <li key={p.id} className="py-3">
-                    <p className="text-fg text-sm font-medium truncate">{p.fullName || p.email} <span className="text-fg-faint text-xs">· {p.role === "principal" ? "principal" : "miembro"}</span></p>
-                    <p className="text-fg-dim text-xs truncate">{p.email} · {p.status === "invitado" ? `invitado el ${fecha(p.invitedAt)}` : p.lastLoginAt ? `entró ${tiempo(p.lastLoginAt)}` : "activo"}</p>
-                    <PersonaAcciones id={p.id} invitado={p.status === "invitado"} />
-                  </li>
-                ))}
-              </ul>
+              <section className={card}>
+                <h2 className={h2}>Horas</h2>
+                {f.horasPorFacturar.length > 0 ? (
+                  <div className="mt-3 space-y-3">
+                    <ul className="space-y-1 text-xs text-fg-dim">{f.horasPorFacturar.slice(0, 6).map((h) => <li key={h.id} className="flex justify-between gap-2"><span className="truncate">{fecha(h.workDate)} · {h.ticket?.number ?? "General"}{h.note ? ` · ${h.note}` : ""}</span><span className="font-mono shrink-0">{dinero(h.amount)}</span></li>)}</ul>
+                    <FacturarHorasForm clientId={c.id} monto={dinero(porFacturar)} />
+                  </div>
+                ) : <p className="mt-2 text-sm text-fg-dim">Sin horas por facturar.</p>}
+                <div className="mt-4 border-t border-line pt-4"><p className="text-fg-mute text-sm font-medium mb-2">Registrar horas sin ticket</p><HorasForm clientId={c.id} tarifa={f.tarifa} /></div>
+              </section>
+            </aside>
+          </div>
+        ),
+        plataformas: (
+          <div className="space-y-6 max-w-4xl">
+            {plataformas ? (
+              <PlataformasCliente clientId={c.id} plataformas={plataformas} className={card} h2={h2} />
+            ) : (
+              <section className={card} role="alert"><h2 className={h2}>Plataformas</h2><p className="mt-2 text-sm text-danger">No se pudieron cargar las plataformas. Recarga la página; si sigue, revisa la conexión con la base.</p></section>
             )}
-            <div className="mt-4"><InvitarForm clientId={c.id} email={c.email} nombre={c.name} hayPrincipal={!!principal} /></div>
-          </section>
 
-          <section className={card}>
-            <h2 className={h2}>Registrar un pago</h2>
-            <div className="mt-3"><PagoForm clientId={c.id} facturas={facturasAbiertas.map((x) => ({ id: x.id, etiqueta: `${x.number ?? "Factura"} · falta ${dinero(x.falta)}`, falta: x.falta }))} /></div>
-          </section>
-
-          <section className={card}>
-            <h2 className={h2}>Horas</h2>
-            {f.horasPorFacturar.length > 0 ? (
-              <div className="mt-3 space-y-3">
-                <ul className="space-y-1 text-xs text-fg-dim">{f.horasPorFacturar.slice(0, 6).map((h) => <li key={h.id} className="flex justify-between gap-2"><span className="truncate">{fecha(h.workDate)} · {h.ticket?.number ?? "General"}{h.note ? ` · ${h.note}` : ""}</span><span className="font-mono shrink-0">{dinero(h.amount)}</span></li>)}</ul>
-                <FacturarHorasForm clientId={c.id} monto={dinero(porFacturar)} />
-              </div>
-            ) : <p className="mt-2 text-sm text-fg-dim">Sin horas por facturar.</p>}
-            <div className="mt-4 border-t border-line pt-4"><p className="text-fg-mute text-sm font-medium mb-2">Registrar horas sin ticket</p><HorasForm clientId={c.id} tarifa={f.tarifa} /></div>
-          </section>
-
-          <section className={card}>
-            <div className="flex items-center justify-between gap-3"><h2 className={h2}>Sistemas</h2><Link href={`/empresa/sistemas/nuevo?cliente=${c.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">+ Conectar</Link></div>
-            {f.sistemas.length ? (
-              <ul className="mt-3 divide-y divide-line">
-                {f.sistemas.map((x) => (
-                  <li key={x.id}><Link href={`/empresa/sistemas/${x.id}`} className="flex items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
-                    <span className="min-w-0 flex-1"><span className="block text-fg text-sm font-medium truncate">{x.name}</span><span className="block text-fg-dim text-xs">{x._count.incidents ? `${x._count.incidents} ${x._count.incidents === 1 ? "error abierto" : "errores abiertos"}` : "Sin errores abiertos"}</span></span>
-                    <EstadoSistemaPill status={x.status} activo={x.active} />
-                  </Link></li>
-                ))}
-              </ul>
-            ) : <p className="mt-2 text-sm text-fg-dim">Conecta los sistemas que le entregaste: Pime te avisa si se caen y el cliente ve si están en línea.</p>}
-          </section>
-
-          {c.notes && <section className={card}><h2 className={h2}>Notas internas</h2><p className="mt-2 text-sm text-fg-mute whitespace-pre-line">{c.notes}</p></section>}
-          {f.contratos.length > 0 && (
-            <section className={card}><h2 className={h2}>Contratos</h2><ul className="mt-2 space-y-1 text-sm">{f.contratos.map((k) => <li key={k.id}><Link href={`/empresa/contratos/${k.id}`} className="text-brand-fg hover:underline">{k.title}</Link> <span className="text-fg-faint text-xs">· {k.signingStatus === "COMPLETED" ? "firmado" : k.signingStatus === "DRAFT" ? "borrador" : "por firmar"}</span></li>)}</ul></section>
-          )}
-        </aside>
-      </div>
+                      <section className={card}>
+                        <div className="flex items-center justify-between gap-3"><h2 className={h2}>Sistemas</h2><Link href={`/empresa/sistemas/nuevo?cliente=${c.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">+ Conectar</Link></div>
+                        {f.sistemas.length ? (
+                          <ul className="mt-3 divide-y divide-line">
+                            {f.sistemas.map((x) => (
+                              <li key={x.id}><Link href={`/empresa/sistemas/${x.id}`} className="flex items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
+                                <span className="min-w-0 flex-1"><span className="block text-fg text-sm font-medium truncate">{x.name}</span><span className="block text-fg-dim text-xs">{x._count.incidents ? `${x._count.incidents} ${x._count.incidents === 1 ? "error abierto" : "errores abiertos"}` : "Sin errores abiertos"}</span></span>
+                                <EstadoSistemaPill status={x.status} activo={x.active} />
+                              </Link></li>
+                            ))}
+                          </ul>
+                        ) : <p className="mt-2 text-sm text-fg-dim">Conecta los sistemas que le entregaste: Pime te avisa si se caen y el cliente ve si están en línea.</p>}
+                      </section>
+          </div>
+        ),
+        cuenta: (
+          <div className="space-y-6 max-w-4xl">
+            <section className={card}>
+              <h2 className={h2}>Cuenta del cliente</h2>
+              {f.personas.length > 0 && (
+                <ul className="mt-3 divide-y divide-line">
+                  {f.personas.map((p) => (
+                    <li key={p.id} className="py-3">
+                      <p className="text-fg text-sm font-medium truncate">{p.fullName || p.email} <span className="text-fg-faint text-xs">· {p.role === "principal" ? "principal" : "miembro"}</span></p>
+                      <p className="text-fg-dim text-xs truncate">{p.email} · {p.status === "invitado" ? `invitado el ${fecha(p.invitedAt)}` : p.lastLoginAt ? `entró ${tiempo(p.lastLoginAt)}` : "activo"}</p>
+                      <PersonaAcciones id={p.id} invitado={p.status === "invitado"} />
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="mt-4"><InvitarForm clientId={c.id} email={c.email} nombre={c.name} hayPrincipal={!!principal} /></div>
+            </section>
+          </div>
+        ),
+        }}
+      />
     </div>
     </ZonaLinea>
   );
