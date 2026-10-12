@@ -2,16 +2,19 @@
 
 /**
  * Asistente de Pime Suite (prompt maestro §4): botón fijo en toda la suite, conversación por texto o voz.
- * Lo que escribe en el sistema llega como propuesta con Confirmar; nada se crea sin ese toque.
+ * Lo chico y claro lo hace al instante y queda con «Deshacer»; lo grande (borrar, anular, USD 1,000 o más,
+ * facturas emitidas, planes con pagos) queda «Por confirmar» con Confirmar y Cancelar.
  */
 import { useCallback, useEffect, useRef, useState, useLayoutEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { fetchLargo } from "@/lib/fetch-largo";
 
-type Propuesta = { id: string; kind: string; summary: string; estado?: "propuesta" | "hecha" | "cancelada" | "deshecha" | "error"; href?: string | null; error?: string };
-type Msg = { rol: "usuario" | "asistente"; texto: string; propuestas?: Propuesta[] };
+type Estado = "propuesta" | "hecha" | "cancelada" | "deshecha" | "error";
+type Accion = { id: string; kind: string; summary: string; estado: Estado; motivo?: string | null; href?: string | null; error?: string; ocupado?: boolean; antes?: Estado };
+type Msg = { rol: "usuario" | "asistente"; texto: string; acciones?: Accion[]; /** versión anterior guardada en el navegador */ propuestas?: Accion[] };
 
-const SUGERENCIAS = ["¿Qué tengo hoy?", "¿Quién me debe dinero?", "Factura aparte a HOLO por 400 por asesoramiento de sitio web", "Tarea para mañana: revisar el acta de la Unión"];
+const SUGERENCIAS = ["¿Qué tengo hoy?", "¿Quién me debe dinero?", "Añade un pago de 300 de hoy a HOLO", "Tarea para mañana: revisar el acta de la Unión"];
 const CLAVE = "pime-asistente";
 
 function IconoAsistente({ className = "h-5 w-5" }: { className?: string }) {
@@ -25,6 +28,7 @@ function IconoEnviar({ className = "h-5 w-5" }: { className?: string }) {
 }
 
 export function AsistenteChat() {
+  const router = useRouter();
   const [abierto, setAbierto] = useState(false);
   const [msgs, setMsgs] = useState<Msg[]>([]);
   const [texto, setTexto] = useState("");
@@ -40,7 +44,7 @@ export function AsistenteChat() {
   const trozos = useRef<Blob[]>([]);
 
   // La conversación sobrevive a cambiar de página dentro de la suite (solo en este navegador).
-  useEffect(() => { try { const g = sessionStorage.getItem(CLAVE); if (g) setMsgs(JSON.parse(g)); } catch { /* sin almacenamiento */ } }, []);
+  useEffect(() => { try { const g = sessionStorage.getItem(CLAVE); if (g) setMsgs((JSON.parse(g) as Msg[]).map((m) => ({ ...m, acciones: m.acciones ?? m.propuestas, propuestas: undefined }))); } catch { /* sin almacenamiento */ } }, []);
   useEffect(() => { try { sessionStorage.setItem(CLAVE, JSON.stringify(msgs.slice(-30))); } catch { /* sin almacenamiento */ } }, [msgs]);
   useEffect(() => { lista.current?.scrollTo({ top: lista.current.scrollHeight, behavior: "smooth" }); }, [msgs, pensando]);
   // La caja crece con lo que se escribe o dicta, hasta su tope (max-h en CSS); de ahí en adelante se desplaza.
@@ -78,27 +82,36 @@ export function AsistenteChat() {
     const nuevos: Msg[] = [...msgs, { rol: "usuario", texto: t }];
     setMsgs(nuevos); setTexto(""); setError(null); setPensando(true);
     try {
-      const r = await fetch("/api/empresa/asistente", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mensajes: nuevos.map(({ rol, texto }) => ({ rol, texto })) }) });
+      const r = await fetchLargo("/api/empresa/asistente", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mensajes: nuevos.map(({ rol, texto }) => ({ rol, texto })) }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.error ?? "El asistente no respondió.");
-      setMsgs((m) => [...m, { rol: "asistente", texto: j.respuesta, propuestas: (j.propuestas ?? []).map((p: Propuesta) => ({ ...p, estado: "propuesta" })) }]);
+      setMsgs((m) => [...m, { rol: "asistente", texto: j.respuesta, acciones: j.acciones ?? [] }]);
+      if ((j.acciones ?? []).some((a: Accion) => a.estado === "hecha")) router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "El asistente no respondió.");
     } finally {
       setPensando(false);
     }
-  }, [msgs, pensando]);
+  }, [msgs, pensando, router]);
 
-  async function decidir(idMsg: number, p: Propuesta, accion: "confirmar" | "cancelar" | "deshacer") {
-    const poner = (cambio: Partial<Propuesta>) => setMsgs((m) => m.map((x, i) => (i === idMsg ? { ...x, propuestas: x.propuestas?.map((y) => (y.id === p.id ? { ...y, ...cambio } : y)) } : x)));
+  async function decidir(idMsg: number, p: Accion, accion: "confirmar" | "cancelar" | "deshacer") {
+    const poner = (cambio: Partial<Accion>) => setMsgs((m) => m.map((x, i) => (i === idMsg ? { ...x, acciones: x.acciones?.map((y) => (y.id === p.id ? { ...y, ...cambio } : y)) } : x)));
+    poner({ ocupado: true, error: undefined });
     try {
       const r = await fetch(`/api/empresa/asistente/${p.id}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ accion }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.error ?? "No se pudo.");
-      poner({ estado: j.estado, href: j.href ?? p.href, error: undefined });
+      poner({ estado: j.estado === "fallida" ? "error" : j.estado, antes: p.estado, href: j.href ?? p.href, error: undefined, ocupado: false });
+      if (accion !== "cancelar") router.refresh();
     } catch (e) {
-      poner({ estado: accion === "deshacer" ? "hecha" : "error", error: e instanceof Error ? e.message : "No se pudo." });
+      // Si no se pudo deshacer, sigue hecha; si no se pudo confirmar, queda con el error y se puede reintentar.
+      poner({ estado: accion === "confirmar" ? "error" : p.estado, error: e instanceof Error ? e.message : "No se pudo.", ocupado: false });
     }
+  }
+
+  async function confirmarTodo(idMsg: number, pendientes: Accion[]) {
+    // En orden: una propuesta puede depender de la anterior.
+    for (const p of pendientes) await decidir(idMsg, p, "confirmar");
   }
 
   async function voz() {
@@ -151,7 +164,7 @@ export function AsistenteChat() {
         <header className="flex items-start justify-between gap-4 border-b border-line px-4 pb-4 pt-[max(16px,env(safe-area-inset-top))] sm:px-6">
           <div className="min-w-0">
             <h2 id="asistente-titulo" className="flex items-center gap-2 text-fg text-base font-semibold"><IconoAsistente className="h-5 w-5 text-brand-fg" />Asistente</h2>
-            <p className="text-fg-dim text-xs mt-1">Pide en palabras o con la voz. Antes de crear algo te pido que confirmes.</p>
+            <p className="text-fg-dim text-xs mt-1">Pide en palabras o con la voz. Lo hago al instante y lo puedes deshacer; lo grande te lo dejo para confirmar.</p>
           </div>
           <div className="flex items-center gap-1">
             {msgs.length > 0 && <button type="button" onClick={() => setMsgs([])} className="inline-flex items-center min-h-11 px-3 rounded-lg text-xs font-semibold text-fg-dim hover:text-fg">Nueva</button>}
@@ -175,28 +188,10 @@ export function AsistenteChat() {
           {msgs.map((m, i) => (
             <div key={i} className={m.rol === "usuario" ? "flex justify-end" : "space-y-3"}>
               <p className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-3 text-sm [overflow-wrap:anywhere] ${m.rol === "usuario" ? "bg-brand text-on-brand" : "bg-fill text-fg"}`}>{m.texto}</p>
-              {m.propuestas?.map((p) => (
-                <div key={p.id} className="rounded-2xl border border-line-mid bg-panel p-4 space-y-3">
-                  <p className="text-fg-dim text-xs font-semibold uppercase tracking-widest">{p.estado === "hecha" ? "Hecho" : p.estado === "cancelada" ? "Cancelado" : p.estado === "deshecha" ? "Deshecho" : "Para confirmar"}</p>
-                  <p className="text-fg text-sm font-semibold [overflow-wrap:anywhere]">{p.summary}</p>
-                  {p.error && <p className="text-danger text-sm" role="alert">{p.error}</p>}
-                  {(p.estado === "propuesta" || p.estado === "error") && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <button type="button" onClick={() => void decidir(i, p, "cancelar")} className="min-h-11 rounded-xl border border-line-mid text-sm font-semibold text-fg-mute hover:text-fg">Cancelar</button>
-                      <button type="button" onClick={() => void decidir(i, p, "confirmar")} className="min-h-11 rounded-xl bg-brand text-on-brand text-sm font-semibold hover:bg-brand-hi">Confirmar</button>
-                    </div>
-                  )}
-                  {p.estado === "hecha" && (
-                    <div className="flex flex-wrap gap-2">
-                      {p.href && <Link href={p.href} onClick={() => setAbierto(false)} className="inline-flex items-center min-h-11 px-4 rounded-xl bg-fill text-sm font-semibold text-brand-fg">Abrir</Link>}
-                      <button type="button" onClick={() => void decidir(i, p, "deshacer")} className="inline-flex items-center min-h-11 px-4 rounded-xl text-sm font-semibold text-fg-dim hover:text-fg">Deshacer</button>
-                    </div>
-                  )}
-                </div>
-              ))}
+              {m.acciones && m.acciones.length > 0 && <Tarjetas acciones={m.acciones} onDecidir={(p, acc) => void decidir(i, p, acc)} onConfirmarTodo={(xs) => void confirmarTodo(i, xs)} onAbrir={() => setAbierto(false)} />}
             </div>
           ))}
-          {(pensando || transcribiendo) && <p className="text-fg-dim text-sm" role="status">{transcribiendo ? "Transcribiendo tu voz…" : "Pensando…"}</p>}
+          {(pensando || transcribiendo) && <p className="text-fg-dim text-sm" role="status">{transcribiendo ? "Transcribiendo tu voz…" : "Trabajando en eso…"}</p>}
           {error && <p className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger" role="alert">{error}</p>}
         </div>
 
@@ -221,5 +216,71 @@ export function AsistenteChat() {
         </form>
       </dialog>
     </>
+  );
+}
+
+const ETIQUETA: Record<Estado, string> = { hecha: "Hecho", propuesta: "Por confirmar", error: "No se pudo", deshecha: "Deshecho", cancelada: "Cancelado" };
+
+/**
+ * Lo que hizo y lo que propone el asistente en un mensaje, en dos tarjetas: «Hecho» (cada cosa con Abrir y
+ * Deshacer) y «Por confirmar» (cada cosa con Cancelar y Confirmar; con dos o más, «Confirmar las N»).
+ * Lo deshecho o cancelado queda tachado en su lugar para no perder el hilo.
+ */
+function Tarjetas({ acciones, onDecidir, onConfirmarTodo, onAbrir }: { acciones: Accion[]; onDecidir: (p: Accion, a: "confirmar" | "cancelar" | "deshacer") => void; onConfirmarTodo: (xs: Accion[]) => void; onAbrir: () => void }) {
+  // Cada acción queda en el grupo donde nació: una propuesta trae su motivo; lo instantáneo, no.
+  const origen = (a: Accion) => (a.motivo ? "confirmar" : a.estado === "error" ? "error" : "hecho");
+  const grupos = [
+    { clave: "hecho", titulo: "Hecho", xs: acciones.filter((a) => origen(a) === "hecho") },
+    { clave: "confirmar", titulo: "Por confirmar", xs: acciones.filter((a) => origen(a) === "confirmar") },
+    { clave: "error", titulo: "No se pudo", xs: acciones.filter((a) => origen(a) === "error") },
+  ].filter((g) => g.xs.length);
+  return (
+    <div className="space-y-3">
+      {grupos.map((g) => {
+        const pendientes = g.xs.filter((a) => a.estado === "propuesta");
+        const ocupado = g.xs.some((a) => a.ocupado);
+        return (
+          <section key={g.clave} aria-label={g.titulo} className={`rounded-2xl border bg-panel ${g.clave === "confirmar" && pendientes.length ? "border-brand/40" : "border-line-mid"}`}>
+            <header className="flex items-center justify-between gap-2 px-4 pt-3">
+              <h3 className={`text-xs font-semibold ${g.clave === "hecho" ? "text-ok" : g.clave === "error" ? "text-danger" : "text-brand-fg"}`}>{g.titulo}{g.xs.length > 1 ? ` · ${g.xs.length}` : ""}</h3>
+            </header>
+            <ul className="divide-y divide-line">
+              {g.xs.map((a) => <Fila key={a.id} a={a} onDecidir={onDecidir} onAbrir={onAbrir} />)}
+            </ul>
+            {pendientes.length > 1 && (
+              <div className="border-t border-line p-3">
+                <button type="button" disabled={ocupado} onClick={() => onConfirmarTodo(pendientes)} className="w-full min-h-11 rounded-xl bg-brand text-on-brand text-sm font-semibold hover:bg-brand-hi disabled:opacity-50">
+                  {ocupado ? "Confirmando…" : `Confirmar las ${pendientes.length}`}
+                </button>
+              </div>
+            )}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+function Fila({ a, onDecidir, onAbrir }: { a: Accion; onDecidir: (p: Accion, x: "confirmar" | "cancelar" | "deshacer") => void; onAbrir: () => void }) {
+  const apagada = a.estado === "deshecha" || a.estado === "cancelada";
+  return (
+    <li className="space-y-2 px-4 py-3">
+      <p className={`text-sm [overflow-wrap:anywhere] ${apagada ? "text-fg-dim line-through" : "text-fg"}`}>{a.summary}</p>
+      {a.estado === "propuesta" && a.motivo && <p className="text-xs text-fg-dim">{a.motivo}</p>}
+      {(apagada || (a.estado === "hecha" && a.antes === "propuesta")) && <p className="text-xs text-fg-dim">{ETIQUETA[a.estado]}</p>}
+      {a.error && <p className="text-sm text-danger" role="alert">{a.error}</p>}
+      {a.estado === "propuesta" && (
+        <div className="grid grid-cols-2 gap-2">
+          <button type="button" disabled={a.ocupado} onClick={() => onDecidir(a, "cancelar")} className="min-h-11 rounded-xl border border-line-mid text-sm font-semibold text-fg-mute hover:text-fg disabled:opacity-50">Cancelar</button>
+          <button type="button" disabled={a.ocupado} onClick={() => onDecidir(a, "confirmar")} className="min-h-11 rounded-xl bg-brand text-on-brand text-sm font-semibold hover:bg-brand-hi disabled:opacity-50">{a.ocupado ? "Haciendo…" : "Confirmar"}</button>
+        </div>
+      )}
+      {a.estado === "hecha" && (
+        <div className="flex flex-wrap gap-2">
+          {a.href && <Link href={a.href} onClick={onAbrir} className="inline-flex items-center min-h-11 px-4 rounded-xl bg-fill text-sm font-semibold text-brand-fg">Abrir</Link>}
+          <button type="button" disabled={a.ocupado} onClick={() => onDecidir(a, "deshacer")} className="inline-flex items-center min-h-11 px-4 rounded-xl text-sm font-semibold text-fg-dim hover:text-fg disabled:opacity-50">{a.ocupado ? "Deshaciendo…" : "Deshacer"}</button>
+        </div>
+      )}
+    </li>
   );
 }

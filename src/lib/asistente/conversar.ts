@@ -1,49 +1,76 @@
 /** Una vuelta de conversación con el asistente: el modelo usa herramientas hasta poder responder. */
 import OpenAI from "openai";
 import { prisma } from "@/lib/prisma";
-import { HERRAMIENTAS, ejecutarHerramienta, type Propuesta } from "./herramientas";
+import { HERRAMIENTAS, ejecutarHerramienta, type Accion } from "./herramientas";
+import type { U } from "./operaciones";
+import { UMBRAL_USD } from "./reglas";
 
 export type Mensaje = { rol: "usuario" | "asistente"; texto: string };
+export type { Accion };
 
 const MODELOS = ["gpt-4.1", "gpt-4o"];
+/** Vueltas del modelo por pedido. Un «haz todo esto» largo cabe holgado; el tope evita que se quede dando vueltas. */
+const MAX_VUELTAS = 16;
 
 function sistema(nombre: string | null) {
-  const hoy = new Date().toLocaleDateString("es-PA", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "America/Panama" });
-  const iso = new Date(Date.now() - 5 * 3600_000).toISOString().slice(0, 10);
-  return `Eres el asistente de Pime Suite, el sistema con el que Pime Panamá (empresa de software a medida) opera. Hablas con ${nombre ?? "el dueño"}, en español de Panamá, corto y directo.
+  const ahora = new Date();
+  const hoy = ahora.toLocaleDateString("es-PA", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "America/Panama" });
+  const iso = new Date(ahora.getTime() - 5 * 3600_000).toISOString().slice(0, 10);
+  const anio = iso.slice(0, 4);
+  return `Eres el asistente de Pime Suite, el sistema con el que opera Pime Panamá (software a medida). Hablas con ${nombre ?? "el dueño"} en español de Panamá, con tuteo, corto y directo.
 Hoy es ${hoy} (${iso}), hora de Panamá.
 
-Reglas:
-- Para actuar sobre un cliente o proyecto nombrado, búscalo primero (buscar_cliente / buscar_proyecto). Los nombres llegan aproximados o dictados por voz: «Holo Realtor» es HOLO REAL ESTATE. Si hay más de un candidato razonable, pregunta cuál en una línea.
-- Nunca escribes directo: usas las herramientas proponer_* y la persona confirma en pantalla. Después de proponer, di en una línea qué propusiste y que toque Confirmar. Nunca digas que ya está hecho.
-- Facturas: si piden una factura y el cliente tiene proyectos activos, y no dijeron si es de un proyecto o aparte, pregunta en una línea «¿Es del proyecto X o aparte?». Si dicen «aparte», «no es de un proyecto» o dan un concepto que no es un proyecto, propón sin proyectoId. Montos en USD.
-- Fechas relativas («el viernes», «mañana») conviértelas a YYYY-MM-DD respecto de hoy.
-- Pagos: si no dicen el método, no preguntes: usa «otro» (se corrige después). Si no dicen la fecha, usa hoy. Fechas sin año («el 28 de agosto») son del año en curso, salvo que eso las deje en el futuro.
-- Fases: si cuentan que empezó o acordaron una fase con precio (y quizá pagos ya recibidos), usa proponer_fase con todo junto: nombre, precio, estado («inició» = en_curso) y la lista de pagos. Antes mira resumen_cliente:
-  · Si el cliente ya tiene un proyecto que encaja, usa su proyectoId.
-  · Si no tiene proyecto, manda clienteId y proyectoNuevo con un nombre sacado de sus contratos o cotizaciones (contrato «Fase 2 Genius» → proyecto «Genius»). El proyecto es el producto o el contrato, nunca el tema de la fase. Dilo en la respuesta para que lo pueda cambiar.
-  · Nombre de la fase: número y tema en palabras de la persona («Fase 3 · Escuelas»).
-  · No dupliques: compara los pagos que te dicen con pagosRegistrados y documentos (misma fecha y monto). Si alguno ya está, déjalo fuera y dilo.
-  · Si el cliente nunca ha pagado ITBMS en sus facturas, conItbms va en false.
-- Nunca envías correos ni mensajes a clientes: los envíos a clientes están apagados. Si te lo piden, dilo y deja el documento listo.
-- Para preguntas de dinero o del día, usa dinero_y_agenda o resumen_cliente y responde con los números. Vencido es lo que preocupa.
-- Si el mensaje trae varios pedidos (por ejemplo, una nota de voz larga después de una llamada), propone cada acción por separado en la misma vuelta y al final resume en una lista corta qué propusiste.
-- No inventes datos: si una herramienta no lo trae, dilo.`;
+Cómo trabajas:
+- Haces los cambios tú mismo con las herramientas. Lo que está claro, hazlo sin preguntar ni pedir permiso. El sistema decide solo qué queda para que la persona confirme (borrar o anular, facturas ya emitidas, planes con pagos, más de 10 registros, o USD ${UMBRAL_USD.toLocaleString("en-US")} o más en una sola acción): tú llama la herramienta igual y cuenta lo que pasó.
+- Pregunta solo si hay una duda real: dos clientes o proyectos posibles, falta un monto, no sabes de qué fase es. Una sola pregunta, en una línea.
+- Antes de actuar consigue los ids: buscar_cliente, buscar_proyecto, ver_fases, ver_pagos, ver_facturas, ver_tareas, ver_tickets, ver_gastos, ver_reuniones, ver_plataformas, ver_citas. Los nombres llegan aproximados o dictados por voz («Holo Realtor» es HOLO REAL ESTATE); si el mejor candidato es claro, úsalo.
+- Pedidos con varias cosas («haz todo esto», una nota de voz larga): haz todas en esta misma vuelta. Llama varias herramientas a la vez cuando no dependen una de otra. Si una falla, sigue con las demás.
+
+Fechas y dinero:
+- Fechas en YYYY-MM-DD. Sin año («el 28 de agosto») son de ${anio}, salvo que eso las deje en el futuro: entonces son del año anterior. Las relativas («el viernes», «mañana») cuentan desde hoy. Un pago sin fecha es de hoy.
+- Montos en USD. ITBMS solo si el cliente ya tuvo facturas con ITBMS (algunaFacturaConItbms en resumen_cliente).
+
+Pagos y facturas:
+- Método de pago: no lo preguntes; si no lo dicen, usa «otro».
+- Si dicen de qué fase es el pago («fase 3»), busca la fase con ver_fases y usa pago_registrar con su faseId. Si no dicen fase pero el cliente tiene un solo proyecto activo, usa su proyectoId.
+- Todo pago queda con su factura emitida en la cuenta del cliente, lista para descargar: la de la fase, una abierta del proyecto o una nueva por el monto. No preguntes si facturar. En la respuesta di qué factura quedó (número).
+- pago_registrar no repite un pago igual (mismo cliente, fecha y monto). Si te dice que ya existe, no insistas: dilo.
+- Nunca envías correos, invitaciones ni mensajes a clientes: están apagados. Si te lo piden, dilo y deja todo listo en su cuenta.
+
+Fases y proyectos:
+- Las fases van fuera del contrato salvo que digan lo contrario. «Crea la fase 4 de 800 en curso» → fase_crear con nombre «Fase 4», precio 800, estado en_curso. Usa el nombre que diga la persona («Fase 3 · Escuelas»).
+- «Inició» o «empezó» = en_curso; «la entregamos» = hecha; «en revisión» = en_revision.
+- Si el cliente no tiene el proyecto, créalo con proyecto_crear antes. El proyecto es el producto o el contrato (contrato «Fase 2 Genius» → proyecto «Genius»), nunca el tema de la fase.
+- Una fase que inició ya se debe aunque no tenga factura: cuenta en «por cobrar».
+
+Al terminar responde con una lista corta, sin relleno:
+- «Hecho:» lo que quedó hecho (una línea por cosa, con montos y número de factura si aplica).
+- «Por confirmar:» lo que espera que toque Confirmar, y por qué.
+- «No se pudo:» lo que falló y el motivo.
+En la respuesta escribe las fechas como «28 ago» y los montos como «USD 300.00». Omite las secciones vacías. Si solo era una pregunta, responde con los números. No inventes: si una herramienta no trae el dato, dilo. Para deshacer algo, usa ver_acciones y deshacer_accion.`;
 }
 
-export async function conversar(user: { id: string; supabaseUid: string; fullName: string | null }, historial: Mensaje[]): Promise<{ respuesta: string; propuestas: Propuesta[] }> {
+export async function conversar(user: U & { supabaseUid: string }, historial: Mensaje[]): Promise<{ respuesta: string; acciones: Accion[] }> {
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const pedido = [...historial].reverse().find((m) => m.rol === "usuario")?.texto ?? "";
   const mensajes: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     { role: "system", content: sistema(user.fullName?.split(" ")[0] ?? null) },
     ...historial.slice(-16).map((m) => ({ role: m.rol === "usuario" ? ("user" as const) : ("assistant" as const), content: m.texto.slice(0, 4000) })),
   ];
-  const propuestas: Propuesta[] = [];
+  // Lo último que hizo o propuso, con sus ids: así «borra la fase 4» o «deshaz eso» encuentra de qué se habla.
+  const recientes = await prisma.assistantAction.findMany({ where: { userId: user.id, createdAt: { gte: new Date(Date.now() - 3 * 3600_000) } }, orderBy: { createdAt: "desc" }, take: 12, select: { id: true, kind: true, summary: true, status: true, resultId: true, payload: true } });
+  if (recientes.length) {
+    const ids = (p: unknown) => Object.fromEntries(Object.entries((p ?? {}) as Record<string, unknown>).filter(([k, v]) => /Id$/.test(k) && typeof v === "string"));
+    mensajes.splice(1, 0, { role: "system", content: `Lo último que hiciste o propusiste (de lo más nuevo a lo más viejo):\n${recientes.map((a) => `- ${a.status} · ${a.kind} · ${a.summary} · accionId ${a.id}${a.resultId ? ` · resultado ${a.resultId}` : ""} · ${JSON.stringify(ids(a.payload))}`).join("\n")}` });
+  }
+  const acciones: Accion[] = [];
+  const traza = process.env.ASISTENTE_TRAZA === "1";
   let modelo = MODELOS[0];
   let entrada = 0, salida = 0;
   const t0 = Date.now();
+  const anotarUso = () => prisma.aiUsageLog.create({ data: { supabaseUid: user.supabaseUid, operation: "asistente", model: modelo, inputTokens: entrada, outputTokens: salida, durationMs: Date.now() - t0 } }).catch(() => {});
 
-  for (let vuelta = 0; vuelta < 6; vuelta++) {
+  for (let vuelta = 0; vuelta < MAX_VUELTAS; vuelta++) {
     let r: OpenAI.Chat.Completions.ChatCompletion;
     try {
       r = await openai.chat.completions.create({ model: modelo, messages: mensajes, tools: HERRAMIENTAS, tool_choice: "auto", temperature: 0.2 });
@@ -57,18 +84,26 @@ export async function conversar(user: { id: string; supabaseUid: string; fullNam
     if (!m) break;
     mensajes.push(m);
     if (!m.tool_calls?.length) {
-      await prisma.aiUsageLog.create({ data: { supabaseUid: user.supabaseUid, operation: "asistente", model: modelo, inputTokens: entrada, outputTokens: salida, durationMs: Date.now() - t0 } }).catch(() => {});
-      return { respuesta: m.content?.trim() || (propuestas.length ? "Revisa la propuesta y toca Confirmar." : "Listo."), propuestas };
+      await anotarUso();
+      return { respuesta: m.content?.trim() || resumenDe(acciones), acciones };
     }
+    // En orden: una herramienta puede depender de lo que hizo la anterior. Si una falla, las demás siguen.
     for (const call of m.tool_calls) {
       if (call.type !== "function") continue;
       let args: Record<string, unknown> = {};
       try { args = JSON.parse(call.function.arguments || "{}"); } catch { /* argumentos vacíos */ }
       let resultado: unknown;
-      try { resultado = await ejecutarHerramienta(user.id, call.function.name, args, pedido, propuestas); } catch (e) { resultado = { error: e instanceof Error ? e.message : "Falló la herramienta." }; }
-      mensajes.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(resultado).slice(0, 12000) });
+      try { resultado = await ejecutarHerramienta(user, call.function.name, args, pedido, acciones); } catch (e) { resultado = { error: e instanceof Error ? e.message : "Falló la herramienta." }; }
+      if (traza) console.log(`  · ${call.function.name}(${call.function.arguments}) → ${JSON.stringify(resultado).slice(0, 300)}`);
+      mensajes.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(resultado ?? null).slice(0, 12000) });
     }
   }
-  await prisma.aiUsageLog.create({ data: { supabaseUid: user.supabaseUid, operation: "asistente", model: modelo, inputTokens: entrada, outputTokens: salida, durationMs: Date.now() - t0 } }).catch(() => {});
-  return { respuesta: propuestas.length ? "Revisa la propuesta y toca Confirmar." : "No pude terminar eso. ¿Me lo dices de otra forma?", propuestas };
+  await anotarUso();
+  return { respuesta: resumenDe(acciones) || "No pude terminar eso. ¿Me lo dices de otra forma?", acciones };
+}
+
+/** Respuesta de respaldo armada con lo que se hizo, por si el modelo no alcanzó a escribirla. */
+function resumenDe(acciones: Accion[]): string {
+  const grupo = (t: string, xs: Accion[]) => (xs.length ? `${t}\n${xs.map((x) => `- ${x.summary}${x.error ? ` (${x.error})` : ""}`).join("\n")}` : "");
+  return [grupo("Hecho:", acciones.filter((a) => a.estado === "hecha")), grupo("Por confirmar:", acciones.filter((a) => a.estado === "propuesta")), grupo("No se pudo:", acciones.filter((a) => a.estado === "error"))].filter(Boolean).join("\n\n");
 }
