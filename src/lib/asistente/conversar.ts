@@ -43,10 +43,7 @@ Fases y proyectos:
 - Si el cliente no tiene el proyecto, créalo con proyecto_crear antes. El proyecto es el producto o el contrato (contrato «Fase 2 Genius» → proyecto «Genius»), nunca el tema de la fase.
 - Una fase que inició ya se debe aunque no tenga factura: cuenta en «por cobrar».
 
-Al terminar responde con una lista corta, sin relleno:
-- «Hecho:» lo que quedó hecho (una línea por cosa, con montos y número de factura si aplica).
-- «Por confirmar:» lo que espera que toque Confirmar, y por qué.
-- «No se pudo:» lo que falló y el motivo.
+Al terminar, cada acción ya aparece en pantalla como tarjeta (hecha, por confirmar o fallida) con su detalle. No la repitas: responde en una o dos líneas con lo que la tarjeta no dice. Por ejemplo, cuánto queda por cobrar, qué falta para confirmar o por qué algo no se pudo. Si todo salió bien y no hay nada que agregar, basta «Listo.».
 En la respuesta escribe las fechas como «28 ago» y los montos como «USD 300.00». Omite las secciones vacías. Si solo era una pregunta, responde con los números. No inventes: si una herramienta no trae el dato, dilo. Para deshacer algo, usa ver_acciones y deshacer_accion.`;
 }
 
@@ -85,7 +82,7 @@ export async function conversar(user: U & { supabaseUid: string }, historial: Me
     mensajes.push(m);
     if (!m.tool_calls?.length) {
       await anotarUso();
-      return { respuesta: m.content?.trim() || resumenDe(acciones), acciones };
+      return { respuesta: m.content?.trim() || "Listo.", acciones };
     }
     // En orden: una herramienta puede depender de lo que hizo la anterior. Si una falla, las demás siguen.
     for (const call of m.tool_calls) {

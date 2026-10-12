@@ -90,7 +90,7 @@ export function CollectRow({
           setOpen((v) => !v);
         }}
         aria-expanded={open}
-        className={`shrink-0 min-h-10 sm:min-h-8 px-4 sm:px-3 rounded-lg border text-sm sm:text-xs font-medium transition-all ${
+        className={`shrink-0 min-h-11 sm:min-h-10 px-4 rounded-lg border text-sm font-medium transition-all ${
           open
             ? "bg-fill-2 border-line-loud text-fg-mute"
             : "bg-ok/10 border-ok/25 text-ok hover:bg-ok/20"
@@ -115,29 +115,29 @@ export function CollectRow({
               value={amount}
               autoFocus
               onChange={(e) => setAmount(e.target.value)}
-              className="w-28 bg-fill border border-line-mid rounded-lg px-2.5 py-1.5 text-sm text-fg font-mono outline-none focus:border-brand/50"
+              className="w-28 min-h-11 sm:min-h-10 bg-fill border border-line-mid rounded-lg px-3 text-base sm:text-sm text-fg font-mono outline-none focus:border-brand/50"
             />
           </div>
         </div>
 
-        <div className="flex gap-1.5 pb-1.5">
+        <div className="flex gap-2">
           {[0.5, 1].map((f) => (
             <button
               key={f}
               type="button"
               onClick={() => setAmount((outstanding * f).toFixed(2))}
-              className="px-2 py-1 text-[10px] rounded border border-line-mid text-fg-faint hover:text-fg hover:border-line-loud transition-colors"
+              className="inline-flex items-center min-h-11 sm:min-h-10 px-3 text-xs rounded-lg border border-line-mid text-fg-faint hover:text-fg hover:border-line-loud transition-colors"
             >
               {f === 1 ? "Todo" : "50%"}
             </button>
           ))}
         </div>
 
-        <div className="flex items-center gap-2 ml-auto pb-0.5">
+        <div className="flex items-center gap-2 ml-auto">
           <button
             type="button"
             onClick={() => setOpen(false)}
-            className="text-fg-ghost hover:text-fg-soft text-xs px-2 py-1.5"
+            className="inline-flex items-center min-h-11 sm:min-h-10 px-3 text-fg-ghost hover:text-fg-soft text-sm"
           >
             Cancelar
           </button>
@@ -145,7 +145,7 @@ export function CollectRow({
             type="button"
             onClick={submit}
             disabled={pending}
-            className="px-3 py-1.5 bg-ok-solid hover:bg-ok-solid/85 disabled:opacity-40 text-on-solid text-xs font-semibold rounded-lg transition-all"
+            className="inline-flex items-center min-h-11 sm:min-h-10 px-4 bg-ok-solid hover:bg-ok-solid/85 disabled:opacity-40 text-on-solid text-sm font-semibold rounded-lg transition-all"
           >
             {pending ? "Registrando…" : "Registrar cobro"}
           </button>

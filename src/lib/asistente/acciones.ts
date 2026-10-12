@@ -49,6 +49,19 @@ export async function cancelarAccion(userId: string, id: string) {
   await prisma.assistantAction.updateMany({ where: { id, userId, status: "propuesta" }, data: { status: "cancelada", decidedAt: new Date() } });
 }
 
+/**
+ * Los eventos de la línea de tiempo que el motor anotó al hacer la acción (por ejemplo «Pago recibido», que ve el
+ * cliente) se van al deshacerla. Solo los de las filas que tocó la acción y anotados mientras se hacía, no lo
+ * que pasó después con esas filas.
+ */
+async function borrarEventosDe(userId: string, cuando: Date, pasos: Paso[], extra: string[] = []) {
+  const ids = [...pasos.flatMap((p) => (p.t === "crear" || p.t === "editar" || p.t === "pago" ? [p.id] : [])), ...extra];
+  if (!ids.length) return;
+  // La acción se anota al terminar de hacerse: sus eventos son de los minutos alrededor de ese momento.
+  const t = cuando.getTime();
+  await prisma.activityEvent.deleteMany({ where: { userId, entityId: { in: ids }, createdAt: { gte: new Date(t - 5 * 60_000), lte: new Date(t + 2 * 60_000) }, kind: { not: "pago_deshecho" } } });
+}
+
 /** Deshace lo que hizo una acción. Si algo ya no se puede (por ejemplo, la factura recibió otro pago), avisa. */
 export async function deshacerAccion(userId: string, id: string) {
   const tomada = await prisma.assistantAction.updateMany({ where: { id, userId, status: "hecha" }, data: { status: "deshecha", decidedAt: new Date() } });
@@ -56,7 +69,13 @@ export async function deshacerAccion(userId: string, id: string) {
   const a = await prisma.assistantAction.findFirstOrThrow({ where: { id, userId } });
   const payload = a.payload as { v?: number; pasos?: Paso[]; creado?: CreadoViejo };
   try {
-    if (payload.v === 2) await deshacerPasos(userId, payload.pasos ?? []);
+    if (payload.v === 2) {
+      // Las facturas que nacieron con un pago se borran junto con él: se anotan antes para limpiar sus eventos.
+      const pagos = (payload.pasos ?? []).flatMap((p) => (p.t === "pago" ? [p.id] : []));
+      const facturas = pagos.length ? (await prisma.payment.findMany({ where: { id: { in: pagos } }, select: { documentId: true } })).flatMap((x) => (x.documentId ? [x.documentId] : [])) : [];
+      await deshacerPasos(userId, payload.pasos ?? []);
+      await borrarEventosDe(userId, a.createdAt, payload.pasos ?? [], facturas);
+    }
     else if (a.kind === "fase" && payload.creado) await deshacerViejo(userId, payload.creado);
     else throw new Error("Esta acción es de una versión anterior; cámbiala a mano.");
   } catch (e) {

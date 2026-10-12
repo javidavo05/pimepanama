@@ -117,35 +117,35 @@ export function ArTaskActions({ documentId, paymentScheduleId, defaultTitle, ini
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         placeholder="Título de la tarea"
-        className="w-full bg-fill border border-line rounded-lg px-2.5 py-1.5 text-xs text-fg placeholder:text-fg-trace outline-none focus:border-brand/40"
+        className="w-full min-h-11 sm:min-h-10 bg-fill border border-line rounded-lg px-3 text-base sm:text-sm text-fg placeholder:text-fg-trace outline-none focus:border-brand/40"
       />
       <div className="flex gap-2">
         <input
           type="date"
           value={dueDate}
           onChange={(e) => setDueDate(e.target.value)}
-          className="flex-1 bg-fill border border-line rounded-lg px-2 py-1.5 text-xs text-fg-mute outline-none focus:border-brand/40 [color-scheme:dark]"
+          className="flex-1 min-h-11 sm:min-h-10 bg-fill border border-line rounded-lg px-2 text-base sm:text-sm text-fg-mute outline-none focus:border-brand/40 [color-scheme:dark]"
         />
         <input
           value={assignee}
           onChange={(e) => setAssignee(e.target.value)}
           placeholder="Responsable"
-          className="w-24 bg-fill border border-line rounded-lg px-2 py-1.5 text-xs text-fg-mute placeholder:text-fg-trace outline-none focus:border-brand/40"
+          className="w-24 min-h-11 sm:min-h-10 bg-fill border border-line rounded-lg px-2 text-base sm:text-sm text-fg-mute placeholder:text-fg-trace outline-none focus:border-brand/40"
         />
       </div>
       <div className="flex items-center justify-between pt-1">
-        <Link href="/empresa/tareas" className="text-[10px] text-fg-faint hover:text-fg-mute">
+        <Link href="/empresa/tareas" className="inline-flex items-center min-h-11 sm:min-h-10 text-xs text-fg-faint hover:text-fg-mute">
           Ver todas →
         </Link>
         <div className="flex gap-2">
-          <button type="button" onClick={() => setOpen(false)} className="text-xs text-fg-dim hover:text-fg-mute px-2 py-1">
+          <button type="button" onClick={() => setOpen(false)} className="inline-flex items-center min-h-11 sm:min-h-10 px-3 text-sm text-fg-dim hover:text-fg-mute">
             Cancelar
           </button>
           <button
             type="button"
             onClick={createTask}
             disabled={!title.trim() || saving}
-            className="px-3 py-1 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-xs font-semibold rounded-lg transition-all"
+            className="inline-flex items-center min-h-11 sm:min-h-10 px-4 bg-brand hover:bg-brand-hi disabled:opacity-40 text-on-brand text-sm font-semibold rounded-lg transition-all"
           >
             Crear
           </button>
@@ -162,7 +162,7 @@ export function ArTaskActions({ documentId, paymentScheduleId, defaultTitle, ini
           type="button"
           onClick={() => completeTask(t.id)}
           title={`Marcar "${t.title}" como completada`}
-          className="text-[10px] px-1.5 py-0.5 rounded border border-iris/30 text-iris-fg hover:bg-iris/10 transition-colors"
+          className="inline-flex items-center min-h-11 sm:min-h-10 px-3 text-xs rounded-lg border border-iris/30 text-iris-fg hover:bg-iris/10 transition-colors"
         >
           ✓ {t.title.length > 18 ? `${t.title.slice(0, 18)}…` : t.title}
         </button>
@@ -174,7 +174,7 @@ export function ArTaskActions({ documentId, paymentScheduleId, defaultTitle, ini
         onClick={() => setOpen((v) => !v)}
         title="Agregar tarea de seguimiento"
         aria-label="Agregar tarea de seguimiento"
-        className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg border border-line-mid text-fg-dim hover:text-brand-fg hover:border-brand/40 text-xs transition-colors"
+        className="w-11 h-11 sm:w-10 sm:h-10 flex items-center justify-center rounded-lg border border-line-mid text-fg-dim hover:text-brand-fg hover:border-brand/40 text-xs transition-colors"
       >
         +
       </button>

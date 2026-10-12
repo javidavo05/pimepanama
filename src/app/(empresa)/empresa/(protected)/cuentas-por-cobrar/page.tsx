@@ -107,7 +107,7 @@ export default async function CuentasPorCobrarPage() {
                   <div key={item.id} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 px-4 sm:px-5 py-3 sm:flex sm:items-center sm:flex-wrap">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <Link href={item.href} className="inline-flex items-center min-h-8 text-fg-mute text-sm font-mono hover:text-brand-fg transition-colors">
+                        <Link href={item.href} className="inline-flex items-center min-h-11 sm:min-h-10 text-fg-mute text-sm font-mono hover:text-brand-fg transition-colors">
                           {item.label}
                         </Link>
                         {item.kind === "schedule" && (
