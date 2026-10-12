@@ -4,7 +4,7 @@
  * Asistente de Pime Suite (prompt maestro §4): botón fijo en toda la suite, conversación por texto o voz.
  * Lo que escribe en el sistema llega como propuesta con Confirmar; nada se crea sin ese toque.
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useLayoutEffect } from "react";
 import Link from "next/link";
 import { fetchLargo } from "@/lib/fetch-largo";
 
@@ -35,6 +35,7 @@ export function AsistenteChat() {
   const [segundos, setSegundos] = useState(0);
   const dialogo = useRef<HTMLDialogElement>(null);
   const lista = useRef<HTMLDivElement>(null);
+  const caja = useRef<HTMLTextAreaElement>(null);
   const rec = useRef<MediaRecorder | null>(null);
   const trozos = useRef<Blob[]>([]);
 
@@ -42,6 +43,15 @@ export function AsistenteChat() {
   useEffect(() => { try { const g = sessionStorage.getItem(CLAVE); if (g) setMsgs(JSON.parse(g)); } catch { /* sin almacenamiento */ } }, []);
   useEffect(() => { try { sessionStorage.setItem(CLAVE, JSON.stringify(msgs.slice(-30))); } catch { /* sin almacenamiento */ } }, [msgs]);
   useEffect(() => { lista.current?.scrollTo({ top: lista.current.scrollHeight, behavior: "smooth" }); }, [msgs, pensando]);
+  // La caja crece con lo que se escribe o dicta, hasta su tope (max-h en CSS); de ahí en adelante se desplaza.
+  useLayoutEffect(() => {
+    const el = caja.current;
+    if (!el) return;
+    el.style.height = "";
+    if (!el.value) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`;
+  }, [texto, abierto, grabando]);
 
   useEffect(() => {
     const d = dialogo.current;
@@ -198,9 +208,9 @@ export function AsistenteChat() {
             </div>
           ) : (
             <div className="flex items-end gap-2">
-              <textarea value={texto} onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void enviar(texto); } }}
+              <textarea ref={caja} value={texto} onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void enviar(texto); } }}
                 rows={1} placeholder="Ej.: factura aparte a HOLO por 400" aria-label="Escribe al asistente"
-                className="min-h-12 max-h-32 flex-1 resize-none rounded-xl border border-line-mid bg-fill px-4 py-3 text-base sm:text-sm text-fg placeholder:text-fg-trace focus:border-brand focus:outline-none" />
+                className="min-h-12 max-h-[min(40dvh,320px)] flex-1 resize-none overflow-y-auto rounded-xl border-0 ring-1 ring-inset ring-line-mid bg-fill px-4 py-3 text-base leading-6 text-fg placeholder:text-fg-trace focus:ring-2 focus:ring-brand focus:outline-none" />
               {texto.trim() ? (
                 <button type="submit" disabled={pensando} className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-brand text-on-brand disabled:opacity-50" aria-label="Enviar"><IconoEnviar /></button>
               ) : (
