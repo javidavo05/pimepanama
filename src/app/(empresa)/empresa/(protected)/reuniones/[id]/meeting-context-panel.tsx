@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LANGUAGE_LABEL, MEETING_LANGUAGES, type MeetingLanguage } from "@/lib/meetings/types";
 import { StageProgress } from "./stage-progress";
+import { fetchLargo } from "@/lib/fetch-largo";
 
 interface ProjectOption {
   id: string;
@@ -127,7 +128,7 @@ export function MeetingContextPanel({
     for (const [step, stage] of REPROCESS_STAGES.entries()) {
       setBusy(stage.key);
       setRun({ step, startedAt, failed: false });
-      const res = await fetch(`/api/empresa/meetings/${meetingId}/process`, {
+      const res = await fetchLargo(`/api/empresa/meetings/${meetingId}/process`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ stage: stage.key }),

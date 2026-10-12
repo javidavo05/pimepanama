@@ -10,6 +10,17 @@ const PDF_FONT_TRACE = ["./public/fonts/pdf/**/*"] as const;
 // piden su CSS, JS y fuentes directo a su propio dominio. Sin esto se ven sin formato y no funcionan.
 const ORIGEN_PROPIO = process.env.VERCEL_ENV === "production" ? "https://pimepanama-wt62.vercel.app" : undefined;
 
+// Las que se llaman con fetchLargo (src/lib/fetch-largo.ts).
+const RUTAS_LARGAS = [
+  "/api/empresa/meetings/:id/:accion(process|audio|materialize|ask)",
+  "/api/empresa/voice-notes/:path*",
+  "/api/empresa/voice-notes",
+  "/api/empresa/ai/:accion(transcribe|analyze-contract)",
+  "/api/empresa/projects/:id/repo",
+  "/api/empresa/mail/backfill-sent",
+  "/api/empresa/mail/accounts/:id/resync-bodies",
+];
+
 const nextConfig: NextConfig = {
   assetPrefix: ORIGEN_PROPIO,
   // react-pdf reads TTFs from disk in API routes; Vercel lambdas don't get public/ unless traced.
@@ -57,6 +68,18 @@ const nextConfig: NextConfig = {
         source: "/_next/static/:path*",
         headers: [{ key: "Access-Control-Allow-Origin", value: "*" }],
       },
+      // Rutas que pueden pasar de 120 s: desde pimepanama.com se llaman directo a este dominio con un permiso
+      // firmado (src/lib/directo.ts), porque Vercel corta los reenvíos de pime-v2 a los 120 s.
+      ...RUTAS_LARGAS.map((source) => ({
+        source,
+        headers: [
+          { key: "Access-Control-Allow-Origin", value: "https://pimepanama.com" },
+          { key: "Access-Control-Allow-Methods", value: "GET, POST, PUT, PATCH, DELETE, OPTIONS" },
+          { key: "Access-Control-Allow-Headers", value: "Authorization, Content-Type" },
+          { key: "Access-Control-Max-Age", value: "600" },
+          { key: "Vary", value: "Origin" },
+        ],
+      })),
       {
         source: "/(.*)",
         headers: [

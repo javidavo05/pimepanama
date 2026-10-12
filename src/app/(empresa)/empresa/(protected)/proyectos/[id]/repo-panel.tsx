@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { fechaCorta } from "@/lib/format-datetime";
 import { AsistenteTokenGithub } from "@/components/empresa/github/asistente-token";
+import { fetchLargo } from "@/lib/fetch-largo";
 
 interface RepoState {
   owner: string | null;
@@ -64,7 +65,7 @@ export function RepoPanel({ projectId }: { projectId: string }) {
     setError(null);
     setMessage(null);
     try {
-      const res = await fetch(`/api/empresa/projects/${projectId}/repo`, {
+      const res = await fetchLargo(`/api/empresa/projects/${projectId}/repo`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -94,7 +95,7 @@ export function RepoPanel({ projectId }: { projectId: string }) {
     }
     setBusy("disconnect");
     try {
-      await fetch(`/api/empresa/projects/${projectId}/repo`, { method: "DELETE" });
+      await fetchLargo(`/api/empresa/projects/${projectId}/repo`, { method: "DELETE" });
       setMessage("Repositorio desconectado.");
       await load();
     } finally {

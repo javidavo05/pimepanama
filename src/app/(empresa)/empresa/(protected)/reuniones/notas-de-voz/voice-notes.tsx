@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { fetchLargo } from "@/lib/fetch-largo";
 
 interface Interpretation {
   resumen: string;
@@ -41,7 +42,7 @@ function asPlainText(r: VoiceNoteResult): string {
 
 /** POST con JSON; si falla, lanza el mensaje del servidor o uno según el código. */
 async function postJson<T>(url: string, body: unknown): Promise<T> {
-  const res = await fetch(url, {
+  const res = await fetchLargo(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),

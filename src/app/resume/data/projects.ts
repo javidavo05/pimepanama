@@ -8,7 +8,8 @@ export interface Project {
   features: { en: string[]; es: string[] };
   /** Optional real screenshot. Drop a file at /public/resume/projects/<id>.png and set the path here. */
   screenshotUrl?: string;
-  /** Slug under /<lang>/portfolio/demos/<slug> for the live interactive demo. */
+  /** Marca que el sistema tiene ficha en el portafolio de pimepanama.com. Las demos interactivas ya no existen:
+   *  pime-v2 sirve el portafolio en /<lang>/portfolio. */
   demoSlug?: string;
   /** External production URL, if shareable. */
   systemUrl?: string;
@@ -19,7 +20,7 @@ export interface Project {
 }
 
 export function demoUrl(p: Project, lang: Lang): string | undefined {
-  return p.demoSlug ? `/${lang}/portfolio/demos/${p.demoSlug}` : undefined;
+  return p.demoSlug ? `/${lang}/portfolio` : undefined;
 }
 
 export const projects: Project[] = [

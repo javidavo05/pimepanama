@@ -85,7 +85,7 @@ export const content = {
       disclaimer:
         "The following represents a selection of active systems. These are a small part of a broader portfolio of 30+ digital products delivered across Panama and the region.",
       viewSystem: "View System",
-      liveDemo: "Open Live Demo",
+      liveDemo: "View in portfolio",
       previewBadge: "Interactive Preview",
     },
     print: {
@@ -98,7 +98,7 @@ export const content = {
       education: "Education",
       languages: "Languages",
       languagesList: "Spanish (Native) · English (Fluent)",
-      demoNote: "Live interactive demo available at",
+      demoNote: "See it in the portfolio at",
       generated: "Full interactive portfolio",
     },
     tech: {
@@ -283,7 +283,7 @@ export const content = {
       disclaimer:
         "Lo siguiente representa una selección de sistemas activos. Estos son una pequeña parte de un portafolio más amplio de 30+ productos digitales entregados en Panamá y la región.",
       viewSystem: "Ver Sistema",
-      liveDemo: "Abrir Demo en Vivo",
+      liveDemo: "Ver en el portafolio",
       previewBadge: "Vista Previa Interactiva",
     },
     print: {
@@ -296,7 +296,7 @@ export const content = {
       education: "Educación",
       languages: "Idiomas",
       languagesList: "Español (Nativo) · Inglés (Fluido)",
-      demoNote: "Demo interactiva disponible en",
+      demoNote: "Míralo en el portafolio:",
       generated: "Portafolio interactivo completo",
     },
     tech: {

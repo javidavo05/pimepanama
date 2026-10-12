@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { formatTimestamp } from "@/lib/meetings/transcript";
+import { fetchLargo } from "@/lib/fetch-largo";
 
 interface Citation {
   startMs: number;
@@ -48,7 +49,7 @@ export function MeetingAskPanel({ meetingId, hasTranscript, onSeek }: MeetingAsk
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch(`/api/empresa/meetings/${meetingId}/ask`, {
+      const res = await fetchLargo(`/api/empresa/meetings/${meetingId}/ask`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: q }),

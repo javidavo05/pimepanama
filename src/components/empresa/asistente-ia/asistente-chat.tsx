@@ -6,6 +6,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { fetchLargo } from "@/lib/fetch-largo";
 
 type Propuesta = { id: string; kind: string; summary: string; estado?: "propuesta" | "hecha" | "cancelada" | "deshecha" | "error"; href?: string | null; error?: string };
 type Msg = { rol: "usuario" | "asistente"; texto: string; propuestas?: Propuesta[] };
@@ -109,7 +110,7 @@ export function AsistenteChat() {
           const fd = new FormData();
           fd.append("audio", blob, `voz.${(r.mimeType || "").includes("mp4") ? "m4a" : "webm"}`);
           fd.append("language", "es");
-          const res = await fetch("/api/empresa/ai/transcribe", { method: "POST", body: fd });
+          const res = await fetchLargo("/api/empresa/ai/transcribe", { method: "POST", body: fd });
           const j = await res.json().catch(() => ({}));
           if (!res.ok || !j.transcript?.trim()) throw new Error("No te entendí. Intenta otra vez, más cerca del micrófono.");
           await enviar(j.transcript);

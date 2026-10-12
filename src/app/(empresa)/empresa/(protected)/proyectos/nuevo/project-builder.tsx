@@ -14,6 +14,7 @@ import { LanguageToggle } from "@/components/empresa/document-builder/language-t
 import { PageHeader, ActionRow, btn } from "@/components/empresa/page-header";
 import { coerceAiText } from "@/lib/ai-text";
 import type { Client } from "@prisma/client";
+import { fetchLargo } from "@/lib/fetch-largo";
 
 interface ProjectFormValues {
   name: string;
@@ -128,7 +129,7 @@ export function ProjectBuilder({ clients, creatorName: _creatorName, preselectCl
       const formData = new FormData();
       formData.append("audio", blob, "recording.webm");
       formData.append("language", language);
-      const res = await fetch("/api/empresa/ai/transcribe", { method: "POST", body: formData });
+      const res = await fetchLargo("/api/empresa/ai/transcribe", { method: "POST", body: formData });
       if (res.ok) {
         const data = await res.json();
         const prev = watch("rawNotes");

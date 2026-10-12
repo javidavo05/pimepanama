@@ -10,6 +10,7 @@ import {
 } from "./offline-store";
 import { PROCESS_STAGES } from "./process-stages";
 import type { MeetingSegment } from "./types";
+import { fetchLargo } from "@/lib/fetch-largo";
 
 /**
  * Subida de las grabaciones guardadas en el equipo.
@@ -55,7 +56,7 @@ export function isTransient(err: unknown): boolean {
 async function send(input: string, init?: RequestInit): Promise<Response> {
   let res: Response;
   try {
-    res = await fetch(input, init);
+    res = await fetchLargo(input, init);
   } catch {
     throw new NetworkError();
   }

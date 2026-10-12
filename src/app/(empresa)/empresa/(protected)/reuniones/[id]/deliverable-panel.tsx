@@ -4,6 +4,7 @@ import Link from "@/components/empresa/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { DeliverableKind, TechnicalDeliverable } from "@/lib/meetings/types";
+import { fetchLargo } from "@/lib/fetch-largo";
 
 const KIND_LABEL: Record<DeliverableKind, string> = {
   SISTEMA_NUEVO: "Sistema nuevo",
@@ -85,7 +86,7 @@ export function DeliverablePanel({
     setError(null);
     setMessage([]);
     try {
-      const res = await fetch(`/api/empresa/meetings/${meetingId}/materialize`, {
+      const res = await fetchLargo(`/api/empresa/meetings/${meetingId}/materialize`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(wants),

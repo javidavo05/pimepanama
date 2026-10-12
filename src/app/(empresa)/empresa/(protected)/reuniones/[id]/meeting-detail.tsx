@@ -23,6 +23,7 @@ import { MeetingContextPanel } from "./meeting-context-panel";
 import { MeetingOutbound } from "./meeting-outbound";
 import { MeetingTranscriptView } from "./meeting-transcript-view";
 import { fechaCorta } from "@/lib/format-datetime";
+import { fetchLargo } from "@/lib/fetch-largo";
 
 type Tab =
   | "entregable"
@@ -209,7 +210,7 @@ export function MeetingDetail({
     setError(null);
     setMessage(null);
     try {
-      const res = await fetch(`/api/empresa/meetings/${meeting.id}/process`, {
+      const res = await fetchLargo(`/api/empresa/meetings/${meeting.id}/process`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ stage }),

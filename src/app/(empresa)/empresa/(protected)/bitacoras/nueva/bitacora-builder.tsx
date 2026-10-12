@@ -17,6 +17,7 @@ import {
 import type { DocumentFormValues } from "@/components/empresa/document-builder/line-items-editor";
 import type { Client } from "@prisma/client";
 import type { SerializedDocument } from "@/lib/serializers";
+import { fetchLargo } from "@/lib/fetch-largo";
 
 function getInitialValues(
   doc?: SerializedDocument,
@@ -133,7 +134,7 @@ export function BitacoraBuilder({
       const formData = new FormData();
       formData.append("audio", blob, "recording.webm");
       formData.append("language", language);
-      const res = await fetch("/api/empresa/ai/transcribe", {
+      const res = await fetchLargo("/api/empresa/ai/transcribe", {
         method: "POST",
         body: formData,
       });

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "@/components/empresa/link";
 import { useRouter } from "next/navigation";
 import { ActionRow, btn, tile } from "@/components/empresa/page-header";
+import { fetchLargo } from "@/lib/fetch-largo";
 
 interface HubSyncButtonProps {
   accounts: { id: string; label: string }[];
@@ -48,7 +49,7 @@ export function HubSyncButton({ accounts, onCompose }: HubSyncButtonProps) {
         return;
       }
 
-      const bodyRes = await fetch(`/api/empresa/mail/accounts/${id}/resync-bodies`, { method: "POST" });
+      const bodyRes = await fetchLargo(`/api/empresa/mail/accounts/${id}/resync-bodies`, { method: "POST" });
       const bodyData = bodyRes.ok ? await bodyRes.json() : null;
       const htmlPart =
         bodyData?.upgraded > 0 ? ` · ${bodyData.upgraded} HTML` : "";
@@ -91,7 +92,7 @@ export function HubSyncButton({ accounts, onCompose }: HubSyncButtonProps) {
     setSyncing(id);
     setResults((r) => ({ ...r, [id]: "" }));
     try {
-      const res = await fetch(`/api/empresa/mail/accounts/${id}/resync-bodies`, { method: "POST" });
+      const res = await fetchLargo(`/api/empresa/mail/accounts/${id}/resync-bodies`, { method: "POST" });
       const data = await res.json();
       if (data.error) {
         setResults((r) => ({ ...r, [id]: `Error: ${data.error}` }));
@@ -119,7 +120,7 @@ export function HubSyncButton({ accounts, onCompose }: HubSyncButtonProps) {
     setSyncing("backfill");
     setResults((r) => ({ ...r, backfill: "" }));
     try {
-      const res = await fetch("/api/empresa/mail/backfill-sent", { method: "POST" });
+      const res = await fetchLargo("/api/empresa/mail/backfill-sent", { method: "POST" });
       const data = await res.json();
       if (data.error) {
         setResults((r) => ({ ...r, backfill: `Error: ${data.error}` }));

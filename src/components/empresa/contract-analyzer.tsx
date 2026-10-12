@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { fetchLargo } from "@/lib/fetch-largo";
 
 export type ContractSourceType =
   | "CONTRACT"
@@ -75,7 +76,7 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
     setDone(null);
     setAssumptions([]);
     try {
-      const res = await fetch("/api/empresa/ai/analyze-contract", {
+      const res = await fetchLargo("/api/empresa/ai/analyze-contract", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

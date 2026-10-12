@@ -121,7 +121,7 @@ export function PrintResume() {
               <p style={{ fontSize: "8pt", color: MUTED, margin: 0 }}>{p.description[lang]}</p>
               {p.demoSlug ? (
                 <div style={{ fontSize: "7.5pt", color: GOLD, marginTop: "2px" }}>
-                  ▸ {c.print.demoNote} {SITE}/{lang}/portfolio/demos/{p.demoSlug}
+                  ▸ {c.print.demoNote} {SITE}/{lang}/portfolio
                 </div>
               ) : null}
             </div>

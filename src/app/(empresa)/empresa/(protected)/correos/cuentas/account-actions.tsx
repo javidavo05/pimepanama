@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "@/components/empresa/link";
 import { useRouter } from "next/navigation";
 import { tile } from "@/components/empresa/page-header";
+import { fetchLargo } from "@/lib/fetch-largo";
 
 export function AccountActions({ accountId }: { accountId: string }) {
   const router = useRouter();
@@ -14,7 +15,7 @@ export function AccountActions({ accountId }: { accountId: string }) {
   async function handleResyncBodies() {
     setSyncing(true);
     try {
-      const res = await fetch(`/api/empresa/mail/accounts/${accountId}/resync-bodies`, { method: "POST" });
+      const res = await fetchLargo(`/api/empresa/mail/accounts/${accountId}/resync-bodies`, { method: "POST" });
       const data = await res.json();
       if (data.error) {
         alert(data.error);
@@ -36,7 +37,7 @@ export function AccountActions({ accountId }: { accountId: string }) {
         alert(data.error);
         return;
       }
-      const bodyRes = await fetch(`/api/empresa/mail/accounts/${accountId}/resync-bodies`, { method: "POST" });
+      const bodyRes = await fetchLargo(`/api/empresa/mail/accounts/${accountId}/resync-bodies`, { method: "POST" });
       const bodyData = bodyRes.ok ? await bodyRes.json() : null;
       const htmlMsg = bodyData?.upgraded > 0 ? ` · ${bodyData.upgraded} con HTML recuperado` : "";
       alert(`Sincronizado. ${data.fetched} correos nuevos${htmlMsg}.`);

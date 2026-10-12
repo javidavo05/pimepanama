@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { resolverEquipo, type EmpresaUserWithConfig } from "@/lib/auth/equipo";
 import { MFA_COOKIE, sesionVerificada } from "@/lib/auth/mfa";
+import { leerPermisoDirecto } from "@/lib/directo";
 
 export type { EmpresaUserWithConfig };
 
@@ -8,6 +9,15 @@ const negar = (status: number, error: string, code: string) =>
   new Response(JSON.stringify({ error, code }), { status, headers: { "Content-Type": "application/json" } });
 
 export async function requireEmpresaUser(request: Request): Promise<EmpresaUserWithConfig> {
+  // Llamadas largas hechas directo al dominio del proyecto (ver lib/directo.ts):
+  // el permiso solo se emite a una sesión que ya pasó login y doble verificación.
+  const directo = leerPermisoDirecto(request);
+  if (directo) {
+    const r = await resolverEquipo({ sub: directo });
+    if (r.estado !== "equipo") throw negar(403, "Esta cuenta no tiene acceso a la suite.", "sin_acceso");
+    return r.user;
+  }
+
   const cookieHeader = request.headers.get("cookie") ?? "";
 
   const supabase = createServerClient(

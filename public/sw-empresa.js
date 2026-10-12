@@ -9,7 +9,7 @@
  * - Nada más. El resto de la suite muestra clientes, facturas y cotizaciones:
  *   datos de negocio vivos que nunca se sirven desde caché.
  */
-const SHELL_CACHE = "pime-empresa-shell-v4";
+const SHELL_CACHE = "pime-empresa-shell-v5";
 const STATIC_CACHE = "pime-empresa-static-v1";
 const PAGES_CACHE = "pime-empresa-pages-v1";
 const KNOWN_CACHES = [SHELL_CACHE, STATIC_CACHE, PAGES_CACHE];
@@ -32,6 +32,17 @@ const WARM_EVERY_MS = 6 * 60 * 60 * 1000;
  */
 const DEV = new URL(self.location.href).searchParams.has("dev");
 
+/**
+ * pimepanama.com lo sirve pime-v2 y reenvía /empresa a este proyecto. En producción
+ * los scripts y estilos de la suite se piden a su propio dominio (assetPrefix en
+ * next.config.ts), así que /_next/static llega desde aquí además del origen propio.
+ */
+const ASSET_ORIGINS = [self.location.origin, "https://pimepanama-wt62.vercel.app"];
+
+function isStatic(url) {
+  return ASSET_ORIGINS.includes(url.origin) && url.pathname.startsWith("/_next/static/");
+}
+
 self.addEventListener("install", (event) => {
   self.skipWaiting();
   event.waitUntil(caches.open(SHELL_CACHE).then((cache) => cache.addAll(PRECACHE_URLS)));
@@ -51,15 +62,15 @@ self.addEventListener("fetch", (event) => {
   const { request } = event;
   if (request.method !== "GET") return;
   const url = new URL(request.url);
+
+  if (!DEV && isStatic(url)) {
+    event.respondWith(cacheFirst(request));
+    return;
+  }
   if (url.origin !== self.location.origin) return;
 
   if (DEV) {
     if (request.mode === "navigate") event.respondWith(fetch(request).catch(() => caches.match(OFFLINE_URL)));
-    return;
-  }
-
-  if (url.pathname.startsWith("/_next/static/")) {
-    event.respondWith(cacheFirst(request));
     return;
   }
 
@@ -75,13 +86,23 @@ self.addEventListener("fetch", (event) => {
 
 let putsSinceTrim = 0;
 
+/** Pide un archivo estático de forma que se pueda guardar: el de otro origen va con CORS. */
+function fetchStatic(url) {
+  return new URL(url).origin === self.location.origin ? fetch(url) : fetch(url, { mode: "cors", credentials: "omit" });
+}
+
 async function cacheFirst(request) {
   const cache = await caches.open(STATIC_CACHE);
-  const hit = await cache.match(request, { ignoreVary: true });
+  const hit = await cache.match(request.url, { ignoreVary: true });
   if (hit) return hit;
-  const res = await fetch(request);
-  if (res.ok && res.type === "basic") {
-    await cache.put(request, res.clone());
+  let res;
+  try {
+    res = await fetchStatic(request.url);
+  } catch {
+    return fetch(request);
+  }
+  if (res.ok && (res.type === "basic" || res.type === "cors")) {
+    await cache.put(request.url, res.clone());
     if (++putsSinceTrim >= 50) {
       putsSinceTrim = 0;
       await trim(cache);
@@ -145,14 +166,16 @@ async function warmOffline() {
 
     // Las rutas aparecen en <script src>, en <link> y dentro de los datos de
     // React Server Components (sin el prefijo /_next/ y entre comillas escapadas).
+    // Con assetPrefix los archivos viven en el dominio del proyecto, no en el de la página.
+    const base = ASSET_ORIGINS.find((o) => o !== self.location.origin && html.includes(`${o}/_next/`)) ?? self.location.origin;
     const assets = new Set();
     for (const match of html.matchAll(/(?:\/_next\/)?static\/(?:chunks|css|media)\/[^"'\s\\<>]+/g)) {
-      assets.add(match[0].startsWith("/_next/") ? match[0] : `/_next/${match[0]}`);
+      assets.add(`${base}${match[0].startsWith("/_next/") ? match[0] : `/_next/${match[0]}`}`);
     }
     for (const asset of assets) {
       if (await statics.match(asset)) continue;
       try {
-        const a = await fetch(asset);
+        const a = await fetchStatic(asset);
         if (a.ok) await statics.put(asset, a);
       } catch {
         // Un archivo que no baja ahora se guarda la próxima vez que se use.

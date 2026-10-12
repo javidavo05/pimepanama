@@ -48,6 +48,7 @@ import {
 import { PROCESS_STAGES } from "@/lib/meetings/process-stages";
 import { PendingOfflineMeetings } from "../pending-offline-meetings";
 import { useConnectivity } from "../use-connectivity";
+import { fetchLargo } from "@/lib/fetch-largo";
 
 /**
  * Duración de cada tramo. Corto a propósito: es lo que hace que la transcripción
@@ -557,7 +558,7 @@ export function MeetingRecorder({
   async function processMeeting(id: string) {
     for (let i = 0; i < STAGES.length; i++) {
       setStageIndex(i);
-      const res = await fetch(`/api/empresa/meetings/${id}/process`, {
+      const res = await fetchLargo(`/api/empresa/meetings/${id}/process`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ stage: STAGES[i].key }),
@@ -624,7 +625,7 @@ export function MeetingRecorder({
           formData.append("audio", blob, `tramo-${index}.wav`);
           formData.append("index", String(index));
           formData.append("offsetMs", String(offsetMs));
-          const res = await fetch(`/api/empresa/meetings/${id}/audio`, {
+          const res = await fetchLargo(`/api/empresa/meetings/${id}/audio`, {
             method: "POST",
             body: formData,
           });
