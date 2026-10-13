@@ -56,6 +56,8 @@ export default async function FichaCliente({ params, searchParams }: { params: P
   const cuenta = !f.personas.length ? ["Sin cuenta", "bg-fill-2 text-fg-dim"] : f.personas.some((p) => p.status === "activo") ? ["Cuenta activa", "bg-ok/10 text-ok"] : ["Invitación enviada", "bg-warn/10 text-warn"];
   const porFacturar = f.horasPorFacturar.reduce((a, h) => a + Number(h.amount), 0);
   const minutosPorFacturar = f.horasPorFacturar.reduce((a, h) => a + h.billedMinutes, 0);
+  // Abonos de cada factura, del más viejo al más nuevo: cada uno lleva su recibo.
+  const pagosDe = (facturaId: string) => f.pagos.filter((p) => p.documentId === facturaId && p.status === "confirmado").map((p) => ({ id: p.id, monto: Number(p.amount), fecha: p.paidAt })).sort((a, b) => a.fecha.getTime() - b.fecha.getTime());
   const facturasAbiertas = f.facturas.filter((x) => x.falta > 0.005 && x.status !== "DRAFT" && x.status !== "CANCELLED");
 
   return (
@@ -281,7 +283,7 @@ export default async function FichaCliente({ params, searchParams }: { params: P
             <div className="space-y-6 xl:col-span-2 min-w-0">
               <section className={card}>
                 <div className="flex items-center justify-between gap-3"><h2 className={h2}>Facturas{f.facturas.length ? ` · ${f.facturas.length}` : ""}</h2><BotonCobrar clientes={clientesCobro} clienteInicial={c.id} etiqueta="Cobrar" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline" /></div>
-                <ListaFacturas facturas={f.facturas.map((x) => ({ id: x.id, number: x.number, title: x.title, status: x.status, total: Number(x.total ?? 0), falta: x.falta, issueDate: x.issueDate }))} vacio="Sin facturas todavía. Cada pago que registres sale con su factura." />
+                <ListaFacturas facturas={f.facturas.map((x) => ({ id: x.id, number: x.number, title: x.title, status: x.status, total: Number(x.total ?? 0), falta: x.falta, issueDate: x.issueDate, pagos: pagosDe(x.id) }))} vacio="Sin facturas todavía. Cada pago que registres sale con su factura." />
                 {f.cotizaciones.length > 0 && <p className="mt-4 text-xs text-fg-dim">{f.cotizaciones.length} cotización(es): {f.cotizaciones.slice(0, 3).map((q) => <Link key={q.id} href={`/empresa/cotizaciones/${q.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-brand-fg hover:underline mr-2">{q.number}</Link>)}</p>}
               </section>
             </div>

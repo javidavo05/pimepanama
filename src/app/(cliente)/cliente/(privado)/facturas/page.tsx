@@ -16,7 +16,7 @@ export default async function FacturasCliente() {
 
   return (
     <>
-      <Encabezado eyebrow="Tu cuenta con Pime" titulo="Facturas y pagos" detalle="Lo facturado, lo que pagaste y lo que falta, con cada factura en PDF." />
+      <Encabezado eyebrow="Tu cuenta con Pime" titulo="Facturas y pagos" detalle="Lo facturado, lo que pagaste y lo que falta, con cada factura y cada recibo de pago en PDF." />
       <div className="grid gap-4 sm:grid-cols-3">
         <Tarjeta><p className="text-fg-dim text-sm">Por pagar</p><p className="text-fg text-3xl font-bold tabular-nums tracking-tight">{dinero(saldo.pendiente)}</p>{saldo.sinFacturar > 0 && <p className="text-fg-dim text-xs mt-1">Incluye {dinero(saldo.sinFacturar)} de fases en curso sin factura todavía.</p>}</Tarjeta>
         <Tarjeta><p className="text-fg-dim text-sm">Pagado</p><p className="text-fg text-3xl font-bold tabular-nums tracking-tight">{dinero(saldo.pagado)}</p></Tarjeta>
@@ -79,6 +79,7 @@ export default async function FacturasCliente() {
                 <span className="text-fg font-semibold tabular-nums">{dinero(x.amount)}</span>
                 <span className="text-fg-dim">{fechaCorta(x.paidAt)} · {PAGO_METODO_LABEL[x.method as PagoMetodo] ?? x.method}{x.reference ? ` · ref. ${x.reference}` : ""}</span>
                 <span className="ml-auto"><Etiqueta tono={x.status === "confirmado" ? "ok" : x.status === "rechazado" ? "peligro" : "aviso"}>{x.status === "confirmado" ? "Confirmado" : x.status === "rechazado" ? "No encontrado" : "Por confirmar"}</Etiqueta></span>
+                {x.status === "confirmado" && <a href={`/api/cliente/pagos/${x.id}/recibo`} download className="inline-flex items-center min-h-11 px-3 rounded-lg text-sm font-semibold text-brand-fg hover:bg-fill">Recibo</a>}
               </li>
             ))}
           </ul>

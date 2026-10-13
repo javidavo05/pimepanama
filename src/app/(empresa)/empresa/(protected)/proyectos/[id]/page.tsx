@@ -204,9 +204,9 @@ export default async function ProyectoDetailPage({
   const facturasRows = await prisma.document.findMany({
     where: { userId: user.id, type: "FACTURA", OR: [{ projectId: project.id }, ...(projectClients.length ? [{ clientId: { in: projectClients.map((c) => c.id) } }] : [])] },
     orderBy: { issueDate: "desc" },
-    select: { id: true, number: true, title: true, status: true, total: true, amountPaid: true, issueDate: true, projectId: true, project: { select: { name: true } } },
+    select: { id: true, number: true, title: true, status: true, total: true, amountPaid: true, issueDate: true, projectId: true, project: { select: { name: true } }, payments: { where: { status: "confirmado" }, orderBy: [{ paidAt: "asc" }, { createdAt: "asc" }], select: { id: true, amount: true, paidAt: true } } },
   });
-  const filaFactura = (d: (typeof facturasRows)[number]): FilaFactura => ({ id: d.id, number: d.number, title: d.title, status: d.status, total: Number(d.total ?? 0), falta: d.status === "PAID" ? 0 : Math.max(0, Number(d.total ?? 0) - Number(d.amountPaid ?? 0)), issueDate: d.issueDate, proyecto: d.projectId && d.projectId !== project.id ? d.project?.name ?? null : null });
+  const filaFactura = (d: (typeof facturasRows)[number]): FilaFactura => ({ id: d.id, number: d.number, title: d.title, status: d.status, total: Number(d.total ?? 0), falta: d.status === "PAID" ? 0 : Math.max(0, Number(d.total ?? 0) - Number(d.amountPaid ?? 0)), issueDate: d.issueDate, proyecto: d.projectId && d.projectId !== project.id ? d.project?.name ?? null : null, pagos: d.payments.map((p) => ({ id: p.id, monto: Number(p.amount), fecha: p.paidAt })) });
   const facturasDelProyecto = facturasRows.filter((d) => d.projectId === project.id).map(filaFactura);
   const otrasFacturas = facturasRows.filter((d) => d.projectId !== project.id).map(filaFactura);
   const ticketsAbiertos = (tickets ?? []).filter((t) => t.status !== "resuelto" && t.status !== "cerrado").length;
