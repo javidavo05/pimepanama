@@ -22,7 +22,9 @@ const RUTAS_LARGAS = [
   "/api/empresa/projects/:id/repo",
   "/api/empresa/mail/backfill-sent",
   "/api/empresa/mail/accounts/:id/resync-bodies",
+  "/api/empresa/asistente",
 ];
+// Tiene que coincidir con DIRECTAS en src/lib/fetch-largo.ts: lo que no está aquí, el navegador lo bloquea.
 
 const nextConfig: NextConfig = {
   assetPrefix: ORIGEN_PROPIO,

@@ -34,12 +34,37 @@ async function permisoVigente() {
   return p;
 }
 
+/**
+ * Las rutas que el dominio del proyecto deja llamar desde pimepanama.com (CORS en next.config.ts,
+ * RUTAS_LARGAS). Cualquier otra que se mande directo la bloquea el navegador y el fetch falla como si no
+ * hubiera internet: así una grabación quedó «esperando conexión» con la red funcionando (2026-10-13).
+ */
+const DIRECTAS = [
+  /^\/api\/empresa\/meetings\/[^/]+\/(process|audio|materialize|ask)$/,
+  /^\/api\/empresa\/voice-notes(\/.*)?$/,
+  /^\/api\/empresa\/ai\/(transcribe|analyze-contract)$/,
+  /^\/api\/empresa\/projects\/[^/]+\/repo$/,
+  /^\/api\/empresa\/mail\/backfill-sent$/,
+  /^\/api\/empresa\/mail\/accounts\/[^/]+\/resync-bodies$/,
+  /^\/api\/empresa\/asistente$/,
+];
+
+export const esRutaDirecta = (path: string) => DIRECTAS.some((r) => r.test(path.split("?")[0]));
+
 export async function fetchLargo(path: string, init: RequestInit = {}): Promise<Response> {
-  if (!reenviado()) return fetch(path, init);
+  if (!reenviado() || !esRutaDirecta(path)) return fetch(path, init);
   const p = await permisoVigente();
   // Sin permiso se intenta por el camino normal: funciona si la llamada dura menos de 120 s.
   if (!p) return fetch(path, init);
   const headers = new Headers(init.headers);
   headers.set("Authorization", `Bearer ${p.token}`);
-  return fetch(`${p.origin}${path}`, { ...init, headers, credentials: "omit", mode: "cors" });
+  try {
+    return await fetch(`${p.origin}${path}`, { ...init, headers, credentials: "omit", mode: "cors" });
+  } catch (err) {
+    // Si el camino directo falla (CORS, dominio caído) y hay internet, se intenta por el normal. Un cuerpo
+    // de un solo uso (stream) no se puede reenviar: ahí el error sigue.
+    if (typeof navigator !== "undefined" && !navigator.onLine) throw err;
+    if (init.body instanceof ReadableStream) throw err;
+    return fetch(path, init);
+  }
 }
