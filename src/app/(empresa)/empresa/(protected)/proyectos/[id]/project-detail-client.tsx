@@ -29,7 +29,7 @@ import { fechaCorta } from "@/lib/format-datetime";
 // celular crecen a 44 px de alto para el dedo; desde tablet vuelven a ser
 // enlaces compactos.
 const MINI_ACTION =
-  "inline-flex items-center justify-center min-h-11 sm:min-h-8 px-2 sm:px-0 text-brand-fg text-xs sm:text-[10px] hover:text-brand-fg transition-colors disabled:opacity-40";
+  "inline-flex items-center justify-center shrink-0 whitespace-nowrap min-h-11 sm:min-h-8 px-2 sm:px-0 text-brand-fg text-xs sm:text-[10px] hover:text-brand-fg transition-colors disabled:opacity-40";
 
 const SCHEDULE_STATUS_COLOR: Record<string, string> = {
   PENDING: "bg-info/15 text-info border-info/20",
@@ -51,6 +51,8 @@ export function ProjectDetailClient({
   allClients,
   initialTab,
   queLeFalta,
+  resumenPanel,
+  presupuesto,
   alertas,
   repoInicial,
   counts,
@@ -70,6 +72,10 @@ export function ProjectDetailClient({
   initialTab: string;
   /** Barra «Qué le falta» (va arriba de las pestañas). */
   queLeFalta: React.ReactNode;
+  /** «Cómo va»: avance, dinero, tareas, tickets y última reunión (servidor). */
+  resumenPanel: React.ReactNode;
+  /** Presupuesto real (fases o plan; si no, el total cargado): el mismo número que Dinero. */
+  presupuesto: number | null;
   /** Estado del repo ya armado en el servidor (sin llamar a GitHub). */
   repoInicial?: EstadoRepo | null;
   /** Pestañas donde hay un requisito pendiente: llevan un punto de aviso. */
@@ -205,11 +211,12 @@ export function ProjectDetailClient({
           resumen: (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
               <div className="lg:col-span-2 space-y-6 min-w-0">
+          {resumenPanel}
           {/* Description / Scope */}
           <div className="bg-panel border border-line rounded-xl p-6 space-y-4">
-            {!project.description && !project.scope ? (
+            {!project.description && !project.scope && !project.aiSummary ? (
               <div className="flex items-center justify-between gap-3">
-                <p className="text-fg-faint text-sm">Sin descripción ni alcance.</p>
+                <p className="text-fg-dim text-sm">Sin descripción ni alcance. Escribe de qué trata el proyecto y qué incluye: es lo primero que se lee aquí.</p>
                 <button
                   type="button"
                   onClick={() => setEditing("form")}
@@ -233,7 +240,7 @@ export function ProjectDetailClient({
                   </div>
                 )}
                 {project.aiSummary && (
-                  <div className="border-t border-line pt-4">
+                  <div className={project.description || project.scope ? "border-t border-line pt-4" : ""}>
                     <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-2">Resumen IA</p>
                     <p className="text-fg-dim text-sm">{project.aiSummary}</p>
                   </div>
@@ -247,7 +254,7 @@ export function ProjectDetailClient({
           {/* Fechas y presupuesto */}
           <div className="bg-panel border border-line rounded-xl p-6 space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <p className="text-fg-faint text-[10px] uppercase tracking-widest">Resumen</p>
+              <p className="text-fg-faint text-[10px] uppercase tracking-widest">Fechas y presupuesto</p>
               <button
                 type="button"
                 onClick={() => setEditing("form")}
@@ -258,8 +265,8 @@ export function ProjectDetailClient({
             </div>
             <div>
               <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Presupuesto</p>
-              {project.totalBudget != null ? (
-                <p className="text-sand-fg font-mono text-lg font-semibold">${fmtUSD(project.totalBudget)}</p>
+              {(presupuesto ?? project.totalBudget ?? 0) > 0 ? (
+                <p className="text-sand-fg font-mono text-lg font-semibold">${fmtUSD(presupuesto || project.totalBudget || 0)}</p>
               ) : (
                 <p className="text-fg-ghost text-sm">Sin definir</p>
               )}

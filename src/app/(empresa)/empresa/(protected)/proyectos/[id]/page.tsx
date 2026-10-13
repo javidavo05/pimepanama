@@ -11,9 +11,11 @@ import { ProjectDetailClient, type Tab } from "./project-detail-client";
 import { cargarFases, FasesPanel, OrdenesPanel } from "./fases-panel";
 import { MeetingsPanel } from "./meetings-panel";
 import { QueLeFalta } from "./que-le-falta";
+import { ResumenProyecto } from "./resumen-panel";
 import { GastosPanel } from "./gastos-panel";
 import { ZonaLinea } from "@/components/empresa/clientes/zona-linea";
 import { DineroProyecto } from "@/components/empresa/cobrar/dinero-proyecto";
+import { dineroDeProyecto } from "@/lib/motor/cobros";
 import { VerificacionGithubCard } from "@/components/empresa/cobrar/verificacion-github";
 import { EnlazarReuniones } from "@/components/empresa/reuniones/enlazar-reunion";
 import type { VerificacionGithub } from "@/lib/motor/verificar-github";
@@ -59,7 +61,7 @@ export default async function ProyectoDetailPage({
   const user = await getEmpresaUser();
 
   // Lo secundario falla por su cuenta (.catch → null): su pestaña lo dice y el resto del proyecto se ve.
-  const [project, allClients, workspace, fases, datos, tickets, horas, plataformas, sinProyecto, candidatos, cuentasGithub, tokenPropio, gastos] = await Promise.all([
+  const [project, allClients, workspace, fases, datos, tickets, horas, plataformas, sinProyecto, candidatos, cuentasGithub, tokenPropio, gastos, plata] = await Promise.all([
     prisma.project.findFirst({
       where: { id, userId: user.id },
       include: {
@@ -117,6 +119,8 @@ export default async function ProyectoDetailPage({
       where: { userId: user.id, projectId: id },
       select: { id: true, title: true, vendor: true, amount: true, status: true, isRecurring: true, paidAt: true, dueDate: true, createdAt: true, category: true },
     }).catch(() => null),
+    // Para el Resumen: la misma cuenta que la pestaña Dinero (presupuesto, cobrado, por cobrar).
+    dineroDeProyecto(user.id, id).catch(() => null),
   ]);
 
   if (!project) notFound();
@@ -249,6 +253,16 @@ export default async function ProyectoDetailPage({
           repoInicial={repoInicial}
           counts={{ reuniones: project.meetings.length, tickets: ticketsAbiertos }}
           queLeFalta={d ? <QueLeFalta projectId={project.id} datos={d} /> : <div className="mb-6"><NoCargo titulo="Qué le falta" /></div>}
+          presupuesto={plata?.presupuesto ?? null}
+          resumenPanel={
+            <ResumenProyecto
+              dinero={interno ? null : plata}
+              fases={fases ? fases.phases.filter((f) => !f.changeOrderId || f.changeOrder?.status === "aprobada") : null}
+              tareasAbiertas={workspace.tasks.filter((t) => t.projectId === project.id && !t.parentId && !t.completed).length}
+              ticketsAbiertos={ticketsAbiertos}
+              ultimaReunion={serialized.meetings[0] ?? null}
+            />
+          }
           tasksPanel={<ProjectTasks projectId={project.id} />}
           reunionesPanel={
             <div className="space-y-6">
