@@ -22,6 +22,7 @@ export const metadata = { title: "Cliente — Pime Suite" };
 const card = "bg-panel border border-line rounded-2xl p-4 sm:p-6 min-w-0";
 const h2 = "text-fg text-base font-semibold tracking-tight";
 const fecha = (d: Date | null | undefined) => (d ? new Date(d).toLocaleDateString("es-PA", { day: "numeric", month: "short", year: "numeric", timeZone: "America/Panama" }) : "—");
+const mesAnio = (d: Date) => new Date(d).toLocaleDateString("es-PA", { month: "long", year: "numeric", timeZone: "America/Panama" });
 const tiempo = (d: Date) => {
   const m = Math.round((Date.now() - new Date(d).getTime()) / 60000);
   return m < 60 ? `hace ${Math.max(1, m)} min` : m < 1440 ? `hace ${Math.round(m / 60)} h` : fecha(d);
@@ -40,6 +41,9 @@ export default async function FichaCliente({ params, searchParams }: { params: P
   if (!f) notFound();
   // Empresa interna: su dinero son los gastos de sus productos, no cobros.
   const interna = f.cliente.internal;
+  const ing = f.ingresos;
+  const maxAnio = Math.max(0, ...ing.porAnio.map((y) => y.monto));
+  const sinProyecto = Math.max(0, ing.total - [...ing.porProyecto.values()].reduce((a, v) => a + v, 0));
   const gastos = interna
     ? await prisma.expense.findMany({
         where: { userId: u.id, project: { OR: [{ clientId: id }, { clients: { some: { clientId: id } } }] } },
@@ -127,6 +131,56 @@ export default async function FichaCliente({ params, searchParams }: { params: P
         resumen: (
           <div className="grid gap-6 xl:grid-cols-3 items-start">
             <div className="space-y-6 xl:col-span-2 min-w-0">
+              {!interna && (
+                <section className={card} aria-labelledby="trajo-titulo">
+                  <div className="flex items-center justify-between gap-3">
+                    <h2 id="trajo-titulo" className={h2}>Lo que nos ha traído</h2>
+                    <Link href={`/empresa/clientes/${c.id}?tab=facturas`} className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">Ver pagos</Link>
+                  </div>
+                  <p className="mt-3 font-mono text-3xl font-semibold tracking-tight tabular-nums text-ok">{dinero(ing.total)}</p>
+                  <p className="text-sm text-fg-dim">
+                    {ing.desde ? `Desde ${mesAnio(ing.desde)} · ${ing.entradas} ${ing.entradas === 1 ? "pago" : "pagos"}${ing.ultima ? ` · el último el ${fecha(ing.ultima)}` : ""}` : "Todavía no ha pagado nada. Cada pago que registres suma aquí."}
+                  </p>
+                  {ing.porAnio.length > 0 && (
+                    <ul className="mt-4 space-y-2" aria-label="Por año">
+                      {ing.porAnio.map((y) => (
+                        <li key={y.anio} className="grid grid-cols-[3rem_minmax(0,1fr)_8rem] items-center gap-3 text-sm">
+                          <span className="text-fg-dim tabular-nums">{y.anio}</span>
+                          <span className="h-2 rounded-full bg-fill-3 overflow-hidden" aria-hidden>
+                            <span className="block h-full rounded-full bg-ok origin-left" style={{ transform: `scaleX(${maxAnio ? y.monto / maxAnio : 0})` }} />
+                          </span>
+                          <span className="text-right font-mono tabular-nums text-fg">{dinero(y.monto)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="mt-6 border-t border-line pt-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-fg-dim text-xs font-semibold uppercase tracking-wider">Proyectos · {f.proyectos.length}</h3>
+                      <Link href={`/empresa/proyectos/nuevo?clientId=${c.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">+ Proyecto</Link>
+                    </div>
+                    {f.proyectos.length ? (
+                      <ul className="mt-2 divide-y divide-line">
+                        {f.proyectos.map((p) => (
+                          <li key={p.id}>
+                            <Link href={`/empresa/proyectos/${p.id}`} className="grid grid-cols-[minmax(0,1fr)_8rem] items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
+                              <span className="min-w-0">
+                                <span className="block text-fg text-sm font-medium truncate">{p.name}</span>
+                                <span className="block text-fg-dim text-xs truncate">{p.status === "ACTIVE" ? "En curso" : p.status === "COMPLETED" ? "Terminado" : p.status === "PAUSED" ? "En pausa" : "Cancelado"} · {Math.round(p.avance)} %{p.actual ? ` · ${p.actual.name}` : ""}</span>
+                              </span>
+                              <span className="text-right">
+                                <span className={`block font-mono text-sm tabular-nums ${ing.porProyecto.get(p.id) ? "text-fg" : "text-fg-faint"}`}>{dinero(ing.porProyecto.get(p.id) ?? 0)}</span>
+                                <span className="block text-fg-faint text-xs">cobrado</span>
+                              </span>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : <p className="mt-2 text-sm text-fg-dim">Sin proyectos. Crea uno con sus fases y precios: de ahí salen la propuesta, las facturas y el avance que ve el cliente.</p>}
+                    {sinProyecto > 0.005 && <p className="mt-2 text-xs text-fg-dim">{dinero(sinProyecto)} entraron por facturas sueltas, sin proyecto.</p>}
+                  </div>
+                </section>
+              )}
                         {f.porConfirmar.length > 0 && (
                           <section className={`${card} border-warn/40`}>
                             <h2 className={h2}>Pagos reportados por el cliente</h2>

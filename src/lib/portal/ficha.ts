@@ -1,6 +1,7 @@
 /** Todo lo de un cliente para su ficha en /empresa, en una sola ida a la base (consultas en paralelo). */
 import { prisma } from "@/lib/prisma";
 import { avanceDeProyecto, faseActual } from "./avance";
+import { ingresosDelCliente } from "./ingresos";
 import { saldoCliente, pagadoEfectivo } from "./saldo";
 import { TICKET_ABIERTOS } from "./estados";
 import { reglasDe, tarifaDe } from "./horas";
@@ -17,9 +18,9 @@ export async function fichaCliente(userId: string, clientId: string) {
       orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
     }),
     prisma.ticket.findMany({ where: { userId, clientId }, orderBy: { updatedAt: "desc" }, take: 30, select: { id: true, number: true, title: true, status: true, kind: true, priority: true, updatedAt: true, lastClientActivityAt: true, lastPimeActivityAt: true } }),
-    prisma.document.findMany({ where: { userId, clientId, type: "FACTURA" }, orderBy: { issueDate: "desc" }, select: { id: true, number: true, title: true, status: true, total: true, amountPaid: true, issueDate: true, dueDate: true } }),
+    prisma.document.findMany({ where: { userId, clientId, type: "FACTURA" }, orderBy: { issueDate: "desc" }, select: { id: true, number: true, title: true, status: true, total: true, amountPaid: true, issueDate: true, dueDate: true, projectId: true } }),
     prisma.document.findMany({ where: { userId, clientId, type: "COTIZACION" }, orderBy: { issueDate: "desc" }, take: 10, select: { id: true, number: true, title: true, status: true, total: true, issueDate: true } }),
-    prisma.payment.findMany({ where: { userId, clientId }, orderBy: [{ paidAt: "desc" }, { createdAt: "desc" }], select: { id: true, documentId: true, phaseId: true, amount: true, paidAt: true, method: true, reference: true, status: true, receiptR2Key: true, note: true } }),
+    prisma.payment.findMany({ where: { userId, clientId }, orderBy: [{ paidAt: "desc" }, { createdAt: "desc" }], select: { id: true, documentId: true, phaseId: true, projectId: true, amount: true, paidAt: true, method: true, reference: true, status: true, receiptR2Key: true, note: true } }),
     prisma.timeEntry.findMany({ where: { userId, clientId, invoiceId: null }, orderBy: { workDate: "desc" }, select: { id: true, minutes: true, billedMinutes: true, amount: true, billable: true, workDate: true, note: true, ticket: { select: { number: true } } } }),
     prisma.clientUser.findMany({ where: { clientId, status: { not: "revocado" } }, orderBy: { createdAt: "asc" }, select: { id: true, email: true, fullName: true, role: true, status: true, lastLoginAt: true, invitedAt: true } }),
     prisma.activityEvent.findMany({ where: { clientId }, orderBy: { createdAt: "desc" }, take: 40, select: { id: true, title: true, detail: true, createdAt: true, visibility: true, actorType: true, kind: true } }),
@@ -50,5 +51,6 @@ export async function fichaCliente(userId: string, clientId: string) {
     contratos,
     sistemas,
     saldo: saldoCliente(facturas, pagos, fasesSinFactura),
+    ingresos: ingresosDelCliente(facturas, pagos),
   };
 }
