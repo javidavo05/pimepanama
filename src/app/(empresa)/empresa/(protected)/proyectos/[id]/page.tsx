@@ -11,7 +11,8 @@ import { ProjectDetailClient, type Tab } from "./project-detail-client";
 import { cargarFases, FasesPanel, OrdenesPanel } from "./fases-panel";
 import { MeetingsPanel } from "./meetings-panel";
 import { QueLeFalta } from "./que-le-falta";
-import { ResumenProyecto } from "./resumen-panel";
+import { ResumenCliente } from "./resumen-panel";
+import { fichaCliente } from "@/lib/portal/ficha";
 import { GastosPanel } from "./gastos-panel";
 import { ZonaLinea } from "@/components/empresa/clientes/zona-linea";
 import { DineroProyecto } from "@/components/empresa/cobrar/dinero-proyecto";
@@ -186,7 +187,20 @@ export default async function ProyectoDetailPage({
     })),
   };
 
-  const lineaCliente = await prisma.client.findFirst({ where: { id: { in: projectClients.map((c) => c.id) }, brandLine: "premium" }, select: { brandLine: true } });
+  // El Resumen es de toda la relación con el cliente principal: todos sus proyectos, facturas, pagos y reuniones.
+  const clientePrincipal = projectClients[0]?.id ?? null;
+  const [lineaCliente, ficha, reunionesCliente] = await Promise.all([
+    prisma.client.findFirst({ where: { id: { in: projectClients.map((c) => c.id) }, brandLine: "premium" }, select: { brandLine: true } }),
+    clientePrincipal ? fichaCliente(user.id, clientePrincipal).catch(() => null) : null,
+    clientePrincipal
+      ? prisma.meeting.findMany({
+          where: { userId: user.id, OR: [{ clientId: clientePrincipal }, { projectId: id }, { project: { OR: [{ clientId: clientePrincipal }, { clients: { some: { clientId: clientePrincipal } } }] } }] },
+          orderBy: { meetingDate: "desc" },
+          take: 100,
+          select: { id: true, title: true, meetingDate: true, contextSummary: true, projectId: true },
+        }).catch(() => null)
+      : [],
+  ]);
 
   // «Qué le falta» y el punto de aviso de cada pestaña con algo pendiente.
   const d = datos?.get(id);
@@ -255,13 +269,19 @@ export default async function ProyectoDetailPage({
           queLeFalta={d ? <QueLeFalta projectId={project.id} datos={d} /> : <div className="mb-6"><NoCargo titulo="Qué le falta" /></div>}
           presupuesto={plata?.presupuesto ?? null}
           resumenPanel={
-            <ResumenProyecto
-              dinero={interno ? null : plata}
-              fases={fases ? fases.phases.filter((f) => !f.changeOrderId || f.changeOrder?.status === "aprobada") : null}
-              tareasAbiertas={workspace.tasks.filter((t) => t.projectId === project.id && !t.parentId && !t.completed).length}
-              ticketsAbiertos={ticketsAbiertos}
-              ultimaReunion={serialized.meetings[0] ?? null}
-            />
+            !clientePrincipal ? (
+              <section className={card}>
+                <h2 className={h2}>Sin cliente</h2>
+                <p className="mt-2 text-sm text-fg-dim">Asígnale un cliente al proyecto y aquí aparece todo lo que ha hecho con Pime: sus proyectos, fases, facturas, pagos y reuniones.</p>
+              </section>
+            ) : interno ? (
+              <section className={card}>
+                <h2 className={h2}>Producto interno</h2>
+                <p className="mt-2 text-sm text-fg-dim">Este proyecto es de Pime Panamá: no se cobra. Su dinero son sus gastos, en la pestaña Dinero.</p>
+              </section>
+            ) : ficha && reunionesCliente ? (
+              <ResumenCliente f={ficha} reuniones={reunionesCliente} projectId={project.id} />
+            ) : <NoCargo titulo="Todo con el cliente" />
           }
           tasksPanel={<ProjectTasks projectId={project.id} />}
           reunionesPanel={
