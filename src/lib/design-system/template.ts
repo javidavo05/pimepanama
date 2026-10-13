@@ -1,10 +1,17 @@
 import { DESIGN_SYSTEM_BASE } from "./document";
 
-const LOGO = `${DESIGN_SYSTEM_BASE}/logo.svg`;
-const LOGO_INVERTIDO = `${DESIGN_SYSTEM_BASE}/logo-invertido.svg`;
+/**
+ * Logos de las dos líneas: el documento lleva los dos y style.css muestra el de su `data-linea`.
+ * Así la misma plantilla (y el HTML ya editado y guardado) cambia de línea sin regenerarse.
+ */
+function logo(modo: "color" | "invertido", estilo: string, modoPremium: "color" | "invertido" = modo): string {
+  const normal = modo === "color" ? `${DESIGN_SYSTEM_BASE}/logo.svg` : `${DESIGN_SYSTEM_BASE}/logo-invertido.svg`;
+  const premium = `/brand/pime-premium-horizontal-${modoPremium}.svg`;
+  return `<img class="ds-logo-normal" src="${normal}" alt="Pime" style="${estilo}"><img class="ds-logo-premium" src="${premium}" alt="Pime" style="${estilo}">`;
+}
 
-/** Banda de tres capas del manual de marca (azul tinta, azul señal, azul cielo). */
-const BANDA = `<div style="position:absolute; top:0; left:0; right:0; display:flex; flex-direction:column;"><div style="height:1.6mm; background:var(--ink);"></div><div style="height:1.6mm; background:var(--blue);"></div><div style="height:1.6mm; background:var(--purple);"></div></div>`;
+/** Banda superior: tres capas del logo en normal; en premium, style.css la vuelve un filete de oro. */
+const BANDA = `<div class="ds-banda" style="position:absolute; top:0; left:0; right:0; display:flex; flex-direction:column;"><div style="height:1.6mm; background:var(--ink);"></div><div style="height:1.6mm; background:var(--blue);"></div><div style="height:1.6mm; background:var(--purple);"></div></div>`;
 
 export function escapeHtml(text: string): string {
   return text
@@ -21,7 +28,7 @@ export function nl2br(text: string): string {
 export function docHeader(sectionTag: string): string {
   return `
     <div class="doc-header">
-      <div class="brand"><img src="${LOGO}" alt="Pime" style="height:6mm; width:auto;"></div>
+      <div class="brand">${logo("color", "height:6mm; width:auto;")}</div>
       <div class="tag">${sectionTag}</div>
     </div>`;
 }
@@ -46,18 +53,19 @@ export interface CoverPageInput {
 export function coverPage(input: CoverPageInput): string {
   const preparedBy = input.preparedBy ?? "Pime Panam&aacute;";
   return `
-<div class="page" style="background:var(--white); color:var(--ink);">
+<div class="page ds-portada" style="background:var(--white); color:var(--ink);">
   ${BANDA}
-  <div style="position:relative; padding:22mm 18mm 18mm 18mm; height:292mm; display:flex; flex-direction:column;">
+  <div style="position:relative; padding:22mm 18mm 18mm 18mm; height:274.6mm; display:flex; flex-direction:column;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <div style="display:flex; align-items:center; gap:9px;">
-        <img src="${LOGO}" style="height:9mm; width:auto;" alt="Pime">
+        ${logo("color", "height:9mm; width:auto;", "invertido")}
       </div>
       <div style="font-size:8pt; letter-spacing:0.14em; text-transform:uppercase; color:var(--slate-light); font-weight:600;">
         Panam&aacute; &middot; Desarrollo de Software
       </div>
     </div>
     <div style="flex:1; display:flex; flex-direction:column; justify-content:center; margin-top:6mm;">
+      <div class="ds-sello">Confidencial</div>
       <div class="eyebrow" style="margin-bottom:9mm;">${input.eyebrow}</div>
       <h1 style="font-family:'Manrope'; font-weight:800; font-size:33pt; line-height:1.14; max-width:150mm; letter-spacing:-0.02em; color:var(--ink);">
         ${input.titleHtml}
@@ -126,7 +134,7 @@ export function closingPage(input: ClosingPageInput): string {
     .map(
       (step, i) => `
         <div style="display:flex; gap:5mm; align-items:flex-start; border-bottom:1px solid rgba(255,255,255,0.12); padding-bottom:5mm;">
-          <div style="width:8mm; height:8mm; border-radius:50%; border:1.4px solid rgba(255,255,255,0.4); display:flex; align-items:center; justify-content:center; font-family:'Manrope'; font-weight:800; font-size:9.5pt; flex:none;">${i + 1}</div>
+          <div style="width:8mm; height:8mm; border-radius:50%; border:1.4px solid var(--accent-on-dark); display:flex; align-items:center; justify-content:center; font-family:'Manrope'; font-weight:800; font-size:9.5pt; flex:none;">${i + 1}</div>
           <div>
             <div style="font-weight:700; font-size:10.5pt;">${escapeHtml(step.title)}</div>
             <div style="font-size:8.8pt; color:rgba(255,255,255,0.6); margin-top:1mm;">${escapeHtml(step.description)}</div>
@@ -137,18 +145,17 @@ export function closingPage(input: ClosingPageInput): string {
 
   return `
 <div class="page" style="background:var(--ink); color:white;">
-  <div style="position:absolute; inset:0; background:
-      #0B1D3A;"></div>
-  <div style="position:relative; padding:20mm 18mm; height:297mm; display:flex; flex-direction:column;">
+  <div style="position:absolute; inset:0; background:var(--ink);"></div>
+  <div style="position:relative; padding:20mm 18mm; height:279.4mm; display:flex; flex-direction:column;">
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <div style="display:flex; align-items:center; gap:9px;">
-        <img src="${LOGO_INVERTIDO}" style="height:6mm; width:auto;" alt="Pime">
+        ${logo("invertido", "height:6mm; width:auto;")}
       </div>
       <div style="font-size:8pt; letter-spacing:0.1em; text-transform:uppercase; color:rgba(255,255,255,0.45); font-weight:600;">${input.sectionTag}</div>
     </div>
     <div style="margin-top:14mm;">
-      <div class="eyebrow" style="color:#6FA8FF;">Pr&oacute;ximos pasos</div>
-      <h2 style="font-family:'Manrope'; font-weight:800; font-size:26pt; margin-top:3mm; line-height:1.15;">${escapeHtml(input.title)}</h2>
+      <div class="eyebrow" style="color:var(--accent-on-dark);">Pr&oacute;ximos pasos</div>
+      <h2 style="font-family:'Manrope'; font-weight:800; font-size:26pt; margin-top:3mm; line-height:1.15; color:#FFFFFF;">${escapeHtml(input.title)}</h2>
       <div style="margin-top:10mm; display:flex; flex-direction:column; gap:5mm;">
         ${stepsHtml}
       </div>

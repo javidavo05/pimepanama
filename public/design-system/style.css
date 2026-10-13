@@ -18,7 +18,46 @@
   --panel:#F4F6FA;
   --white:#FFFFFF;
   --grad: linear-gradient(var(--blue), var(--blue));
+  --accent-on-dark:#6FA8FF;
 }
+/* Línea Premium (design-system/assets/style.css): negro y oro. --blue hace de acento de texto y
+   --purple de acento claro, igual que el alias de compatibilidad del design-system. */
+[data-linea="premium"]{
+  --ink:#0A0A0A;
+  --ink-soft:#1F1D1A;
+  --slate:#57524A;
+  --slate-light:#948C80;
+  --line:#ECE7DE;
+  --panel:#F8F6F1;
+  --blue:#8A6420;
+  --purple:#E3C27A;
+  --grad: linear-gradient(#B8892E, #B8892E);
+  --accent-on-dark:#E3C27A;
+}
+.ds-logo-premium{ display:none !important; }
+[data-linea="premium"] .ds-logo-normal{ display:none !important; }
+[data-linea="premium"] .ds-logo-premium{ display:inline-block !important; }
+[data-linea="premium"] .ds-banda > div{ height:0 !important; }
+[data-linea="premium"] .ds-banda > div:first-child{ height:1.2mm !important; background:#B8892E !important; }
+/* Portada premium: negra, con logo invertido y sello «Confidencial» (manual de marca). Se redefinen los
+   tokens dentro de la portada para que los estilos en línea de la plantilla cambien solos. */
+[data-linea="premium"] .ds-portada{
+  --white:#0A0A0A;
+  --ink:#FFFFFF;
+  --slate:rgba(255,255,255,0.72);
+  --slate-light:rgba(255,255,255,0.5);
+  --line:rgba(255,255,255,0.14);
+  --blue:#E3C27A;
+  background:#0A0A0A !important;
+}
+.ds-sello{ display:none; }
+[data-linea="premium"] .ds-sello{
+  display:inline-flex; align-self:flex-start; margin-bottom:8mm; border:1px solid #B8892E; color:#E3C27A;
+  border-radius:20px; padding:1.6mm 3.6mm; font-size:7.4pt; font-weight:700; letter-spacing:0.16em; text-transform:uppercase;
+}
+
+/* Tamaño carta: 8.5 × 11 in. Nunca A4. */
+@page{ size:letter; margin:0; }
 
 *{ box-sizing:border-box; margin:0; padding:0; }
 
@@ -30,8 +69,8 @@ html,body{
 }
 
 .page{
-  width:210mm;
-  min-height:297mm;
+  width:215.9mm;
+  min-height:279.4mm;
   position:relative;
   page-break-after:always;
   overflow:hidden;

@@ -299,7 +299,11 @@ export function ContractForm({ clients, projects, mode = "create", initial, defa
         // min-w-0 + overflow-x-auto: el editor trae su propio ancho de página y
         // no debe empujar el resto de la pantalla hacia el costado.
         <div className="min-w-0 max-w-full overflow-x-auto">
-          <DesignSystemHtmlEditor value={htmlContent} onChange={setHtmlContent} />
+          <DesignSystemHtmlEditor
+            value={htmlContent}
+            onChange={setHtmlContent}
+            linea={clients.find((c) => c.id === clientId)?.brandLine === "premium" ? "premium" : "normal"}
+          />
         </div>
       ) : (
         <div className="bg-panel border border-line rounded-xl p-8 text-center text-fg-faint text-sm">

@@ -7,18 +7,21 @@ interface DesignSystemHtmlEditorProps {
   value: string;
   onChange: (pagesHtml: string) => void;
   title?: string;
+  /** Línea de marca del cliente: pinta la vista en azul tinta o en negro y oro. */
+  linea?: "normal" | "premium";
 }
 
-const A4_WIDTH_PX = 794; // 210mm at 96dpi
+const A4_WIDTH_PX = 816; // carta: 215.9mm a 96dpi (el nombre quedó del tamaño anterior)
 
 /**
- * Visual HTML editor for design-system proposals: renders paginated A4 `.page` divs
+ * Visual HTML editor for design-system proposals: renders paginated letter-size `.page` divs
  * with brand CSS and allows in-place WYSIWYG editing inside the preview iframe.
  */
 export function DesignSystemHtmlEditor({
   value,
   onChange,
   title = "Documento (design-system)",
+  linea = "normal",
 }: DesignSystemHtmlEditorProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [editing, setEditing] = useState(true);
@@ -31,7 +34,7 @@ export function DesignSystemHtmlEditor({
     (pagesHtml: string, editable: boolean) => {
       const doc = iframeRef.current?.contentDocument;
       if (!doc) return;
-      const full = wrapDesignSystemDocument(pagesHtml, { mode: "screen", editable: false });
+      const full = wrapDesignSystemDocument(pagesHtml, { mode: "screen", editable: false, linea });
       doc.open();
       doc.write(full);
       doc.close();
@@ -43,7 +46,7 @@ export function DesignSystemHtmlEditor({
         });
       }
     },
-    []
+    [linea]
   );
 
   const extractFromIframe = useCallback((): string => {

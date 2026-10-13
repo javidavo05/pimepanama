@@ -3,6 +3,7 @@ import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { wrapDesignSystemDocument } from "@/lib/design-system/document";
 import { buildDefaultContractHtml, resolveContractHtml } from "@/lib/design-system/contract-html";
+import { lineaDeProyecto } from "@/lib/pdf/datos-linea";
 import type { ContractStatus } from "@prisma/client";
 
 export const runtime = "nodejs";
@@ -56,7 +57,8 @@ export async function POST(request: Request) {
       ? body.htmlContent.trim()
       : resolveContractHtml(contract, client, user.config, project);
 
-    const html = wrapDesignSystemDocument(pagesHtml, { mode: "screen" });
+    const linea = await lineaDeProyecto(body.projectId, client && "brandLine" in client ? [client] : []);
+    const html = wrapDesignSystemDocument(pagesHtml, { mode: "screen", linea });
 
     return new Response(html, {
       headers: {
