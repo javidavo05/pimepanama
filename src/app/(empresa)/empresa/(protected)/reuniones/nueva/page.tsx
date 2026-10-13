@@ -1,6 +1,7 @@
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { MeetingRecorder } from "./meeting-recorder";
+import { contextoClientes } from "@/lib/meetings/clientes-contexto";
 
 export const metadata = { title: "Grabar reunión — Pime Suite" };
 export const dynamic = "force-dynamic";
@@ -18,13 +19,9 @@ export default async function NuevaReunionPage({
   const { proyecto, projectId, title, source } = await searchParams;
   const pedido = proyecto || projectId || null;
 
-  const [projects, clients, ultima] = await Promise.all([
-    prisma.project.findMany({
-      // El pedido por enlace entra aunque esté cerrado: si no, el selector no lo mostraría.
-      where: { userId: user.id, OR: [{ status: { in: ["ACTIVE", "PAUSED"] } }, ...(pedido ? [{ id: pedido }] : [])] },
-      select: { id: true, name: true, clientId: true },
-      orderBy: { createdAt: "desc" },
-    }),
+  const [ctx, clients, ultima] = await Promise.all([
+    // Proyectos con su cliente principal y lo de cada cliente: al elegirlo sale todo al instante.
+    contextoClientes(user.id),
     prisma.client.findMany({
       where: { userId: user.id },
       select: { id: true, name: true, company: true },
@@ -39,6 +36,8 @@ export default async function NuevaReunionPage({
         }),
   ]);
 
+  // El pedido por enlace entra aunque esté cerrado: si no, el selector no lo mostraría.
+  const projects = ctx.proyectos.filter((p) => p.status === "ACTIVE" || p.status === "PAUSED" || p.id === pedido);
   const desdeEnlace = pedido && projects.some((p) => p.id === pedido) ? pedido : null;
   const inicial = desdeEnlace ?? ultima?.projectId ?? undefined;
 
@@ -47,6 +46,7 @@ export default async function NuevaReunionPage({
       <MeetingRecorder
         projects={projects}
         clients={clients}
+        resumenes={ctx.resumenes}
         creatorName={user.fullName ?? null}
         initialProjectId={inicial}
         projectPreset={desdeEnlace ? "enlace" : inicial ? "ultimo" : null}

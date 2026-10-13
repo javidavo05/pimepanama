@@ -14,6 +14,7 @@ import { TaskWorkspace } from "@/components/empresa/tasks/task-workspace";
 import { MeetingDetail } from "./meeting-detail";
 import { proyectosCandidatos } from "@/lib/proyectos/candidatos";
 import { MOTIVO_LABEL, sugerirProyecto } from "@/lib/proyectos/sugerir-proyecto";
+import { contextoClientes, proyectoUnicoDelCliente } from "@/lib/meetings/clientes-contexto";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
 
   // Los proyectos y clientes viajan con la reunión para poder asignarla a un
   // proyecto después de grabada, sin salir del detalle.
-  const [meeting, segments, projects, clients] = await Promise.all([
+  const [meeting, segments, ctxClientes, clients] = await Promise.all([
     prisma.meeting.findFirst({
       where: { id, userId: user.id },
       include: {
@@ -41,11 +42,8 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
     }),
     // Los segmentos alimentan la transcripción y los saltos al audio.
     loadSegments(id),
-    prisma.project.findMany({
-      where: { userId: user.id },
-      select: { id: true, name: true, clientId: true },
-      orderBy: { createdAt: "desc" },
-    }),
+    // Proyectos (con su cliente principal) y lo de cada cliente: al elegirlo sale todo al instante.
+    contextoClientes(user.id, id),
     prisma.client.findMany({
       where: { userId: user.id },
       select: { id: true, name: true, company: true },
@@ -54,6 +52,19 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
   ]);
 
   if (!meeting) notFound();
+
+  // Reunión con cliente y sin proyecto: si el cliente tiene un único proyecto en curso, se asigna sola.
+  if (meeting.clientId && !meeting.projectId) {
+    const unico = await proyectoUnicoDelCliente(user.id, meeting.clientId).catch(() => null);
+    if (unico) {
+      const p = await prisma.$transaction([
+        prisma.meeting.update({ where: { id: meeting.id }, data: { projectId: unico } }),
+        prisma.project.findUniqueOrThrow({ where: { id: unico }, select: { id: true, name: true, repoOwner: true, repoSnapshot: true } }),
+      ]);
+      meeting.projectId = unico;
+      meeting.project = p[1];
+    }
+  }
 
   // Las tareas del proyecto (y las que salieron de esta reunión aunque no
   // tenga proyecto): los pendientes muestran su estado real y se pueden
@@ -78,7 +89,8 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
         segments={segments}
         project={meeting.project}
         client={meeting.client}
-        projects={projects}
+        projects={ctxClientes.proyectos}
+        resumenes={ctxClientes.resumenes}
         clients={clients}
         speakers={meeting.speakers.map(serializeMeetingSpeaker)}
         actionItems={meeting.actionItems.map(serializeMeetingActionItem)}

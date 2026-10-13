@@ -71,7 +71,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { block, repoBlock, hasRepo } = await buildProjectContext(
       user.id,
       meeting.projectId,
-      meeting.id
+      meeting.id,
+      meeting.clientId
     );
     // El contexto del proyecto y las notas manuales se combinan: se puede grabar
     // primero y decidir después a qué proyecto pertenece la reunión y con qué

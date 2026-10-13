@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withEmpresaRoute } from "@/app/api/empresa/_route";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
+import { proyectoUnicoDelCliente } from "@/lib/meetings/clientes-contexto";
 import { serializeMeeting } from "@/lib/meetings/serialize";
 import { meetingSearchFilter, type MeetingListFilters } from "@/lib/meetings/search";
 import { parseAttendees, parseAudioSource, parseSpokenLanguages } from "@/lib/meetings/types";
@@ -70,6 +71,8 @@ export const POST = withEmpresaRoute(async (req) => {
     });
     clientId = client?.id ?? null;
   }
+  // Solo con cliente: si tiene un único proyecto en curso, la reunión es de ese.
+  if (!projectId && clientId) projectId = await proyectoUnicoDelCliente(user.id, clientId);
 
   const meeting = await prisma.meeting.create({
     data: {

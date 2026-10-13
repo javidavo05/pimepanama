@@ -45,11 +45,17 @@ const EMPTY: MeetingProjectContext = {
 export async function buildProjectContext(
   userId: string,
   projectId: string | null | undefined,
-  excludeMeetingId?: string
+  excludeMeetingId?: string,
+  clientId?: string | null
 ): Promise<MeetingProjectContext> {
-  if (!projectId) return EMPTY;
+  // Lo del cliente va en paralelo con el proyecto: sus otros proyectos y lo hablado fuera de este.
+  const clienteP = clientId ? buildClientBlock(userId, clientId, projectId ?? null, excludeMeetingId) : Promise.resolve("");
+  if (!projectId) {
+    const clientBlock = await clienteP;
+    return clientBlock ? { ...EMPTY, block: `No hay proyecto asociado a esta reunión ni acceso al código. Esto es lo que se sabe del cliente:\n\n${clientBlock}` } : EMPTY;
+  }
 
-  const project = await prisma.project.findFirst({
+  const [project, clientBlock] = await Promise.all([prisma.project.findFirst({
     where: { id: projectId, userId },
     select: {
       name: true,
@@ -85,7 +91,7 @@ export async function buildProjectContext(
         take: HISTORY_LIMIT,
       },
     },
-  });
+  }), clienteP]);
 
   if (!project) return EMPTY;
 
@@ -139,6 +145,8 @@ export async function buildProjectContext(
     lines.push("\n## Reuniones anteriores\nEsta es la primera reunión registrada del proyecto.");
   }
 
+  if (clientBlock) lines.push(`\n${clientBlock}`);
+
   const snapshot = parseRepoSnapshot(project.repoSnapshot);
   const repoBlock = snapshot
     ? describeRepo(snapshot)
@@ -151,6 +159,48 @@ export async function buildProjectContext(
     openItems,
     hasRepo: snapshot !== null,
   };
+}
+
+/**
+ * Lo del cliente que no está en el proyecto: sus otros proyectos con la fase en curso y lo que se habló
+ * con él en reuniones de otros proyectos o sin proyecto. Así una reunión con un cliente de años no
+ * arranca de cero aunque el proyecto sea nuevo.
+ */
+async function buildClientBlock(userId: string, clientId: string, projectId: string | null, excludeMeetingId?: string): Promise<string> {
+  const deCliente = { OR: [{ clientId }, { clients: { some: { clientId } } }] };
+  const [client, projects, meetings] = await Promise.all([
+    prisma.client.findFirst({ where: { id: clientId, userId }, select: { name: true, company: true } }),
+    prisma.project.findMany({
+      where: { userId, ...deCliente, ...(projectId ? { id: { not: projectId } } : {}) },
+      orderBy: { updatedAt: "desc" },
+      take: 8,
+      select: { name: true, status: true, phases: { where: { OR: [{ changeOrderId: null }, { changeOrder: { status: "aprobada" } }] }, orderBy: { sortOrder: "asc" }, select: { name: true, status: true } } },
+    }),
+    prisma.meeting.findMany({
+      where: {
+        userId,
+        contextSummary: { not: null },
+        ...(excludeMeetingId ? { id: { not: excludeMeetingId } } : {}),
+        // Las del proyecto ya entran arriba: aquí solo lo hablado por fuera.
+        AND: [{ OR: [{ clientId }, { project: deCliente }] }, ...(projectId ? [{ OR: [{ projectId: null }, { projectId: { not: projectId } }] }] : [])],
+      },
+      orderBy: { meetingDate: "desc" },
+      take: 4,
+      select: { title: true, meetingDate: true, contextSummary: true },
+    }),
+  ]);
+  if (!client) return "";
+  const label = client.company && client.company !== client.name ? `${client.name} (${client.company})` : client.name;
+  const lines = [`## El cliente: ${label}`];
+  if (projects.length) {
+    lines.push(projectId ? "Otros proyectos con él:" : "Sus proyectos:");
+    for (const p of projects) lines.push(`- ${p.name} (${p.status})${p.phases.length ? `: ${p.phases.map((f) => `${f.name} [${f.status}]`).join(", ")}` : ""}`);
+  }
+  if (meetings.length) {
+    lines.push(projectId ? "\nReuniones con el cliente fuera de este proyecto (de la más reciente a la más antigua):" : "\nReuniones anteriores con el cliente (de la más reciente a la más antigua):");
+    for (const m of meetings) lines.push(`\n### ${m.meetingDate.toISOString().split("T")[0]} — ${m.title}\n${m.contextSummary}`);
+  }
+  return lines.length > 1 ? lines.join("\n") : "";
 }
 
 /**

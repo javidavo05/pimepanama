@@ -28,6 +28,7 @@ export const POST = withEmpresaIdRoute(async (req, { params }) => {
       projectId: true,
       attendees: true,
       manualContext: true,
+      clientId: true,
       diarizedText: true,
       transcript: true,
     },
@@ -51,7 +52,7 @@ export const POST = withEmpresaIdRoute(async (req, { params }) => {
     );
   }
 
-  const { block } = await buildProjectContext(user.id, meeting.projectId, meeting.id);
+  const { block } = await buildProjectContext(user.id, meeting.projectId, meeting.id, meeting.clientId);
   const projectContext = withManualContext(block, meeting.manualContext);
 
   const result = await runAsk(

@@ -49,6 +49,8 @@ import { PROCESS_STAGES } from "@/lib/meetings/process-stages";
 import { PendingOfflineMeetings } from "../pending-offline-meetings";
 import { useConnectivity } from "../use-connectivity";
 import { fetchLargo } from "@/lib/fetch-largo";
+import type { ProyectoOpcion, ResumenClienteReunion } from "@/lib/meetings/clientes-contexto";
+import { ClienteAlElegir, OpcionesProyecto, enlazar } from "@/components/empresa/reuniones/cliente-al-elegir";
 
 /**
  * Duración de cada tramo. Corto a propósito: es lo que hace que la transcripción
@@ -61,12 +63,6 @@ const SEGMENT_MS = 8_000;
 /** Intentos antes de dar por perdido un tramo que el servidor no puede transcribir. */
 const MAX_UPLOAD_ATTEMPTS = 3;
 
-interface ProjectOption {
-  id: string;
-  name: string;
-  clientId: string | null;
-}
-
 interface ClientOption {
   id: string;
   name: string;
@@ -74,8 +70,10 @@ interface ClientOption {
 }
 
 interface MeetingRecorderProps {
-  projects: ProjectOption[];
+  projects: ProyectoOpcion[];
   clients: ClientOption[];
+  /** Lo de cada cliente (proyectos, saldo, última reunión): sale al instante al elegirlo. */
+  resumenes: Record<string, ResumenClienteReunion>;
   creatorName: string | null;
   /** Preselecciona el proyecto cuando se entra desde el detalle de un proyecto */
   initialProjectId?: string;
@@ -185,6 +183,7 @@ function LevelBar({ level, channel }: { level: number; channel: CaptureChannel }
 export function MeetingRecorder({
   projects,
   clients,
+  resumenes,
   creatorName,
   initialProjectId,
   projectPreset = null,
@@ -295,9 +294,41 @@ export function MeetingRecorder({
   const interimSpeaker =
     mode === "ambient" ? "Vista previa" : channelSpeaker.LOCAL || "Tu micrófono";
 
+  // El proyecto precargado (enlace o el último usado) trae su cliente.
   useEffect(() => {
     if (selectedProject?.clientId && !clientId) setClientId(selectedProject.clientId);
   }, [selectedProject, clientId]);
+
+  const clienteElegido = clients.find((c) => c.id === clientId);
+
+  /**
+   * Elegir el proyecto trae su cliente; elegir el cliente trae su proyecto activo. Con el cliente se
+   * completa también lo que estaba vacío: el asistente del cliente y el título.
+   */
+  function elegir(cambio: { proyecto: string } | { cliente: string }) {
+    const next = enlazar(cambio, { proyecto: projectId, cliente: clientId }, projects, resumenes);
+    if (next.proyecto !== projectId) setProjectTouched(true);
+    setProjectId(next.proyecto);
+    setClientId(next.cliente);
+  }
+
+  // Con el cliente (elegido o heredado del proyecto) se completa lo que esté vacío: su asistente y el título.
+  // Si se cambia de cliente, lo que se puso solo se cambia con él; lo que se escribió a mano no se toca.
+  const autoRef = useRef<{ title: string; attendee: string }>({ title: "", attendee: "" });
+  useEffect(() => {
+    const c = clients.find((x) => x.id === clientId);
+    if (!c) return;
+    const auto = autoRef.current;
+    const titulo = `Reunión con ${c.company || c.name}`;
+    setAttendees((prev) => {
+      if (prev.some((a) => a.name.trim() === c.name)) return prev;
+      const i = prev.findIndex((a) => a.org === "CLIENTE" && (!a.name.trim() || (auto.attendee && a.name === auto.attendee)));
+      if (i < 0) return prev;
+      return prev.map((a, j) => (j === i ? { ...a, name: c.name } : a));
+    });
+    setTitle((t) => (!t.trim() || t === auto.title ? titulo : t));
+    autoRef.current = { title: titulo, attendee: c.name };
+  }, [clientId, clients]);
 
   // Si llegó preparada (título incluido), el siguiente paso es solo grabar: el
   // botón queda a la vista y con el foco. No arranca sola: el navegador no deja
@@ -1225,24 +1256,19 @@ export function MeetingRecorder({
       </div>
 
       <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6 space-y-4">
-        {/* El proyecto va primero: de él salen el contexto que lee la IA y a qué proyecto suma la reunión. */}
+        {/* Proyecto y cliente van primero y juntos: elegir uno trae el otro, y con el cliente sale todo lo suyo.
+            De ahí salen el contexto que lee la IA y a qué proyecto suma la reunión. */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 [&>div]:min-w-0">
         <div>
           <label htmlFor="reunion-proyecto" className="block text-fg-mute text-xs uppercase tracking-wider mb-2">Proyecto</label>
           <select
             id="reunion-proyecto"
             value={projectId}
-            onChange={(e) => {
-              setProjectId(e.target.value);
-              setProjectTouched(true);
-            }}
+            onChange={(e) => elegir({ proyecto: e.target.value })}
             className={`field-select w-full bg-canvas border rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base focus:border-brand/50 focus:outline-none ${projectId ? "border-line" : "border-warn/40"}`}
           >
             <option value="">Elegir después (queda pendiente)</option>
-            {projects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
+            <OpcionesProyecto proyectos={projects} cliente={clientId} nombreCliente={clienteElegido ? clienteElegido.company || clienteElegido.name : undefined} />
           </select>
           <p className={`text-xs mt-1 ${projectId ? "text-fg-ghost" : "text-warn"}`}>
             {!projectId
@@ -1254,6 +1280,29 @@ export function MeetingRecorder({
         </div>
 
         <div>
+          <label htmlFor="reunion-cliente" className="block text-fg-mute text-xs uppercase tracking-wider mb-2">Cliente</label>
+          <select
+            id="reunion-cliente"
+            value={clientId}
+            onChange={(e) => elegir({ cliente: e.target.value })}
+            className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base focus:border-brand/50 focus:outline-none"
+          >
+            <option value="">Sin cliente</option>
+            {clients.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+                {c.company && c.company !== c.name ? ` — ${c.company}` : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+        </div>
+
+        {clienteElegido && (
+          <ClienteAlElegir clienteId={clienteElegido.id} nombre={clienteElegido.company || clienteElegido.name} resumen={resumenes[clienteElegido.id]} proyectoId={projectId} />
+        )}
+
+        <div>
           <label className="block text-fg-mute text-xs uppercase tracking-wider mb-2">Título</label>
           <input
             value={title}
@@ -1263,25 +1312,8 @@ export function MeetingRecorder({
           />
         </div>
 
-        {/* Cinco campos en dos columnas: el último ocupa la fila entera para que las filas cierren parejas. */}
+        {/* Campos en dos columnas: si quedan impares, el último ocupa la fila entera para que las filas cierren parejas. */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:[&>*:last-child:nth-child(odd)]:col-span-2">
-          <div>
-            <label className="block text-fg-mute text-xs uppercase tracking-wider mb-2">Cliente</label>
-            <select
-              value={clientId}
-              onChange={(e) => setClientId(e.target.value)}
-              className="field-select w-full bg-canvas border border-line rounded-lg pl-3 pr-8 py-2 min-h-[44px] text-fg text-base focus:border-brand/50 focus:outline-none"
-            >
-              <option value="">Sin cliente</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                  {c.company ? ` — ${c.company}` : ""}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div>
             <label className="block text-fg-mute text-xs uppercase tracking-wider mb-2">Fecha</label>
             <input

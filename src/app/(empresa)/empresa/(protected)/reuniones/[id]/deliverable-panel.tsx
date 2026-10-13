@@ -166,9 +166,9 @@ export function DeliverablePanel({
               Materializa el entregable sin volver a teclearlo en otro módulo. Lo que ya se creó no
               se duplica.
             </p>
-            {/* En el celular, un botón por fila a lo ancho: los tres textos son
-                largos y en fila libre quedaban de anchos distintos. */}
-            <div className="grid gap-2 sm:flex sm:flex-wrap">
+            {/* Un botón por fila en el celular; desde tablet, tres columnas iguales: en fila libre los
+                textos largos dejaban filas de anchos distintos. */}
+            <div className="grid gap-2 sm:grid-cols-3">
               {deliverableId ? (
                 <Link
                   href={`/empresa/proyectos/${projectId}`}

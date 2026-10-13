@@ -25,6 +25,7 @@ import { MeetingOutbound } from "./meeting-outbound";
 import { MeetingTranscriptView } from "./meeting-transcript-view";
 import { fechaCorta } from "@/lib/format-datetime";
 import { fetchLargo } from "@/lib/fetch-largo";
+import type { ProyectoOpcion, ResumenClienteReunion } from "@/lib/meetings/clientes-contexto";
 
 type Tab =
   | "entregable"
@@ -61,8 +62,9 @@ interface MeetingDetailProps {
   segments: MeetingSegment[];
   project: { id: string; name: string } | null;
   client: { id: string; name: string; company: string | null } | null;
-  projects: { id: string; name: string; clientId: string | null }[];
+  projects: ProyectoOpcion[];
   clients: { id: string; name: string; company: string | null }[];
+  resumenes: Record<string, ResumenClienteReunion>;
   speakers: SerializedMeetingSpeaker[];
   actionItems: SerializedMeetingActionItem[];
   executive: ExecutiveMinutes | null;
@@ -147,6 +149,7 @@ export function MeetingDetail({
   client,
   projects,
   clients,
+  resumenes,
   speakers,
   actionItems: initialItems,
   executive,
@@ -434,7 +437,7 @@ export function MeetingDetail({
                       </span>
                       <button
                         onClick={() => setRenaming((prev) => ({ ...prev, [s.label]: s.name ?? "" }))}
-                        className="inline-flex items-center justify-center w-11 h-11 -my-3 -mr-3 sm:w-auto sm:h-auto sm:m-0 text-fg-ghost hover:text-brand-fg transition-colors"
+                        className="inline-flex items-center justify-center w-11 h-11 -my-3 -mr-3 sm:w-8 sm:h-8 sm:-my-2 sm:-mr-2 text-fg-ghost hover:text-brand-fg transition-colors"
                         aria-label={`Renombrar ${s.label}`}
                       >
                         ✎
@@ -509,6 +512,7 @@ export function MeetingDetail({
         spokenLanguages={meeting.spokenLanguages}
         projects={projects}
         clients={clients}
+        resumenes={resumenes}
         hasMinutes={executive !== null || technical !== null}
       />
 

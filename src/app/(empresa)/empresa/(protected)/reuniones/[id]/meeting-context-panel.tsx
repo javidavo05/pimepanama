@@ -5,12 +5,8 @@ import { useRouter } from "next/navigation";
 import { LANGUAGE_LABEL, MEETING_LANGUAGES, type MeetingLanguage } from "@/lib/meetings/types";
 import { StageProgress } from "./stage-progress";
 import { fetchLargo } from "@/lib/fetch-largo";
-
-interface ProjectOption {
-  id: string;
-  name: string;
-  clientId: string | null;
-}
+import type { ProyectoOpcion, ResumenClienteReunion } from "@/lib/meetings/clientes-contexto";
+import { ClienteAlElegir, OpcionesProyecto, enlazar } from "@/components/empresa/reuniones/cliente-al-elegir";
 
 interface ClientOption {
   id: string;
@@ -33,8 +29,10 @@ interface MeetingContextPanelProps {
   manualContext: string | null;
   audioSource: string | null;
   spokenLanguages: string[];
-  projects: ProjectOption[];
+  projects: ProyectoOpcion[];
   clients: ClientOption[];
+  /** Lo de cada cliente (proyectos, saldo, última reunión): sale al instante al elegirlo. */
+  resumenes: Record<string, ResumenClienteReunion>;
   /** Si ya se generaron minutas, reprocesar las rehace con el contexto nuevo */
   hasMinutes: boolean;
 }
@@ -63,6 +61,7 @@ export function MeetingContextPanel({
   spokenLanguages,
   projects,
   clients,
+  resumenes,
   hasMinutes,
 }: MeetingContextPanelProps) {
   const router = useRouter();
@@ -88,7 +87,7 @@ export function MeetingContextPanel({
     source !== (audioSource ?? "") ||
     spoken.join(",") !== MEETING_LANGUAGES.filter((l) => spokenLanguages.includes(l)).join(",");
 
-  async function save(): Promise<boolean> {
+  async function save(cambio?: { proyecto: string; cliente: string }): Promise<boolean> {
     setBusy("save");
     setError(null);
     setSaved(false);
@@ -97,8 +96,8 @@ export function MeetingContextPanel({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          projectId: project,
-          clientId: client,
+          projectId: cambio?.proyecto ?? project,
+          clientId: cambio?.cliente ?? client,
           manualContext: notes,
           audioSource: source || null,
           spokenLanguages: spoken,
@@ -148,12 +147,18 @@ export function MeetingContextPanel({
     router.refresh();
   }
 
-  function onProjectChange(value: string) {
-    setProject(value);
-    // El cliente del proyecto se hereda si la reunión no tenía uno propio.
-    const found = projects.find((p) => p.id === value);
-    if (found?.clientId && !client) setClient(found.clientId);
+  /**
+   * Elegir el proyecto trae su cliente y elegir el cliente trae su proyecto activo; se guarda en el acto,
+   * sin tocar «Guardar». Lo demás (notas, origen, idiomas) sigue esperando a «Guardar».
+   */
+  function elegir(cambio: { proyecto: string } | { cliente: string }) {
+    const next = enlazar(cambio, { proyecto: project, cliente: client }, projects, resumenes);
+    setProject(next.proyecto);
+    setClient(next.cliente);
+    if (next.proyecto !== (projectId ?? "") || next.cliente !== (clientId ?? "")) void save(next);
   }
+
+  const clienteElegido = clients.find((c) => c.id === client);
 
   return (
     <div className="bg-panel border border-line rounded-2xl">
@@ -165,12 +170,19 @@ export function MeetingContextPanel({
           <span className="text-fg-mute text-xs uppercase tracking-wider">Proyecto y contexto</span>
           <span className="block text-fg-ghost text-xs mt-0.5">
             {projectId
-              ? "Cambia el proyecto o agrega contexto y vuelve a analizar."
+              ? `${projects.find((p) => p.id === projectId)?.name ?? "Proyecto"}${clienteElegido ? ` · ${clienteElegido.company || clienteElegido.name}` : ""}. Cambia el proyecto o agrega contexto y vuelve a analizar.`
               : "Esta reunión no está en ningún proyecto: asígnala para que la IA la analice con el alcance y las reuniones anteriores."}
           </span>
         </span>
         <span className="text-fg-ghost text-xs shrink-0">{open ? "Ocultar" : "Editar"}</span>
       </button>
+
+      {/* Lo del cliente se ve siempre, aunque el formulario esté cerrado. */}
+      {clienteElegido && (
+        <div className="px-4 sm:px-6 pb-4">
+          <ClienteAlElegir clienteId={clienteElegido.id} nombre={clienteElegido.company || clienteElegido.name} resumen={resumenes[clienteElegido.id]} proyectoId={project} />
+        </div>
+      )}
 
       {open && (
         <div className="px-4 sm:px-6 pb-6 space-y-4 border-t border-line pt-4">
@@ -181,15 +193,12 @@ export function MeetingContextPanel({
               </label>
               <select
                 value={project}
-                onChange={(e) => onProjectChange(e.target.value)}
+                onChange={(e) => elegir({ proyecto: e.target.value })}
+                disabled={busy !== null}
                 className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
               >
                 <option value="">Sin proyecto</option>
-                {projects.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
+                <OpcionesProyecto proyectos={projects} cliente={client} nombreCliente={clienteElegido ? clienteElegido.company || clienteElegido.name : undefined} />
               </select>
             </div>
 
@@ -199,14 +208,15 @@ export function MeetingContextPanel({
               </label>
               <select
                 value={client}
-                onChange={(e) => setClient(e.target.value)}
+                onChange={(e) => elegir({ cliente: e.target.value })}
+                disabled={busy !== null}
                 className="w-full bg-canvas border border-line rounded-lg px-3 py-2 text-fg text-sm focus:border-brand/50 focus:outline-none"
               >
                 <option value="">Sin cliente</option>
                 {clients.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
-                    {c.company ? ` — ${c.company}` : ""}
+                    {c.company && c.company !== c.name ? ` — ${c.company}` : ""}
                   </option>
                 ))}
               </select>
@@ -287,7 +297,7 @@ export function MeetingContextPanel({
               debajo, a lo ancho. */}
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center">
             <button
-              onClick={save}
+              onClick={() => void save()}
               disabled={busy !== null || !dirty}
               className="min-h-11 sm:min-h-8 min-w-0 px-4 py-2 bg-fill hover:bg-fill-2 disabled:opacity-40 border border-line text-fg-mute text-xs rounded-lg transition-all"
             >

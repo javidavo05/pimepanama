@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withEmpresaIdRoute } from "@/app/api/empresa/_route";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
+import { proyectoUnicoDelCliente } from "@/lib/meetings/clientes-contexto";
 import { deleteR2Object } from "@/lib/r2";
 import {
   serializeMeeting,
@@ -46,7 +47,7 @@ export const GET = withEmpresaIdRoute(async (req, { params }) => {
 export const PATCH = withEmpresaIdRoute(async (req, { params }) => {
   const user = await requireEmpresaUser(req);
   const { id } = await params;
-  const existing = await prisma.meeting.findFirst({ where: { id, userId: user.id }, select: { id: true, clientId: true } });
+  const existing = await prisma.meeting.findFirst({ where: { id, userId: user.id }, select: { id: true, clientId: true, projectId: true } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
@@ -92,6 +93,11 @@ export const PATCH = withEmpresaIdRoute(async (req, { params }) => {
         select: { id: true },
       });
       data.clientId = client?.id ?? null;
+      // Se eligió el cliente y la reunión sigue sin proyecto: si tiene uno solo en curso, va a ese.
+      if (data.clientId && body.projectId === undefined && !existing.projectId) {
+        const unico = await proyectoUnicoDelCliente(user.id, data.clientId as string);
+        if (unico) data.projectId = unico;
+      }
     }
   }
 

@@ -112,7 +112,7 @@ export const POST = withEmpresaIdRoute(async (req, { params }) => {
   const needsContext = wants.proposal || wants.contract;
   let projectContext = "";
   if (needsContext) {
-    const ctx = await buildProjectContext(user.id, meeting.projectId, meeting.id);
+    const ctx = await buildProjectContext(user.id, meeting.projectId, meeting.id, meeting.clientId);
     projectContext = withRepoContext(
       withManualContext(ctx.block, meeting.manualContext),
       ctx.repoBlock
