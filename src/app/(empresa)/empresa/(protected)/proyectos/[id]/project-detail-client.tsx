@@ -43,7 +43,7 @@ const DOC_TYPE_PATH: Record<string, string> = {
 };
 
 /** Pestañas del detalle, en orden. «resumen» es la de entrada: sin ?tab= en la URL. */
-export const PESTANAS = ["resumen", "tareas", "reuniones", "fases", "dinero", "repo", "tickets", "clientes"] as const;
+export const PESTANAS = ["resumen", "tareas", "reuniones", "fases", "dinero", "facturas", "repo", "tickets", "clientes"] as const;
 export type Tab = (typeof PESTANAS)[number];
 
 export function ProjectDetailClient({
@@ -58,6 +58,8 @@ export function ProjectDetailClient({
   reunionesPanel,
   fasesPanel,
   dineroPanel,
+  facturasPanel,
+  facturasCount = 0,
   ordenesPanel,
   horasPanel,
   repoExtra,
@@ -78,6 +80,9 @@ export function ProjectDetailClient({
   fasesPanel: React.ReactNode;
   /** Dinero del proyecto (servidor): presupuesto, facturado, cobrado, por cobrar y el botón «Cobrar». */
   dineroPanel?: React.ReactNode;
+  /** Facturas del proyecto y las demás del cliente, con su PDF (servidor). */
+  facturasPanel?: React.ReactNode;
+  facturasCount?: number;
   ordenesPanel: React.ReactNode;
   horasPanel: React.ReactNode;
   /** Verificación con GitHub y plataformas (servidor). */
@@ -136,6 +141,7 @@ export function ProjectDetailClient({
     { key: "reuniones", label: "Reuniones", count: counts.reuniones, alert: alertas.reuniones },
     { key: "fases", label: "Fases y entregables", count: project.deliverables.filter((d) => !d.completed).length, alert: alertas.fases },
     { key: "dinero", label: "Dinero", alert: alertas.dinero },
+    { key: "facturas", label: "Facturas", count: facturasCount },
     { key: "repo", label: "Repo y plataformas", alert: alertas.repo },
     { key: "tickets", label: "Tickets", count: counts.tickets },
     { key: "clientes", label: "Clientes", count: project.clients.length, alert: alertas.clientes },
@@ -285,6 +291,7 @@ export function ProjectDetailClient({
             </div>
           ),
           tareas: tasksPanel,
+          facturas: facturasPanel,
           reuniones: reunionesPanel,
           fases: (
             <div className="space-y-6">

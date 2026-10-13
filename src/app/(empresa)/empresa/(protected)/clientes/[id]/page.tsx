@@ -5,8 +5,7 @@ import { fichaCliente } from "@/lib/portal/ficha";
 import { dinero } from "@/lib/portal/datos";
 import { formatoHoras } from "@/lib/portal/horas";
 import { PAGO_METODO_LABEL, TICKET_ESTADO_LABEL, type PagoMetodo, type TicketEstado } from "@/lib/portal/estados";
-import { StatusBadge } from "@/components/empresa/document-builder/status-badge";
-import type { DocumentStatus } from "@prisma/client";
+import { ListaFacturas } from "@/components/empresa/facturas/lista-facturas";
 import { btn } from "@/components/empresa/page-header";
 import { FacturarHorasForm, HorasForm, InvitarForm, PagoForm, PagoPorConfirmar, PersonaAcciones } from "@/components/empresa/clientes/formularios";
 import { ZonaLinea } from "@/components/empresa/clientes/zona-linea";
@@ -281,18 +280,8 @@ export default async function FichaCliente({ params, searchParams }: { params: P
           <div className="grid gap-6 xl:grid-cols-3 items-start">
             <div className="space-y-6 xl:col-span-2 min-w-0">
               <section className={card}>
-                <div className="flex items-center justify-between gap-3"><h2 className={h2}>Facturas</h2><BotonCobrar clientes={clientesCobro} clienteInicial={c.id} etiqueta="Cobrar" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline" /></div>
-                {f.facturas.length ? (
-                  <ul className="mt-3 divide-y divide-line">
-                    {f.facturas.slice(0, 12).map((x) => (
-                      <li key={x.id}><Link href={`/empresa/facturas/${x.id}`} className="flex items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
-                        <span className="min-w-0 flex-1"><span className="block text-fg text-sm font-medium truncate">{x.number ?? "Factura"} · {x.title}</span><span className="block text-fg-dim text-xs">{fecha(x.issueDate)}{x.falta > 0.005 && x.pagado > 0 ? ` · falta ${dinero(x.falta)}` : ""}</span></span>
-                        <span className="font-mono text-sm text-fg">{dinero(x.total)}</span>
-                        <StatusBadge status={x.status as DocumentStatus} />
-                      </Link></li>
-                    ))}
-                  </ul>
-                ) : <p className="mt-3 text-sm text-fg-dim">Sin facturas todavía.</p>}
+                <div className="flex items-center justify-between gap-3"><h2 className={h2}>Facturas{f.facturas.length ? ` · ${f.facturas.length}` : ""}</h2><BotonCobrar clientes={clientesCobro} clienteInicial={c.id} etiqueta="Cobrar" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline" /></div>
+                <ListaFacturas facturas={f.facturas.map((x) => ({ id: x.id, number: x.number, title: x.title, status: x.status, total: Number(x.total ?? 0), falta: x.falta, issueDate: x.issueDate }))} vacio="Sin facturas todavía. Cada pago que registres sale con su factura." />
                 {f.cotizaciones.length > 0 && <p className="mt-4 text-xs text-fg-dim">{f.cotizaciones.length} cotización(es): {f.cotizaciones.slice(0, 3).map((q) => <Link key={q.id} href={`/empresa/cotizaciones/${q.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-brand-fg hover:underline mr-2">{q.number}</Link>)}</p>}
               </section>
             </div>

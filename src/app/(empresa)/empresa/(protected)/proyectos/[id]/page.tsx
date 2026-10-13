@@ -2,6 +2,7 @@ import Link from "@/components/empresa/link";
 import { notFound } from "next/navigation";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
+import { ListaFacturas, type FilaFactura } from "@/components/empresa/facturas/lista-facturas";
 import type { FinancingPlan } from "@/lib/financing";
 import { loadTaskWorkspace } from "@/lib/tasks";
 import { TaskWorkspace } from "@/components/empresa/tasks/task-workspace";
@@ -199,6 +200,15 @@ export default async function ProyectoDetailPage({
   }
 
   const clienteId = projectClients[0]?.id ?? null;
+  // Facturas: las del proyecto y, debajo, las demás de sus clientes, todas con su PDF para descargar.
+  const facturasRows = await prisma.document.findMany({
+    where: { userId: user.id, type: "FACTURA", OR: [{ projectId: project.id }, ...(projectClients.length ? [{ clientId: { in: projectClients.map((c) => c.id) } }] : [])] },
+    orderBy: { issueDate: "desc" },
+    select: { id: true, number: true, title: true, status: true, total: true, amountPaid: true, issueDate: true, projectId: true, project: { select: { name: true } } },
+  });
+  const filaFactura = (d: (typeof facturasRows)[number]): FilaFactura => ({ id: d.id, number: d.number, title: d.title, status: d.status, total: Number(d.total ?? 0), falta: d.status === "PAID" ? 0 : Math.max(0, Number(d.total ?? 0) - Number(d.amountPaid ?? 0)), issueDate: d.issueDate, proyecto: d.projectId && d.projectId !== project.id ? d.project?.name ?? null : null });
+  const facturasDelProyecto = facturasRows.filter((d) => d.projectId === project.id).map(filaFactura);
+  const otrasFacturas = facturasRows.filter((d) => d.projectId !== project.id).map(filaFactura);
   const ticketsAbiertos = (tickets ?? []).filter((t) => t.status !== "resuelto" && t.status !== "cerrado").length;
   const horasTotal = (horas ?? []).reduce((a, h) => a + Number(h.amount), 0);
   const minutosTotal = (horas ?? []).reduce((a, h) => a + h.billedMinutes, 0);
@@ -255,6 +265,21 @@ export default async function ProyectoDetailPage({
                 {gastosPanel}
               </>
             )
+          }
+          facturasCount={facturasDelProyecto.length}
+          facturasPanel={
+            <div className="space-y-6">
+              <section className={card}>
+                <h2 className={h2}>Facturas de este proyecto{facturasDelProyecto.length ? ` · ${facturasDelProyecto.length}` : ""}</h2>
+                <ListaFacturas facturas={facturasDelProyecto} vacio="Este proyecto todavía no tiene facturas. Cada pago que registres en sus fases sale con su factura." />
+              </section>
+              {otrasFacturas.length > 0 && (
+                <section className={card}>
+                  <h2 className={h2}>Otras facturas de {projectClients.length === 1 ? (projectClients[0].company || projectClients[0].name) : "sus clientes"} · {otrasFacturas.length}</h2>
+                  <ListaFacturas facturas={otrasFacturas} />
+                </section>
+              )}
+            </div>
           }
           ordenesPanel={fases ? <OrdenesPanel p={fases} ordenNueva={orden === "nueva"} ticketId={ticket} /> : <NoCargo titulo="Órdenes de cambio" />}
           horasPanel={
