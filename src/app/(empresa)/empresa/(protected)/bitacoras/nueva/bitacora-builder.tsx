@@ -87,6 +87,7 @@ export function BitacoraBuilder({
   const allValues = useWatch({ control });
   const previewPayload = {
     type: "BITACORA" as const,
+    clientId: allValues.clientId || null,
     title: allValues.project || "Bitácora",
     language: allValues.language,
     clientName: allValues.clientName,

@@ -1,24 +1,27 @@
-import { View, Text, StyleSheet } from "@react-pdf/renderer";
-import { COLORS, FONTS, RADIUS } from "../tokens";
+import { View, Text } from "@react-pdf/renderer";
+import { FONTS, RADIUS } from "../tokens";
+import { porTema, type PdfTheme } from "../tema";
 import { Pill } from "./pill";
+import { ChevronCapas } from "./gradient";
 
-const s = StyleSheet.create({
+const estilos = porTema((t) => ({
   card: { flex: 1, borderRadius: RADIUS.block, padding: 13, display: "flex", flexDirection: "column" },
-  highlight: { backgroundColor: COLORS.ink },
-  plain: { backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.line },
-  // Tall enough to fit the pill's own padding+glyphs (~17pt) — a shorter fixed height clips the label.
+  highlight: { backgroundColor: t.dark },
+  plain: { backgroundColor: t.paper, borderWidth: 1, borderColor: t.line },
+  // Alto suficiente para la pill (~17 pt): uno menor la recorta.
   badgeSlot: { height: 18, marginBottom: 6 },
   name: { fontFamily: FONTS.heading, fontWeight: 700, fontSize: 11.5 },
-  priceRow: { flexDirection: "row", alignItems: "baseline", gap: 3, marginTop: 6 },
-  price: { fontFamily: FONTS.heading, fontWeight: 800, fontSize: 19 },
-  period: { fontFamily: FONTS.body, fontSize: 8 },
+  priceRow: { flexDirection: "row", alignItems: "flex-end", marginTop: 6 },
+  price: { fontFamily: FONTS.heading, fontWeight: 800, fontSize: 19, marginRight: 3 },
+  period: { fontFamily: FONTS.body, fontSize: 8, marginBottom: 3 },
   desc: { fontSize: 8.2, marginTop: 5, marginBottom: 10 },
-  featureRow: { flexDirection: "row", gap: 6, alignItems: "flex-start", marginBottom: 5 },
-  featureBullet: { width: 6, height: 6, borderRadius: 2, marginTop: 2, backgroundColor: COLORS.blue, flexShrink: 0 },
+  featureRow: { flexDirection: "row", alignItems: "flex-start", marginBottom: 5 },
+  featureBullet: { marginTop: 1, marginRight: 6 },
   featureText: { fontFamily: FONTS.body, fontWeight: 500, fontSize: 8, lineHeight: 1.45, flex: 1 },
-});
+}));
 
 interface PricingCardProps {
+  t: PdfTheme;
   name: string;
   price: string;
   desc: string;
@@ -26,14 +29,15 @@ interface PricingCardProps {
   highlight?: boolean;
 }
 
-/** Design-system §4.10 — a row of these with equal height, the recommended plan filled dark with the "MÁS ELEGIDO" badge. */
-export function PricingCard({ name, price, desc, features, highlight = false }: PricingCardProps) {
-  const textColor = highlight ? COLORS.white : COLORS.ink;
-  const subColor = highlight ? "rgba(255,255,255,0.65)" : COLORS.slate;
-  const featureColor = highlight ? "rgba(255,255,255,0.82)" : COLORS.inkSoft;
+/** design-system §4.10 — fila de planes de igual alto; el recomendado en el oscuro de la línea con «MÁS ELEGIDO». */
+export function PricingCard({ t, name, price, desc, features, highlight = false }: PricingCardProps) {
+    const s = estilos(t);
+  const textColor = highlight ? t.white : t.ink;
+  const subColor = highlight ? t.onDarkSoft : t.slate;
+  const featureColor = highlight ? t.white : t.inkSoft;
   return (
     <View style={[s.card, highlight ? s.highlight : s.plain]} wrap={false}>
-      <View style={s.badgeSlot}>{highlight && <Pill variant="grad">MÁS ELEGIDO</Pill>}</View>
+      <View style={s.badgeSlot}>{highlight ? <Pill t={t} variant="grad">MÁS ELEGIDO</Pill> : null}</View>
       <Text style={[s.name, { color: textColor }]}>{name}</Text>
       <View style={s.priceRow}>
         <Text style={[s.price, { color: textColor }]}>{price}</Text>
@@ -42,7 +46,9 @@ export function PricingCard({ name, price, desc, features, highlight = false }: 
       <Text style={[s.desc, { color: subColor }]}>{desc}</Text>
       {features.map((f, i) => (
         <View key={i} style={s.featureRow}>
-          <View style={s.featureBullet} />
+          <View style={s.featureBullet}>
+            <ChevronCapas size={8} color={highlight ? t.accentOnDark : t.accent} />
+          </View>
           <Text style={[s.featureText, { color: featureColor }]}>{f}</Text>
         </View>
       ))}

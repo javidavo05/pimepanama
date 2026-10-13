@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { renderContractPdf } from "@/lib/pdf/render";
+import { lineaDe } from "@/lib/pdf/linea";
 import { Readable } from "stream";
 import type { Contract, Client, ContractStatus } from "@prisma/client";
 
@@ -54,7 +55,7 @@ export async function POST(request: Request) {
       updatedAt: now,
     } as unknown as Contract;
 
-    const stream = await renderContractPdf(draft, client, user.config);
+    const stream = await renderContractPdf(draft, client, user.config, lineaDe(client));
     const webStream = Readable.toWeb(stream as Readable) as ReadableStream;
 
     return new Response(webStream, {

@@ -149,6 +149,7 @@ export function FacturaBuilder({
   const allValues = useWatch({ control });
   const previewPayload = {
     type: "FACTURA" as const,
+    clientId: allValues.clientId || null,
     number: initialDocument?.number,
     title: allValues.clientName || "Factura",
     language: allValues.language,

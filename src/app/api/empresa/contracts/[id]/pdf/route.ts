@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { renderContractPdf } from "@/lib/pdf/render";
+import { lineaDeProyecto } from "@/lib/pdf/datos-linea";
 import { resolveContractHtml } from "@/lib/design-system/contract-html";
 import { renderHtmlToPdfBuffer } from "@/lib/design-system/html-to-pdf";
 import { Readable } from "stream";
@@ -29,9 +30,11 @@ export async function GET(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const company = user.configId
-      ? await prisma.companyConfig.findUnique({ where: { id: user.configId } })
-      : null;
+    // La línea: la del cliente del contrato o, si uno de los clientes del proyecto es premium, premium.
+    const [company, linea] = await Promise.all([
+      user.configId ? prisma.companyConfig.findUnique({ where: { id: user.configId } }) : Promise.resolve(null),
+      lineaDeProyecto(contract.projectId, contract.client ? [contract.client] : []),
+    ]);
 
     const filename = `Contrato-${contract.title}`
       .replace(/\s+/g, "-")
@@ -44,7 +47,7 @@ export async function GET(
     if (!useLegacy) {
       try {
         const pagesHtml = resolveContractHtml(contract, contract.client, company, contract.project);
-        const pdfBuffer = await renderHtmlToPdfBuffer(pagesHtml);
+        const pdfBuffer = await renderHtmlToPdfBuffer(pagesHtml, linea);
         return new Response(new Uint8Array(pdfBuffer), {
           headers: {
             "Content-Type": "application/pdf",
@@ -57,7 +60,7 @@ export async function GET(
       }
     }
 
-    const stream = await renderContractPdf(contract, contract.client, company);
+    const stream = await renderContractPdf(contract, contract.client, company, linea);
     const webStream = Readable.toWeb(stream as Readable) as ReadableStream;
 
     return new Response(webStream, {

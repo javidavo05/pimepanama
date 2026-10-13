@@ -43,6 +43,7 @@ export default async function FacturaDetailPage({
         paymentMethod: { select: { name: true } },
         linkedDocument: { select: { id: true, number: true, status: true, total: true, projectId: true, project: { select: { id: true, name: true, status: true } } } },
         project: { select: { id: true, name: true, status: true } },
+        client: { select: { id: true, brandLine: true } },
       },
     }),
     isEditing
@@ -180,6 +181,18 @@ export default async function FacturaDetailPage({
             <p className="text-fg font-medium">{doc.clientName ?? "—"}</p>
             {doc.clientCompany && <p className="text-fg-faint text-sm">{doc.clientCompany}</p>}
             {doc.clientRuc && <p className="text-fg-faint text-xs mt-1">RUC: {doc.clientRuc}</p>}
+            {/* La línea de marca decide cómo sale el PDF; se cambia en la ficha del cliente. */}
+            {doc.client ? (
+              <Link
+                href={`/empresa/clientes/${doc.client.id}`}
+                title="El PDF sale en la línea del cliente. Cámbiala en su ficha."
+                className={`mt-2 inline-flex items-center gap-1 min-h-11 sm:min-h-8 px-3 rounded-full text-xs font-semibold transition-colors ${doc.client.brandLine === "premium" ? "bg-sand/15 text-sand-fg hover:bg-sand/25" : "bg-brand/10 text-brand-fg hover:bg-brand/20"}`}
+              >
+                Línea {doc.client.brandLine === "premium" ? "Premium" : "Normal"} <span aria-hidden>→</span>
+              </Link>
+            ) : (
+              <p className="mt-2 text-fg-faint text-xs">Sin cliente vinculado: el PDF sale en línea Normal.</p>
+            )}
           </div>
           <div className="text-right">
             <p className="text-fg-faint text-[10px] uppercase tracking-widest mb-1">Emitida</p>
@@ -229,12 +242,11 @@ export default async function FacturaDetailPage({
           </p>
         )}
         {outstanding > 0 && !isClosed && (
-          <p className="text-warn text-xs mt-4">
-            Saldo vivo en{" "}
-            <Link href="/empresa/cuentas-por-cobrar" className="underline hover:text-warn-soft">
+          <p className="text-warn text-xs mt-4 flex flex-wrap items-center gap-x-1">
+            Saldo vivo en
+            <Link href="/empresa/cuentas-por-cobrar" className="inline-flex items-center min-h-11 sm:min-h-8 underline hover:text-warn-soft">
               Cuentas por Cobrar
             </Link>
-            .
           </p>
         )}
       </div>

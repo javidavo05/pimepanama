@@ -25,7 +25,7 @@
     "audio": "bash tools/pime-audio/run.sh",
     "disk-recovery:web": "node tools/disk-recovery/server.mjs",
     "disk-recovery:install": "bash tools/disk-recovery/install-mac.sh",
-    "test": "node --import tsx --test src/lib/portal/*.test.ts src/lib/auth/*.test.ts src/lib/pulso/*.test.ts src/lib/asistente/*.test.ts src/lib/calendario/*.test.ts src/lib/pimebook/*.test.ts src/lib/proyectos/*.test.ts src/lib/gastos/*.test.ts",
+    "test": "node --import tsx --test src/lib/portal/*.test.ts src/lib/auth/*.test.ts src/lib/pulso/*.test.ts src/lib/asistente/*.test.ts src/lib/calendario/*.test.ts src/lib/pimebook/*.test.ts src/lib/proyectos/*.test.ts src/lib/gastos/*.test.ts src/lib/pdf/*.test.ts",
     "test:db": "node --env-file=.env.local --import tsx --test scripts/pruebas/*.test.ts"
   },
   "dependencies": {

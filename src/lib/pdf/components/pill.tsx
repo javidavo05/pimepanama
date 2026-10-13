@@ -1,42 +1,31 @@
-import { View, Text, StyleSheet } from "@react-pdf/renderer";
-import { COLORS, FONTS, RADIUS } from "../tokens";
+import { View, Text } from "@react-pdf/renderer";
+import { FONTS, RADIUS } from "../tokens";
+import { porTema, type PdfTheme } from "../tema";
 
-// La pill destacada usa el azul señal sólido (manual de marca: sin degradados).
-const GRAD_BLEND = COLORS.blue;
+const estilos = porTema((t) => ({
+  base: { alignSelf: "flex-start", borderRadius: RADIUS.pill, paddingHorizontal: 9, paddingVertical: 4 },
+  solid: { backgroundColor: t.ink },
+  outline: { backgroundColor: "transparent", borderWidth: 1, borderColor: t.line },
+  grad: { backgroundColor: t.pillAccentBg },
+  // Sobre fondo oscuro: el sello de la línea (`.linea-sello`), borde de acento y texto en acento claro.
+  sello: { backgroundColor: "transparent", borderWidth: 1, borderColor: t.accent },
+  text: { fontFamily: FONTS.body, fontWeight: 700, fontSize: 6.8, letterSpacing: 0.6 },
+  textSolid: { color: t.white },
+  textOutline: { color: t.slate },
+  textGrad: { color: t.pillAccentText },
+  textSello: { color: t.accentOnDark, letterSpacing: 1.1 },
+}));
 
-const s = StyleSheet.create({
-  base: {
-    alignSelf: "flex-start",
-    borderRadius: RADIUS.pill,
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-  },
-  solid: { backgroundColor: COLORS.ink },
-  outline: { backgroundColor: "transparent", borderWidth: 1, borderColor: COLORS.line },
-  grad: { backgroundColor: GRAD_BLEND },
-  text: {
-    fontFamily: FONTS.body,
-    fontWeight: 700,
-    fontSize: 6.8,
-    letterSpacing: 0.6,
-  },
-  textSolid: { color: COLORS.white },
-  textOutline: { color: COLORS.slate },
-  textGrad: { color: COLORS.white },
-});
+export type PillVariant = "solid" | "outline" | "grad" | "sello";
 
-interface PillProps {
-  children: React.ReactNode;
-  variant?: "solid" | "outline" | "grad";
-}
-
-/** Small status/label badge (design-system §4.7 `.pill`). */
-export function Pill({ children, variant = "solid" }: PillProps) {
-  const boxStyle = variant === "outline" ? s.outline : variant === "grad" ? s.grad : s.solid;
-  const textStyle = variant === "outline" ? s.textOutline : variant === "grad" ? s.textGrad : s.textSolid;
+/** Pill de estado o etiqueta (design-system §4.7 `.pill`). `grad` es la destacada (`.pill.accent`). */
+export function Pill({ t, children, variant = "solid" }: { t: PdfTheme; children: React.ReactNode; variant?: PillVariant }) {
+  const s = estilos(t);
+  const caja = { solid: s.solid, outline: s.outline, grad: s.grad, sello: s.sello }[variant];
+  const texto = { solid: s.textSolid, outline: s.textOutline, grad: s.textGrad, sello: s.textSello }[variant];
   return (
-    <View style={[s.base, boxStyle]}>
-      <Text style={[s.text, textStyle]}>{children}</Text>
+    <View style={[s.base, caja]}>
+      <Text style={[s.text, texto]}>{children}</Text>
     </View>
   );
 }

@@ -4,6 +4,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { renderDocumentPdf } from "@/lib/pdf/render";
 import { resolveDocumentPdfPaymentMethods } from "@/lib/pdf/payment-methods";
+import { opcionesPdfDocumento } from "@/lib/pdf/datos-linea";
 
 export const runtime = "nodejs";
 
@@ -19,11 +20,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   const doc = await prisma.document.findFirst({ where: { id, clientId: persona.clientId, type: "FACTURA", status: { notIn: ["DRAFT", "CANCELLED"] } } });
   if (!doc) return NextResponse.json({ error: "No encontramos esa factura." }, { status: 404 });
-  const [company, metodos] = await Promise.all([
+  const [company, metodos, opciones] = await Promise.all([
     prisma.companyConfig.findFirst({ where: { users: { some: { id: doc.userId } } } }),
     prisma.paymentMethod.findMany({ where: { userId: doc.userId, isActive: true }, orderBy: [{ type: "asc" }, { name: "asc" }] }),
+    opcionesPdfDocumento(doc),
   ]);
-  const stream = await renderDocumentPdf(doc, company, resolveDocumentPdfPaymentMethods(doc, metodos));
+  const stream = await renderDocumentPdf(doc, company, resolveDocumentPdfPaymentMethods(doc, metodos), opciones);
   const nombre = `${doc.number ?? doc.id}.pdf`.replace(/\s+/g, "-").replace(/[^\w.-]/g, "");
   return new Response(Readable.toWeb(stream as Readable) as ReadableStream, {
     headers: { "Content-Type": "application/pdf", "Content-Disposition": `${new URL(request.url).searchParams.get("ver") ? "inline" : "attachment"}; filename="${nombre}"`, "Cache-Control": "private, no-cache" },

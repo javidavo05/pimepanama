@@ -3,6 +3,7 @@ import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { renderDocumentPdf } from "@/lib/pdf/render";
 import { resolveDocumentPdfPaymentMethods } from "@/lib/pdf/payment-methods";
+import { lineaDeClienteId } from "@/lib/pdf/datos-linea";
 import { Readable } from "stream";
 import type { Document as PrismaDocument, DocumentType } from "@prisma/client";
 
@@ -25,6 +26,8 @@ interface PreviewPayload {
   paymentMethodId?: string | null;
   pdfPaymentMethodIds?: string[];
   number?: string;
+  /** Cliente elegido en el formulario: de él sale la línea de marca de la vista previa. */
+  clientId?: string | null;
   content?: Record<string, unknown>;
 }
 
@@ -74,20 +77,23 @@ export async function POST(request: Request) {
       createdAt: now,
       updatedAt: now,
       userId: user.id,
-      clientId: null,
+      clientId: body.clientId || null,
       leadId: null,
       projectId: null,
       contractId: null,
       paymentMethodId: body.paymentMethodId ?? null,
     } as unknown as PrismaDocument;
 
-    const allMethods = await prisma.paymentMethod.findMany({
-      where: { userId: user.id, isActive: true },
-      orderBy: [{ type: "asc" }, { name: "asc" }],
-    });
+    const [allMethods, linea] = await Promise.all([
+      prisma.paymentMethod.findMany({
+        where: { userId: user.id, isActive: true },
+        orderBy: [{ type: "asc" }, { name: "asc" }],
+      }),
+      lineaDeClienteId(body.clientId, user.id),
+    ]);
     const paymentMethods = resolveDocumentPdfPaymentMethods(draft, allMethods);
 
-    const stream = await renderDocumentPdf(draft, user.config, paymentMethods);
+    const stream = await renderDocumentPdf(draft, user.config, paymentMethods, { linea });
     const webStream = Readable.toWeb(stream as Readable) as ReadableStream;
 
     return new Response(webStream, {

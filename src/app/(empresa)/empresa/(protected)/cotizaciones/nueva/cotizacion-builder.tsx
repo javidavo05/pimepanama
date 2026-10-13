@@ -130,6 +130,7 @@ export function CotizacionBuilder({
   const allValues = useWatch({ control });
   const previewPayload = {
     type: "COTIZACION" as const,
+    clientId: allValues.clientId || null,
     number: initialDocument?.number,
     title: allValues.clientName || "Cotización",
     language: allValues.language,

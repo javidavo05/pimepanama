@@ -1,87 +1,42 @@
-import { View, Text, StyleSheet } from "@react-pdf/renderer";
-import { COLORS, FONTS, SPACING, RADIUS } from "../tokens";
+import { View, Text } from "@react-pdf/renderer";
+import { FONTS, RADIUS } from "../tokens";
+import { porTema, type PdfTheme } from "../tema";
 import type { PdfTranslations } from "../translations";
 import type { PdfPaymentMethod } from "../payment-methods";
+import { Eyebrow } from "./section-title";
+import { Parrafos } from "./notes-block";
 
-const s = StyleSheet.create({
-  container: {
-    marginTop: SPACING.md,
-    marginBottom: SPACING.sm,
-    backgroundColor: COLORS.panel,
+const estilos = porTema((t) => ({
+  container: { marginBottom: 8 },
+  row: { flexDirection: "row", flexWrap: "wrap" },
+  card: {
+    marginBottom: 10,
+    backgroundColor: t.panel,
     borderWidth: 1,
-    borderColor: COLORS.line,
+    borderColor: t.line,
     borderRadius: RADIUS.card,
-    padding: SPACING.md,
+    padding: 11,
   },
-  title: {
-    fontFamily: FONTS.body,
-    fontWeight: 700,
-    fontSize: 7,
-    color: COLORS.blue,
-    letterSpacing: 1.4,
-    marginBottom: SPACING.sm,
-  },
-  row: {
-    flexDirection: "row",
-    gap: SPACING.lg,
-    flexWrap: "wrap",
-  },
-  method: {
-    flexGrow: 1,
-    flexBasis: "28%",
-    minWidth: 120,
-    paddingRight: SPACING.sm,
-  },
-  methodLabel: {
-    fontFamily: FONTS.body,
-    fontWeight: 700,
-    fontSize: 6.6,
-    color: COLORS.slateLight,
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-    marginBottom: 3,
-  },
-  methodValue: {
-    fontFamily: FONTS.heading,
-    fontWeight: 700,
-    fontSize: 9,
-    color: COLORS.ink,
-    lineHeight: 1.5,
-  },
-  methodSub: {
-    fontFamily: FONTS.body,
-    fontSize: 7.5,
-    color: COLORS.slate,
-    lineHeight: 1.5,
-  },
-  divider: {
-    width: 1,
-    backgroundColor: COLORS.line,
-    marginHorizontal: SPACING.sm,
-    alignSelf: "stretch",
-  },
-});
+  methodLabel: { fontFamily: FONTS.body, fontWeight: 700, fontSize: 6.6, color: t.slateLight, letterSpacing: 0.6, textTransform: "uppercase", marginBottom: 4 },
+  methodValue: { fontFamily: FONTS.heading, fontWeight: 700, fontSize: 9.4, color: t.ink, lineHeight: 1.4 },
+  methodSub: { fontFamily: FONTS.body, fontSize: 7.8, color: t.slate, lineHeight: 1.5, marginTop: 2 },
+}));
 
-interface PaymentInfoBlockProps {
-  tr: PdfTranslations;
-  methods: PdfPaymentMethod[];
-}
-
-export function PaymentInfoBlock({ tr, methods }: PaymentInfoBlockProps) {
+/** Formas de pago en tarjetas (`.grid3` de `.card`). Va entero en una página. */
+export function PaymentInfoBlock({ t, tr, methods }: { t: PdfTheme; tr: PdfTranslations; methods: PdfPaymentMethod[] }) {
+  const s = estilos(t);
   if (methods.length === 0) return null;
-
+  // Tres por fila; con cuatro, los cuatro en una fila para que no quede uno solo abajo.
+  const cols = methods.length === 4 ? 4 : 3;
   return (
     <View style={s.container} wrap={false}>
-      <Text style={s.title}>{tr.paymentMethods}</Text>
+      <Eyebrow t={t}>{tr.paymentMethods}</Eyebrow>
       <View style={s.row}>
-        {methods.map((method, index) => (
-          <View key={method.id} style={{ flexDirection: "row", flexGrow: 1, flexBasis: "28%" }}>
-            {index > 0 ? <View style={s.divider} /> : null}
-            <View style={s.method}>
-              <Text style={s.methodLabel}>{method.label}</Text>
-              <Text style={s.methodValue}>{method.title}</Text>
-              {method.subtitle ? <Text style={s.methodSub}>{method.subtitle}</Text> : null}
-            </View>
+        {methods.map((m, i) => (
+          <View key={m.id} style={[s.card, { flexBasis: `${(100 - 2 * (cols - 1)) / cols - 0.3}%`, flexGrow: 1, marginRight: i % cols === cols - 1 ? 0 : "2%" }]}>
+            <Text style={s.methodLabel}>{m.label}</Text>
+            <Text style={s.methodValue}>{m.title}</Text>
+            {m.subtitle ? <Parrafos text={m.subtitle} style={s.methodSub} /> : null}
           </View>
         ))}
       </View>

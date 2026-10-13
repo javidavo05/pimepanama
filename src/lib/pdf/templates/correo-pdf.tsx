@@ -1,125 +1,63 @@
-import { Document, Page, View, Text, StyleSheet } from "@react-pdf/renderer";
-import { pageStyles, COLORS, FONTS, SPACING, RADIUS } from "../tokens";
-import { t, fmtDate, type PdfLang } from "../translations";
-import { DocumentHeader } from "../components/document-header";
+import { Document, View, Text } from "@react-pdf/renderer";
+import { FONTS, RADIUS } from "../tokens";
+import { porTema, temaDe, type PdfLinea, type PdfTheme } from "../tema";
+import { t as traducir, fmtDate, type PdfLang, type PdfTranslations } from "../translations";
+import { DocPage } from "../components/doc-page";
+import { DocumentHeader, type MetaDato } from "../components/document-header";
 import { DocumentFooter } from "../components/document-footer";
+import { Eyebrow } from "../components/section-title";
+import { Parrafos } from "../components/notes-block";
 import type { Document as PrismaDocument, CompanyConfig } from "@prisma/client";
 
-const s = StyleSheet.create({
-  // LAW: size must be LETTER (8.5" × 11"). NEVER A4.
-  page: {
-    ...pageStyles.page,
-    fontFamily: FONTS.body,
-    backgroundColor: COLORS.white,
-    color: COLORS.ink,
-    paddingBottom: 70,
-  },
-  body: {
-    paddingHorizontal: SPACING.page,
-    paddingTop: SPACING.lg,
-  },
-  metaCard: {
-    backgroundColor: COLORS.panel,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    borderRadius: RADIUS.card,
-    padding: SPACING.md,
-    marginBottom: SPACING.lg,
-  },
-  metaRow: { flexDirection: "row", marginBottom: 5 },
-  metaLabel: {
-    fontFamily: FONTS.body,
-    fontWeight: 700,
-    fontSize: 7,
-    color: COLORS.blue,
-    width: 50,
-    letterSpacing: 0.8,
-  },
-  metaValue: { fontFamily: FONTS.body, fontSize: 8.5, color: COLORS.ink, flex: 1 },
-  subjectDivider: {
-    borderTopWidth: 1,
-    borderTopColor: COLORS.line,
-    marginTop: 6,
-    paddingTop: 6,
-  },
-  subjectLabel: {
-    fontFamily: FONTS.body,
-    fontWeight: 700,
-    fontSize: 7,
-    color: COLORS.blue,
-    letterSpacing: 1.4,
-    marginBottom: 4,
-  },
-  subject: { fontFamily: FONTS.heading, fontWeight: 700, fontSize: 12, color: COLORS.ink },
-  bodyCard: {
-    backgroundColor: COLORS.panel,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    borderRadius: RADIUS.card,
-    padding: SPACING.md,
-  },
-  bodyLabel: {
-    fontFamily: FONTS.body,
-    fontWeight: 700,
-    fontSize: 7,
-    color: COLORS.blue,
-    letterSpacing: 1.4,
-    marginBottom: SPACING.sm,
-  },
-  emailBodyText: { fontFamily: FONTS.body, fontSize: 9, color: COLORS.slate, lineHeight: 1.7 },
-});
+const estilos = porTema((th) => ({
+  subjectWrap: { marginBottom: 22 },
+  subject: { fontFamily: FONTS.heading, fontWeight: 800, fontSize: 14, color: th.ink, lineHeight: 1.3 },
+  bodyCard: { backgroundColor: th.panel, borderWidth: 1, borderColor: th.line, borderRadius: RADIUS.card, padding: 16 },
+  emailBodyText: { fontFamily: FONTS.body, fontSize: 9, color: th.slate, lineHeight: 1.7 },
+}));
+
+function Cuerpo({ t, tr, subject, body }: { t: PdfTheme; tr: PdfTranslations; subject: string; body: string }) {
+  const s = estilos(t);
+  return (
+    <>
+      <View style={s.subjectWrap} wrap={false}>
+        <Eyebrow t={t}>{tr.subject}</Eyebrow>
+        <Text style={s.subject}>{subject}</Text>
+      </View>
+      <View minPresenceAhead={80}>
+        <Eyebrow t={t}>{tr.emailBody}</Eyebrow>
+      </View>
+      <View style={s.bodyCard}>
+        <Parrafos text={body || "—"} style={s.emailBodyText} />
+      </View>
+    </>
+  );
+}
 
 interface CorreoPdfProps {
   doc: PrismaDocument;
   company: Partial<CompanyConfig> | null;
-  logoSrc: string;
+  linea: PdfLinea;
 }
 
-export function CorreoPdf({ doc, company, logoSrc }: CorreoPdfProps) {
+export function CorreoPdf({ doc, company, linea }: CorreoPdfProps) {
+  const t = temaDe(linea);
   const lang = (doc.language as PdfLang) ?? "es";
-  const tr = t(lang);
+  const tr = traducir(lang);
   const content = doc.content as Record<string, string>;
+  const meta: MetaDato[] = [
+    { label: tr.date, value: fmtDate(doc.issueDate, lang) },
+    ...(content?.to ? [{ label: tr.to, value: content.to }] : []),
+    ...(content?.cc ? [{ label: tr.cc, value: content.cc }] : []),
+  ];
 
   return (
-    <Document
-      title={`${tr.email} — ${content?.subject ?? doc.title}`}
-      author={company?.name ?? "PIME PANAMA"}
-      creator="Pime Communications Suite"
-    >
-      <Page size="LETTER" style={s.page}>
-        <DocumentHeader
-          config={company}
-          docLabel={tr.email}
-          docNumber={fmtDate(doc.issueDate, lang)}
-          logoSrc={logoSrc}
-        />
-        <View style={s.body}>
-          <View style={s.metaCard} wrap={false}>
-            {content?.to && (
-              <View style={s.metaRow}>
-                <Text style={s.metaLabel}>{tr.to}:</Text>
-                <Text style={s.metaValue}>{content.to}</Text>
-              </View>
-            )}
-            {content?.cc && (
-              <View style={s.metaRow}>
-                <Text style={s.metaLabel}>{tr.cc}:</Text>
-                <Text style={s.metaValue}>{content.cc}</Text>
-              </View>
-            )}
-            <View style={s.subjectDivider}>
-              <Text style={s.subjectLabel}>{tr.subject}</Text>
-              <Text style={s.subject}>{content?.subject ?? "—"}</Text>
-            </View>
-          </View>
-
-          <View style={s.bodyCard}>
-            <Text style={s.bodyLabel}>{tr.emailBody}</Text>
-            <Text style={s.emailBodyText}>{content?.body ?? ""}</Text>
-          </View>
-        </View>
-        <DocumentFooter tr={tr} config={company} />
-      </Page>
+    <Document title={`${tr.email} — ${content?.subject ?? doc.title}`} author={company?.name ?? "PIME PANAMA"} creator="Pime Communications Suite">
+        <DocPage t={t}>
+          <DocumentHeader t={t} docLabel={tr.email} docNumber={doc.number ?? null} meta={meta} />
+          <Cuerpo t={t} tr={tr} subject={content?.subject ?? "—"} body={content?.body ?? ""} />
+          <DocumentFooter t={t} tr={tr} config={company} />
+        </DocPage>
     </Document>
   );
 }

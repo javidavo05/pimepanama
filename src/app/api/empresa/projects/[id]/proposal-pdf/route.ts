@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { renderProjectProposalPdf } from "@/lib/pdf/render";
+import { lineaDeProyecto } from "@/lib/pdf/datos-linea";
 import { isProposalContent } from "@/lib/pdf/proposal-content";
 import { Readable } from "stream";
 
@@ -31,11 +32,12 @@ export async function GET(
       );
     }
 
-    const company = user.configId
-      ? await prisma.companyConfig.findUnique({ where: { id: user.configId } })
-      : null;
+    const [company, linea] = await Promise.all([
+      user.configId ? prisma.companyConfig.findUnique({ where: { id: user.configId } }) : Promise.resolve(null),
+      lineaDeProyecto(project.id, project.client ? [project.client] : []),
+    ]);
 
-    const stream = await renderProjectProposalPdf(project, project.client, company, project.proposalContent);
+    const stream = await renderProjectProposalPdf(project, project.client, company, project.proposalContent, linea);
 
     const filename = `Propuesta-${project.name}`
       .replace(/\s+/g, "-")

@@ -1,47 +1,40 @@
-import { Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
-import { COLORS, FONTS, PAGE } from "../tokens";
-import { GradientBar } from "./gradient";
+import { Page, View, Text, Image } from "@react-pdf/renderer";
+import { FONTS, PAGE } from "../tokens";
+import { porTema, type PdfTheme } from "../tema";
+import { brandPng } from "../brand-assets";
+import { GradientBar, CapasOutline } from "./gradient";
+import { Pill } from "./pill";
 
-const s = StyleSheet.create({
-  page: { backgroundColor: COLORS.white, fontFamily: FONTS.body, color: COLORS.ink },
-  content: { position: "relative", padding: "30pt 26pt 26pt 26pt", height: PAGE.height - 6, display: "flex", flexDirection: "column" },
-  topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  brand: { flexDirection: "row", alignItems: "center", gap: 8 },
-  logo: { width: 98, height: 28, objectFit: "contain" },
-  brandName: { fontFamily: FONTS.heading, fontWeight: 800, fontSize: 13, color: COLORS.ink },
-  tag: { fontSize: 7.5, letterSpacing: 1.6, textTransform: "uppercase", color: COLORS.slateLight, fontWeight: 600 },
-  middle: { flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", marginTop: 10 },
-  eyebrow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    fontFamily: FONTS.body,
-    fontWeight: 700,
-    fontSize: 9.5,
-    letterSpacing: 1.6,
-    textTransform: "uppercase",
-    color: COLORS.blue,
-    marginBottom: 14,
-  },
-  title: { fontFamily: FONTS.heading, fontWeight: 800, fontSize: 30, lineHeight: 1.16, maxWidth: 400, letterSpacing: -0.5, color: COLORS.ink },
-  accentLine: { marginTop: 16, marginBottom: 16 },
-  subtitle: { fontSize: 11, color: COLORS.slate, maxWidth: 340, lineHeight: 1.7, fontWeight: 400 },
-  metaRow: { flexDirection: "row", gap: 34, marginTop: 30 },
-  metaLabel: { fontSize: 7, color: COLORS.slateLight, textTransform: "uppercase", letterSpacing: 1, fontWeight: 700, marginBottom: 4 },
-  metaValue: { fontSize: 10, fontWeight: 600, color: COLORS.ink },
-  bottomRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    borderTopWidth: 1,
-    borderTopColor: COLORS.line,
-    paddingTop: 12,
-  },
-  bottomText: { fontSize: 7.6, color: COLORS.slateLight, fontWeight: 500 },
+const estilos = porTema((t) => {
+  const oscuro = t.linea === "premium";
+  const tc = oscuro ? t.white : t.ink;
+  const muted = oscuro ? t.onDarkMuted : t.slateLight;
+  return {
+    page: { backgroundColor: oscuro ? t.dark : t.paper, fontFamily: FONTS.body, color: tc },
+    deco: { position: "absolute", left: PAGE.width - 190, top: 250 },
+    content: { position: "relative", padding: "50pt 51pt 40pt 51pt", height: PAGE.height - 5, display: "flex", flexDirection: "column" },
+    topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+    logo: { width: 98, height: 28, objectFit: "contain" },
+    tag: { fontSize: 7.5, letterSpacing: 1.4, textTransform: "uppercase", color: muted, fontWeight: 700 },
+    middle: { flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" },
+    sello: { marginBottom: 20 },
+    eyebrow: { flexDirection: "row", alignItems: "center", marginBottom: 18 },
+    bar: { width: 12, height: 1.8, borderRadius: 1, backgroundColor: oscuro ? t.accentOnDark : t.accent, marginRight: 8 },
+    eyebrowText: { fontFamily: FONTS.body, fontWeight: 700, fontSize: 9, letterSpacing: 1.4, textTransform: "uppercase", color: oscuro ? t.accentOnDark : t.accentText },
+    title: { fontFamily: FONTS.heading, fontWeight: 800, fontSize: 30, lineHeight: 1.14, maxWidth: 400, letterSpacing: -0.6, color: tc },
+    accentLine: { width: 62, height: 2, backgroundColor: t.accent, marginTop: 20, marginBottom: 20 },
+    subtitle: { fontSize: 11, color: oscuro ? t.onDarkSoft : t.slate, maxWidth: 340, lineHeight: 1.7, fontWeight: 400 },
+    metaRow: { flexDirection: "row", marginTop: 34 },
+    meta: { marginRight: 38 },
+    metaLabel: { fontSize: 7, color: muted, textTransform: "uppercase", letterSpacing: 1, fontWeight: 700, marginBottom: 5 },
+    metaValue: { fontSize: 10, fontWeight: 600, color: tc },
+    bottomRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", borderTopWidth: 1, borderTopColor: oscuro ? t.onDarkLine : t.line, paddingTop: 14 },
+    bottomText: { fontSize: 7.6, color: muted, fontWeight: 500 },
+  };
 });
 
 interface CoverPageProps {
-  logoSrc: string;
+  t: PdfTheme;
   eyebrow: string;
   title: string;
   subtitle: string;
@@ -51,41 +44,51 @@ interface CoverPageProps {
   brandTag?: string;
 }
 
-/** Design-system §4.1 — white, serious cover. Never dark/neon here (that's reserved for ClosingPage). */
-export function CoverPage({ logoSrc, eyebrow, title, subtitle, preparedFor, preparedBy = "Pime Panamá", date, brandTag = "Panamá · Desarrollo de Software" }: CoverPageProps) {
+/**
+ * design-system §4.1 — Portada. Normal: blanca, banda de tres capas y logo a color.
+ * Premium: negra, filete de oro, logo invertido y sello «Confidencial».
+ */
+export function CoverPage({ t, eyebrow, title, subtitle, preparedFor, preparedBy = "Pime Panamá", date, brandTag = "Panamá · Desarrollo de software" }: CoverPageProps) {
+    const s = estilos(t);
+  const oscuro = t.linea === "premium";
   return (
     <Page size="LETTER" style={s.page}>
-      <GradientBar width={PAGE.width} height={5} />
+      <GradientBar t={t} width={PAGE.width} height={oscuro ? 3.4 : 5} />
+      <View style={s.deco}>
+        <CapasOutline size={330} color={oscuro ? t.accent : t.line} opacity={oscuro ? 0.3 : 1} strokeWidth={oscuro ? 1.6 : 1.4} />
+      </View>
       <View style={s.content}>
         <View style={s.topRow}>
-          <View style={s.brand}>
-            {/* eslint-disable-next-line jsx-a11y/alt-text */}
-            <Image style={s.logo} src={logoSrc} />
-          </View>
+          {/* eslint-disable-next-line jsx-a11y/alt-text */}
+          <Image style={s.logo} src={brandPng(oscuro ? t.logoInvertido : t.logoColor)} />
           <Text style={s.tag}>{brandTag}</Text>
         </View>
 
         <View style={s.middle}>
-          <Text style={s.eyebrow}>{eyebrow}</Text>
-          <Text style={s.title}>{title}</Text>
-          <View style={s.accentLine}>
-            <GradientBar width={62} height={2.4} />
+          {oscuro ? (
+            <View style={s.sello}>
+              <Pill t={t} variant="sello">CONFIDENCIAL</Pill>
+            </View>
+          ) : null}
+          <View style={s.eyebrow}>
+            <View style={s.bar} />
+            <Text style={s.eyebrowText}>{eyebrow}</Text>
           </View>
+          <Text style={s.title}>{title}</Text>
+          <View style={s.accentLine} />
           <Text style={s.subtitle}>{subtitle}</Text>
 
           <View style={s.metaRow}>
-            <View>
-              <Text style={s.metaLabel}>Preparado para</Text>
-              <Text style={s.metaValue}>{preparedFor}</Text>
-            </View>
-            <View>
-              <Text style={s.metaLabel}>Preparado por</Text>
-              <Text style={s.metaValue}>{preparedBy}</Text>
-            </View>
-            <View>
-              <Text style={s.metaLabel}>Fecha</Text>
-              <Text style={s.metaValue}>{date}</Text>
-            </View>
+            {[
+              ["Preparado para", preparedFor],
+              ["Preparado por", preparedBy],
+              ["Fecha", date],
+            ].map(([k, v]) => (
+              <View key={k} style={s.meta}>
+                <Text style={s.metaLabel}>{k}</Text>
+                <Text style={s.metaValue}>{v}</Text>
+              </View>
+            ))}
           </View>
         </View>
 

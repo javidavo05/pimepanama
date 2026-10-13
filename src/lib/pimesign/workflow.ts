@@ -5,6 +5,7 @@ import { getR2Object, putR2Object } from "@/lib/r2";
 import { signingLinkTtlDays, signingTokenSecret } from "./config";
 import { generateSigningToken, hashSigningToken, type SigningRole } from "./tokens";
 import { renderContractPdfBuffer } from "./pdf";
+import { lineaDeProyecto } from "@/lib/pdf/datos-linea";
 import { buildSignedPdf } from "./pdf-stamp";
 import {
   clientSigningEmail,
@@ -104,7 +105,8 @@ export async function sendContractForSigning(contractId: string, userId: string)
   const companyEmail = company?.email ?? (await prisma.empresaUser.findUnique({ where: { id: userId } }))?.email;
   if (!companyEmail) throw new Error("Configura el email de la empresa en Configuración.");
 
-  const pdfBuffer = await renderContractPdfBuffer(contract, contract.client, company, contract.project);
+  const linea = await lineaDeProyecto(contract.projectId, contract.client ? [contract.client] : []);
+  const pdfBuffer = await renderContractPdfBuffer(contract, contract.client, company, contract.project, linea);
   const expiresAt = new Date(Date.now() + signingLinkTtlDays() * 24 * 60 * 60 * 1000);
   const baseKey = `contracts/signing/${contract.id}/base-${randomUUID()}.pdf`;
   await putR2Object(baseKey, pdfBuffer, "application/pdf");

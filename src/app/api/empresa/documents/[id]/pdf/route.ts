@@ -3,6 +3,7 @@ import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { renderDocumentPdf } from "@/lib/pdf/render";
 import { resolveDocumentPdfPaymentMethods } from "@/lib/pdf/payment-methods";
+import { opcionesPdfDocumento } from "@/lib/pdf/datos-linea";
 import { Readable } from "stream";
 
 export const runtime = "nodejs";
@@ -23,17 +24,18 @@ export async function GET(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    const company = user.configId
-      ? await prisma.companyConfig.findUnique({ where: { id: user.configId } })
-      : null;
-
-    const allMethods = await prisma.paymentMethod.findMany({
-      where: { userId: user.id, isActive: true },
-      orderBy: [{ type: "asc" }, { name: "asc" }],
-    });
+    // En paralelo: empresa, métodos de pago y la línea del cliente (con los abonos si es factura).
+    const [company, allMethods, opciones] = await Promise.all([
+      user.configId ? prisma.companyConfig.findUnique({ where: { id: user.configId } }) : Promise.resolve(null),
+      prisma.paymentMethod.findMany({
+        where: { userId: user.id, isActive: true },
+        orderBy: [{ type: "asc" }, { name: "asc" }],
+      }),
+      opcionesPdfDocumento(doc),
+    ]);
     const paymentMethods = resolveDocumentPdfPaymentMethods(doc, allMethods);
 
-    const stream = await renderDocumentPdf(doc, company, paymentMethods);
+    const stream = await renderDocumentPdf(doc, company, paymentMethods, opciones);
 
     const filename = `${doc.number ?? doc.id}.pdf`
       .replace(/\s+/g, "-")

@@ -1,81 +1,77 @@
-import { View, Text, StyleSheet } from "@react-pdf/renderer";
-import { COLORS, FONTS, SPACING, RADIUS } from "../tokens";
+import { View, Text } from "@react-pdf/renderer";
+import { FONTS, RADIUS } from "../tokens";
+import { porTema, type PdfTheme } from "../tema";
 import type { PdfTranslations } from "../translations";
+import type { CompanyConfig } from "@prisma/client";
+import { Parrafos } from "./notes-block";
 
-const s = StyleSheet.create({
-  container: { marginBottom: SPACING.lg },
-  row: { flexDirection: "row", gap: SPACING.md },
-  block: {
-    flex: 1,
-    backgroundColor: COLORS.panel,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    borderRadius: RADIUS.card,
-    padding: SPACING.md,
-  },
-  label: {
-    fontFamily: FONTS.body,
-    fontWeight: 700,
-    fontSize: 7,
-    color: COLORS.blue,
-    letterSpacing: 1.4,
-    marginBottom: SPACING.xs,
-  },
-  name: { fontFamily: FONTS.heading, fontWeight: 700, fontSize: 10.5, color: COLORS.ink, marginBottom: 2 },
-  detail: { fontFamily: FONTS.body, fontSize: 8, color: COLORS.slate, lineHeight: 1.55 },
-  dateRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 4 },
-  dateLabel: { fontFamily: FONTS.body, fontSize: 7, color: COLORS.slateLight },
-  dateValue: { fontFamily: FONTS.body, fontWeight: 600, fontSize: 8.5, color: COLORS.ink },
-});
+const estilos = porTema((t) => ({
+  row: { flexDirection: "row", marginBottom: 18 },
+  block: { flex: 1, backgroundColor: t.panel, borderWidth: 1, borderColor: t.line, borderRadius: RADIUS.card, padding: 12 },
+  gap: { width: 12 },
+  label: { fontFamily: FONTS.body, fontWeight: 700, fontSize: 6.8, color: t.accentText, letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 6 },
+  name: { fontFamily: FONTS.heading, fontWeight: 700, fontSize: 10.5, color: t.ink, marginBottom: 3 },
+  detail: { fontFamily: FONTS.body, fontSize: 8, color: t.slate, lineHeight: 1.55 },
+  empty: { fontFamily: FONTS.body, fontSize: 8, color: t.slateLight },
+}));
 
-interface ClientBlockProps {
-  tr: PdfTranslations;
-  billToLabel?: string;
-  clientName?: string | null;
-  clientCompany?: string | null;
-  clientAddress?: string | null;
-  clientEmail?: string | null;
-  clientRuc?: string | null;
-  issueDate: string;
-  secondDateLabel?: string;
-  secondDate?: string | null;
+export interface DatosParte {
+  name?: string | null;
+  company?: string | null;
+  ruc?: string | null;
+  address?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  website?: string | null;
 }
 
-export function ClientBlock({
-  tr,
-  billToLabel,
-  clientName,
-  clientCompany,
-  clientAddress,
-  clientEmail,
-  clientRuc,
-  issueDate,
-  secondDateLabel,
-  secondDate,
-}: ClientBlockProps) {
+interface ClientBlockProps {
+  t: PdfTheme;
+  tr: PdfTranslations;
+  /** Etiqueta del cliente («Facturar a», «Propuesta para», «Recibido de»). */
+  billToLabel?: string;
+  client: DatosParte;
+  /** La empresa que emite. Va en la tarjeta de la derecha. */
+  company: Partial<CompanyConfig> | null;
+}
+
+function Detalles({ p, s }: { p: DatosParte; s: ReturnType<typeof estilos> }) {
   return (
-    <View style={s.container} wrap={false}>
-      <View style={s.row}>
-        <View style={s.block}>
-          <Text style={s.label}>{billToLabel ?? tr.billTo}</Text>
-          {clientName && <Text style={s.name}>{clientName}</Text>}
-          {clientCompany && <Text style={s.detail}>{clientCompany}</Text>}
-          {clientRuc && <Text style={s.detail}>RUC: {clientRuc}</Text>}
-          {clientAddress && <Text style={s.detail}>{clientAddress}</Text>}
-          {clientEmail && <Text style={s.detail}>{clientEmail}</Text>}
-        </View>
-        <View style={s.block}>
-          <View style={s.dateRow}>
-            <Text style={s.dateLabel}>{tr.issueDate}</Text>
-            <Text style={s.dateValue}>{issueDate}</Text>
-          </View>
-          {secondDate && secondDateLabel && (
-            <View style={s.dateRow}>
-              <Text style={s.dateLabel}>{secondDateLabel}</Text>
-              <Text style={s.dateValue}>{secondDate}</Text>
-            </View>
-          )}
-        </View>
+    <>
+      {p.company && p.name && p.company !== p.name ? <Text style={s.detail}>{p.company}</Text> : null}
+      {p.ruc ? <Text style={s.detail}>RUC: {p.ruc}</Text> : null}
+      {p.address ? <Parrafos text={p.address} style={s.detail} /> : null}
+      {p.phone ? <Text style={s.detail}>Tel: {p.phone}</Text> : null}
+      {p.email ? <Text style={s.detail}>{p.email}</Text> : null}
+      {p.website ? <Text style={s.detail}>{p.website}</Text> : null}
+    </>
+  );
+}
+
+/** Las dos partes del documento en dos tarjetas (`.grid2` de `.card`): cliente a la izquierda, emisor a la derecha. */
+export function ClientBlock({ t, tr, billToLabel, client, company }: ClientBlockProps) {
+  const s = estilos(t);
+  const emisor: DatosParte = {
+    name: company?.name ?? "Pime Panamá",
+    ruc: company?.ruc ?? "1-NT-2-739436 DV71",
+    address: company?.address ? [company.address, company.city, company.country].filter(Boolean).join(", ") : null,
+    phone: company?.phone,
+    email: company?.email,
+    website: company?.website,
+  };
+  const nombre = client.name || client.company;
+  return (
+    <View style={s.row} wrap={false}>
+      <View style={s.block}>
+        <Text style={s.label}>{billToLabel ?? tr.billTo}</Text>
+        {nombre ? <Text style={s.name}>{nombre}</Text> : <Text style={s.empty}>—</Text>}
+        <Detalles p={client} s={s} />
+      </View>
+      <View style={s.gap} />
+      <View style={s.block}>
+        <Text style={s.label}>{tr.issuedBy}</Text>
+        <Text style={s.name}>{emisor.name}</Text>
+        <Detalles p={emisor} s={s} />
       </View>
     </View>
   );

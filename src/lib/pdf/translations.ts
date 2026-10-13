@@ -43,6 +43,17 @@ export type PdfTranslations = {
   acceptance: string;
   acceptanceText: string;
   paymentMethods: string;
+  issuedBy: string;
+  detail: string;
+  paidToDate: string;
+  balanceDue: string;
+  amountDue: string;
+  paidInFull: string;
+  quoteTotal: string;
+  paymentsReceived: string;
+  method: string;
+  reference: string;
+  currency: string;
 };
 
 const translations: Record<PdfLang, PdfTranslations> = {
@@ -89,6 +100,17 @@ const translations: Record<PdfLang, PdfTranslations> = {
     acceptance: "ACEPTACIÓN",
     acceptanceText: "Al firmar el presente documento, el cliente acepta los términos y condiciones de esta cotización.",
     paymentMethods: "FORMAS DE PAGO",
+    issuedBy: "EMITIDA POR",
+    detail: "DETALLE",
+    paidToDate: "PAGADO A LA FECHA",
+    balanceDue: "SALDO PENDIENTE",
+    amountDue: "TOTAL A PAGAR",
+    paidInFull: "PAGADA EN SU TOTALIDAD",
+    quoteTotal: "TOTAL DE LA PROPUESTA",
+    paymentsReceived: "ABONOS RECIBIDOS",
+    method: "MÉTODO",
+    reference: "REFERENCIA",
+    currency: "MONEDA",
   },
   en: {
     invoice: "INVOICE",
@@ -133,6 +155,17 @@ const translations: Record<PdfLang, PdfTranslations> = {
     acceptance: "ACCEPTANCE",
     acceptanceText: "By signing this document, the client accepts the terms and conditions of this quote.",
     paymentMethods: "PAYMENT METHODS",
+    issuedBy: "ISSUED BY",
+    detail: "DETAIL",
+    paidToDate: "PAID TO DATE",
+    balanceDue: "BALANCE DUE",
+    amountDue: "AMOUNT DUE",
+    paidInFull: "PAID IN FULL",
+    quoteTotal: "PROPOSAL TOTAL",
+    paymentsReceived: "PAYMENTS RECEIVED",
+    method: "METHOD",
+    reference: "REFERENCE",
+    currency: "CURRENCY",
   },
 };
 

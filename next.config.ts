@@ -3,7 +3,10 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
-const PDF_FONT_TRACE = ["./public/fonts/pdf/**/*"] as const;
+// Lo que los PDF leen de disco: fuentes .ttf y los logos de cada línea de marca (react-pdf no lee SVG).
+const PDF_FONT_TRACE = ["./public/fonts/pdf/**/*", "./public/brand/*.png"] as const;
+// El contrato en HTML (Chromium) incrusta su hoja de estilos, fuentes y logos SVG desde public/.
+const PDF_HTML_TRACE = [...PDF_FONT_TRACE, "./public/design-system/**/*", "./public/brand/*.svg"] as const;
 
 // pimepanama.com lo sirve pime-v2 y reenvía /empresa, /cliente, /firmar… a este proyecto. Next no deja
 // reenviar /_next/static (devuelve 404 antes de mirar los reenvíos), así que las páginas de este proyecto
@@ -27,7 +30,11 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/api/empresa/documents/[id]/pdf": [...PDF_FONT_TRACE],
     "/api/empresa/documents/preview": [...PDF_FONT_TRACE],
-    "/api/empresa/contracts/[id]/pdf": [...PDF_FONT_TRACE],
+    "/api/cliente/facturas/[id]": [...PDF_FONT_TRACE],
+    "/api/empresa/pagos/[id]/recibo": [...PDF_FONT_TRACE],
+    "/api/cliente/pagos/[id]/recibo": [...PDF_FONT_TRACE],
+    "/api/empresa/contracts/[id]/pdf": [...PDF_HTML_TRACE],
+    "/api/empresa/contracts/[id]/signing/send": [...PDF_HTML_TRACE],
     "/api/empresa/contracts/preview": [...PDF_FONT_TRACE],
     "/api/empresa/contracts/preview/html": [...PDF_FONT_TRACE],
     "/api/empresa/projects/[id]/proposal-pdf": [...PDF_FONT_TRACE],

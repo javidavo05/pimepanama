@@ -1,9 +1,11 @@
-import { Document, Page, View, StyleSheet } from "@react-pdf/renderer";
-import { pageStyles, COLORS, FONTS, SPACING } from "../tokens";
-import { t, fmtDate, documentStatusLabel, documentStatusVariant, type PdfLang } from "../translations";
-import { DocumentHeader } from "../components/document-header";
+import { Document, View } from "@react-pdf/renderer";
+import { t as traducir, fmtDate, fmtCurrency, documentStatusLabel, documentStatusVariant, type PdfLang } from "../translations";
+import { temaDe, type PdfLinea } from "../tema";
+import { DocPage } from "../components/doc-page";
+import { DocumentHeader, type MetaDato } from "../components/document-header";
 import { ClientBlock } from "../components/client-block";
-import { LineItemsTable } from "../components/line-items-table";
+import { LineItemsTable, TotalsBlock, calcularTotales, type LineItem } from "../components/line-items-table";
+import { AbonosTable, type AbonoPdf } from "../components/abonos-table";
 import { NotesBlock } from "../components/notes-block";
 import { PaymentInfoBlock } from "../components/payment-info-block";
 import { SignatureBlock } from "../components/signature-block";
@@ -11,80 +13,62 @@ import { DocumentFooter } from "../components/document-footer";
 import type { Document as PrismaDocument, CompanyConfig, PaymentMethod } from "@prisma/client";
 import { buildPdfPaymentMethods } from "../payment-methods";
 
-const s = StyleSheet.create({
-  // LAW: size must be LETTER (8.5" × 11"). NEVER A4.
-  page: {
-    ...pageStyles.page,
-    fontFamily: FONTS.body,
-    backgroundColor: COLORS.white,
-    color: COLORS.ink,
-    paddingBottom: 70,
-  },
-  body: {
-    paddingHorizontal: SPACING.page,
-    paddingTop: SPACING.lg,
-    flex: 1,
-    flexDirection: "column",
-  },
-  spacer: { flexGrow: 1 },
-});
-
 interface FacturaPdfProps {
   doc: PrismaDocument;
   company: Partial<CompanyConfig> | null;
-  logoSrc: string;
   paymentMethods?: PaymentMethod[];
+  /** Línea de marca del cliente de la factura (lineaDe(cliente)). */
+  linea: PdfLinea;
+  /** Abonos confirmados a la factura. Si hay, salen en su tabla y el destacado pasa a ser el saldo. */
+  abonos?: AbonoPdf[];
 }
 
-export function FacturaPdf({ doc, company, logoSrc, paymentMethods = [] }: FacturaPdfProps) {
+export function FacturaPdf({ doc, company, paymentMethods = [], linea, abonos = [] }: FacturaPdfProps) {
+  const t = temaDe(linea);
   const lang = (doc.language as PdfLang) ?? "es";
-  const tr = t(lang);
+  const tr = traducir(lang);
   const content = doc.content as Record<string, unknown>;
-  const lineItems = (content?.lineItems as never[]) ?? [];
+  const lineItems = (content?.lineItems as LineItem[]) ?? [];
   const notes = content?.notes as string | undefined;
   const currency = (doc.currency as string) ?? "USD";
-  const pdfPaymentMethods = buildPdfPaymentMethods(paymentMethods);
+  const { total } = calcularTotales(lineItems);
+  // Lo pagado: los abonos confirmados si los hay; si no, lo que la factura ya tiene conciliado.
+  const pagado = abonos.length > 0 ? abonos.reduce((a, b) => a + b.monto, 0) : Number(doc.amountPaid ?? 0);
+  const saldo = Math.max(0, Math.round((total - pagado) * 100) / 100);
+
+  const meta: MetaDato[] = [
+    { label: tr.issueDate, value: fmtDate(doc.issueDate, lang) },
+    ...(doc.dueDate ? [{ label: tr.dueDate, value: fmtDate(doc.dueDate, lang) }] : []),
+    { label: tr.total, value: fmtCurrency(total, lang, currency), strong: pagado <= 0.004 },
+    ...(pagado > 0.004 ? [{ label: tr.balanceDue, value: fmtCurrency(saldo, lang, currency), strong: true }] : []),
+  ];
 
   return (
-    <Document
-      title={`${tr.invoice} ${doc.number ?? ""}`}
-      author={company?.name ?? "PIME PANAMA"}
-      creator="Pime Communications Suite"
-    >
-      <Page size="LETTER" style={s.page}>
-        <DocumentHeader
-          config={company}
-          docLabel={tr.invoice}
-          docNumber={doc.number}
-          logoSrc={logoSrc}
-          statusLabel={documentStatusLabel(doc.status, lang)}
-          statusVariant={documentStatusVariant(doc.status)}
-        />
-        <View style={s.body}>
-          <ClientBlock
-            tr={tr}
-            clientName={doc.clientName}
-            clientCompany={doc.clientCompany}
-            clientAddress={doc.clientAddress}
-            clientEmail={doc.clientEmail}
-            clientRuc={doc.clientRuc}
-            issueDate={fmtDate(doc.issueDate, lang)}
-            secondDateLabel={doc.dueDate ? tr.dueDate : undefined}
-            secondDate={doc.dueDate ? fmtDate(doc.dueDate, lang) : undefined}
+    <Document title={`${tr.invoice} ${doc.number ?? ""}`} author={company?.name ?? "PIME PANAMA"} creator="Pime Communications Suite">
+        <DocPage t={t}>
+          <DocumentHeader t={t}
+            docLabel={tr.invoice}
+            docNumber={doc.number}
+            statusLabel={documentStatusLabel(doc.status, lang)}
+            statusVariant={documentStatusVariant(doc.status)}
+            meta={meta}
           />
-          <LineItemsTable
+          <ClientBlock t={t}
             tr={tr}
-            lang={lang}
-            items={lineItems}
-            currency={currency}
+            client={{ name: doc.clientName, company: doc.clientCompany, ruc: doc.clientRuc, address: doc.clientAddress, email: doc.clientEmail }}
+            company={company}
           />
-          <NotesBlock label={tr.notes} text={notes} />
-          <PaymentInfoBlock tr={tr} methods={pdfPaymentMethods} />
-          <View style={s.spacer} />
-          <SignatureBlock tr={tr} />
-        </View>
-        <DocumentFooter tr={tr} config={company} />
-      </Page>
+          <LineItemsTable t={t} tr={tr} lang={lang} items={lineItems} currency={currency} />
+          <TotalsBlock t={t} tr={tr} lang={lang} items={lineItems} currency={currency} paid={pagado} />
+          <AbonosTable t={t} tr={tr} lang={lang} abonos={abonos} currency={currency} />
+          <NotesBlock t={t} label={tr.notes} text={notes} />
+          {/* Formas de pago y firmas van juntas: las firmas nunca quedan solas en una página. */}
+          <View wrap={false}>
+            <PaymentInfoBlock t={t} tr={tr} methods={buildPdfPaymentMethods(paymentMethods)} />
+            <SignatureBlock t={t} tr={tr} />
+          </View>
+          <DocumentFooter t={t} tr={tr} config={company} />
+        </DocPage>
     </Document>
   );
 }

@@ -6,7 +6,7 @@ import { Readable } from "stream";
 import { renderToStream, type DocumentProps } from "@react-pdf/renderer";
 import type { ReactElement, JSXElementConstructor } from "react";
 import { prisma } from "@/lib/prisma";
-import { getLogoForPdf } from "@/lib/pdf/logo-loader";
+import { lineaDe } from "@/lib/pdf/linea";
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -20,7 +20,7 @@ export function numeroRecibo(factura: string | null, orden: number, pagoId: stri
 export async function datosRecibo(pagoId: string, where: { userId?: string; clientId?: string }) {
   const pago = await prisma.payment.findFirst({
     where: { id: pagoId, status: "confirmado", ...where },
-    include: { client: true, document: { select: { id: true, number: true, title: true, total: true, currency: true, language: true, userId: true } } },
+    include: { client: true, document: { select: { id: true, number: true, title: true, total: true, currency: true, language: true, userId: true, client: { select: { brandLine: true } } } } },
   });
   if (!pago) return null;
   // Abonos de la misma factura, por fecha: el orden da el número y el acumulado.
@@ -41,6 +41,8 @@ export async function datosRecibo(pagoId: string, where: { userId?: string; clie
     saldo: r2(Math.max(0, total - pagadoHasta)),
     moneda: pago.document?.currency ?? "USD",
     lang: (pago.document?.language === "en" ? "en" : "es") as "es" | "en",
+    // Línea de marca del cliente que pagó (o, si el pago no tiene cliente, la del cliente de la factura).
+    linea: lineaDe(pago.client ?? pago.document?.client),
     company,
   };
 }
@@ -48,9 +50,8 @@ export async function datosRecibo(pagoId: string, where: { userId?: string; clie
 type PdfElement = ReactElement<DocumentProps, string | JSXElementConstructor<unknown>>;
 
 export async function respuestaRecibo(d: NonNullable<DatosRecibo>, inline: boolean) {
-  const logoSrc = await getLogoForPdf(d.company);
   const { ReciboPdf } = await import("@/lib/pdf/templates/recibo-pdf");
-  const stream = await renderToStream(ReciboPdf({ d, logoSrc }) as PdfElement);
+  const stream = await renderToStream(ReciboPdf({ d, linea: d.linea }) as PdfElement);
   const nombre = `${d.numero}.pdf`.replace(/\s+/g, "-").replace(/[^\w.-]/g, "");
   return new Response(Readable.toWeb(stream as Readable) as ReadableStream, {
     headers: { "Content-Type": "application/pdf", "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${nombre}"`, "Cache-Control": "private, no-cache" },
