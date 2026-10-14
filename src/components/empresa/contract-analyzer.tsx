@@ -72,6 +72,8 @@ export type ContractAnalysis = {
 
 interface ContractAnalyzerProps {
   onAnalyzed: (result: ContractAnalysis) => void;
+  /** Para un proyecto que ya existe: el texto cambia y no se habla de crear el contrato. */
+  existingProject?: boolean;
 }
 
 const MAX_MB = 12;
@@ -94,7 +96,7 @@ const PAYMENT_PHRASE: Record<AnalyzedPayment["schedule"], string> = {
 };
 
 /** Resumen de lo que se precargó, para que se vea de un vistazo qué revisar. */
-function summarize(data: ContractAnalysis): string {
+function summarize(data: ContractAnalysis, existingProject: boolean): string {
   const source: ContractSourceType = data.sourceType ?? "OTHER";
   const phases = data.phases?.length ?? 0;
   const items = data.phases?.reduce((n, p) => n + p.deliverables.length, 0) ?? data.deliverables?.length ?? 0;
@@ -110,13 +112,15 @@ function summarize(data: ContractAnalysis): string {
     parts.push(`${PAYMENT_PHRASE[payment.schedule]}${split}`);
   }
   if (payment?.barter?.amount) parts.push("parte en canje");
-  const contract = source === "CONTRACT"
-    ? "El contrato queda activo."
-    : "El contrato queda como borrador para firmar.";
+  const contract = existingProject
+    ? "Revisa abajo qué se agrega al proyecto."
+    : source === "CONTRACT"
+      ? "El contrato queda activo."
+      : "El contrato queda como borrador para firmar.";
   return `${SOURCE_PHRASE[source] ?? SOURCE_PHRASE.OTHER}: ${parts.join(", ")}. ${contract}`;
 }
 
-export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
+export function ContractAnalyzer({ onAnalyzed, existingProject = false }: ContractAnalyzerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [pasted, setPasted] = useState("");
@@ -154,7 +158,7 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
         return;
       }
       onAnalyzed(data as ContractAnalysis);
-      setDone(summarize(data as ContractAnalysis));
+      setDone(summarize(data as ContractAnalysis, existingProject));
       setSummary(typeof data.documentSummary === "string" ? data.documentSummary : null);
       setAssumptions(Array.isArray(data.assumptions) ? data.assumptions : []);
     } catch {
@@ -185,10 +189,9 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
           ¿Tienes una propuesta, cotización o contrato?
         </h3>
         <p className="text-fg-faint text-xs mt-1">
-          Adjunta la propuesta, la cotización o el contrato y la IA arma el proyecto
-          completo: las fases, cada entregable, la forma de pago (50/50, cuotas o
-          canje) y un borrador del contrato. Si es una propuesta o cotización, el
-          contrato queda como borrador para firmar.
+          {existingProject
+            ? "Adjunta la propuesta, la cotización o el contrato de este proyecto y la IA lo lee completo: las fases, cada entregable, la forma de pago (50/50, cuotas o canje) y el contrato. Antes de guardar eliges qué se agrega."
+            : "Adjunta la propuesta, la cotización o el contrato y la IA arma el proyecto completo: las fases, cada entregable, la forma de pago (50/50, cuotas o canje) y un borrador del contrato. Si es una propuesta o cotización, el contrato queda como borrador para firmar."}
         </p>
       </div>
 
@@ -271,7 +274,9 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
       )}
 
       <p className="text-fg-ghost text-[10px]">
-        Revisa siempre lo redactado: la IA puede equivocarse y nada se guarda hasta que pulses crear.
+        {existingProject
+          ? "Revisa siempre lo redactado: la IA puede equivocarse y nada se guarda hasta que pulses agregar."
+          : "Revisa siempre lo redactado: la IA puede equivocarse y nada se guarda hasta que pulses crear."}
       </p>
     </div>
   );

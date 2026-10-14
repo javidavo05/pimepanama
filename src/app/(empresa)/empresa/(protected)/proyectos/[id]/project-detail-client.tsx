@@ -11,6 +11,7 @@ import { FREQUENCY_ADJECTIVE } from "@/lib/financing";
 import { ClientsPanel } from "./clients-panel";
 import { ProjectEditForm, type EditSection } from "./project-edit-form";
 import { DeliverablesPanel } from "./deliverables-panel";
+import { CompletarConDocumento } from "./completar-con-documento";
 import { ContractsPanel } from "./contracts-panel";
 import { RepoPanel } from "./repo-panel";
 import type { EstadoRepo } from "@/lib/github/estado-repo";
@@ -212,6 +213,18 @@ export function ProjectDetailClient({
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
               <div className="lg:col-span-2 space-y-6 min-w-0">
           {resumenPanel}
+          {/* Subir la propuesta, cotización o contrato y agregar lo que falta. */}
+          <CompletarConDocumento
+            projectId={project.id}
+            description={project.description}
+            scope={project.scope}
+            totalBudget={project.totalBudget}
+            hasPlan={project.financingPlan != null}
+            contractsCount={project.contracts.length}
+            phasesCount={project.phases.length}
+            deliverablesCount={project.deliverables.length}
+            endDate={project.endDate}
+          />
           {/* Description / Scope */}
           <div className="bg-panel border border-line rounded-xl p-6 space-y-4">
             {!project.description && !project.scope && !project.aiSummary ? (

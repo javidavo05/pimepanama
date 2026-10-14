@@ -6,7 +6,8 @@ import { useState, useRef } from "react";
 import { createProjectWithContractAction } from "@/app/(empresa)/empresa/actions";
 import { ClientCombobox } from "@/components/empresa/client-combobox";
 import { ContractAnalyzer, type ContractAnalysis } from "@/components/empresa/contract-analyzer";
-import { PhasesEditor, emptyPhase, type PhaseDraft } from "@/components/empresa/phases-editor";
+import { PhasesEditor, type PhaseDraft } from "@/components/empresa/phases-editor";
+import { alcanceDesdeDocumento, fasesDesdeDocumento, planDesdeDocumento } from "@/lib/proyectos/desde-documento";
 import { FinancingPlanner } from "@/components/empresa/financing-planner";
 import type { FinancingPlan } from "@/lib/financing";
 import { AiEnhanceButton } from "@/components/empresa/document-builder/ai-enhance-button";
@@ -171,14 +172,7 @@ export function ProjectBuilder({ clients, creatorName: _creatorName, preselectCl
   function applyAnalysis(a: ContractAnalysis) {
     if (a.projectName) setValue("name", a.projectName);
     if (a.description) setValue("description", a.description);
-    // El alcance lleva también las listas de incluye / no incluye: es lo que
-    // se consulta cuando el cliente pide algo que no estaba.
-    const scope = [
-      a.scope?.trim(),
-      a.scopeIncludes?.length ? `Incluye:\n${a.scopeIncludes.map((x) => `• ${x}`).join("\n")}` : "",
-      a.scopeExcludes?.length ? `No incluye:\n${a.scopeExcludes.map((x) => `• ${x}`).join("\n")}` : "",
-      a.durationText ? `Plazo: ${a.durationText}` : "",
-    ].filter(Boolean).join("\n\n");
+    const scope = alcanceDesdeDocumento(a);
     if (scope) setValue("scope", scope);
     if (a.startsAt) setValue("startDate", a.startsAt);
     if (a.endsAt) setValue("endDate", a.endsAt);
@@ -216,62 +210,26 @@ export function ProjectBuilder({ clients, creatorName: _creatorName, preselectCl
       terms: a.terms || c.terms,
     }));
 
-    const toDraft = (d: { name: string; description?: string | null; dueDate?: string | null }) => ({
-      name: d.name ?? "",
-      description: d.description ?? "",
-      dueDate: d.dueDate ?? "",
-    });
-    if (a.phases?.length) {
+    const fases = fasesDesdeDocumento(a);
+    if (fases.length) {
       setPhases(
-        a.phases.map((p) => ({
-          name: p.name,
-          description: [
-            p.optional ? "Fase opcional: se aprueba por separado." : "",
-            p.summary ?? "",
-            p.timeframe ? `Plazo: ${p.timeframe}.` : "",
-          ].filter(Boolean).join(" "),
-          price: p.amount != null ? String(p.amount) : "",
-          // Con precio propio se cobra al entregarla (las opcionales, al aprobarlas);
-          // sin precio propio el cobro va por el plan de pago del proyecto.
-          billingPoint: p.amount == null ? "sin_cobro" : p.optional ? "al_aprobar" : "al_entregar",
-          estimatedDays: p.estimatedDays ? String(Math.round(p.estimatedDays)) : "",
-          deliverables: p.deliverables.map(toDraft),
+        fases.map((f) => ({
+          name: f.name,
+          description: f.description,
+          price: f.price != null ? String(f.price) : "",
+          billingPoint: f.billingPoint,
+          estimatedDays: f.estimatedDays != null ? String(f.estimatedDays) : "",
+          deliverables: f.deliverables,
         }))
       );
-      setPhasesFromDocument(true);
-    } else if (a.deliverables?.length) {
-      setPhases([{ ...emptyPhase(1), deliverables: a.deliverables.map(toDraft) }]);
       setPhasesFromDocument(true);
     }
 
     // Forma de pago: hitos (50/50), abono + cuotas, y el canje si lo hay.
-    const pay = a.payment;
-    if (pay && (pay.schedule === "MILESTONES" || pay.schedule === "INSTALLMENTS" || pay.barter)) {
-      const total = a.value ?? (pay.cashAmount ?? 0) + (pay.barter?.amount ?? 0);
-      const delivery = a.endsAt ?? "";
+    const plan = planDesdeDocumento(a);
+    if (plan) {
       setFinancingEnabled(true);
-      setFinancing({
-        total,
-        barter: pay.barter?.amount ? { amount: pay.barter.amount, description: pay.barter.description } : null,
-        mode: pay.schedule === "INSTALLMENTS" ? "INSTALLMENTS" : "MILESTONES",
-        milestones:
-          pay.schedule === "INSTALLMENTS"
-            ? undefined
-            : (pay.milestones.length > 0
-                ? pay.milestones
-                : [{ description: "Pago único", percent: 100, trigger: "SIGNING" as const, dueDate: null }]
-              ).map((m) => ({
-                description: m.description,
-                percent: m.percent,
-                trigger: m.trigger,
-                // "A la entrega" sin fecha: la fecha estimada de fin del proyecto.
-                dueDate: m.dueDate ?? (m.trigger === "DELIVERY" ? delivery : ""),
-              })),
-        downPayment: pay.installments?.downPayment ?? 0,
-        installments: pay.installments?.count ?? 1,
-        frequency: pay.installments?.frequency ?? "MONTHLY",
-        firstDueDate: pay.installments?.firstDueDate ?? a.startsAt ?? "",
-      });
+      setFinancing(plan);
     }
   }
 
