@@ -16,6 +16,7 @@ export const campo = "w-full min-h-11 rounded-lg border border-line-mid bg-fill 
 export const etiqueta = "block text-fg-dim text-xs font-semibold uppercase tracking-widest mb-1.5";
 const errorBox = "rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger";
 const okBox = "rounded-lg border border-ok/30 bg-ok/10 px-3 py-2 text-sm text-ok";
+const avisoBox = "rounded-lg border border-warn/30 bg-warn/10 px-3 py-2 text-sm text-warn";
 
 function Mensajes({ estado }: { estado: Estado }) {
   if (!estado) return null;
@@ -23,7 +24,7 @@ function Mensajes({ estado }: { estado: Estado }) {
     <>
       {estado.error && <p className={errorBox} role="alert">{estado.error}</p>}
       {estado.ok && estado.mensaje && (
-        <p className={okBox} role="status">
+        <p className={estado.aviso ? avisoBox : okBox} role="status">
           {estado.mensaje}{" "}
           {estado.enlace?.startsWith("/") && <Link href={estado.enlace} className="font-semibold underline">Abrir</Link>}
         </p>

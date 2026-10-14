@@ -197,7 +197,7 @@ export async function invitarCompaneroAction(_: Estado, form: FormData): Promise
   const r = await invitarPersona({ empresaUserId: p.client.userId, clientId: p.clientId, email: String(form.get("email") ?? ""), fullName: texto(form.get("nombre"), 120), role: "miembro", invitadoPor: p.fullName || p.email, invitadoPorClientUserId: p.id });
   if (!r.ok) return { error: r.error };
   revalidatePath("/cliente/cuenta");
-  return { ok: true, mensaje: r.enviado ? "Invitación enviada." : "La invitación quedó lista, pero el correo no salió. Pide a Pime que la reenvíe." };
+  return { ok: true, mensaje: r.enviado ? "Invitación enviada." : "La invitación quedó lista, pero no se envió por correo. Pide a Pime el enlace para mandárselo." };
 }
 
 export async function quitarCompaneroAction(_: Estado, form: FormData): Promise<Estado> {

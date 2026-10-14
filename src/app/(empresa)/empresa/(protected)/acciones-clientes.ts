@@ -17,7 +17,7 @@ import { FASE_COBRO, FASE_ESTADOS, PAGO_METODOS, PROYECTO_TIPOS, TICKET_PRIORIDA
 import { dinero } from "@/lib/portal/datos";
 import { getSiteUrl } from "@/lib/site-url";
 
-export type Estado = { error?: string; ok?: boolean; mensaje?: string; enlace?: string } | null;
+export type Estado = { error?: string; ok?: boolean; mensaje?: string; enlace?: string; aviso?: boolean } | null;
 const txt = (v: FormDataEntryValue | null, max = 500) => String(v ?? "").trim().slice(0, max);
 const num = (v: FormDataEntryValue | null) => Number(String(v ?? "").replace(/[^\d.-]/g, ""));
 const falla = (e: unknown): Estado => ({ error: e instanceof Error ? e.message : "No se pudo completar." });
@@ -72,7 +72,15 @@ export async function invitarAlPortalAction(_: Estado, form: FormData): Promise<
   const r = await invitarPersona({ empresaUserId: u.id, clientId, email: txt(form.get("email"), 160), fullName: txt(form.get("nombre"), 120) || null, role: form.get("rol") === "miembro" ? "miembro" : "principal", invitadoPor: u.fullName || "El equipo de Pime" });
   if (!r.ok) return { error: r.error };
   refrescar(clientId);
-  return { ok: true, enlace: r.enlace, mensaje: r.enviado ? "Invitación enviada por correo. También puedes copiar el enlace." : "El correo no salió. Copia el enlace y envíalo tú." };
+  if (r.enviado) return { ok: true, enlace: r.enlace, mensaje: "Invitación enviada por correo. También puedes copiar el enlace." };
+  return {
+    ok: true,
+    aviso: true,
+    enlace: r.enlace,
+    mensaje: r.sinEnviar === "apagado"
+      ? "No se envió ningún correo: los envíos a clientes están apagados en Configuración → Clientes. La invitación quedó creada; copia el enlace y mándaselo tú."
+      : "La invitación quedó creada, pero el correo falló al enviarse. Copia el enlace y mándaselo tú.",
+  };
 }
 
 export async function restablecerAccesoAction(_: Estado, form: FormData): Promise<Estado> {
