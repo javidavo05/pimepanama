@@ -7,13 +7,13 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { btnPeligro, btnPrincipal, btnSecundario } from "@/components/portal/ui";
 import { IconEscudo } from "@/components/portal/iconos";
 import { campo, errorBox, etiqueta, okBox } from "@/components/auth/auth-shell";
+import { ClaveNueva } from "@/components/auth/campo-clave";
 
 export function CambiarClave() {
   const [estado, accion, enviando] = useActionState(cambiarClaveAction, null);
   return (
     <form action={accion} className="space-y-4">
-      <div><label htmlFor="clave" className={etiqueta}>Contraseña nueva</label><input id="clave" name="clave" type="password" autoComplete="new-password" minLength={10} required className={campo} /></div>
-      <div><label htmlFor="repetir" className={etiqueta}>Repítela</label><input id="repetir" name="repetir" type="password" autoComplete="new-password" minLength={10} required className={campo} /></div>
+      <ClaveNueva etiquetaClave="Contraseña nueva" etiquetaRepetir="Repítela" />
       {estado?.error && <p className={errorBox} role="alert">{estado.error}</p>}
       {estado?.ok && <p className={okBox} role="status">{estado.mensaje}</p>}
       <button type="submit" className={btnPrincipal} disabled={enviando}>{enviando ? "Guardando…" : "Cambiar contraseña"}</button>

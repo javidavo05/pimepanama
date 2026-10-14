@@ -1,5 +1,6 @@
 "use server";
 
+import { errorDeClave } from "@/lib/auth/reglas-clave";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { activarPersona, enviarRecuperacion } from "@/lib/portal/invitaciones";
@@ -32,7 +33,8 @@ export async function recuperarAction(_: Estado, form: FormData): Promise<Estado
 export async function nuevaClaveAction(_: Estado, form: FormData): Promise<Estado> {
   const th = String(form.get("th") ?? "");
   const clave = String(form.get("clave") ?? "");
-  if (clave.length < 10) return { error: "La contraseña necesita al menos 10 caracteres." };
+  const debil = errorDeClave(clave);
+  if (debil) return { error: debil };
   if (clave !== String(form.get("repetir") ?? "")) return { error: "Las dos contraseñas no coinciden." };
   const supabase = await createSupabaseServerClient();
   const { error: e1 } = await supabase.auth.verifyOtp({ type: "recovery", token_hash: th });

@@ -1,5 +1,6 @@
 "use server";
 
+import { errorDeClave } from "@/lib/auth/reglas-clave";
 /**
  * Acciones de la cuenta del cliente. Cada una vuelve a leer la sesión (getPortalUser) y filtra por
  * su clientId: nunca se confía en un id que llegue del navegador sin comprobar que es de ese cliente.
@@ -183,7 +184,8 @@ export async function reportarPagoAction(_: Estado, form: FormData): Promise<Est
 export async function cambiarClaveAction(_: Estado, form: FormData): Promise<Estado> {
   await getPortalUser();
   const clave = String(form.get("clave") ?? "");
-  if (clave.length < 10) return { error: "La contraseña necesita al menos 10 caracteres." };
+  const debil = errorDeClave(clave);
+  if (debil) return { error: debil };
   if (clave !== String(form.get("repetir") ?? "")) return { error: "Las dos contraseñas no coinciden." };
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.updateUser({ password: clave });

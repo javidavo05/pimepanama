@@ -10,6 +10,7 @@ import { getSiteUrl } from "@/lib/site-url";
 import { getPortalInvitationEmail, getPortalPasswordResetEmail } from "@/lib/email-templates";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { registrarEvento } from "./eventos";
+import { errorDeClave } from "@/lib/auth/reglas-clave";
 
 const DIAS_INVITACION = 7;
 export const hashToken = (t: string) => createHash("sha256").update(t).digest("hex");
@@ -99,7 +100,8 @@ export async function validarInvitacion(token: string | null | undefined): Promi
 
 /** Crea la cuenta de Supabase (o la vincula si ya existe) y deja a la persona activa. */
 export async function activarPersona(token: string, fullName: string, password: string): Promise<{ ok: true; email: string } | { ok: false; error: string }> {
-  if (password.length < 10) return { ok: false, error: "La contraseña necesita al menos 10 caracteres." };
+  const debil = errorDeClave(password);
+  if (debil) return { ok: false, error: debil };
   const v = await validarInvitacion(token);
   if (!v.ok) return v;
   const { persona, invitacionId } = v.data;

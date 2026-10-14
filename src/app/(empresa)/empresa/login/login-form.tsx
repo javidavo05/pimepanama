@@ -6,6 +6,7 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { FingerprintIcon } from "@/components/empresa/fingerprint-icon";
 import { biometricLabel, loginWithPasskey, passkeysSupported } from "@/lib/passkeys-client";
 import { botonPrincipal, botonSecundario, campo, errorBox, etiqueta } from "@/components/auth/auth-shell";
+import { CampoClave } from "@/components/auth/campo-clave";
 
 export function EmpresaLoginForm() {
   const router = useRouter();
@@ -52,7 +53,7 @@ export function EmpresaLoginForm() {
         </div>
         <div>
           <label htmlFor="login-clave" className={etiqueta}>Contraseña</label>
-          <input id="login-clave" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" className={campo} />
+          <CampoClave id="login-clave" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" className={campo} />
         </div>
         {error && <p className={errorBox} role="alert">{error}</p>}
         <button type="submit" disabled={cargando !== null} className={bioLabel ? botonSecundario : botonPrincipal}>

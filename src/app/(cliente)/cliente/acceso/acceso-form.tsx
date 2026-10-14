@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { botonPrincipal, botonSecundario, campo, errorBox, etiqueta } from "@/components/auth/auth-shell";
+import { CampoClave } from "@/components/auth/campo-clave";
 import { cerrarSesion } from "@/components/auth/totp";
 
 export function AccesoForm({ conSesion }: { conSesion: boolean }) {
@@ -28,7 +29,7 @@ export function AccesoForm({ conSesion }: { conSesion: boolean }) {
       </div>
       <div>
         <label htmlFor="clave" className={etiqueta}>Contraseña</label>
-        <input id="clave" type="password" autoComplete="current-password" required className={campo} value={clave} onChange={(e) => setClave(e.target.value)} />
+        <CampoClave id="clave" autoComplete="current-password" required className={campo} value={clave} onChange={(e) => setClave(e.target.value)} />
         <div className="flex justify-end"><a href="/cliente/recuperar" className="inline-flex items-center min-h-11 text-xs font-semibold text-brand-fg hover:underline">Olvidé mi contraseña</a></div>
       </div>
       {error && <p className={errorBox} role="alert">{error}</p>}
