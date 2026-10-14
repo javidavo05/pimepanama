@@ -38,5 +38,5 @@ export async function enviosClientesAction(_: EstadoConfig, form: FormData): Pro
   const encender = form.get("encender") === "1";
   await prisma.companyConfig.update({ where: { id: u.configId }, data: { clientEmailsEnabled: encender } });
   refrescar();
-  return { ok: true, mensaje: encender ? "Envíos a clientes encendidos." : "Envíos a clientes apagados. No sale ningún correo a clientes." };
+  return { ok: true, mensaje: encender ? "Correos automáticos a clientes encendidos." : "Correos automáticos apagados. Lo que mandes tú con un botón sigue saliendo." };
 }

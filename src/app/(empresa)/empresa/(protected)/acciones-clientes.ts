@@ -5,7 +5,7 @@
  * (invitar, restablecer, quitar acceso), tickets, horas, facturas de horas, pagos, fases y órdenes
  * de cambio. Todas pasan por getEmpresaUser (equipo + doble verificación) y filtran por su userId.
  */
-import { enviarAlCliente, enviosAClientesActivos } from "@/lib/motor/envios";
+import { enviarAlCliente } from "@/lib/motor/envios";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
@@ -78,7 +78,7 @@ export async function invitarAlPortalAction(_: Estado, form: FormData): Promise<
     aviso: true,
     enlace: r.enlace,
     mensaje: r.sinEnviar === "apagado"
-      ? "No se envió ningún correo: los envíos a clientes están apagados en Configuración → Clientes. La invitación quedó creada; copia el enlace y mándaselo tú."
+      ? "No se envió el correo: los envíos a clientes están bloqueados en el servidor (PIME_ENVIOS_CLIENTES=off). La invitación quedó creada; copia el enlace y mándaselo tú."
       : "La invitación quedó creada, pero el correo falló al enviarse. Copia el enlace y mándaselo tú.",
   };
 }
@@ -331,18 +331,19 @@ export async function guardarOrdenAction(_: Estado, form: FormData): Promise<Est
     data: { userId: u.id, projectId: p.id, clientId, ticketId, title: titulo, description: descripcion, total, status: enviar ? "enviada" : "borrador", sentAt: enviar ? new Date() : null,
       phases: { create: fases.map((f, i) => ({ ...f, projectId: p.id, sortOrder: 1000 + i })) } },
   });
+  let avisada = false;
   if (enviar) {
     await registrarEvento({ userId: u.id, clientId, projectId: p.id, entityType: "orden_de_cambio", entityId: o.id, kind: "orden_enviada", title: `Te enviamos la orden de cambio ${o.number}: ${titulo}`, detail: `Total ${dinero(total)}. Espera tu decisión.`, visibility: "cliente", actorEmpresaUserId: u.id });
     const personas = await prisma.clientUser.findMany({ where: { clientId, status: "activo" }, select: { email: true } });
     if (personas.length) {
       const { getPortalTicketUpdateEmail } = await import("@/lib/email-templates");
       const c = getPortalTicketUpdateEmail({ number: o.number, title: titulo, status: "Espera tu aprobación", message: `${descripcion ?? ""}\n\nTotal: ${dinero(total)}`.trim(), link: `${getSiteUrl()}/cliente/cambios/${o.id}` });
-      await enviarAlCliente({ to: personas.map((x) => x.email), subject: `Orden de cambio ${o.number} · ${titulo}`, html: c.html, motivo: `orden ${o.number}` }).catch((e) => console.error("[orden] correo", e));
+      await enviarAlCliente({ to: personas.map((x) => x.email), subject: `Orden de cambio ${o.number} · ${titulo}`, html: c.html, motivo: `orden ${o.number}`, manual: true }).then((r) => { avisada = r.enviado; }).catch((e) => console.error("[orden] correo", e));
     }
   }
   revalidatePath(`/empresa/proyectos/${p.id}`);
   refrescar(clientId);
-  return { ok: true, mensaje: enviar ? `Orden ${o.number} publicada en la cuenta del cliente${(await enviosAClientesActivos()) ? " y avisada por correo" : " (los correos a clientes están apagados)"}.` : `Orden ${o.number} guardada en borrador.` };
+  return { ok: true, mensaje: enviar ? `Orden ${o.number} publicada en la cuenta del cliente${avisada ? " y avisada por correo" : " (sin correo: el cliente todavía no tiene cuenta activa o el envío falló)"}.` : `Orden ${o.number} guardada en borrador.` };
 }
 
 export async function enviarOrdenAction(_: Estado, form: FormData): Promise<Estado> {
