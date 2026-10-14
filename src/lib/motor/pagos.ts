@@ -1,6 +1,6 @@
 /**
  * Todo pago queda con su factura (pedido del 2026-10-12): la factura se emite (no queda en borrador) y queda
- * en la cuenta del cliente para descargar. No se le envía nada: los envíos a clientes siguen apagados.
+ * en la cuenta del cliente para descargar. El recibo no se envía por correo: queda en su cuenta.
  *   - Pago de una fase: se abona a la factura de la fase; si no tiene, se emite la de la fase por su precio.
  *   - Pago de un proyecto: se abona a una factura abierta del proyecto que alcance; si no hay, se emite una
  *     por el monto del pago, dentro del proyecto, ya pagada.

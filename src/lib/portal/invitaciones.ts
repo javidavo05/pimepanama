@@ -15,8 +15,8 @@ const DIAS_INVITACION = 7;
 export const hashToken = (t: string) => createHash("sha256").update(t).digest("hex");
 const correoValido = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
-/** sinEnviar: "apagado" = envíos bloqueados en el servidor (PIME_ENVIOS_CLIENTES=off); "error" = Resend falló. */
-export type ResultadoInvitacion = { ok: true; enlace: string; enviado: boolean; sinEnviar?: "apagado" | "error"; clientUserId: string } | { ok: false; error: string };
+/** errorEnvio: por qué no salió el correo (lo que respondió Resend); la invitación queda creada igual. */
+export type ResultadoInvitacion = { ok: true; enlace: string; enviado: boolean; errorEnvio?: string; clientUserId: string } | { ok: false; error: string };
 
 /** Invita (o vuelve a invitar) a una persona del cliente. Deja sin efecto las invitaciones anteriores. */
 export async function invitarPersona(opts: {
@@ -64,22 +64,21 @@ export async function invitarPersona(opts: {
 
   const enlace = `${getSiteUrl()}/cliente/activar?token=${token}`;
   let enviado = false;
-  let sinEnviar: "apagado" | "error" | undefined;
+  let errorEnvio: string | undefined;
   try {
     const correo = getPortalInvitationEmail({ name: persona.fullName, company: client.company || client.name, link: enlace, invitedBy: opts.invitadoPor });
-    const r = await enviarAlCliente({ to: email, subject: correo.subject, html: correo.html, motivo: `invitación ${email}`, manual: true });
+    const r = await enviarAlCliente({ to: email, subject: correo.subject, html: correo.html, motivo: `invitación ${email}` });
     enviado = r.enviado;
-    if (r.bloqueado) sinEnviar = "apagado";
   } catch (e) {
     console.error("[portal] invitación sin enviar", e);
-    sinEnviar = "error";
+    errorEnvio = e instanceof Error ? e.message : "error desconocido";
   }
   await registrarEvento({
     userId: opts.empresaUserId, clientId: client.id, entityType: "cuenta", entityId: persona.id, kind: "invitacion",
-    title: `Invitación a ${email}${enviado ? "" : sinEnviar === "apagado" ? " (correo no enviado: envíos bloqueados en el servidor)" : " (el correo falló: copia el enlace)"}`, visibility: "interno",
+    title: `Invitación a ${email}${enviado ? "" : ` (el correo falló: ${errorEnvio ?? "sin detalle"})`}`, visibility: "interno",
     actorType: opts.invitadoPorClientUserId ? "cliente" : "pime", actorClientUserId: opts.invitadoPorClientUserId ?? null,
   });
-  return { ok: true, enlace, enviado, sinEnviar, clientUserId: persona.id };
+  return { ok: true, enlace, enviado, errorEnvio, clientUserId: persona.id };
 }
 
 export type InvitacionValida = { invitacionId: string; persona: { id: string; email: string; fullName: string | null; status: string }; cliente: { id: string; name: string; company: string | null; brandLine: string } };
@@ -139,5 +138,5 @@ export async function enviarRecuperacion(emailCrudo: string): Promise<void> {
   const th = data?.properties?.hashed_token;
   if (error || !th) { console.error("[portal] recuperación", error); return; }
   const correo = getPortalPasswordResetEmail({ name: persona.fullName, link: `${getSiteUrl()}/cliente/nueva-clave?th=${encodeURIComponent(th)}` });
-  try { await enviarAlCliente({ to: email, subject: correo.subject, html: correo.html, motivo: "recuperación de clave", manual: true }); } catch (e) { console.error("[portal] recuperación sin enviar", e); }
+  try { await enviarAlCliente({ to: email, subject: correo.subject, html: correo.html, motivo: "recuperación de clave" }); } catch (e) { console.error("[portal] recuperación sin enviar", e); }
 }

@@ -35,7 +35,7 @@ Pagos y facturas:
 - Si dicen de qué fase es el pago («fase 3»), busca la fase con ver_fases y usa pago_registrar con su faseId. Si no dicen fase pero el cliente tiene un solo proyecto activo, usa su proyectoId.
 - Todo pago queda con su factura emitida en la cuenta del cliente, lista para descargar: la de la fase, una abierta del proyecto o una nueva por el monto. No preguntes si facturar. En la respuesta di qué factura quedó (número).
 - pago_registrar no repite un pago igual (mismo cliente, fecha y monto). Si te dice que ya existe, no insistas: dilo.
-- Nunca envías correos, invitaciones ni mensajes a clientes: están apagados. Si te lo piden, dilo y deja todo listo en su cuenta.
+- Tú no envías correos, invitaciones ni mensajes a clientes: no tienes herramienta para eso. Si te lo piden, dilo y deja todo listo en su cuenta; la invitación se manda desde la ficha del cliente.
 
 Fases y proyectos:
 - Las fases van fuera del contrato salvo que digan lo contrario. «Crea la fase 4 de 800 en curso» → fase_crear con nombre «Fase 4», precio 800, estado en_curso. Usa el nombre que diga la persona («Fase 3 · Escuelas»).

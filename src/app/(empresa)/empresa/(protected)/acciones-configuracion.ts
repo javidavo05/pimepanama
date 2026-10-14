@@ -31,12 +31,3 @@ export async function cambiarLineaAction(clientId: string, linea: "normal" | "pr
   revalidatePath(`/empresa/clientes/${c.id}`);
   return { ok: true };
 }
-
-export async function enviosClientesAction(_: EstadoConfig, form: FormData): Promise<EstadoConfig> {
-  const u = await getEmpresaUser();
-  if (!u.configId) return { error: "Primero guarda los datos de la empresa en Configuración." };
-  const encender = form.get("encender") === "1";
-  await prisma.companyConfig.update({ where: { id: u.configId }, data: { clientEmailsEnabled: encender } });
-  refrescar();
-  return { ok: true, mensaje: encender ? "Correos automáticos a clientes encendidos." : "Correos automáticos apagados. Lo que mandes tú con un botón sigue saliendo." };
-}

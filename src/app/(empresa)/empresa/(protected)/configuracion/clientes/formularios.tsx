@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useOptimistic, useState, useTransition } from "react";
-import { cambiarLineaAction, enviosClientesAction, guardarTarifasAction, type EstadoConfig } from "../../acciones-configuracion";
+import { cambiarLineaAction, guardarTarifasAction, type EstadoConfig } from "../../acciones-configuracion";
 import { btn } from "@/components/empresa/page-header";
 
 const errorBox = "rounded-lg border border-danger/30 bg-danger/10 px-3 py-2 text-sm text-danger";
@@ -50,45 +50,6 @@ export function LineaCliente({ clientId, linea }: { clientId: string; linea: "no
         ))}
       </div>
       {error && <p className="text-danger text-xs" role="alert">{error}</p>}
-    </div>
-  );
-}
-
-export function EnviosClientes({ encendidos, bloqueado = false }: { encendidos: boolean; bloqueado?: boolean }) {
-  const [estado, accion, enviando] = useActionState(enviosClientesAction, null);
-  const [seguro, setSeguro] = useState(false);
-  return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-fg text-base font-semibold">Correos automáticos a clientes</h2>
-        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${encendidos ? "bg-ok/10 text-ok" : "bg-warn/10 text-warn"}`}>{encendidos ? "Encendidos" : "Apagados"}</span>
-      </div>
-      <p className="text-fg-dim text-sm">
-        {encendidos
-          ? "Salen solos los recordatorios de cobro y los avisos de tickets. Lo que mandas tú con un botón (invitaciones, órdenes de cambio) sale siempre."
-          : "No sale ningún correo automático: recordatorios de cobro y avisos de tickets se guardan, pero no se envían. Lo que mandas tú con un botón (invitaciones, órdenes de cambio) y la recuperación de clave sí salen."}
-      </p>
-      {bloqueado ? (
-        <p className="rounded-xl bg-fill px-4 py-3 text-sm text-fg-mute">Bloqueados en el servidor (PIME_ENVIOS_CLIENTES=off en Vercel): no sale ningún correo a clientes, ni los manuales. Para encenderlos hay que quitar esa variable primero.</p>
-      ) : (
-      <form action={accion} className="space-y-3">
-        <input type="hidden" name="encender" value={encendidos ? "0" : "1"} />
-        {encendidos ? (
-          <button className={btn.secondary} disabled={enviando}>{enviando ? "Apagando…" : "Apagar correos automáticos"}</button>
-        ) : seguro ? (
-          <div className="rounded-xl border border-warn/40 bg-warn/5 p-4 space-y-3">
-            <p className="text-fg text-sm">Desde ahora, los clientes con cuenta reciben recordatorios de cobro y avisos de tickets automáticos. ¿Encender?</p>
-            <div className="flex flex-wrap gap-2">
-              <button type="button" className={btn.secondary} onClick={() => setSeguro(false)}>Dejar apagados</button>
-              <button className={btn.primary} disabled={enviando}>{enviando ? "Encendiendo…" : "Encender correos automáticos"}</button>
-            </div>
-          </div>
-        ) : (
-          <button type="button" className={btn.secondary} onClick={() => setSeguro(true)}>Encender correos automáticos</button>
-        )}
-        <Mensajes e={estado} />
-      </form>
-      )}
     </div>
   );
 }

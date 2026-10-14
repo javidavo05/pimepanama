@@ -66,21 +66,24 @@ export async function guardarClienteAction(_: Estado, form: FormData): Promise<E
   redirect(`/empresa/clientes/${clientId}`);
 }
 
+/** Lo que se le dice a quien invitó: enviada, o creada pero con el motivo exacto por el que el correo no salió. */
+function resultadoInvitacion(r: { enlace: string; enviado: boolean; errorEnvio?: string }, ok: string): Estado {
+  if (r.enviado) return { ok: true, enlace: r.enlace, mensaje: ok };
+  return {
+    ok: true,
+    aviso: true,
+    enlace: r.enlace,
+    mensaje: `La invitación quedó creada, pero el correo no salió (${r.errorEnvio ?? "sin detalle"}). Copia el enlace y mándaselo tú.`,
+  };
+}
+
 export async function invitarAlPortalAction(_: Estado, form: FormData): Promise<Estado> {
   const u = await getEmpresaUser();
   const clientId = txt(form.get("clientId"), 60);
   const r = await invitarPersona({ empresaUserId: u.id, clientId, email: txt(form.get("email"), 160), fullName: txt(form.get("nombre"), 120) || null, role: form.get("rol") === "miembro" ? "miembro" : "principal", invitadoPor: u.fullName || "El equipo de Pime" });
   if (!r.ok) return { error: r.error };
   refrescar(clientId);
-  if (r.enviado) return { ok: true, enlace: r.enlace, mensaje: "Invitación enviada por correo. También puedes copiar el enlace." };
-  return {
-    ok: true,
-    aviso: true,
-    enlace: r.enlace,
-    mensaje: r.sinEnviar === "apagado"
-      ? "No se envió el correo: los envíos a clientes están bloqueados en el servidor (PIME_ENVIOS_CLIENTES=off). La invitación quedó creada; copia el enlace y mándaselo tú."
-      : "La invitación quedó creada, pero el correo falló al enviarse. Copia el enlace y mándaselo tú.",
-  };
+  return resultadoInvitacion(r, "Invitación enviada por correo. También puedes copiar el enlace.");
 }
 
 export async function restablecerAccesoAction(_: Estado, form: FormData): Promise<Estado> {
@@ -89,7 +92,7 @@ export async function restablecerAccesoAction(_: Estado, form: FormData): Promis
   if (!p) return { error: "No encontré a esa persona." };
   if (p.status === "invitado") {
     const r = await invitarPersona({ empresaUserId: u.id, clientId: p.clientId, email: p.email, invitadoPor: u.fullName });
-    return r.ok ? { ok: true, mensaje: "Invitación reenviada.", enlace: r.enlace } : { error: r.error };
+    return r.ok ? resultadoInvitacion(r, `Invitación reenviada a ${p.email}.`) : { error: r.error };
   }
   await enviarRecuperacion(p.email);
   await registrarEvento({ userId: u.id, clientId: p.clientId, entityType: "cuenta", entityId: p.id, kind: "recuperacion", title: `Enviamos a ${p.email} un enlace para cambiar la contraseña`, visibility: "interno", actorEmpresaUserId: u.id });
@@ -338,7 +341,7 @@ export async function guardarOrdenAction(_: Estado, form: FormData): Promise<Est
     if (personas.length) {
       const { getPortalTicketUpdateEmail } = await import("@/lib/email-templates");
       const c = getPortalTicketUpdateEmail({ number: o.number, title: titulo, status: "Espera tu aprobación", message: `${descripcion ?? ""}\n\nTotal: ${dinero(total)}`.trim(), link: `${getSiteUrl()}/cliente/cambios/${o.id}` });
-      await enviarAlCliente({ to: personas.map((x) => x.email), subject: `Orden de cambio ${o.number} · ${titulo}`, html: c.html, motivo: `orden ${o.number}`, manual: true }).then((r) => { avisada = r.enviado; }).catch((e) => console.error("[orden] correo", e));
+      await enviarAlCliente({ to: personas.map((x) => x.email), subject: `Orden de cambio ${o.number} · ${titulo}`, html: c.html, motivo: `orden ${o.number}` }).then((r) => { avisada = r.enviado; }).catch((e) => console.error("[orden] correo", e));
     }
   }
   revalidatePath(`/empresa/proyectos/${p.id}`);

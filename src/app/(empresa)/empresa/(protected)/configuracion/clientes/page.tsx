@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { reglasDe, tarifaDe } from "@/lib/portal/horas";
 import { saldoCliente } from "@/lib/portal/saldo";
 import { dinero } from "@/lib/portal/datos";
-import { EnviosClientes, LineaCliente, TarifasForm } from "./formularios";
+import { LineaCliente, TarifasForm } from "./formularios";
 
 export const metadata = { title: "Clientes Normal y Premium — Pime Suite" };
 
@@ -20,8 +20,6 @@ export default async function ConfigClientesPage() {
   });
   const filas = clientes.map((c) => ({ ...c, facturado: saldoCliente(c.documents, c.payments).facturado, tarifa: tarifaDe(c, reglas) })).sort((a, b) => b.facturado - a.facturado);
   const premium = filas.filter((c) => c.brandLine === "premium").length;
-  const bloqueado = process.env.PIME_ENVIOS_CLIENTES === "off";
-  const envios = !bloqueado && !!u.config?.clientEmailsEnabled;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -30,17 +28,13 @@ export default async function ConfigClientesPage() {
       </nav>
       <div>
         <h1 className="text-fg text-2xl font-semibold tracking-tight">Clientes Normal y Premium</h1>
-        <p className="text-fg-dim text-sm mt-1">La tarifa por hora de cada línea, en qué línea está cada cliente y si Pime les escribe.</p>
+        <p className="text-fg-dim text-sm mt-1">La tarifa por hora de cada línea y en qué línea está cada cliente.</p>
       </div>
 
       <section className={card}>
         <h2 className="text-fg text-base font-semibold">Tarifa por hora</h2>
         <p className="text-fg-dim text-sm mt-1">Un cliente con tarifa propia mantiene la suya. Las horas ya registradas no cambian.</p>
         <div className="mt-4"><TarifasForm normal={reglas.tarifaNormal} premium={reglas.tarifaPremium} /></div>
-      </section>
-
-      <section className={`${card} ${envios ? "" : "border-warn/40"}`}>
-        <EnviosClientes encendidos={envios} bloqueado={bloqueado} />
       </section>
 
       <section className={card}>
