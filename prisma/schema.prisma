@@ -606,6 +606,9 @@ model Deliverable {
   sortOrder    Int                 @default(0)
   /// MANUAL | AI_CONTRACT — de dónde salió el entregable
   source       String              @default("MANUAL")
+  /// Fase a la que pertenece; null = sin fase
+  phaseId      String?
+  phase        ProjectPhase?       @relation(fields: [phaseId], references: [id], onDelete: SetNull)
   meetingItems MeetingActionItem[]
   meetings     Meeting[]           @relation("MeetingDeliverable")
   createdAt    DateTime            @default(now())
@@ -613,6 +616,7 @@ model Deliverable {
 
   @@index([projectId])
   @@index([projectId, sortOrder])
+  @@index([phaseId])
 }
 
 /// Sección del tablero de tareas de un proyecto ("Por hacer", "Diseño"...)
@@ -1441,6 +1445,7 @@ model ProjectPhase {
   invoiceId       String?
   invoice         Document?    @relation(fields: [invoiceId], references: [id])
   payments        Payment[]
+  deliverables    Deliverable[]
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 

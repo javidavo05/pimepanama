@@ -29,6 +29,7 @@ const LECTURA: Def[] = [
   def("buscar_proyecto", "Busca proyectos por nombre aproximado, opcionalmente de un cliente. Sin texto lista los del cliente.", { texto: STR, clienteId: STR }),
   def("estado_proyecto", "Fases (con ids, precio, estado, factura y pagos), avance, dinero, plan de pagos y actividad de GitHub de un proyecto.", { proyectoId: STR }, ["proyectoId"]),
   def("ver_fases", "Fases de un proyecto con su id, número de orden, precio, estado, avance, factura y lo pagado.", { proyectoId: STR }, ["proyectoId"]),
+  def("ver_entregables", "Entregables de un proyecto agrupados por fase, con entregableId, faseId, nombre, detalle, fecha y si está hecho.", { proyectoId: STR }, ["proyectoId"]),
   def("ver_pagos", "Pagos registrados de un cliente o de un proyecto, con id, fecha, monto, fase y factura. desde/hasta en YYYY-MM-DD.", { clienteId: STR, proyectoId: STR, desde: STR, hasta: STR }),
   def("ver_facturas", "Facturas de un cliente o proyecto con id, número, estado, total, pagado y lo que falta.", { clienteId: STR, proyectoId: STR }),
   def("ver_cuotas", "Cuotas del plan de pagos de un proyecto o de una factura, con id, monto, fecha y estado.", { proyectoId: STR, facturaId: STR }),
@@ -94,6 +95,17 @@ async function leer(u: U, nombreHerr: string, a: Args): Promise<unknown> {
       const dinero = await dineroDeProyecto(userId, p.id);
       const g = p.githubCheck as { commits7?: number; commits30?: number; ultimoCommit?: { mensaje: string; fecha: string } | null } | null;
       return { proyecto: p.name, cliente: nombre(p.client), estado: p.status, avance: `${Math.round(avanceDeProyecto(p.phases))} %`, fases, plan: isFinancingPlan(p.financingPlan) ? p.financingPlan : null, dinero: dinero && { presupuesto: usd(dinero.presupuesto), facturado: usd(dinero.facturado), cobrado: usd(dinero.cobrado), porCobrar: usd(dinero.porCobrar) }, github: p.repoName ? (g ? { verificado: p.githubCheckAt, commits7: g.commits7, commits30: g.commits30, ultimoCambio: g.ultimoCommit } : "Ligado pero sin verificar todavía") : "Sin repositorio" };
+    }
+    case "ver_entregables": {
+      const p = await prisma.project.findFirst({ where: { id: s("proyectoId"), userId }, select: { name: true, phases: { orderBy: { sortOrder: "asc" }, select: { id: true, name: true } }, deliverables: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { id: true, name: true, description: true, dueDate: true, completed: true, phaseId: true } } } });
+      if (!p) return { error: "No encontré ese proyecto." };
+      const fila = (d: (typeof p.deliverables)[number]) => ({ entregableId: d.id, nombre: d.name, detalle: d.description, fecha: dia(d.dueDate), hecho: d.completed });
+      const sinFase = p.deliverables.filter((d) => !d.phaseId || !p.phases.some((f) => f.id === d.phaseId));
+      return {
+        proyecto: p.name,
+        fases: p.phases.map((f) => ({ faseId: f.id, fase: f.name, entregables: p.deliverables.filter((d) => d.phaseId === f.id).map(fila) })),
+        ...(sinFase.length ? { sinFase: sinFase.map(fila) } : {}),
+      };
     }
     case "ver_pagos": {
       if (!s("clienteId") && !s("proyectoId")) return { error: "Dime el cliente o el proyecto." };

@@ -55,6 +55,13 @@ export interface Deliverable {
   completed: boolean;
   completedAt: string | null;
   source: string;
+  phaseId: string | null;
+}
+
+/** Lo mínimo de una fase para agrupar entregables; el resto vive en FasesPanel. */
+export interface ProjectPhaseRef {
+  id: string;
+  name: string;
 }
 
 export interface ProjectClientRef {
@@ -80,6 +87,7 @@ export interface Project {
   financingPlan: FinancingPlan | null;
   clients: ProjectClientRef[];
   deliverables: Deliverable[];
+  phases: ProjectPhaseRef[];
   meetings: ProjectMeeting[];
   contracts: Contract[];
   documents: ProjectDocument[];

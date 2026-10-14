@@ -299,8 +299,10 @@ export const OPERACIONES: Record<string, Op> = {
     async ejecutar(u, p) {
       const f = await prisma.projectPhase.findFirstOrThrow({ where: { id: String(p.faseId), project: { userId: u.id } } });
       const pagos = await prisma.payment.findMany({ where: { phaseId: f.id }, select: { id: true } });
+      // Sus entregables quedan sin fase (SET NULL); al deshacer vuelven a ella.
+      const entregables = await prisma.deliverable.findMany({ where: { phaseId: f.id }, select: { id: true } });
       await prisma.projectPhase.delete({ where: { id: f.id } });
-      return { pasos: [...pagos.map((x) => ({ t: "editar" as const, m: "payment" as const, id: x.id, antes: { phaseId: f.id } })), { t: "borrar" as const, m: "projectPhase" as const, fila: filaParaGuardar(f as unknown as Args) }], resultType: "fase", resultId: f.id, href: `/empresa/proyectos/${f.projectId}?tab=fases` };
+      return { pasos: [...pagos.map((x) => ({ t: "editar" as const, m: "payment" as const, id: x.id, antes: { phaseId: f.id } })), ...entregables.map((x) => ({ t: "editar" as const, m: "deliverable" as const, id: x.id, antes: { phaseId: f.id } })), { t: "borrar" as const, m: "projectPhase" as const, fila: filaParaGuardar(f as unknown as Args) }], resultType: "fase", resultId: f.id, href: `/empresa/proyectos/${f.projectId}?tab=fases` };
     },
   },
 
@@ -411,6 +413,75 @@ export const OPERACIONES: Record<string, Op> = {
       return { pasos, resultType: "pago", resultId: pg.id, href: `/empresa/facturas/${f.id}`, datos: { facturaId: f.id, facturaNueva: f.creada } };
     },
   },
+  // Entregables (cuelgan de una fase; salen de la propuesta al crear el proyecto)
+  entregable_crear: {
+    def: def("entregable_crear", "Agrega un entregable a un proyecto, en una fase (faseId de ver_fases) o sin fase. fecha en YYYY-MM-DD.", P({ proyectoId: STR, nombre: STR, detalle: STR, faseId: STR, fecha: STR }), ["proyectoId", "nombre"]),
+    async preparar(u, a) {
+      const pr = await proyectoDe(u, s(a, "proyectoId"));
+      if (!pr) return { error: "No encontré ese proyecto." };
+      if (!s(a, "nombre")) return { error: "Falta el nombre del entregable." };
+      const fase = s(a, "faseId") ? await prisma.projectPhase.findFirst({ where: { id: s(a, "faseId"), projectId: pr.id }, select: { id: true, name: true } }) : null;
+      if (s(a, "faseId") && !fase) return { error: "Esa fase no es de ese proyecto. Búscala con ver_fases." };
+      if (s(a, "fecha") && !esFecha(s(a, "fecha"))) return { error: "La fecha va en YYYY-MM-DD." };
+      return { resumen: `Entregable «${s(a, "nombre")}» · ${fase ? `fase ${fase.name}` : "sin fase"} · ${pr.name}`, evalua: {}, payload: { proyectoId: pr.id, nombre: s(a, "nombre"), detalle: s(a, "detalle") || null, faseId: fase?.id ?? null, fecha: s(a, "fecha") || null } };
+    },
+    async ejecutar(u, p) {
+      const ultimo = await prisma.deliverable.aggregate({ where: { projectId: String(p.proyectoId) }, _max: { sortOrder: true } });
+      const d = await prisma.deliverable.create({ data: { projectId: String(p.proyectoId), name: String(p.nombre).slice(0, 300), description: (p.detalle as string) || null, phaseId: (p.faseId as string) || null, dueDate: p.fecha ? fechaUTC(String(p.fecha)) : null, sortOrder: (ultimo._max.sortOrder ?? -1) + 1, source: "MANUAL" } });
+      return { pasos: [{ t: "crear", m: "deliverable", id: d.id }], resultType: "entregable", resultId: d.id, href: `/empresa/proyectos/${p.proyectoId}` };
+    },
+  },
+  entregable_editar: {
+    def: def("entregable_editar", "Cambia un entregable (entregableId de ver_entregables): nombre, detalle, fecha (YYYY-MM-DD), hecho, o lo mueve de fase con faseId (\"ninguna\" lo deja sin fase).", P({ entregableId: STR, nombre: STR, detalle: STR, fecha: STR, hecho: BOOL, faseId: STR }), ["entregableId"]),
+    async preparar(u, a) {
+      const d = await prisma.deliverable.findFirst({ where: { id: s(a, "entregableId"), project: { userId: u.id } }, select: { id: true, name: true, projectId: true, project: { select: { name: true } } } });
+      if (!d) return { error: "No encontré ese entregable. Búscalo con ver_entregables." };
+      const cambios: Args = {};
+      if (s(a, "nombre")) cambios.name = s(a, "nombre").slice(0, 300);
+      if (tiene(a, "detalle")) cambios.description = s(a, "detalle") || null;
+      if (s(a, "fecha")) {
+        if (!esFecha(s(a, "fecha"))) return { error: "La fecha va en YYYY-MM-DD." };
+        cambios.dueDate = s(a, "fecha");
+      }
+      if (typeof a.hecho === "boolean") cambios.completed = a.hecho;
+      let fase: string | null = null;
+      if (s(a, "faseId")) {
+        if (s(a, "faseId") === "ninguna") cambios.phaseId = null;
+        else {
+          const f = await prisma.projectPhase.findFirst({ where: { id: s(a, "faseId"), projectId: d.projectId }, select: { id: true, name: true } });
+          if (!f) return { error: "Esa fase no es de ese proyecto. Búscala con ver_fases." };
+          cambios.phaseId = f.id;
+          fase = f.name;
+        }
+      }
+      if (!Object.keys(cambios).length) return { error: "No me dijiste qué cambiar." };
+      const resumen = `Entregable «${d.name}» (${d.project.name}) · ${partes([["nombre →", cambios.name as string], ["detalle →", cambios.description as string], ["fecha →", cambios.dueDate ? fechaCorta(String(cambios.dueDate)) : null], ["→", cambios.completed === undefined ? null : cambios.completed ? "hecho" : "pendiente"], ["fase →", cambios.phaseId === undefined ? null : fase ?? "sin fase"]])}`;
+      return { resumen, evalua: {}, payload: { entregableId: d.id, cambios } };
+    },
+    async ejecutar(u, p) {
+      const d = await prisma.deliverable.findFirstOrThrow({ where: { id: String(p.entregableId), project: { userId: u.id } } });
+      const cambios = { ...(p.cambios as Args) };
+      if (typeof cambios.dueDate === "string") cambios.dueDate = fechaUTC(cambios.dueDate);
+      if (cambios.completed !== undefined) cambios.completedAt = cambios.completed ? new Date() : null;
+      const antes = antesDe(d as unknown as Args, Object.keys(cambios));
+      await prisma.deliverable.update({ where: { id: d.id }, data: cambios });
+      return { pasos: [{ t: "editar", m: "deliverable", id: d.id, antes }], resultType: "entregable", resultId: d.id, href: `/empresa/proyectos/${d.projectId}` };
+    },
+  },
+  entregable_borrar: {
+    def: def("entregable_borrar", "Borra un entregable (entregableId de ver_entregables).", P({ entregableId: STR }), ["entregableId"]),
+    async preparar(u, a) {
+      const d = await prisma.deliverable.findFirst({ where: { id: s(a, "entregableId"), project: { userId: u.id } }, select: { id: true, name: true, project: { select: { name: true } } } });
+      if (!d) return { error: "No encontré ese entregable. Búscalo con ver_entregables." };
+      return { resumen: `Borrar el entregable «${d.name}» de ${d.project.name}`, evalua: { destruye: true }, payload: { entregableId: d.id } };
+    },
+    async ejecutar(u, p) {
+      const d = await prisma.deliverable.findFirstOrThrow({ where: { id: String(p.entregableId), project: { userId: u.id } } });
+      await prisma.deliverable.delete({ where: { id: d.id } });
+      return { pasos: [{ t: "borrar", m: "deliverable", fila: filaParaGuardar(d as unknown as Args) }], resultType: "entregable", resultId: d.id, href: `/empresa/proyectos/${d.projectId}` };
+    },
+  },
+
   pago_borrar: {
     def: def("pago_borrar", "Borra un pago registrado por error. Siempre pide confirmación. Si su factura nació solo por ese pago, se borra también.", P({ pagoId: STR }), ["pagoId"]),
     async preparar(u, a) {

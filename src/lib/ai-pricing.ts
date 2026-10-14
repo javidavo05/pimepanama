@@ -16,8 +16,14 @@ export const GPT41 = {
   outputPerToken: 8.00 / 1_000_000,
 };
 
+// GPT-5.1: $1.25/1M input, $10.00/1M output (el razonamiento se cobra como salida)
+export const GPT51 = {
+  inputPerToken: 1.25 / 1_000_000,
+  outputPerToken: 10.00 / 1_000_000,
+};
+
 export function calcGptCost(inputTokens: number, outputTokens: number, model = "gpt-4o"): number {
-  const price = model === "gpt-4.1" ? GPT41 : GPT4O;
+  const price = model === "gpt-4.1" ? GPT41 : model === "gpt-5.1" ? GPT51 : GPT4O;
   return inputTokens * price.inputPerToken + outputTokens * price.outputPerToken;
 }
 

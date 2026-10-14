@@ -6,7 +6,7 @@ import { useState, useRef } from "react";
 import { createProjectWithContractAction } from "@/app/(empresa)/empresa/actions";
 import { ClientCombobox } from "@/components/empresa/client-combobox";
 import { ContractAnalyzer, type ContractAnalysis } from "@/components/empresa/contract-analyzer";
-import { DeliverablesEditor, type DeliverableDraft } from "@/components/empresa/deliverables-editor";
+import { PhasesEditor, emptyPhase, type PhaseDraft } from "@/components/empresa/phases-editor";
 import { FinancingPlanner } from "@/components/empresa/financing-planner";
 import type { FinancingPlan } from "@/lib/financing";
 import { AiEnhanceButton } from "@/components/empresa/document-builder/ai-enhance-button";
@@ -64,8 +64,10 @@ export function ProjectBuilder({ clients, creatorName: _creatorName, preselectCl
     terms: "",
   });
   const [error, setError] = useState<string | null>(null);
-  const [deliverables, setDeliverables] = useState<DeliverableDraft[]>([]);
-  const [deliverablesFromDocument, setDeliverablesFromDocument] = useState(0);
+  const [phases, setPhases] = useState<PhaseDraft[]>([]);
+  const [phasesFromDocument, setPhasesFromDocument] = useState(false);
+  // Una propuesta o cotización no es un contrato firmado: el contrato nace en borrador.
+  const [contractIsSigned, setContractIsSigned] = useState(false);
   const [financingEnabled, setFinancingEnabled] = useState(false);
   const [financing, setFinancing] = useState<FinancingPlan>({
     total: 0,
@@ -165,10 +167,19 @@ export function ProjectBuilder({ clients, creatorName: _creatorName, preselectCl
     }
   }
 
-  /** Vuelca en el formulario el contrato que la IA sacó del documento adjunto. */
+  /** Vuelca en el formulario el proyecto que la IA sacó del documento adjunto. */
   function applyAnalysis(a: ContractAnalysis) {
     if (a.projectName) setValue("name", a.projectName);
-    if (a.scope) setValue("scope", a.scope);
+    if (a.description) setValue("description", a.description);
+    // El alcance lleva también las listas de incluye / no incluye: es lo que
+    // se consulta cuando el cliente pide algo que no estaba.
+    const scope = [
+      a.scope?.trim(),
+      a.scopeIncludes?.length ? `Incluye:\n${a.scopeIncludes.map((x) => `• ${x}`).join("\n")}` : "",
+      a.scopeExcludes?.length ? `No incluye:\n${a.scopeExcludes.map((x) => `• ${x}`).join("\n")}` : "",
+      a.durationText ? `Plazo: ${a.durationText}` : "",
+    ].filter(Boolean).join("\n\n");
+    if (scope) setValue("scope", scope);
     if (a.startsAt) setValue("startDate", a.startsAt);
     if (a.endsAt) setValue("endDate", a.endsAt);
     if (a.value != null) setValue("totalBudget", String(a.value));
@@ -176,10 +187,15 @@ export function ProjectBuilder({ clients, creatorName: _creatorName, preselectCl
     // Cliente: solo si el nombre coincide con uno ya registrado. Crear clientes
     // a partir de un PDF sería adivinar demasiado.
     if (a.clientName) {
-      const match = clients.find(
-        (c) =>
-          c.name.toLowerCase() === a.clientName!.toLowerCase() ||
-          c.company?.toLowerCase() === a.clientName!.toLowerCase()
+      // Sin tildes, espacios ni puntuación: «Grupo BJCapital» y «BJ CAPITAL» son el mismo.
+      const norm = (v: string | null | undefined) =>
+        (v ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]/g, "");
+      const name = norm(a.clientName);
+      const match = clients.find((c) =>
+        [c.name, c.company].some((v) => {
+          const n = norm(v);
+          return n.length >= 4 && (n === name || name.includes(n));
+        })
       );
       if (match) {
         setSelectedClients((list) => (list.some((x) => x.id === match.id) ? list : [...list, match]));
@@ -189,6 +205,7 @@ export function ProjectBuilder({ clients, creatorName: _creatorName, preselectCl
     }
 
     setWithContract(true);
+    setContractIsSigned(a.sourceType === "CONTRACT");
     setContract((c) => ({
       ...c,
       title: a.contractTitle || c.title,
@@ -199,25 +216,61 @@ export function ProjectBuilder({ clients, creatorName: _creatorName, preselectCl
       terms: a.terms || c.terms,
     }));
 
-    if (a.deliverables?.length) {
-      setDeliverables(
-        a.deliverables.map((d) => ({
-          name: d.name ?? "",
-          description: d.description ?? "",
-          dueDate: d.dueDate ?? "",
+    const toDraft = (d: { name: string; description?: string | null; dueDate?: string | null }) => ({
+      name: d.name ?? "",
+      description: d.description ?? "",
+      dueDate: d.dueDate ?? "",
+    });
+    if (a.phases?.length) {
+      setPhases(
+        a.phases.map((p) => ({
+          name: p.name,
+          description: [
+            p.optional ? "Fase opcional: se aprueba por separado." : "",
+            p.summary ?? "",
+            p.timeframe ? `Plazo: ${p.timeframe}.` : "",
+          ].filter(Boolean).join(" "),
+          price: p.amount != null ? String(p.amount) : "",
+          // Con precio propio se cobra al entregarla (las opcionales, al aprobarlas);
+          // sin precio propio el cobro va por el plan de pago del proyecto.
+          billingPoint: p.amount == null ? "sin_cobro" : p.optional ? "al_aprobar" : "al_entregar",
+          estimatedDays: p.estimatedDays ? String(Math.round(p.estimatedDays)) : "",
+          deliverables: p.deliverables.map(toDraft),
         }))
       );
-      setDeliverablesFromDocument(a.deliverables.length);
+      setPhasesFromDocument(true);
+    } else if (a.deliverables?.length) {
+      setPhases([{ ...emptyPhase(1), deliverables: a.deliverables.map(toDraft) }]);
+      setPhasesFromDocument(true);
     }
 
-    if (a.financing) {
+    // Forma de pago: hitos (50/50), abono + cuotas, y el canje si lo hay.
+    const pay = a.payment;
+    if (pay && (pay.schedule === "MILESTONES" || pay.schedule === "INSTALLMENTS" || pay.barter)) {
+      const total = a.value ?? (pay.cashAmount ?? 0) + (pay.barter?.amount ?? 0);
+      const delivery = a.endsAt ?? "";
       setFinancingEnabled(true);
       setFinancing({
-        total: a.value ?? 0,
-        downPayment: a.financing.downPayment ?? 0,
-        installments: a.financing.installments ?? 1,
-        frequency: a.financing.frequency ?? "MONTHLY",
-        firstDueDate: a.financing.firstDueDate ?? a.startsAt ?? "",
+        total,
+        barter: pay.barter?.amount ? { amount: pay.barter.amount, description: pay.barter.description } : null,
+        mode: pay.schedule === "INSTALLMENTS" ? "INSTALLMENTS" : "MILESTONES",
+        milestones:
+          pay.schedule === "INSTALLMENTS"
+            ? undefined
+            : (pay.milestones.length > 0
+                ? pay.milestones
+                : [{ description: "Pago único", percent: 100, trigger: "SIGNING" as const, dueDate: null }]
+              ).map((m) => ({
+                description: m.description,
+                percent: m.percent,
+                trigger: m.trigger,
+                // "A la entrega" sin fecha: la fecha estimada de fin del proyecto.
+                dueDate: m.dueDate ?? (m.trigger === "DELIVERY" ? delivery : ""),
+              })),
+        downPayment: pay.installments?.downPayment ?? 0,
+        installments: pay.installments?.count ?? 1,
+        frequency: pay.installments?.frequency ?? "MONTHLY",
+        firstDueDate: pay.installments?.firstDueDate ?? a.startsAt ?? "",
       });
     }
   }
@@ -245,12 +298,21 @@ export function ProjectBuilder({ clients, creatorName: _creatorName, preselectCl
         startDate: data.startDate || undefined,
         endDate: data.endDate || undefined,
         totalBudget: budget,
-        deliverables: deliverables
-          .filter((d) => d.name.trim())
-          .map((d) => ({
-            name: d.name,
-            description: d.description || undefined,
-            dueDate: d.dueDate || undefined,
+        phases: phases
+          .filter((p) => p.name.trim())
+          .map((p) => ({
+            name: p.name,
+            description: p.description || undefined,
+            price: p.price.trim() ? Number(p.price) : null,
+            billingPoint: p.billingPoint,
+            estimatedDays: p.estimatedDays.trim() ? Number(p.estimatedDays) : null,
+            deliverables: p.deliverables
+              .filter((d) => d.name.trim())
+              .map((d) => ({
+                name: d.name,
+                description: d.description || undefined,
+                dueDate: d.dueDate || undefined,
+              })),
           })),
         financingPlan: financingEnabled
           ? { ...financing, total: financing.total || budget || 0 }
@@ -265,6 +327,7 @@ export function ProjectBuilder({ clients, creatorName: _creatorName, preselectCl
               responsibilities: contract.responsibilities || undefined,
               terms: contract.terms || undefined,
               description: data.description || undefined,
+              status: contractIsSigned ? "ACTIVE" : "DRAFT",
             }
           : null,
       });
@@ -488,6 +551,24 @@ export function ProjectBuilder({ clients, creatorName: _creatorName, preselectCl
 
         {withContract && (
           <div className="space-y-4 border-t border-line pt-4">
+            <label className="flex items-start gap-2 min-h-11 sm:min-h-8 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={contractIsSigned}
+                onChange={(e) => setContractIsSigned(e.target.checked)}
+                className="mt-0.5 w-4 h-4 rounded border border-line-loud bg-fill accent-brand"
+              />
+              <span className="text-xs">
+                <span className="text-fg-dim">{isEs ? "Ya está firmado" : "Already signed"}</span>
+                <span className="block text-fg-faint mt-1">
+                  {contractIsSigned
+                    ? (isEs ? "Se guarda como contrato activo." : "Saved as an active contract.")
+                    : (isEs
+                        ? "Se guarda como borrador para firmar: sale de una propuesta o cotización."
+                        : "Saved as a draft to sign: it comes from a proposal or quote.")}
+                </span>
+              </span>
+            </label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="sm:col-span-2">
                 <label className="block text-fg-faint text-xs uppercase tracking-widest font-medium mb-1.5">
@@ -572,11 +653,7 @@ export function ProjectBuilder({ clients, creatorName: _creatorName, preselectCl
         )}
       </div>
 
-      <DeliverablesEditor
-        items={deliverables}
-        onChange={setDeliverables}
-        fromDocument={deliverablesFromDocument}
-      />
+      <PhasesEditor phases={phases} onChange={setPhases} fromDocument={phasesFromDocument} />
 
       <FinancingPlanner
         plan={{
@@ -587,7 +664,7 @@ export function ProjectBuilder({ clients, creatorName: _creatorName, preselectCl
         onChange={setFinancing}
         enabled={financingEnabled}
         onToggle={setFinancingEnabled}
-        hint="Abono inicial más cuotas mensuales o quincenales. Al facturar el proyecto, cada cuota se crea sola en Cuentas por Cobrar."
+        hint="Por hitos (50 % al firmar y 50 % a la entrega) o abono más cuotas, con una parte en canje si aplica. Al facturar el proyecto, cada pago se crea solo en Cuentas por Cobrar."
       />
 
       {error && (

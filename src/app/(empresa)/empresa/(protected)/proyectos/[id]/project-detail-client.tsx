@@ -303,7 +303,7 @@ export function ProjectDetailClient({
           fases: (
             <div className="space-y-6">
               {fasesPanel}
-              <DeliverablesPanel projectId={project.id} deliverables={project.deliverables} />
+              <DeliverablesPanel projectId={project.id} deliverables={project.deliverables} phases={project.phases} />
             </div>
           ),
           dinero: (

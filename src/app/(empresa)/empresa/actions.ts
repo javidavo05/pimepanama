@@ -2,6 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { randomUUID } from "node:crypto";
+import { esUno, FASE_COBRO } from "@/lib/portal/estados";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
@@ -547,17 +549,22 @@ export async function createProjectWithContractAction(data: {
     responsibilities?: string;
     terms?: string;
     description?: string;
+    /** ACTIVE solo si ya está firmado; de una propuesta o cotización nace en borrador. */
+    status?: "DRAFT" | "ACTIVE";
   } | null;
-  /** Entregables (los suele extraer el análisis del contrato adjunto). */
+  /** Entregables sin fase. */
   deliverables?: { name: string; description?: string; dueDate?: string }[];
+  /** Fases con sus entregables (las suele sacar el análisis del documento adjunto). */
+  phases?: {
+    name: string;
+    description?: string;
+    price?: number | null;
+    billingPoint?: string;
+    estimatedDays?: number | null;
+    deliverables: { name: string; description?: string; dueDate?: string }[];
+  }[];
   /** Plan de financiación: abono inicial + cuotas. */
-  financingPlan?: {
-    total: number;
-    downPayment: number;
-    installments: number;
-    frequency: "MONTHLY" | "BIWEEKLY" | "WEEKLY";
-    firstDueDate: string;
-  } | null;
+  financingPlan?: FinancingPlan | null;
 }) {
   const user = await getEmpresaUser();
   if (!data.name.trim()) throw new Error("El proyecto necesita un nombre");
@@ -591,11 +598,31 @@ export async function createProjectWithContractAction(data: {
     },
   });
 
-  const deliverables = (data.deliverables ?? []).filter((d) => d.name?.trim());
-  if (deliverables.length > 0) {
+  // Fases primero (con id generado aquí) y después todos los entregables en un
+  // solo insert: dos viajes a la base aunque la propuesta traiga 100 entregables.
+  type DeliverableInput = { name: string; description?: string; dueDate?: string };
+  const phases = (data.phases ?? []).filter((p) => p.name?.trim());
+  const phaseRows = phases.map((p, i) => ({
+    id: randomUUID(),
+    projectId: project.id,
+    name: p.name.trim().slice(0, 160),
+    description: p.description?.trim() || null,
+    price: p.price ?? 0,
+    billingPoint: p.billingPoint && esUno(FASE_COBRO, p.billingPoint) ? p.billingPoint : "al_entregar",
+    estimatedDays: p.estimatedDays ? Math.round(p.estimatedDays) : null,
+    sortOrder: i,
+  }));
+  if (phaseRows.length > 0) await prisma.projectPhase.createMany({ data: phaseRows });
+
+  const allDeliverables: (DeliverableInput & { phaseId: string | null })[] = [
+    ...phases.flatMap((p, i) => p.deliverables.map((d) => ({ ...d, phaseId: phaseRows[i].id }))),
+    ...(data.deliverables ?? []).map((d) => ({ ...d, phaseId: null })),
+  ].filter((d) => d.name?.trim());
+  if (allDeliverables.length > 0) {
     await prisma.deliverable.createMany({
-      data: deliverables.map((d, i) => ({
+      data: allDeliverables.map((d, i) => ({
         projectId: project.id,
+        phaseId: d.phaseId,
         name: d.name.trim(),
         description: d.description?.trim() || null,
         dueDate: d.dueDate ? new Date(d.dueDate) : null,
@@ -620,7 +647,7 @@ export async function createProjectWithContractAction(data: {
         startsAt: toDate(data.contract.startsAt),
         endsAt: toDate(data.contract.endsAt),
         // Borrador hasta que se firme: antes quedaba «activo» sin firma de nadie.
-        status: "DRAFT",
+        status: data.contract.status ?? "DRAFT",
       },
     });
   }
@@ -714,7 +741,7 @@ export async function updateProjectAction(
 
 export async function createDeliverableAction(
   projectId: string,
-  data: { name: string; description?: string | null; dueDate?: string | null }
+  data: { name: string; description?: string | null; dueDate?: string | null; phaseId?: string | null }
 ) {
   const user = await getEmpresaUser();
   const project = await prisma.project.findFirst({
@@ -736,6 +763,7 @@ export async function createDeliverableAction(
       name: data.name.trim(),
       description: data.description?.trim() || null,
       dueDate: data.dueDate ? new Date(data.dueDate) : null,
+      phaseId: await ownPhaseId(projectId, data.phaseId),
       sortOrder: (last?.sortOrder ?? -1) + 1,
       source: "MANUAL",
     },
@@ -750,6 +778,7 @@ export async function updateDeliverableAction(
     description: string | null;
     dueDate: string | null;
     completed: boolean;
+    phaseId: string | null;
   }>
 ) {
   const user = await getEmpresaUser();
@@ -766,12 +795,23 @@ export async function updateDeliverableAction(
       description: data.description === undefined ? undefined : data.description?.trim() || null,
       dueDate: data.dueDate === undefined ? undefined : data.dueDate ? new Date(data.dueDate) : null,
       completed: data.completed,
+      phaseId: data.phaseId === undefined ? undefined : await ownPhaseId(existing.projectId, data.phaseId),
       // La fecha de cierre la pone el sistema, no el formulario.
       completedAt:
         data.completed === undefined ? undefined : data.completed ? new Date() : null,
     },
   });
   revalidatePath(`/empresa/proyectos/${existing.projectId}`);
+}
+
+/** Solo acepta una fase del mismo proyecto; cualquier otra cosa queda sin fase. */
+async function ownPhaseId(projectId: string, phaseId: string | null | undefined) {
+  if (!phaseId) return null;
+  const phase = await prisma.projectPhase.findFirst({
+    where: { id: phaseId, projectId },
+    select: { id: true },
+  });
+  return phase?.id ?? null;
 }
 
 export async function deleteDeliverableAction(id: string) {

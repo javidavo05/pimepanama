@@ -70,6 +70,7 @@ export default async function ProyectoDetailPage({
         githubAccount: { select: { login: true } },
         clients: { include: { client: { select: { id: true, name: true, company: true } } } },
         deliverables: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }] },
+        phases: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { id: true, name: true } },
         meetings: {
           select: {
             id: true, title: true, status: true, meetingDate: true,

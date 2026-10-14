@@ -64,3 +64,4 @@ Todas las migraciones se corren manualmente en **Supabase → SQL Editor**.
 | 0049 | `0049_tickets_internos.sql` | Ticket.kind admite bug, mejora y tarea (tickets internos de los productos de la empresa) además de soporte, cambio, nuevo e incidente | 2026-10-12 | ✅ Aplicado |
 | 0050 | `0050_asistente_fases.sql` | AssistantAction.kind acepta «fase»: el asistente propone una fase con su factura y los pagos ya recibidos | 2026-10-12 | ✅ Aplicado |
 | 0051 | `0051_asistente_total_pagos_por_fase.sql` | Payment.projectId/phaseId (FK SET NULL, índices): de qué proyecto o fase es cada pago. AssistantAction.kind pasa de lista cerrada a formato libre en minúsculas (el asistente hace de todo) | 2026-10-12 | ✅ Aplicado |
+| 0052 | `0052_entregables_por_fase.sql` | Deliverable.phaseId (FK SET NULL, índice): los entregables cuelgan de una fase; salen completos de la propuesta/cotización adjunta al crear el proyecto | 2026-10-14 | ✅ Aplicado |

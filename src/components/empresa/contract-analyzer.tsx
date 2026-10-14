@@ -11,8 +11,41 @@ export type ContractSourceType =
   | "SCOPE"
   | "OTHER";
 
+export type AnalyzedDeliverable = { name: string; description?: string | null; dueDate?: string | null };
+
+export type AnalyzedPhase = {
+  name: string;
+  summary?: string | null;
+  amount?: number | null;
+  timeframe?: string | null;
+  estimatedDays?: number | null;
+  optional?: boolean;
+  deliverables: AnalyzedDeliverable[];
+};
+
+export type AnalyzedPayment = {
+  cashAmount?: number | null;
+  barter?: { amount: number; description: string } | null;
+  schedule: "MILESTONES" | "INSTALLMENTS" | "SINGLE" | "UNSPECIFIED";
+  milestones: {
+    description: string;
+    percent: number;
+    trigger: "SIGNING" | "DELIVERY" | "PHASE" | "DATE";
+    dueDate?: string | null;
+  }[];
+  installments?: {
+    downPayment: number;
+    count: number;
+    frequency: "MONTHLY" | "BIWEEKLY" | "WEEKLY";
+    firstDueDate?: string | null;
+  } | null;
+  paymentNotes?: string | null;
+};
+
 export type ContractAnalysis = {
   sourceType?: ContractSourceType | null;
+  /** Qué es el documento, en dos o tres frases. */
+  documentSummary?: string | null;
   projectName?: string | null;
   contractTitle?: string | null;
   clientName?: string | null;
@@ -20,16 +53,18 @@ export type ContractAnalysis = {
   currency?: string | null;
   startsAt?: string | null;
   endsAt?: string | null;
+  /** Plazo tal como lo dice el documento ("hasta 3 meses desde..."). */
+  durationText?: string | null;
+  description?: string | null;
   scope?: string | null;
+  scopeIncludes?: string[];
+  scopeExcludes?: string[];
   responsibilities?: string | null;
   terms?: string | null;
-  deliverables?: { name: string; description?: string | null; dueDate?: string | null }[];
-  financing?: {
-    downPayment?: number | null;
-    installments?: number | null;
-    frequency?: "MONTHLY" | "BIWEEKLY" | "WEEKLY" | null;
-    firstDueDate?: string | null;
-  } | null;
+  phases?: AnalyzedPhase[];
+  /** Lista plana de todos los entregables (compatibilidad). */
+  deliverables?: AnalyzedDeliverable[];
+  payment?: AnalyzedPayment | null;
   /** Lo que la IA redactó por su cuenta porque el documento no lo decía. */
   assumptions?: string[];
   costUSD?: number;
@@ -43,13 +78,43 @@ const MAX_MB = 12;
 
 /** Qué decirle al usuario según lo que resultó ser el documento. */
 const SOURCE_PHRASE: Record<ContractSourceType, string> = {
-  CONTRACT: "Contrato analizado",
-  PROPOSAL: "Contrato redactado desde la propuesta",
-  QUOTE: "Contrato redactado desde la cotización",
-  PRODUCT: "Contrato redactado desde el detalle del producto",
-  SCOPE: "Contrato redactado desde el alcance de trabajo",
-  OTHER: "Contrato redactado desde el documento",
+  CONTRACT: "Contrato leído",
+  PROPOSAL: "Propuesta leída",
+  QUOTE: "Cotización leída",
+  PRODUCT: "Detalle del producto leído",
+  SCOPE: "Alcance de trabajo leído",
+  OTHER: "Documento leído",
 };
+
+const PAYMENT_PHRASE: Record<AnalyzedPayment["schedule"], string> = {
+  MILESTONES: "pago por hitos",
+  INSTALLMENTS: "abono más cuotas",
+  SINGLE: "un solo pago",
+  UNSPECIFIED: "",
+};
+
+/** Resumen de lo que se precargó, para que se vea de un vistazo qué revisar. */
+function summarize(data: ContractAnalysis): string {
+  const source: ContractSourceType = data.sourceType ?? "OTHER";
+  const phases = data.phases?.length ?? 0;
+  const items = data.phases?.reduce((n, p) => n + p.deliverables.length, 0) ?? data.deliverables?.length ?? 0;
+  const parts = [
+    `${phases} fase${phases !== 1 ? "s" : ""}`,
+    `${items} entregable${items !== 1 ? "s" : ""}`,
+  ];
+  const payment = data.payment;
+  if (payment && PAYMENT_PHRASE[payment.schedule]) {
+    const split = payment.schedule === "MILESTONES" && payment.milestones.length > 0
+      ? ` ${payment.milestones.map((m) => Math.round(m.percent)).join("/")}`
+      : "";
+    parts.push(`${PAYMENT_PHRASE[payment.schedule]}${split}`);
+  }
+  if (payment?.barter?.amount) parts.push("parte en canje");
+  const contract = source === "CONTRACT"
+    ? "El contrato queda activo."
+    : "El contrato queda como borrador para firmar.";
+  return `${SOURCE_PHRASE[source] ?? SOURCE_PHRASE.OTHER}: ${parts.join(", ")}. ${contract}`;
+}
 
 export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -59,6 +124,7 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
   const [assumptions, setAssumptions] = useState<string[]>([]);
 
   function readAsDataUrl(file: File): Promise<string> {
@@ -74,6 +140,7 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
     setBusy(true);
     setError(null);
     setDone(null);
+    setSummary(null);
     setAssumptions([]);
     try {
       const res = await fetchLargo("/api/empresa/ai/analyze-contract", {
@@ -87,13 +154,8 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
         return;
       }
       onAnalyzed(data as ContractAnalysis);
-
-      const source: ContractSourceType = data.sourceType ?? "OTHER";
-      const n = data.deliverables?.length ?? 0;
-      setDone(
-        `${SOURCE_PHRASE[source] ?? SOURCE_PHRASE.OTHER} — ${n} entregable${n !== 1 ? "s" : ""} detectado${n !== 1 ? "s" : ""}.` +
-          (data.financing ? " Se precargó el plan de financiación." : "")
-      );
+      setDone(summarize(data as ContractAnalysis));
+      setSummary(typeof data.documentSummary === "string" ? data.documentSummary : null);
       setAssumptions(Array.isArray(data.assumptions) ? data.assumptions : []);
     } catch {
       setError("Error de red al analizar el documento");
@@ -123,9 +185,10 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
           ¿Tienes una propuesta, cotización o contrato?
         </h3>
         <p className="text-fg-faint text-xs mt-1">
-          Adjunta lo que tengas —propuesta, cotización, detalle del producto o el
-          contrato firmado— y la IA redacta el contrato: alcance, responsabilidades,
-          términos, entregables y forma de pago.
+          Adjunta la propuesta, la cotización o el contrato y la IA arma el proyecto
+          completo: las fases, cada entregable, la forma de pago (50/50, cuotas o
+          canje) y un borrador del contrato. Si es una propuesta o cotización, el
+          contrato queda como borrador para firmar.
         </p>
       </div>
 
@@ -146,7 +209,7 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
           onClick={() => inputRef.current?.click()}
           className="px-4 py-2 rounded-lg bg-iris/15 border border-iris/30 text-iris-fg text-sm font-medium hover:bg-iris/25 disabled:opacity-50 transition-all"
         >
-          {busy ? "Analizando…" : "📎 Adjuntar documento (PDF)"}
+          {busy ? "Leyendo el documento…" : "📎 Adjuntar documento (PDF)"}
         </button>
         <button
           type="button"
@@ -183,11 +246,13 @@ export function ContractAnalyzer({ onAnalyzed }: ContractAnalyzerProps) {
 
       {busy && (
         <p className="text-fg-faint text-xs">
-          Leyendo el documento y redactando el contrato… suele tardar entre 10 y 25 segundos.
+          Leyendo el documento página por página para sacar todas las fases y entregables… una
+          propuesta completa tarda entre 2 y 4 minutos. No cierres esta pantalla.
         </p>
       )}
       {error && <p className="text-danger text-xs">{error}</p>}
       {done && <p className="text-ok text-xs">✓ {done}</p>}
+      {summary && <p className="text-fg-dim text-xs leading-relaxed">{summary}</p>}
 
       {/* Lo que la IA completó por su cuenta: es lo primero que hay que revisar. */}
       {assumptions.length > 0 && (
