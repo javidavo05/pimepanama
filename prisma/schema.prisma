@@ -325,6 +325,8 @@ model Client {
   /// La propia empresa (Pime Panamá) para sus productos internos (migración 0048): no suma a cobros ni
   /// ingresos, no tiene cuenta de cliente ni recibe correos.
   internal           Boolean         @default(false)
+  /// Logo del cliente en R2 (migración 0053): lo sube el cliente en su cuenta y se ve junto al de Pime.
+  logoKey            String?
   archivedAt         DateTime?
   portalUsers        ClientUser[]
   changeOrders       ChangeOrder[]
@@ -587,11 +589,34 @@ model Project {
   payments        Payment[]
   /// Requisitos de «Qué le falta» marcados «No aplica» (migración 0047): no cuentan en el porcentaje.
   linkWaived      String[]        @default([])
+  /// Enlace del sistema en producción; lo ve el cliente en su cuenta (migración 0053).
+  liveUrl         String?
+  /// Webhook que Pime crea en el repo para que el avance de las fases se mueva solo (migración 0053).
+  githubHookId    String?
+  accesses        ProjectAccess[]
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
   @@index([userId])
   @@index([userId, status])
+}
+
+/// Accesos al sistema del cliente (migración 0053): panel, usuario y clave. La clave va cifrada (AES-256-GCM,
+/// MAIL_ENCRYPTION_KEY) y solo se descifra cuando el cliente o el equipo la piden.
+model ProjectAccess {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  label     String
+  url       String?
+  username  String?
+  secretEnc String?
+  notes     String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
 }
 
 model Deliverable {
@@ -1439,6 +1464,8 @@ model ProjectPhase {
   /// "manual" | "github"
   progressSource  String       @default("manual")
   githubMilestone Int?
+  /// Cuándo se avisó al cliente que la fase quedó lista (migración 0053); evita avisar dos veces.
+  readyNotifiedAt DateTime?
   estimatedDays   Int?
   startedAt       DateTime?
   completedAt     DateTime?

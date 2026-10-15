@@ -196,7 +196,8 @@ export async function cambiarClaveAction(_: Estado, form: FormData): Promise<Est
 export async function invitarCompaneroAction(_: Estado, form: FormData): Promise<Estado> {
   const p = await getPortalUser();
   if (p.role !== "principal") return { error: "Solo la persona principal de la cuenta puede invitar a otras." };
-  const r = await invitarPersona({ empresaUserId: p.client.userId, clientId: p.clientId, email: String(form.get("email") ?? ""), fullName: texto(form.get("nombre"), 120), role: "miembro", invitadoPor: p.fullName || p.email, invitadoPorClientUserId: p.id });
+  const rol = form.get("rol") === "principal" ? "principal" : "miembro";
+  const r = await invitarPersona({ empresaUserId: p.client.userId, clientId: p.clientId, email: String(form.get("email") ?? ""), fullName: texto(form.get("nombre"), 120), role: rol, invitadoPor: p.fullName || p.email, invitadoPorClientUserId: p.id });
   if (!r.ok) return { error: r.error };
   revalidatePath("/cliente/cuenta");
   return { ok: true, mensaje: r.enviado ? "Invitación enviada." : "La invitación quedó lista, pero no se envió por correo. Pide a Pime el enlace para mandárselo." };
@@ -213,4 +214,59 @@ export async function quitarCompaneroAction(_: Estado, form: FormData): Promise<
   await registrarEvento({ userId: p.client.userId, clientId: p.clientId, entityType: "cuenta", entityId: otra.id, kind: "acceso_quitado", title: `${p.fullName || p.email} quitó el acceso de ${otra.email}`, visibility: "cliente", actorType: "cliente", actorClientUserId: p.id });
   revalidatePath("/cliente/cuenta");
   return { ok: true, mensaje: "Acceso quitado." };
+}
+
+/** Varios dueños por empresa: una persona principal puede hacer principal a otra, o volverla miembro. */
+export async function cambiarRolAction(_: Estado, form: FormData): Promise<Estado> {
+  const p = await getPortalUser();
+  if (p.role !== "principal") return { error: "Solo una persona principal puede cambiar permisos." };
+  const rol = form.get("rol") === "principal" ? "principal" : "miembro";
+  const otra = await prisma.clientUser.findFirst({ where: { id: String(form.get("persona") ?? ""), clientId: p.clientId, status: { not: "revocado" } }, select: { id: true, email: true, role: true } });
+  if (!otra) return { error: "No encontramos a esa persona." };
+  if (rol === "miembro" && otra.role === "principal") {
+    const principales = await prisma.clientUser.count({ where: { clientId: p.clientId, role: "principal", status: { not: "revocado" } } });
+    if (principales <= 1) return { error: "La cuenta necesita al menos una persona principal." };
+  }
+  await prisma.clientUser.update({ where: { id: otra.id }, data: { role: rol } });
+  await registrarEvento({ userId: p.client.userId, clientId: p.clientId, entityType: "cuenta", entityId: otra.id, kind: "rol", title: `${otra.email} ahora es ${rol === "principal" ? "dueño de la cuenta" : "miembro"}`, visibility: "cliente", actorType: "cliente", actorClientUserId: p.id });
+  revalidatePath("/cliente/cuenta");
+  return { ok: true, mensaje: "Permiso actualizado." };
+}
+
+// ─── Logo de la empresa ───────────────────────────────────────────────────────
+
+const TIPOS_LOGO = ["image/png", "image/jpeg", "image/webp"];
+
+/** Guarda como logo de la empresa una imagen ya subida a la carpeta del cliente. */
+export async function guardarLogoAction(_: Estado, form: FormData): Promise<Estado> {
+  const p = await getPortalUser();
+  const { llaveDelCliente } = await import("@/lib/portal/adjuntos");
+  const key = String(form.get("key") ?? "");
+  if (!llaveDelCliente(p.clientId, key) || !TIPOS_LOGO.includes(String(form.get("tipo") ?? ""))) return { error: "Sube una imagen PNG, JPG o WebP." };
+  await prisma.client.update({ where: { id: p.clientId }, data: { logoKey: key } });
+  await registrarEvento({ userId: p.client.userId, clientId: p.clientId, entityType: "cuenta", kind: "logo", title: `${p.fullName || p.email} actualizó el logo de la empresa`, visibility: "interno", actorType: "cliente", actorClientUserId: p.id });
+  revalidatePath("/cliente", "layout");
+  return { ok: true, mensaje: "Logo guardado." };
+}
+
+export async function quitarLogoAction(): Promise<Estado> {
+  const p = await getPortalUser();
+  await prisma.client.update({ where: { id: p.clientId }, data: { logoKey: null } });
+  revalidatePath("/cliente", "layout");
+  return { ok: true, mensaje: "Logo quitado." };
+}
+
+// ─── Acceso a su sistema ──────────────────────────────────────────────────────
+
+/** Descifra una clave de acceso del sistema del cliente. Queda registrado para el equipo. */
+export async function verClaveAction(_: Estado, form: FormData): Promise<Estado & { valor?: string }> {
+  const p = await getPortalUser();
+  const a = await prisma.projectAccess.findFirst({ where: { id: String(form.get("acceso") ?? ""), project: { ...proyectosDelCliente(p.clientId), portalVisible: true } }, select: { id: true, label: true, secretEnc: true, projectId: true } });
+  if (!a?.secretEnc) return { error: "Este acceso no tiene clave guardada." };
+  try {
+    const { decryptPassword } = await import("@/lib/mail/crypto");
+    const valor = decryptPassword(a.secretEnc);
+    await registrarEvento({ userId: p.client.userId, clientId: p.clientId, projectId: a.projectId, entityType: "acceso", entityId: a.id, kind: "acceso_visto", title: `${p.fullName || p.email} vio la clave de ${a.label}`, visibility: "interno", actorType: "cliente", actorClientUserId: p.id });
+    return { ok: true, valor };
+  } catch { return { error: "No pudimos mostrar la clave. Pídela en un ticket." }; }
 }

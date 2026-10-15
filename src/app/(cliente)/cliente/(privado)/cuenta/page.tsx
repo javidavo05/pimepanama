@@ -2,7 +2,7 @@ import { getPortalUser } from "@/lib/portal/sesion";
 import { prisma } from "@/lib/prisma";
 import { ThemeToggleLabeled } from "@/components/empresa/theme/theme-toggle";
 import { Encabezado, Etiqueta, Tarjeta, TituloSeccion, fechaCorta } from "@/components/portal/ui";
-import { CambiarClave, DobleVerificacion, InvitarCompanero, QuitarCompanero } from "./cuenta-forms";
+import { CambiarClave, CambiarRol, DobleVerificacion, InvitarCompanero, LogoEmpresa, QuitarCompanero } from "./cuenta-forms";
 
 export const metadata = { title: "Tu cuenta" };
 
@@ -13,7 +13,7 @@ export default async function CuentaCliente() {
     <>
       <Encabezado eyebrow={p.client.company || p.client.name} titulo="Tu cuenta" detalle="Tus datos, tu contraseña, la doble verificación y las personas de tu empresa con acceso." />
       <div className="grid gap-6 lg:grid-cols-2 items-start">
-        <Tarjeta>
+        <Tarjeta i={1}>
           <TituloSeccion>Tus datos</TituloSeccion>
           <dl className="space-y-3 text-sm">
             <div><dt className="text-fg-dim">Nombre</dt><dd className="text-fg font-semibold break-words">{p.fullName || "—"}</dd></div>
@@ -22,24 +22,26 @@ export default async function CuentaCliente() {
           </dl>
           <p className="mt-4 text-xs text-fg-faint">Para cambiar el correo o los datos de facturación, escríbenos en un ticket.</p>
         </Tarjeta>
-        <Tarjeta><TituloSeccion>Contraseña</TituloSeccion><CambiarClave /></Tarjeta>
-        <Tarjeta><TituloSeccion>Apariencia</TituloSeccion><p className="text-fg-dim text-sm mb-4">Claro, oscuro o el mismo de tu teléfono o computadora.</p><ThemeToggleLabeled /></Tarjeta>
-        <Tarjeta><TituloSeccion>Doble verificación</TituloSeccion><DobleVerificacion /></Tarjeta>
-        <Tarjeta>
+        <Tarjeta i={2}><TituloSeccion>Logo de tu empresa</TituloSeccion><LogoEmpresa logo={p.client.logoKey ? `/api/cliente/logo?v=${encodeURIComponent(p.client.logoKey.slice(-12))}` : null} empresa={p.client.company || p.client.name} /></Tarjeta>
+        <Tarjeta i={2}><TituloSeccion>Contraseña</TituloSeccion><CambiarClave /></Tarjeta>
+        <Tarjeta i={3}><TituloSeccion>Apariencia</TituloSeccion><p className="text-fg-dim text-sm mb-4">Claro, oscuro o el mismo de tu teléfono o computadora.</p><ThemeToggleLabeled /></Tarjeta>
+        <Tarjeta i={4}><TituloSeccion>Doble verificación</TituloSeccion><DobleVerificacion /></Tarjeta>
+        <Tarjeta i={5}>
           <TituloSeccion>Personas con acceso</TituloSeccion>
           <ul className="divide-y divide-line">
             {personas.map((x) => (
-              <li key={x.id} className="flex items-center gap-3 py-3">
-                <div className="min-w-0 flex-1">
+              <li key={x.id} className="flex flex-wrap items-center gap-3 py-3">
+                <div className="min-w-0 flex-1 basis-48">
                   <p className="text-fg text-sm font-semibold truncate">{x.fullName || x.email}{x.id === p.id ? " (tú)" : ""}</p>
                   <p className="text-fg-dim text-xs truncate">{x.email} · {x.status === "invitado" ? "Invitación enviada" : x.lastLoginAt ? `Entró el ${fechaCorta(x.lastLoginAt)}` : "Activa"}</p>
                 </div>
-                <Etiqueta tono={x.role === "principal" ? "marca" : "neutro"}>{x.role === "principal" ? "Principal" : "Miembro"}</Etiqueta>
+                <Etiqueta tono={x.role === "principal" ? "marca" : "neutro"} vivo={false}>{x.role === "principal" ? "Dueño" : "Miembro"}</Etiqueta>
+                {p.role === "principal" && x.id !== p.id && <CambiarRol id={x.id} rol={x.role} nombre={x.fullName || x.email} />}
                 {p.role === "principal" && x.id !== p.id && <QuitarCompanero id={x.id} nombre={x.fullName || x.email} />}
               </li>
             ))}
           </ul>
-          {p.role === "principal" ? <div className="mt-6 border-t border-line pt-6"><InvitarCompanero /></div> : <p className="mt-4 text-xs text-fg-faint">Solo la persona principal puede invitar o quitar accesos.</p>}
+          {p.role === "principal" ? <div className="mt-6 border-t border-line pt-6"><InvitarCompanero /></div> : <p className="mt-4 text-xs text-fg-faint">Solo los dueños de la cuenta pueden invitar, quitar accesos o dar permisos.</p>}
         </Tarjeta>
       </div>
     </>

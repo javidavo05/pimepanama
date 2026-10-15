@@ -15,7 +15,7 @@ export const getPortalUser = cache(async () => {
 
   const persona = await prisma.clientUser.findUnique({
     where: { supabaseUid: claims.sub },
-    include: { client: { select: { id: true, name: true, company: true, brandLine: true, archivedAt: true, userId: true, email: true, phone: true, ruc: true } } },
+    include: { client: { select: { id: true, name: true, company: true, brandLine: true, archivedAt: true, userId: true, email: true, phone: true, ruc: true, logoKey: true } } },
   });
   if (!persona) redirect("/cliente/acceso?aviso=equipo");
   if (persona.status !== "activo" || persona.client.archivedAt) redirect("/cliente/acceso?aviso=desactivada");

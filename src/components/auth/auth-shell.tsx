@@ -23,11 +23,11 @@ export function AuthShell({ eyebrow, title, subtitle, children, footer }: { eyeb
 }
 
 export const campo =
-  "w-full min-h-12 rounded-lg border border-line-mid bg-fill px-4 text-base text-fg placeholder:text-fg-trace focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
-export const etiqueta = "block text-fg-dim text-xs font-semibold uppercase tracking-widest mb-2";
+  "a-campo w-full min-h-12 rounded-lg border border-line-mid bg-fill px-4 text-base text-fg placeholder:text-fg-trace focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
+export const etiqueta = "a-etiqueta block text-fg-dim text-xs font-semibold uppercase tracking-widest mb-2";
 export const botonPrincipal =
-  "w-full inline-flex items-center justify-center min-h-12 rounded-lg bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold transition-colors disabled:opacity-50 disabled:pointer-events-none";
+  "a-btn a-btn-1 w-full inline-flex items-center justify-center min-h-12 rounded-lg bg-brand hover:bg-brand-hi text-on-brand text-sm font-semibold transition-colors disabled:opacity-50 disabled:pointer-events-none";
 export const botonSecundario =
-  "w-full inline-flex items-center justify-center min-h-12 rounded-lg border border-line-mid hover:border-line-loud text-fg-mute hover:text-fg text-sm font-semibold transition-colors disabled:opacity-50";
-export const errorBox = "rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger-soft";
-export const okBox = "rounded-lg border border-ok/30 bg-ok/10 px-4 py-3 text-sm text-ok-soft";
+  "a-btn w-full inline-flex items-center justify-center min-h-12 rounded-lg border border-line-mid hover:border-line-loud text-fg-mute hover:text-fg text-sm font-semibold transition-colors disabled:opacity-50";
+export const errorBox = "a-alerta rounded-lg border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger-soft";
+export const okBox = "a-listo rounded-lg border border-ok/30 bg-ok/10 px-4 py-3 text-sm text-ok-soft";

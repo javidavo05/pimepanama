@@ -1,4 +1,5 @@
-import { AuthShell, errorBox } from "@/components/auth/auth-shell";
+import { AccesoShell } from "@/components/portal/acceso-shell";
+import { errorBox } from "@/components/auth/auth-shell";
 import { validarInvitacion } from "@/lib/portal/invitaciones";
 import { ActivarForm } from "./activar-form";
 
@@ -9,16 +10,16 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ t
   const v = await validarInvitacion(token);
   if (!v.ok) {
     return (
-      <AuthShell eyebrow="Tu cuenta en Pime" title="No pudimos abrir la invitación">
+      <AccesoShell eyebrow="Tu cuenta en Pime" title="No pudimos abrir la invitación">
         <p className={errorBox} role="alert">{v.error}</p>
-        <a href="/cliente/acceso" className="mt-6 block text-center text-sm font-semibold text-brand-fg hover:underline">Ir a entrar</a>
-      </AuthShell>
+        <a href="/cliente/acceso" className="p-link mt-4">Ir a entrar</a>
+      </AccesoShell>
     );
   }
   const { persona, cliente } = v.data;
   return (
-    <AuthShell eyebrow={cliente.company || cliente.name} title="Crea tu contraseña" subtitle={<>Vas a entrar con <b className="text-fg">{persona.email}</b>.</>}>
+    <AccesoShell eyebrow={cliente.company || cliente.name} title="Crea tu contraseña" subtitle={<>Vas a entrar con <b className="text-fg">{persona.email}</b>.</>}>
       <ActivarForm token={token!} nombre={persona.fullName ?? ""} />
-    </AuthShell>
+    </AccesoShell>
   );
 }

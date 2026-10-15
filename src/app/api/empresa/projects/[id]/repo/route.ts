@@ -92,8 +92,12 @@ export const POST = withEmpresaIdRoute(async (req, { params }) => {
       },
     });
 
+    // Repo recién conectado: cada fase recibe su marcador en GitHub y el webhook queda puesto (el avance se mueve solo).
+    const marcadores = await import("@/lib/portal/github-marcadores").then((m) => m.prepararMarcadores(id)).catch((e) => ({ error: e instanceof Error ? e.message : "error" }));
+
     return NextResponse.json({
       ok: true,
+      marcadores,
       summary: describeRepoShort(snapshot),
       owner: snapshot.owner,
       repo: snapshot.repo,

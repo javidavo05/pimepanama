@@ -248,6 +248,21 @@ export async function guardarFaseAction(_: Estado, form: FormData): Promise<Esta
   } else {
     const ultima = await prisma.projectPhase.aggregate({ where: { projectId: p.id }, _max: { sortOrder: true } });
     await prisma.projectPhase.create({ data: { ...datos, projectId: p.id, sortOrder: (ultima._max.sortOrder ?? -1) + 1, progressSource: datos.githubMilestone ? "github" : "manual" } });
+    // Proyecto con repo: la fase nueva nace con su marcador en GitHub y su avance se mueve solo.
+    if (!datos.githubMilestone) {
+      const repo = await prisma.project.findUnique({ where: { id: p.id }, select: { repoName: true } });
+      if (repo?.repoName) {
+        try {
+          const { prepararMarcadores } = await import("@/lib/portal/github-marcadores");
+          const r = await prepararMarcadores(p.id);
+          revalidatePath(`/empresa/proyectos/${p.id}`);
+          return { ok: true, mensaje: `Fase guardada con su marcador en GitHub (${r.tareas} tarea${r.tareas === 1 ? "" : "s"}).${r.avisos.length ? ` ${r.avisos.join(" ")}` : ""}` };
+        } catch (e) {
+          revalidatePath(`/empresa/proyectos/${p.id}`);
+          return { ok: true, mensaje: `Fase guardada. No se pudo crear el marcador en GitHub: ${e instanceof Error ? e.message : "error"}` };
+        }
+      }
+    }
   }
   revalidatePath(`/empresa/proyectos/${p.id}`);
   const cid = clientePrincipal(p); if (cid) revalidatePath(`/empresa/clientes/${cid}`);
@@ -359,6 +374,23 @@ export async function enviarOrdenAction(_: Estado, form: FormData): Promise<Esta
   return { ok: true, mensaje: "Enviada al cliente." };
 }
 
+/** Crea en GitHub el marcador (milestone + tareas) de cada fase que no lo tiene y el webhook del repo. */
+export async function marcadoresGithubAction(_: Estado, form: FormData): Promise<Estado> {
+  const u = await getEmpresaUser();
+  const p = await proyectoDe(u.id, txt(form.get("projectId"), 60));
+  if (!p) return { error: "No encontré ese proyecto." };
+  try {
+    const { prepararMarcadores } = await import("@/lib/portal/github-marcadores");
+    const r = await prepararMarcadores(p.id);
+    const { sincronizarProyecto } = await import("@/lib/portal/github-avance");
+    await sincronizarProyecto(p.id).catch(() => null);
+    revalidatePath(`/empresa/proyectos/${p.id}`);
+    const base = r.fases ? `Listo: ${r.fases} fase(s) con marcador y ${r.tareas} tarea(s) en GitHub.` : "Todas las fases ya tenían su marcador en GitHub.";
+    const hook = r.webhook === "nuevo" ? " Webhook creado: el avance se mueve al cerrar cada tarea." : r.webhook === "ya_estaba" ? " El webhook ya estaba puesto." : "";
+    return { ok: true, mensaje: `${base}${hook}${r.avisos.length ? ` ${r.avisos.join(" ")}` : ""}` };
+  } catch (e) { return falla(e); }
+}
+
 export async function sincronizarGithubAction(_: Estado, form: FormData): Promise<Estado> {
   const u = await getEmpresaUser();
   const p = await proyectoDe(u.id, txt(form.get("projectId"), 60));
@@ -367,6 +399,6 @@ export async function sincronizarGithubAction(_: Estado, form: FormData): Promis
     const { sincronizarProyecto } = await import("@/lib/portal/github-avance");
     const r = await sincronizarProyecto(p.id);
     revalidatePath(`/empresa/proyectos/${p.id}`);
-    return { ok: true, mensaje: r.fases ? `Sincronizado: ${r.fases} fase(s), ${r.issues} tarea(s) nueva(s) contadas al cliente.` : "Ninguna fase tiene milestone de GitHub. Agrégalo en «Editar fase»." };
+    return { ok: true, mensaje: r.fases ? `Sincronizado: ${r.fases} fase(s), ${r.issues} tarea(s) nueva(s) contadas al cliente.` : "Ninguna fase tiene marcador de GitHub. Usa «Crear marcadores en GitHub»." };
   } catch (e) { return falla(e); }
 }

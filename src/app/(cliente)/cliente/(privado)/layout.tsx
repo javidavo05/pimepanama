@@ -1,5 +1,7 @@
 import { getPortalUser } from "@/lib/portal/sesion";
 import { NavPortal } from "@/components/portal/nav";
+import { PortalVivo } from "@/components/portal/vivo";
+import { SimboloContorno } from "@/components/portal/marca";
 
 export const dynamic = "force-dynamic";
 
@@ -8,9 +10,11 @@ export default async function PrivadoLayout({ children }: { children: React.Reac
   const persona = await getPortalUser();
   const linea = persona.client.brandLine === "premium" ? "premium" : "normal";
   return (
-    <div className="portal-app" data-linea={linea}>
-      <NavPortal linea={linea} empresa={persona.client.company || persona.client.name} persona={persona.fullName || persona.email} />
-      <main className="mx-auto w-full max-w-5xl px-4 sm:px-6 pt-6 sm:pt-8 pb-32 sm:pb-16 space-y-8">{children}</main>
+    <div className="portal-app p-fondo" data-linea={linea}>
+      <SimboloContorno className="p-marca-agua" />
+      <NavPortal linea={linea} empresa={persona.client.company || persona.client.name} persona={persona.fullName || persona.email} logo={persona.client.logoKey ? `/api/cliente/logo?v=${encodeURIComponent(persona.client.logoKey.slice(-12))}` : null} />
+      <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 pt-8 sm:pt-12 pb-32 sm:pb-16 space-y-8">{children}</main>
+      <PortalVivo />
     </div>
   );
 }

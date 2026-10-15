@@ -169,3 +169,44 @@ export async function getClosedIssues(owner: string, repo: string, milestone: nu
   const items = await api<ClosedIssue[]>(`/repos/${owner}/${repo}/issues?milestone=${milestone}&state=closed&sort=updated&direction=desc&per_page=50`, token);
   return items.filter((i) => !i.pull_request);
 }
+
+// ─── Marcadores de fase (escritura mínima) ──────────────────────────────────
+// Única escritura del sistema en GitHub: crea el milestone de cada fase, una tarea por entregable y el
+// webhook que mueve el avance. Nunca toca el código. Pide permiso de escritura de issues (y de webhooks
+// para el aviso automático); si el token no lo tiene, GitHub responde 403 y se explica.
+
+async function apiEscribir<T>(path: string, token: string | null, body: unknown, method: "POST" | "PATCH" = "POST"): Promise<T> {
+  if (!token) throw new GithubError("Para crear los marcadores en GitHub hace falta un token con permiso de escritura de issues.", 401);
+  const res = await fetch(`${API}${path}`, {
+    method,
+    headers: { Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "pime-suite", "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+    cache: "no-store",
+  });
+  if (!res.ok) {
+    const detail = await res.text().catch(() => "");
+    const message = res.status === 401 || res.status === 403
+      ? "GitHub no dejó escribir: el token necesita permiso de issues (y de webhooks para el aviso automático)."
+      : res.status === 404 ? "No se encontró el repositorio o el token no tiene acceso." : `GitHub respondió ${res.status}. ${detail.slice(0, 200)}`;
+    throw new GithubError(message, res.status);
+  }
+  return (await res.json()) as T;
+}
+
+export function crearMilestone(owner: string, repo: string, token: string | null, title: string, description?: string | null) {
+  return apiEscribir<MilestoneSummary>(`/repos/${owner}/${repo}/milestones`, token, { title: title.slice(0, 255), description: description?.slice(0, 2000) ?? undefined });
+}
+
+export function crearIssue(owner: string, repo: string, token: string | null, p: { title: string; body?: string | null; milestone: number; labels?: string[] }) {
+  return apiEscribir<{ number: number; html_url: string }>(`/repos/${owner}/${repo}/issues`, token, { title: p.title.slice(0, 255), body: p.body ?? undefined, milestone: p.milestone, labels: p.labels });
+}
+
+export interface HookSummary { id: number; config: { url?: string } ; active: boolean; events: string[] }
+
+export function listarHooks(owner: string, repo: string, token: string | null) {
+  return api<HookSummary[]>(`/repos/${owner}/${repo}/hooks?per_page=100`, token);
+}
+
+export function crearHook(owner: string, repo: string, token: string | null, url: string, secret: string) {
+  return apiEscribir<HookSummary>(`/repos/${owner}/${repo}/hooks`, token, { name: "web", active: true, events: ["issues", "milestone"], config: { url, content_type: "json", secret, insecure_ssl: "0" } });
+}

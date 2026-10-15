@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
-import { AuthShell, errorBox } from "@/components/auth/auth-shell";
+import { AccesoShell } from "@/components/portal/acceso-shell";
+import { errorBox } from "@/components/auth/auth-shell";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 import { AccesoForm } from "./acceso-form";
@@ -21,9 +22,9 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ a
     if (persona?.status === "activo") redirect("/cliente");
   }
   return (
-    <AuthShell eyebrow="Tu cuenta en Pime" title="Entra a tu cuenta" subtitle="Avance de tus proyectos, tickets de soporte, aprobaciones, facturas y pagos." footer={<>¿Todavía no tienes cuenta? Pime te envía una invitación por correo.</>}>
+    <AccesoShell eyebrow="Tu cuenta en Pime" title="Entra a tu cuenta" subtitle="Avance de tus proyectos, tickets de soporte, aprobaciones, facturas y pagos." footer={<>¿Todavía no tienes cuenta? Pime te envía una invitación por correo.</>}>
       {aviso && AVISOS[aviso] && <p className={`${errorBox} mb-6`} role="alert">{AVISOS[aviso]}</p>}
       <AccesoForm conSesion={!!uid} />
-    </AuthShell>
+    </AccesoShell>
   );
 }

@@ -2,8 +2,8 @@ import Link from "next/link";
 import { getPortalUser } from "@/lib/portal/sesion";
 import { datosInicio, dinero } from "@/lib/portal/datos";
 import { FASE_ESTADO_LABEL, TICKET_ESTADO_LABEL, type FaseEstado, type TicketEstado } from "@/lib/portal/estados";
-import { Barra, Encabezado, Etiqueta, Fila, Tarjeta, TituloSeccion, Vacio, btnPrincipal, btnSecundario, fechaCorta, haceCuanto } from "@/components/portal/ui";
-import { IconMas } from "@/components/portal/iconos";
+import { Anillo, Barra, BloqueOscuro, Cifra, Mezcla, type Tono, Encabezado, Etiqueta, Eyebrow, Fila, Swap, Tarjeta, TituloSeccion, Vacio, btnPrincipal, btnSecundario, enlace, fechaCorta, haceCuanto } from "@/components/portal/ui";
+import { IconCheck, IconFlecha, IconMas } from "@/components/portal/iconos";
 import { EstadoSistemas, hayProblema } from "@/components/portal/sistemas";
 import { sistemasDelCliente } from "@/lib/pulso/datos";
 
@@ -15,6 +15,8 @@ export default async function InicioCliente() {
   const problema = hayProblema(sistemas);
   const nombre = (persona.fullName || "").split(" ")[0];
   const principal = d.activos[0] ?? null;
+  const vencida = !!d.proximo?.dueDate && d.proximo.dueDate.getTime() < Date.now() && d.saldo.pendiente > 0.005;
+  const estadoSaldo: [string, Tono] = vencida ? ["Hay una factura vencida", "peligro"] : d.saldo.pendiente > 0.005 ? ["Pendiente", "aviso"] : ["Al día", "ok"];
 
   const resumen = [
     d.activos.length ? `${d.activos.length} ${d.activos.length === 1 ? "proyecto en curso" : "proyectos en curso"}` : null,
@@ -28,51 +30,58 @@ export default async function InicioCliente() {
         eyebrow={persona.client.company || persona.client.name}
         titulo={nombre ? `Hola, ${nombre}` : "Tu cuenta"}
         detalle={resumen || "Aquí vas a ver el avance de tus proyectos, tus tickets y tus pagos."}
-        accion={<Link href="/cliente/tickets/nuevo" className={btnPrincipal}><IconMas />Abrir un ticket</Link>}
+        accion={<Link href="/cliente/tickets/nuevo" className={btnPrincipal}><IconMas data-gira="" /><Swap>Abrir un ticket</Swap></Link>}
       />
 
       {problema && <EstadoSistemas sistemas={sistemas} />}
 
       {d.decisiones.length > 0 && (
-        <Tarjeta className="border-sand/60 bg-sand/10">
+        <Tarjeta className="p-aviso" i={1}>
           <TituloSeccion accion={<Etiqueta tono="aviso">{d.decisiones.length} {d.decisiones.length === 1 ? "pendiente" : "pendientes"}</Etiqueta>}>Espera tu decisión</TituloSeccion>
-          <ul className="divide-y divide-line">
-            {d.decisiones.map((x) => <Fila key={`${x.tipo}-${x.id}`} href={x.href} titulo={x.titulo} detalle={x.detalle} />)}
+          <ul className="p-lista divide-y divide-line">
+            {d.decisiones.map((x, i) => <Fila key={`${x.tipo}-${x.id}`} i={i} tono="aviso" href={x.href} titulo={x.titulo} detalle={x.detalle} />)}
           </ul>
         </Tarjeta>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-5 items-start">
-        <Tarjeta className="lg:col-span-3">
-          <TituloSeccion accion={principal ? <Link href={`/cliente/proyectos/${principal.id}`} className="text-sm font-semibold text-brand-fg hover:underline">Ver detalle</Link> : undefined}>
+      <div className="grid gap-6 lg:grid-cols-12 items-stretch">
+        <Tarjeta className="lg:col-span-7" i={2}>
+          <TituloSeccion accion={principal ? <Link href={`/cliente/proyectos/${principal.id}`} className={enlace}>Ver detalle</Link> : undefined}>
             {principal ? "Proyecto en curso" : "Proyectos"}
           </TituloSeccion>
           {principal ? (
             <div className="space-y-6">
-              <div className="space-y-1">
-                <p className="text-fg text-xl font-bold tracking-tight break-words">{principal.name}</p>
-                <p className="text-fg-dim text-sm">
-                  {principal.actual
-                    ? <>Fase {principal.phases.indexOf(principal.actual) + 1} de {principal.phases.length}: <b className="text-fg">{principal.actual.name}</b></>
-                    : principal.phases.length ? "Todas las fases terminadas" : "Las fases aparecen aquí cuando Pime las cargue."}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <div className="flex items-baseline justify-between gap-4">
-                  <span className="text-fg-dim text-sm">Avance del proyecto</span>
-                  <span className="text-fg text-3xl font-bold tabular-nums tracking-tight">{Math.round(principal.avance)} %</span>
+              <div className="flex items-center gap-6">
+                <Anillo valor={principal.avance} tam={112} etiqueta={`Avance de ${principal.name}`}>
+                  <Cifra texto={`${Math.round(principal.avance)}`} className="text-fg text-3xl font-extrabold tracking-tight" demora={200} />
+                  <span className="block text-fg-dim text-xs font-semibold">%</span>
+                </Anillo>
+                <div className="min-w-0 space-y-1">
+                  <p className="text-fg text-xl sm:text-2xl font-extrabold tracking-tight break-words">{principal.name}</p>
+                  <p className="text-fg-dim text-sm">
+                    {principal.actual
+                      ? <>Fase {principal.phases.indexOf(principal.actual) + 1} de {principal.phases.length}: <b className="text-fg">{principal.actual.name}</b></>
+                      : principal.phases.length ? "Todas las fases terminadas" : "Las fases aparecen aquí cuando Pime las cargue."}
+                  </p>
                 </div>
-                <Barra valor={principal.avance} etiqueta={`Avance de ${principal.name}`} />
               </div>
+              <Barra valor={principal.avance} etiqueta={`Avance de ${principal.name}`} viva={!!principal.actual} />
               {principal.phases.length > 0 && (
-                <ol className="grid gap-2">
-                  {principal.phases.map((f, i) => (
-                    <li key={f.id} className="flex items-center gap-3 text-sm min-w-0">
-                      <span className={`grid place-items-center h-6 w-6 shrink-0 rounded-full text-xs font-bold tabular-nums ${f.status === "hecha" ? "bg-ok text-on-solid" : f.id === principal.actual?.id ? "bg-brand text-on-brand" : "bg-fill-3 text-fg-dim"}`}>{i + 1}</span>
-                      <span className={`min-w-0 flex-1 truncate ${f.id === principal.actual?.id ? "text-fg font-semibold" : "text-fg-mute"}`}>{f.name}</span>
-                      <span className="text-fg-faint text-xs whitespace-nowrap">{FASE_ESTADO_LABEL[f.status as FaseEstado] ?? f.status}</span>
-                    </li>
-                  ))}
+                <ol className="p-pasos">
+                  {principal.phases.map((f, i) => {
+                    const hecha = f.status === "hecha";
+                    const actual = f.id === principal.actual?.id;
+                    return (
+                      <li key={f.id} className="flex items-center gap-3 text-sm min-w-0" style={{ "--i": i } as React.CSSProperties}>
+                        <span className={`p-chip ${hecha ? "hecha" : actual ? "actual" : ""}`} style={{ "--i": i } as React.CSSProperties}>
+                          {actual && <svg viewBox="0 0 32 32" aria-hidden><circle cx="16" cy="16" r="15.2" pathLength={1} /></svg>}
+                          {hecha ? <IconCheck width={16} height={16} /> : i + 1}
+                        </span>
+                        <span className={`min-w-0 flex-1 truncate ${actual ? "text-fg font-bold" : hecha ? "text-fg-mute" : "text-fg-dim"}`}>{f.name}</span>
+                        <span className="text-fg-faint text-xs whitespace-nowrap">{FASE_ESTADO_LABEL[f.status as FaseEstado] ?? f.status}</span>
+                      </li>
+                    );
+                  })}
                 </ol>
               )}
               {d.activos.length > 1 && <Link href="/cliente/proyectos" className={btnSecundario}>Ver los {d.activos.length} proyectos</Link>}
@@ -82,35 +91,45 @@ export default async function InicioCliente() {
           )}
         </Tarjeta>
 
-        <Tarjeta className="lg:col-span-2">
-          <TituloSeccion accion={<Link href="/cliente/facturas" className="text-sm font-semibold text-brand-fg hover:underline">Facturas</Link>}>Tu saldo con Pime</TituloSeccion>
-          <div className="space-y-6">
-            <div>
-              <p className="text-fg-dim text-sm">Por pagar</p>
-              <p className="text-fg text-4xl font-bold tabular-nums tracking-tight">{dinero(d.saldo.pendiente)}</p>
+        <BloqueOscuro className="lg:col-span-5 flex flex-col gap-6" i={3}>
+          <div className="flex items-center justify-between gap-4">
+            <Eyebrow>Tu saldo con Pime</Eyebrow>
+            <Link href="/cliente/facturas" className="p-link">Facturas<IconFlecha width={16} height={16} /></Link>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-3">
+              <p className="p-ink-2 text-sm">Por pagar</p>
+              <Etiqueta tono={estadoSaldo[1]}>{estadoSaldo[0]}</Etiqueta>
             </div>
-            <dl className="grid grid-cols-2 gap-4 text-sm">
-              <div className="rounded-xl bg-fill px-4 py-3"><dt className="text-fg-dim">Pagado</dt><dd className="text-fg font-semibold tabular-nums">{dinero(d.saldo.pagado)}</dd></div>
-              <div className="rounded-xl bg-fill px-4 py-3"><dt className="text-fg-dim">Facturado</dt><dd className="text-fg font-semibold tabular-nums">{dinero(d.saldo.facturado)}</dd></div>
-            </dl>
-            {d.saldo.sinFacturar > 0 && <p className="text-sm text-fg-dim">Incluye <b className="text-fg tabular-nums">{dinero(d.saldo.sinFacturar)}</b> de fases en curso que todavía no tienen factura.</p>}
-            {d.saldo.porConfirmar > 0 && <p className="text-sm text-fg-dim">Pagos reportados esperando confirmación: <b className="text-fg tabular-nums">{dinero(d.saldo.porConfirmar)}</b></p>}
+            <Cifra texto={dinero(d.saldo.pendiente)} moneda className="text-[clamp(36px,3.8vw,52px)] font-extrabold tracking-[-0.03em] leading-none" demora={300} />
+          </div>
+          <Mezcla etiqueta="Tu saldo" partes={[
+            { label: "Pagado", valor: d.saldo.pagado, tono: "ok", texto: dinero(d.saldo.pagado) },
+            { label: "Por pagar", valor: d.saldo.pendiente, tono: vencida ? "peligro" : "aviso", texto: dinero(d.saldo.pendiente) },
+          ]} />
+          <dl className="grid grid-cols-2 gap-3 text-sm">
+            <div className="p-ink-celda p-celda px-4 py-3" data-tono="ok"><dt className="p-ink-3 flex items-center justify-between gap-2">Pagado</dt><dd className="text-lg font-bold"><Cifra texto={dinero(d.saldo.pagado)} moneda demora={450} /></dd></div>
+            <div className="p-ink-celda p-celda px-4 py-3" data-tono="marca"><dt className="p-ink-3">Facturado</dt><dd className="text-lg font-bold"><Cifra texto={dinero(d.saldo.facturado)} moneda demora={520} /></dd></div>
+          </dl>
+          <div className="mt-auto space-y-2 text-sm p-ink-2">
+            {d.saldo.sinFacturar > 0 && <p>Incluye <b className="p-ink-acc tabular-nums">{dinero(d.saldo.sinFacturar)}</b> de fases en curso que todavía no tienen factura.</p>}
+            {d.saldo.porConfirmar > 0 && <p>Pagos reportados esperando confirmación: <b className="p-ink-acc tabular-nums">{dinero(d.saldo.porConfirmar)}</b></p>}
             {d.proximo ? (
-              <p className="text-sm text-fg-dim">Próximo vencimiento: <b className="text-fg">{d.proximo.number ?? "Factura"}</b> el {fechaCorta(d.proximo.dueDate)}</p>
+              <p>{vencida ? "Venció" : "Próximo vencimiento"}: <b className="text-white">{d.proximo.number ?? "Factura"}</b> el {fechaCorta(d.proximo.dueDate)}</p>
             ) : (
-              <p className="text-sm text-fg-dim">{d.saldo.facturado ? "No tienes pagos vencidos ni por vencer." : "Todavía no hay facturas en tu cuenta."}</p>
+              <p>{d.saldo.facturado ? "No tienes pagos vencidos ni por vencer." : "Todavía no hay facturas en tu cuenta."}</p>
             )}
           </div>
-        </Tarjeta>
+        </BloqueOscuro>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2 items-start">
-        <Tarjeta>
-          <TituloSeccion accion={<Link href="/cliente/tickets" className="text-sm font-semibold text-brand-fg hover:underline">Todos</Link>}>Tickets abiertos</TituloSeccion>
+        <Tarjeta i={4}>
+          <TituloSeccion accion={<Link href="/cliente/tickets" className={enlace}>Todos</Link>}>Tickets abiertos</TituloSeccion>
           {d.tickets.length ? (
-            <ul className="divide-y divide-line">
-              {d.tickets.slice(0, 5).map((t) => (
-                <Fila key={t.id} href={`/cliente/tickets/${t.id}`} titulo={t.title} detalle={`${t.number} · ${haceCuanto(t.updatedAt)}`}
+            <ul className="p-lista divide-y divide-line">
+              {d.tickets.slice(0, 5).map((t, i) => (
+                <Fila key={t.id} i={i} tono={t.status === "esperando_cliente" ? "aviso" : "marca"} href={`/cliente/tickets/${t.id}`} titulo={t.title} detalle={`${t.number} · ${haceCuanto(t.updatedAt)}`}
                   derecha={<Etiqueta tono={t.status === "esperando_cliente" ? "aviso" : "marca"}>{TICKET_ESTADO_LABEL[t.status as TicketEstado] ?? t.status}</Etiqueta>} />
               ))}
             </ul>
@@ -118,13 +137,13 @@ export default async function InicioCliente() {
             <Vacio titulo="No tienes tickets abiertos" texto="Si algo no funciona o quieres un cambio, abre un ticket con capturas y te respondemos desde aquí." />
           )}
         </Tarjeta>
-        <Tarjeta>
+        <Tarjeta i={5}>
           <TituloSeccion>Lo último</TituloSeccion>
           {d.eventos.length ? (
-            <ol className="space-y-4">
-              {d.eventos.map((e) => (
-                <li key={e.id} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
-                  <span className="mt-2 h-2 w-2 rounded-full bg-brand" aria-hidden />
+            <ol className="p-tiempo">
+              {d.eventos.map((e, i) => (
+                <li key={e.id} style={{ "--i": i } as React.CSSProperties}>
+                  <span className="pt" aria-hidden />
                   <div className="min-w-0">
                     <p className="text-fg text-sm font-semibold break-words">{e.title}</p>
                     {e.detail && <p className="text-fg-dim text-sm break-words">{e.detail}</p>}

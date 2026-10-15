@@ -53,6 +53,7 @@ export async function datosInicio(clientId: string) {
     .sort((a, b) => a.dueDate!.getTime() - b.dueDate!.getTime())[0] ?? null;
 
   const decisiones = [
+    ...activos.flatMap((p) => p.phases.filter((f) => f.status === "en_revision").map((f) => ({ tipo: "fase" as const, id: f.id, titulo: `Revisar la fase lista: ${f.name}`, detalle: `${p.name}${Number(f.price) > 0 && f.billingPoint === "al_entregar" ? ` · se paga al entregar, ${dinero(f.price)}` : ""}`, href: `/cliente/proyectos/${p.id}` }))),
     ...ordenes.map((o) => ({ tipo: "orden" as const, id: o.id, titulo: `Aprobar cambio: ${o.title}`, detalle: `${o.number} · ${dinero(o.total)}`, href: `/cliente/cambios/${o.id}` })),
     ...tickets.filter((t) => t.estimateStatus === "pendiente").map((t) => ({ tipo: "estimado" as const, id: t.id, titulo: `Aprobar estimado: ${t.title}`, detalle: t.number, href: `/cliente/tickets/${t.id}` })),
     ...tickets.filter((t) => t.status === "esperando_cliente" && t.estimateStatus !== "pendiente").map((t) => ({ tipo: "respuesta" as const, id: t.id, titulo: `Responder: ${t.title}`, detalle: t.number, href: `/cliente/tickets/${t.id}` })),
@@ -65,14 +66,17 @@ export async function proyectoDelCliente(clientId: string, id: string) {
   const p = await prisma.project.findFirst({
     where: { id, ...proyectosDelCliente(clientId) },
     select: {
-      id: true, name: true, description: true, kind: true, status: true, startDate: true, endDate: true,
+      id: true, name: true, description: true, kind: true, status: true, startDate: true, endDate: true, liveUrl: true,
+      accesses: { orderBy: { sortOrder: "asc" }, select: { id: true, label: true, url: true, username: true, notes: true, secretEnc: true } },
       phases: { where: fasesVigentes, orderBy: { sortOrder: "asc" }, select: { id: true, name: true, description: true, status: true, progress: true, price: true, sortOrder: true, billingPoint: true, startedAt: true, completedAt: true, estimatedDays: true, invoice: { select: { id: true, number: true, status: true } } } },
       changeOrders: { where: { clientId, status: { not: "borrador" } }, orderBy: { createdAt: "desc" }, select: { id: true, number: true, title: true, status: true, total: true, sentAt: true, decidedAt: true } },
     },
   });
   if (!p) return null;
   const eventos = await prisma.activityEvent.findMany({ where: { clientId, projectId: id, visibility: "cliente" }, orderBy: { createdAt: "desc" }, take: 30, select: { id: true, title: true, detail: true, createdAt: true, actorType: true } });
-  return { ...p, avance: avanceDeProyecto(p.phases), actual: faseActual(p.phases), eventos };
+  // La clave cifrada nunca sale del servidor: solo si existe; se descifra a pedido (verClaveAction).
+  const accesos = p.accesses.map(({ secretEnc, ...a }) => ({ ...a, conClave: !!secretEnc }));
+  return { ...p, accesses: undefined, accesos, avance: avanceDeProyecto(p.phases), actual: faseActual(p.phases), eventos };
 }
 
 export async function ticketsDelCliente(clientId: string) {

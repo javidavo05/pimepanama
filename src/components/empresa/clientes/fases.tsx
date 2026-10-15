@@ -3,7 +3,7 @@
 /** Fases del proyecto y órdenes de cambio, del lado del equipo. Lo que se guarda aquí es lo que ve el cliente. */
 import { useActionState, useState } from "react";
 import Link from "next/link";
-import { sincronizarGithubAction, avanceFaseAction, borrarFaseAction, enviarOrdenAction, facturarFaseAction, guardarFaseAction, guardarOrdenAction, tipoProyectoAction, type Estado } from "@/app/(empresa)/empresa/(protected)/acciones-clientes";
+import { marcadoresGithubAction, sincronizarGithubAction, avanceFaseAction, borrarFaseAction, enviarOrdenAction, facturarFaseAction, guardarFaseAction, guardarOrdenAction, tipoProyectoAction, type Estado } from "@/app/(empresa)/empresa/(protected)/acciones-clientes";
 import { btn } from "@/components/empresa/page-header";
 import { campo, etiqueta } from "./formularios";
 
@@ -32,7 +32,9 @@ export function FaseFila({ projectId, f, indice }: { projectId: string; f: FaseV
       <form action={aA} className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_7rem_auto] sm:items-end">
         <input type="hidden" name="faseId" value={f.id} /><input type="hidden" name="projectId" value={projectId} />
         <div><label className={etiqueta} htmlFor={`st-${f.id}`}>Estado</label><select id={`st-${f.id}`} name="status" defaultValue={f.status} className={`${campo} field-select pr-8`}>{ESTADO.map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select></div>
-        <div><label className={etiqueta} htmlFor={`pr-${f.id}`}>Avance %</label><input id={`pr-${f.id}`} name="progress" type="number" min={0} max={100} step={5} defaultValue={Math.round(f.progress)} className={campo} /></div>
+        {f.githubMilestone
+          ? <div><span className={etiqueta}>Avance</span><p className="min-h-11 flex items-center gap-2 text-sm font-semibold text-fg" title="Lo mueven las tareas cerradas del milestone"><span className="h-2 w-2 rounded-full bg-ok" aria-hidden />{Math.round(f.progress)} % · GitHub</p></div>
+          : <div><label className={etiqueta} htmlFor={`pr-${f.id}`}>Avance %</label><input id={`pr-${f.id}`} name="progress" type="number" min={0} max={100} step={5} defaultValue={Math.round(f.progress)} className={campo} /></div>}
         <button className={btn.secondary} disabled={pA}>Actualizar</button>
       </form>
       <Msg e={eA} />
@@ -59,7 +61,7 @@ export function FaseForm({ projectId, f }: { projectId: string; f?: FaseVista })
         <div><label className={etiqueta}>Precio USD</label><input name="price" inputMode="decimal" defaultValue={f?.price ?? ""} className={campo} /></div>
         <div><label className={etiqueta}>Se cobra</label><select name="billingPoint" defaultValue={f?.billingPoint ?? "al_entregar"} className={`${campo} field-select pr-8`}>{COBRO.map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select></div>
         <div><label className={etiqueta}>Plazo (días)</label><input name="estimatedDays" inputMode="numeric" defaultValue={f?.estimatedDays ?? ""} className={campo} /></div>
-        <div><label className={etiqueta}>Milestone de GitHub</label><input name="githubMilestone" inputMode="numeric" defaultValue={f?.githubMilestone ?? ""} className={campo} placeholder="Número; el avance se mueve solo" /></div>
+        <div><label className={etiqueta}>Milestone de GitHub</label><input name="githubMilestone" inputMode="numeric" defaultValue={f?.githubMilestone ?? ""} className={campo} placeholder="Vacío: se crea solo si hay repo" /></div>
       </div>
       <Msg e={e} />
       <button className={btn.primary} disabled={p}>{p ? "Guardando…" : f ? "Guardar fase" : "Agregar fase"}</button>
@@ -121,15 +123,18 @@ export function EnviarOrden({ ordenId }: { ordenId: string }) {
   return <form action={a}><input type="hidden" name="ordenId" value={ordenId} /><button className="text-xs font-semibold text-brand-fg hover:underline min-h-10 px-2" disabled={p}>Enviar al cliente</button><Msg e={e} /></form>;
 }
 
-export function SincronizarGithub({ projectId, repo }: { projectId: string; repo: string | null }) {
+export function SincronizarGithub({ projectId, repo, sinMarcador }: { projectId: string; repo: string | null; sinMarcador: number }) {
   const [e, a, p] = useActionState(sincronizarGithubAction, null);
-  if (!repo) return <p className="text-xs text-fg-dim">Conecta el repositorio del proyecto (pestaña Resumen) y pon el número de milestone en cada fase: el avance se mueve solo cuando se cierran sus tareas.</p>;
+  const [eM, aM, pM] = useActionState(marcadoresGithubAction, null);
+  if (!repo) return <p className="text-xs text-fg-dim">Conecta el repositorio del proyecto (pestaña Resumen): cada fase tendrá su marcador en GitHub y el avance se moverá solo al cerrar sus tareas, con aviso y correo al cliente.</p>;
   return (
-    <form action={a} className="flex flex-wrap items-center gap-3">
-      <input type="hidden" name="projectId" value={projectId} />
-      <span className="text-xs text-fg-dim">GitHub: <span className="font-mono text-fg-mute">{repo}</span></span>
-      <button className="text-xs font-semibold text-brand-fg hover:underline min-h-11 sm:min-h-10" disabled={p}>{p ? "Sincronizando…" : "Sincronizar avance ahora"}</button>
-      <Msg e={e} />
-    </form>
+    <div className="space-y-2 rounded-xl border border-line p-4">
+      <p className="text-xs text-fg-dim">GitHub: <span className="font-mono text-fg-mute">{repo}</span> · {sinMarcador ? <b className="text-warn">{sinMarcador} fase{sinMarcador === 1 ? "" : "s"} sin marcador: su avance no se mueve solo</b> : <span className="text-ok font-semibold">todas las fases con marcador</span>}</p>
+      <div className="flex flex-wrap items-center gap-3">
+        {sinMarcador > 0 && <form action={aM}><input type="hidden" name="projectId" value={projectId} /><button className={btn.primary} disabled={pM}>{pM ? "Creando marcadores…" : "Crear marcadores en GitHub"}</button></form>}
+        <form action={a}><input type="hidden" name="projectId" value={projectId} /><button className="text-xs font-semibold text-brand-fg hover:underline min-h-11 sm:min-h-10" disabled={p}>{p ? "Sincronizando…" : "Sincronizar avance ahora"}</button></form>
+      </div>
+      <Msg e={eM} /><Msg e={e} />
+    </div>
   );
 }

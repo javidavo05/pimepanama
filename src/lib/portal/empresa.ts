@@ -228,13 +228,19 @@ export function clientePrincipal(p: { clientId: string | null; clients: { client
 }
 
 export async function avanceDeFaseEvento(u: Equipo, faseId: string, cambios: { status?: string; progress?: number }) {
-  const f = await prisma.projectPhase.findFirst({ where: { id: faseId, project: { userId: u.id } }, select: { id: true, name: true, status: true, progress: true, startedAt: true, project: { select: { id: true, clientId: true, clients: { select: { clientId: true } } } } } });
+  const f = await prisma.projectPhase.findFirst({ where: { id: faseId, project: { userId: u.id } }, select: { id: true, name: true, status: true, progress: true, progressSource: true, githubMilestone: true, startedAt: true, project: { select: { id: true, clientId: true, clients: { select: { clientId: true } } } } } });
   if (!f) throw new Error("No encontré esa fase.");
   const status = cambios.status ?? f.status;
-  const progress = status === "hecha" ? 100 : Math.max(0, Math.min(100, cambios.progress ?? Number(f.progress)));
+  // Con marcador de GitHub el avance lo mueven las tareas cerradas, no la mano.
+  const deGithub = f.progressSource === "github" && f.githubMilestone != null;
+  const progress = status === "hecha" ? 100 : deGithub ? Number(f.progress) : Math.max(0, Math.min(100, cambios.progress ?? Number(f.progress)));
   await prisma.projectPhase.update({ where: { id: f.id }, data: { status, progress, startedAt: f.startedAt ?? (status !== "pendiente" ? new Date() : null), completedAt: status === "hecha" ? new Date() : null } });
   const clientId = clientePrincipal(f.project);
   if (clientId && (status !== f.status || Math.abs(progress - Number(f.progress)) >= 5)) {
+    if ((status === "en_revision" || status === "hecha") && status !== f.status) {
+      const { avisarFaseLista } = await import("./fase-lista");
+      await avisarFaseLista(f.id, status === "hecha");
+    }
     await registrarEvento({ userId: u.id, clientId, projectId: f.project.id, entityType: "fase", entityId: f.id, kind: status === "hecha" ? "fase_hecha" : "avance", title: status === "hecha" ? `Terminamos la fase ${f.name}` : status === "en_revision" ? `La fase ${f.name} está lista para tu revisión` : `${f.name} al ${Math.round(progress)} %`, visibility: "cliente", actorType: "pime", actorEmpresaUserId: u.id });
   }
 }

@@ -16,7 +16,7 @@ export function ActivarForm({ token, nombre }: { token: string; nombre: string }
       </div>
       <ClaveNueva />
       {estado?.error && <p className={errorBox} role="alert">{estado.error}</p>}
-      <button type="submit" className={botonPrincipal} disabled={enviando}>{enviando ? "Creando tu cuenta…" : "Crear contraseña y entrar"}</button>
+      <button type="submit" className={botonPrincipal} disabled={enviando} aria-busy={enviando}>{enviando ? "Creando tu cuenta…" : "Crear contraseña y entrar"}</button>
     </form>
   );
 }

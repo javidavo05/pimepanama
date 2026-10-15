@@ -15,7 +15,7 @@ export function RecuperarForm() {
         <label htmlFor="email" className={etiqueta}>Correo</label>
         <input id="email" name="email" type="email" autoComplete="email" inputMode="email" required className={campo} />
       </div>
-      <button type="submit" className={botonPrincipal} disabled={enviando}>{enviando ? "Enviando…" : "Enviarme el enlace"}</button>
+      <button type="submit" className={botonPrincipal} disabled={enviando} aria-busy={enviando}>{enviando ? "Enviando…" : "Enviarme el enlace"}</button>
     </form>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { ThemeScript } from "@/components/empresa/theme/theme-script";
 import { ThemeProvider } from "@/components/empresa/theme/theme-provider";
+import "@/components/portal/portal.css";
 
 export const metadata: Metadata = {
   title: { default: "Tu cuenta · Pime", template: "%s · Pime" },

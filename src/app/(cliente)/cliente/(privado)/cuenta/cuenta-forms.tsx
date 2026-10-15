@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
-import { cambiarClaveAction, invitarCompaneroAction, quitarCompaneroAction } from "../acciones";
+import { cambiarClaveAction, cambiarRolAction, guardarLogoAction, invitarCompaneroAction, quitarCompaneroAction, quitarLogoAction } from "../acciones";
 import { ActivarTotp } from "@/components/auth/totp";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { btnPeligro, btnPrincipal, btnSecundario } from "@/components/portal/ui";
@@ -61,6 +61,15 @@ export function InvitarCompanero() {
         <div><label htmlFor="inv-nombre" className={etiqueta}>Nombre</label><input id="inv-nombre" name="nombre" autoComplete="off" className={campo} /></div>
         <div><label htmlFor="inv-email" className={etiqueta}>Correo</label><input id="inv-email" name="email" type="email" inputMode="email" required autoComplete="off" className={campo} /></div>
       </div>
+      <fieldset className="grid gap-2 sm:grid-cols-2">
+        <legend className={etiqueta}>Qué puede hacer</legend>
+        {[["miembro", "Miembro", "Ve proyectos, tickets y facturas."], ["principal", "Dueño", "Además invita, quita accesos y da permisos."]].map(([v, t, d]) => (
+          <label key={v} className="flex cursor-pointer flex-col gap-1 rounded-xl border border-line-mid p-4 min-h-14 transition-colors hover:border-line-loud has-[:checked]:border-brand has-[:checked]:bg-brand/5">
+            <input type="radio" name="rol" value={v} defaultChecked={v === "miembro"} className="sr-only" />
+            <span className="text-fg text-sm font-bold">{t}</span><span className="text-fg-dim text-xs">{d}</span>
+          </label>
+        ))}
+      </fieldset>
       {estado?.error && <p className={errorBox} role="alert">{estado.error}</p>}
       {estado?.ok && <p className={okBox} role="status">{estado.mensaje}</p>}
       <button type="submit" className={btnSecundario} disabled={enviando}>{enviando ? "Enviando…" : "Enviar invitación"}</button>
@@ -79,5 +88,64 @@ export function QuitarCompanero({ id, nombre }: { id: string; nombre: string }) 
       <button type="button" className="text-xs font-semibold text-fg-dim min-h-11 px-2" onClick={() => setConfirmar(false)}>No</button>
       {estado?.error && <span className="sr-only" role="alert">{estado.error}</span>}
     </form>
+  );
+}
+
+export function CambiarRol({ id, rol, nombre }: { id: string; rol: string; nombre: string }) {
+  const [estado, accion, enviando] = useActionState(cambiarRolAction, null);
+  const nuevo = rol === "principal" ? "miembro" : "principal";
+  return (
+    <form action={accion} className="flex items-center gap-2">
+      <input type="hidden" name="persona" value={id} /><input type="hidden" name="rol" value={nuevo} />
+      <button type="submit" className="text-xs font-semibold text-brand-fg hover:underline min-h-11 px-2" disabled={enviando} aria-label={`${nuevo === "principal" ? "Hacer dueño" : "Volver miembro"} a ${nombre}`}>{nuevo === "principal" ? "Hacer dueño" : "Volver miembro"}</button>
+      {estado?.error && <span className="text-xs text-danger" role="alert">{estado.error}</span>}
+    </form>
+  );
+}
+
+/** Logo de la empresa: se sube a la carpeta del cliente y se ve en su cuenta junto al de Pime. */
+export function LogoEmpresa({ logo, empresa }: { logo: string | null; empresa: string }) {
+  const [vista, setVista] = useState(logo);
+  const [error, setError] = useState<string | null>(null);
+  const [subiendo, setSubiendo] = useState(false);
+  const iniciales = empresa.split(/\s+/).filter(Boolean).slice(0, 2).map((x) => x[0]).join("").toUpperCase();
+
+  async function subir(file: File | undefined) {
+    if (!file) return;
+    setError(null);
+    if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) { setError("Sube una imagen PNG, JPG o WebP."); return; }
+    if (file.size > 4 * 1024 * 1024) { setError("La imagen pasa de 4 MB."); return; }
+    setSubiendo(true);
+    try {
+      const fd = new FormData(); fd.append("archivo", file);
+      const r = await fetch("/api/cliente/adjuntos", { method: "POST", body: fd });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || "No se pudo subir.");
+      const g = new FormData(); g.append("key", j.key); g.append("tipo", j.contentType);
+      const res = await guardarLogoAction(null, g);
+      if (res?.error) throw new Error(res.error);
+      setVista(URL.createObjectURL(file));
+    } catch (e) { setError(e instanceof Error ? e.message : "No se pudo subir."); }
+    setSubiendo(false);
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-4">
+        <span className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-xl border border-line bg-panel">
+          {/* eslint-disable-next-line @next/next/no-img-element -- logo del cliente servido desde su cuenta */}
+          {vista ? <img src={vista} alt={`Logo de ${empresa}`} className="h-full w-full object-contain p-2" /> : <span className="text-fg-dim text-xl font-extrabold">{iniciales}</span>}
+        </span>
+        <p className="text-fg-dim text-sm leading-relaxed">Aparece en tu cuenta junto al de Pime. PNG o WebP con fondo transparente se ve mejor.</p>
+      </div>
+      {error && <p className={errorBox} role="alert">{error}</p>}
+      <div className="flex flex-wrap gap-3">
+        <label className={`${btnSecundario} cursor-pointer`} aria-busy={subiendo}>
+          {subiendo ? "Subiendo…" : vista ? "Cambiar logo" : "Subir el logo"}
+          <input type="file" accept="image/png,image/jpeg,image/webp" className="sr-only text-base" onChange={(e) => void subir(e.target.files?.[0])} disabled={subiendo} />
+        </label>
+        {vista && <button type="button" className="text-sm font-semibold text-fg-dim hover:text-danger min-h-12 px-3" onClick={async () => { await quitarLogoAction(); setVista(null); }}>Quitar</button>}
+      </div>
+    </div>
   );
 }

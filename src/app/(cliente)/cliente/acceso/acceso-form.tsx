@@ -5,6 +5,8 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { botonPrincipal, botonSecundario, campo, errorBox, etiqueta } from "@/components/auth/auth-shell";
 import { CampoClave } from "@/components/auth/campo-clave";
 import { cerrarSesion } from "@/components/auth/totp";
+import { Swap } from "@/components/portal/ui";
+import { IconFlecha } from "@/components/portal/iconos";
 
 export function AccesoForm({ conSesion }: { conSesion: boolean }) {
   const [email, setEmail] = useState("");
@@ -30,10 +32,10 @@ export function AccesoForm({ conSesion }: { conSesion: boolean }) {
       <div>
         <label htmlFor="clave" className={etiqueta}>Contraseña</label>
         <CampoClave id="clave" autoComplete="current-password" required className={campo} value={clave} onChange={(e) => setClave(e.target.value)} />
-        <div className="flex justify-end"><a href="/cliente/recuperar" className="inline-flex items-center min-h-11 text-xs font-semibold text-brand-fg hover:underline">Olvidé mi contraseña</a></div>
+        <div className="flex justify-end"><a href="/cliente/recuperar" className="p-link">Olvidé mi contraseña</a></div>
       </div>
       {error && <p className={errorBox} role="alert">{error}</p>}
-      <button type="submit" className={botonPrincipal} disabled={cargando}>{cargando ? "Entrando…" : "Entrar a mi cuenta"}</button>
+      <button type="submit" className={`${botonPrincipal} gap-2`} disabled={cargando} aria-busy={cargando}>{cargando ? "Entrando…" : <><Swap>Entrar a mi cuenta</Swap><IconFlecha width={18} height={18} /></>}</button>
       {conSesion && <button type="button" className={botonSecundario} onClick={() => void cerrarSesion("/cliente/acceso")}>Cerrar la sesión abierta</button>}
     </form>
   );

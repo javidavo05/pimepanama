@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { avanceDeProyecto } from "@/lib/portal/avance";
 import { dinero } from "@/lib/portal/datos";
+import { AccesosCliente } from "@/components/empresa/clientes/accesos";
 import { EnviarOrden, FaseFila, FaseForm, OrdenForm, SincronizarGithub, TipoProyecto } from "@/components/empresa/clientes/fases";
 
 const ORDEN: Record<string, string> = { borrador: "Borrador", enviada: "Espera al cliente", aprobada: "Aprobada", rechazada: "No aprobada", cancelada: "Cancelada" };
@@ -12,7 +13,8 @@ export async function cargarFases(projectId: string, userId: string) {
   return prisma.project.findFirst({
     where: { id: projectId, userId },
     select: {
-      id: true, kind: true, portalVisible: true, repoOwner: true, repoName: true,
+      id: true, kind: true, portalVisible: true, repoOwner: true, repoName: true, liveUrl: true,
+      accesses: { orderBy: { sortOrder: "asc" }, select: { id: true, label: true, url: true, username: true, notes: true, secretEnc: true } },
       phases: { orderBy: { sortOrder: "asc" }, include: { invoice: { select: { number: true } }, changeOrder: { select: { status: true } } } },
       changeOrders: { orderBy: { createdAt: "desc" }, select: { id: true, number: true, title: true, status: true, total: true, decidedAt: true, decisionComment: true } },
     },
@@ -36,7 +38,7 @@ export function FasesPanel({ p }: { p: Fases }) {
       <div id="tipo-proyecto" tabIndex={-1} className="scroll-mt-4 outline-none">
         <TipoProyecto projectId={p.id} kind={p.kind} portalVisible={p.portalVisible} />
       </div>
-      <SincronizarGithub projectId={p.id} repo={p.repoOwner && p.repoName ? `${p.repoOwner}/${p.repoName}` : null} />
+      <SincronizarGithub projectId={p.id} repo={p.repoOwner && p.repoName ? `${p.repoOwner}/${p.repoName}` : null} sinMarcador={vigentes.filter((f) => !f.githubMilestone).length} />
       {vigentes.length ? (
         <ol className="space-y-3">
           {vigentes.map((f, i) => (
@@ -48,6 +50,10 @@ export function FasesPanel({ p }: { p: Fases }) {
         <summary className="flex items-center cursor-pointer p-4 text-sm font-semibold text-brand-fg min-h-11">+ Agregar fase</summary>
         <div className="p-4 pt-0"><FaseForm projectId={p.id} /></div>
       </details>
+      <div id="acceso-cliente" className="space-y-3 border-t border-line pt-6">
+        <div><h3 className="text-fg text-sm font-semibold">Acceso del cliente a su sistema</h3><p className="text-fg-dim text-xs">El enlace y los accesos aparecen en la ficha del proyecto en la cuenta del cliente. Las claves se guardan cifradas.</p></div>
+        <AccesosCliente projectId={p.id} liveUrl={p.liveUrl} accesos={p.accesses.map((a) => ({ id: a.id, label: a.label, url: a.url, username: a.username, notes: a.notes, conClave: !!a.secretEnc }))} />
+      </div>
     </section>
   );
 }

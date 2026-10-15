@@ -424,6 +424,25 @@ export function getPortalTicketUpdateEmail(params: { name?: string | null; numbe
   return { subject: `${params.number} · ${params.status}`, html: shell({ preheader: `${params.title} — ${params.status}`, content, lang: "es" }) };
 }
 
+/** Aviso al cliente: una fase de su proyecto quedó lista (el avance llegó solo desde GitHub o lo marcó el equipo). */
+export function getPortalFaseListaEmail(params: { name?: string | null; project: string; phase: string; avance: number; terminada: boolean; pago?: string | null; link: string; liveUrl?: string | null }) {
+  const content = [
+    eyebrow(params.project),
+    heading(params.terminada ? `Terminamos la fase «${params.phase}»` : `La fase «${params.phase}» está lista para tu revisión`),
+    paragraph(`${params.name ? `${esc(params.name.split(" ")[0])}, t` : "T"}ienes un avance nuevo en tu cuenta de Pime. Entra para ver lo que se entregó${params.terminada ? "" : " y darnos tu visto bueno"}.`),
+    detailPanel([
+      { label: "Fase", value: esc(params.phase) },
+      { label: "Avance del proyecto", value: `${Math.round(params.avance)} %` },
+      ...(params.pago ? [{ label: "Pago de esta fase", value: esc(params.pago) }] : []),
+      ...(params.liveUrl ? [{ label: "Tu sistema", value: `<a href="${esc(params.liveUrl)}" style="color:inherit">${esc(params.liveUrl.replace(/^https?:\/\//, ""))}</a>` }] : []),
+    ]),
+    button(params.link, "Revisar mi cuenta"),
+    spacer(),
+  ].join("");
+  const asunto = params.terminada ? `${params.project}: terminamos ${params.phase}` : `${params.project}: ${params.phase} está lista para revisar`;
+  return { subject: asunto, html: shell({ preheader: `Tienes un avance nuevo en ${params.project}.`, content, lang: "es" }) };
+}
+
 /** Aviso interno a Pime: un cliente abrió un ticket o escribió en uno. */
 export function getPimeTicketAlertEmail(params: { client: string; person?: string | null; number: string; title: string; kind: string; message: string; attachments: number; link: string }) {
   const content = [
