@@ -5,7 +5,8 @@ import { cambiarClaveAction, cambiarRolAction, guardarLogoAction, invitarCompane
 import { ActivarTotp } from "@/components/auth/totp";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { btnPeligro, btnPrincipal, btnSecundario } from "@/components/portal/ui";
-import { IconEscudo } from "@/components/portal/iconos";
+import { IconCuenta, IconEscudo } from "@/components/portal/iconos";
+import { Opciones } from "@/components/portal/opciones";
 import { campo, errorBox, etiqueta, okBox } from "@/components/auth/auth-shell";
 import { ClaveNueva } from "@/components/auth/campo-clave";
 
@@ -61,14 +62,12 @@ export function InvitarCompanero() {
         <div><label htmlFor="inv-nombre" className={etiqueta}>Nombre</label><input id="inv-nombre" name="nombre" autoComplete="off" className={campo} /></div>
         <div><label htmlFor="inv-email" className={etiqueta}>Correo</label><input id="inv-email" name="email" type="email" inputMode="email" required autoComplete="off" className={campo} /></div>
       </div>
-      <fieldset className="grid gap-2 sm:grid-cols-2">
+      <fieldset>
         <legend className={etiqueta}>Qué puede hacer</legend>
-        {[["miembro", "Miembro", "Ve proyectos, tickets y facturas."], ["principal", "Dueño", "Además invita, quita accesos y da permisos."]].map(([v, t, d]) => (
-          <label key={v} className="flex cursor-pointer flex-col gap-1 rounded-xl border border-line-mid p-4 min-h-14 transition-colors hover:border-line-loud has-[:checked]:border-brand has-[:checked]:bg-brand/5">
-            <input type="radio" name="rol" value={v} defaultChecked={v === "miembro"} className="sr-only" />
-            <span className="text-fg text-sm font-bold">{t}</span><span className="text-fg-dim text-xs">{d}</span>
-          </label>
-        ))}
+        <Opciones name="rol" porDefecto="miembro" opciones={[
+          { v: "miembro", t: "Miembro", d: "Ve proyectos, tickets, facturas y los accesos del sistema.", Icon: IconCuenta },
+          { v: "principal", t: "Dueño", d: "Además invita personas, quita accesos y da permisos.", Icon: IconEscudo },
+        ]} />
       </fieldset>
       {estado?.error && <p className={errorBox} role="alert">{estado.error}</p>}
       {estado?.ok && <p className={okBox} role="status">{estado.mensaje}</p>}

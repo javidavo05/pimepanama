@@ -25,7 +25,7 @@ export default async function TicketCliente({ params, searchParams }: { params: 
 
   return (
     <>
-      <Link href="/cliente/tickets" className="inline-flex items-center gap-1 text-sm font-semibold text-fg-dim hover:text-fg"><IconAtras width={16} height={16} />Tickets</Link>
+      <Link href="/cliente/tickets" className="p-in group inline-flex items-center gap-1 min-h-11 text-sm font-semibold text-fg-dim hover:text-fg transition-colors"><IconAtras width={16} height={16} className="transition-transform group-hover:-translate-x-1" />Tickets</Link>
       <Encabezado eyebrow={`${t.number} · ${TICKET_TIPO_LABEL[t.kind as TicketTipo] ?? t.kind}`} titulo={t.title}
         detalle={<>Abierto el {fechaCorta(t.createdAt)}{t.project ? <> · {t.project.name}</> : null}</>}
         accion={<Etiqueta tono={t.status === "esperando_cliente" ? "aviso" : cerrado ? "ok" : "marca"}>{TICKET_ESTADO_LABEL[t.status as TicketEstado] ?? t.status}</Etiqueta>} />

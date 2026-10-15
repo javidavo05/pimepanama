@@ -4,12 +4,14 @@ import { useActionState, useState } from "react";
 import { crearTicketAction } from "../../acciones";
 import { SubirArchivos } from "@/components/portal/subir-archivos";
 import { btnPrincipal } from "@/components/portal/ui";
+import { Opciones } from "@/components/portal/opciones";
+import { IconMas, IconProyectos, IconTickets } from "@/components/portal/iconos";
 import { campo, errorBox, etiqueta } from "@/components/auth/auth-shell";
 
 const TIPOS = [
-  { v: "soporte", t: "Algo no funciona", d: "Un error, algo que se ve mal o una duda." },
-  { v: "cambio", t: "Cambiar algo existente", d: "Ajustar una pantalla, un reporte o un proceso." },
-  { v: "nuevo", t: "Algo nuevo", d: "Un módulo, una integración o un sistema nuevo." },
+  { v: "soporte", t: "Algo no funciona", d: "Un error, algo que se ve mal o una duda.", Icon: IconTickets },
+  { v: "cambio", t: "Cambiar algo existente", d: "Ajustar una pantalla, un reporte o un proceso.", Icon: IconProyectos },
+  { v: "nuevo", t: "Algo nuevo", d: "Un módulo, una integración o un sistema nuevo.", Icon: IconMas },
 ] as const;
 
 const AYUDA: Record<string, string> = {
@@ -25,15 +27,7 @@ export function NuevoTicketForm({ proyectos, proyectoInicial, tipoInicial }: { p
     <form action={accion} className="space-y-6">
       <fieldset>
         <legend className={etiqueta}>¿Qué necesitas?</legend>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {TIPOS.map((x) => (
-            <label key={x.v} className={`flex cursor-pointer flex-col gap-1 rounded-xl border p-4 min-h-14 transition-colors ${tipo === x.v ? "border-brand bg-brand/5" : "border-line-mid hover:border-line-loud"}`}>
-              <input type="radio" name="tipo" value={x.v} checked={tipo === x.v} onChange={() => setTipo(x.v)} className="sr-only" />
-              <span className="text-fg text-sm font-semibold">{x.t}</span>
-              <span className="text-fg-dim text-xs leading-relaxed">{x.d}</span>
-            </label>
-          ))}
-        </div>
+        <Opciones name="tipo" opciones={TIPOS} valor={tipo} onCambio={setTipo} columnas={3} />
       </fieldset>
       {proyectos.length > 0 && (
         <div>

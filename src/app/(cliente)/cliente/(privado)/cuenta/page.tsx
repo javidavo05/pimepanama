@@ -1,6 +1,6 @@
 import { getPortalUser } from "@/lib/portal/sesion";
 import { prisma } from "@/lib/prisma";
-import { ThemeToggleLabeled } from "@/components/empresa/theme/theme-toggle";
+import { TemaPortal } from "@/components/portal/opciones";
 import { Encabezado, Etiqueta, Tarjeta, TituloSeccion, fechaCorta } from "@/components/portal/ui";
 import { CambiarClave, CambiarRol, DobleVerificacion, InvitarCompanero, LogoEmpresa, QuitarCompanero } from "./cuenta-forms";
 
@@ -24,7 +24,7 @@ export default async function CuentaCliente() {
         </Tarjeta>
         <Tarjeta i={2}><TituloSeccion>Logo de tu empresa</TituloSeccion><LogoEmpresa logo={p.client.logoKey ? `/api/cliente/logo?v=${encodeURIComponent(p.client.logoKey.slice(-12))}` : null} empresa={p.client.company || p.client.name} /></Tarjeta>
         <Tarjeta i={2}><TituloSeccion>Contraseña</TituloSeccion><CambiarClave /></Tarjeta>
-        <Tarjeta i={3}><TituloSeccion>Apariencia</TituloSeccion><p className="text-fg-dim text-sm mb-4">Claro, oscuro o el mismo de tu teléfono o computadora.</p><ThemeToggleLabeled /></Tarjeta>
+        <Tarjeta i={3}><TituloSeccion>Apariencia</TituloSeccion><p className="text-fg-dim text-sm mb-4">Claro, oscuro o el mismo de tu teléfono o computadora.</p><TemaPortal /></Tarjeta>
         <Tarjeta i={4}><TituloSeccion>Doble verificación</TituloSeccion><DobleVerificacion /></Tarjeta>
         <Tarjeta i={5}>
           <TituloSeccion>Personas con acceso</TituloSeccion>

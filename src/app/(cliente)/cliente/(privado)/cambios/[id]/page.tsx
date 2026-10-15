@@ -17,7 +17,7 @@ export default async function OrdenCliente({ params }: { params: Promise<{ id: s
   const abierta = o.status === "enviada";
   return (
     <>
-      <Link href={`/cliente/proyectos/${o.project.id}`} className="inline-flex items-center gap-1 text-sm font-semibold text-fg-dim hover:text-fg"><IconAtras width={16} height={16} />{o.project.name}</Link>
+      <Link href={`/cliente/proyectos/${o.project.id}`} className="p-in group inline-flex items-center gap-1 min-h-11 text-sm font-semibold text-fg-dim hover:text-fg transition-colors"><IconAtras width={16} height={16} className="transition-transform group-hover:-translate-x-1" />{o.project.name}</Link>
       <Encabezado eyebrow={`Orden de cambio ${o.number}`} titulo={o.title}
         accion={<Etiqueta tono={abierta ? "aviso" : o.status === "aprobada" ? "ok" : "neutro"}>{abierta ? "Espera tu decisión" : o.status === "aprobada" ? `Aprobada el ${fechaCorta(o.decidedAt)}` : o.status === "rechazada" ? "No aprobada" : "Cancelada"}</Etiqueta>} />
       {o.description && <Tarjeta><TituloSeccion>Qué cambia</TituloSeccion><p className="text-fg-mute text-sm leading-relaxed whitespace-pre-line">{o.description}</p></Tarjeta>}
