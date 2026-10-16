@@ -12,6 +12,7 @@ export type Portal = {
   eyebrow: string;
   titulo: string[];
   bajada: string;
+  sellos: string[];
   pasos: { id: "avance" | "tickets" | "facturas"; titulo: string; texto: string }[];
   ventana: {
     ejemplo: string;
@@ -43,6 +44,7 @@ export type Portal = {
       lista: string;
       estados: { resuelto: string; en_curso: string; recibido: string };
       respuesta: string;
+      equipo: string;
       estimado: string;
       aprobar: string;
       aprobado: string;
@@ -55,6 +57,8 @@ export type Portal = {
       estados: { pagada: string; pendiente: string };
       verDetalle: string;
       pdf: string;
+      pdfNota: string;
+      pdfHref: string;
       pagar: string;
       items: Factura[];
     };
@@ -67,7 +71,8 @@ export const PORTAL: Record<Lang, Portal> = {
   es: {
     eyebrow: "06 · Su cuenta",
     titulo: ["Su proyecto,", "en vivo, paso a paso"],
-    bajada: "Cada cliente tiene su cuenta dentro del sistema de Pime. Ahí ve avanzar cada fase con lo que el equipo termina en el código, pide cambios con tickets y tiene sus facturas al día. Toque cada parte para verla funcionar.",
+    bajada: "Trabajamos con un sistema propio de manejo de proyectos. Desde el primer día usted tiene su cuenta: ve el estado real de su proyecto en todo momento, descarga sus facturas y pide cambios con tickets, sin esperar un correo ni pedir un reporte. Esta es una demostración con datos de ejemplo: toque cada parte para verla funcionar.",
+    sellos: ["Estado del proyecto en tiempo real", "Facturas en PDF cuando las necesite", "Tickets con respuesta y estimado"],
     pasos: [
       { id: "avance", titulo: "Avance en vivo", texto: "Cada fase tiene su barra. Se mueve sola cuando el equipo cierra una tarea en el código, y usted lee qué quedó listo con sus palabras." },
       { id: "tickets", titulo: "Tickets y cambios", texto: "Pide un cambio o reporta un problema desde su cuenta. Ve quién lo tiene, cada respuesta y el estimado antes de aprobarlo." },
@@ -75,7 +80,7 @@ export const PORTAL: Record<Lang, Portal> = {
     ],
     ventana: {
       ejemplo: "Ejemplo",
-      cliente: "Distribuidora del Atlántico",
+      cliente: "Su empresa",
       proyecto: "Sistema de pedidos y entregas",
       avanceTotal: "Avance total",
       faseDe: (n, t) => `Fase ${n} de ${t} en curso`,
@@ -108,11 +113,12 @@ export const PORTAL: Record<Lang, Portal> = {
         lista: "Sus tickets",
         estados: { resuelto: "Resuelto", en_curso: "En curso", recibido: "Recibido" },
         respuesta: "Lo revisamos hoy. Estimado: 3 horas.",
+        equipo: "Equipo Pime",
         estimado: "Estimado 3 h · espera su aprobación",
         aprobar: "Aprobar estimado",
         aprobado: "Aprobado · ya se está haciendo",
         items: [
-          { id: "T-0145", titulo: "Logo nuevo en las facturas", estado: "en_curso", quien: "Ana" },
+          { id: "T-0145", titulo: "Logo nuevo en las facturas", estado: "en_curso", quien: "Diseño" },
           { id: "T-0142", titulo: "No llega el correo de confirmación", estado: "resuelto" },
         ],
       },
@@ -122,7 +128,9 @@ export const PORTAL: Record<Lang, Portal> = {
         proximo: "Próximo pago: Fase 2, al entregarse",
         estados: { pagada: "Pagada", pendiente: "Pendiente" },
         verDetalle: "Ver detalle",
-        pdf: "PDF en su cuenta",
+        pdf: "Descargar PDF",
+        pdfNota: "Factura de ejemplo con datos ficticios.",
+        pdfHref: "/demo/factura-ejemplo.pdf",
         pagar: "Se paga con tarjeta o transferencia desde su cuenta.",
         items: [
           { id: "FAC-0038", concepto: "Fase 2 · Entregas", monto: 2400, estado: "pendiente", fecha: "Al entregar", lineas: ["Rutas, entregas con foto y avisos al cliente", "Devoluciones y cierre de ruta"] },
@@ -137,7 +145,8 @@ export const PORTAL: Record<Lang, Portal> = {
   en: {
     eyebrow: "06 · Your account",
     titulo: ["Your project,", "live, step by step"],
-    bajada: "Every client gets an account inside Pime's system. There you watch each phase move forward as the team finishes work in the code, request changes with tickets and keep your invoices up to date. Tap each part to see it work.",
+    bajada: "We run every project on our own project-management system. From day one you get your account: see the real status of your project at any moment, download your invoices and request changes with tickets, without waiting for an email or asking for a report. This is a demo with sample data: tap each part to see it work.",
+    sellos: ["Real-time project status", "Invoices in PDF whenever you need them", "Tickets with replies and estimates"],
     pasos: [
       { id: "avance", titulo: "Live progress", texto: "Each phase has its own bar. It moves on its own when the team closes a task in the code, and you read what got done in plain words." },
       { id: "tickets", titulo: "Tickets and changes", texto: "Request a change or report a problem from your account. See who has it, every reply and the estimate before you approve it." },
@@ -145,7 +154,7 @@ export const PORTAL: Record<Lang, Portal> = {
     ],
     ventana: {
       ejemplo: "Example",
-      cliente: "Atlantic Distributors",
+      cliente: "Your company",
       proyecto: "Orders and deliveries system",
       avanceTotal: "Overall progress",
       faseDe: (n, t) => `Phase ${n} of ${t} in progress`,
@@ -178,11 +187,12 @@ export const PORTAL: Record<Lang, Portal> = {
         lista: "Your tickets",
         estados: { resuelto: "Resolved", en_curso: "In progress", recibido: "Received" },
         respuesta: "We'll review it today. Estimate: 3 hours.",
+        equipo: "Pime team",
         estimado: "Estimate 3 h · awaiting your approval",
         aprobar: "Approve estimate",
         aprobado: "Approved · already in progress",
         items: [
-          { id: "T-0145", titulo: "New logo on invoices", estado: "en_curso", quien: "Ana" },
+          { id: "T-0145", titulo: "New logo on invoices", estado: "en_curso", quien: "Design" },
           { id: "T-0142", titulo: "Confirmation email not arriving", estado: "resuelto" },
         ],
       },
@@ -192,7 +202,9 @@ export const PORTAL: Record<Lang, Portal> = {
         proximo: "Next payment: Phase 2, on delivery",
         estados: { pagada: "Paid", pendiente: "Pending" },
         verDetalle: "View detail",
-        pdf: "PDF in your account",
+        pdf: "Download PDF",
+        pdfNota: "Sample invoice with fictitious data.",
+        pdfHref: "/demo/sample-invoice.pdf",
         pagar: "Pay by card or transfer from your account.",
         items: [
           { id: "FAC-0038", concepto: "Phase 2 · Deliveries", monto: 2400, estado: "pendiente", fecha: "On delivery", lineas: ["Routes, photo-logged deliveries and client notices", "Returns and route close-out"] },

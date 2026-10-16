@@ -39,6 +39,8 @@ export const HOME: Record<Lang, {
     bajada: string;
     cta: { href: string; label: string };
     secundario: { href: string; label: string };
+    /** Aviso de la cuenta del cliente (sistema propio de manejo de proyectos), con enlace a la demostración. */
+    cuenta: { texto: string; href: string; label: string };
     metadatos: { k: string; v: string }[];
     ventana: Ventana;
   };
@@ -50,6 +52,7 @@ export const HOME: Record<Lang, {
       bajada: "Somos un equipo de profesionales en Panamá: diseñamos y programamos su sistema desde cero, usted habla directo con quien lo construye, y paga un precio cerrado por fase con tres meses de garantía.",
       cta: { href: "/agendar", label: "Agendar una llamada gratis" },
       secundario: { href: "/es/contacto", label: "Pedir una propuesta" },
+      cuenta: { texto: "Su proyecto, en vivo: vea el estado actual y descargue sus facturas desde su cuenta, en todo momento.", href: "#cuenta", label: "Ver cómo funciona" },
       metadatos: [
         { k: "Qué hacemos", v: "ERP, CRM, SaaS, portales y sitios web" },
         { k: "Con quién", v: "Directo con el equipo que lo programa" },
@@ -74,7 +77,7 @@ export const HOME: Record<Lang, {
             { label: "En curso", items: [
               { cliente: "Clínica San Fernando", modulo: "Citas y expedientes", responsable: "M. Ríos", dias: 12 },
               { cliente: "Sastrería Rey", modulo: "Pedidos y medidas", responsable: "J. Vallejo", dias: 8 },
-              { cliente: "Unión Adventista", modulo: "Actas de junta", responsable: "L. Pérez", dias: 2 },
+              { cliente: "Asociación Central", modulo: "Actas de junta", responsable: "L. Pérez", dias: 2 },
             ] },
             { label: "Entregadas", items: [
               { cliente: "Iglesia Central", modulo: "Miembros", responsable: "A. Díaz", dias: 0 },
@@ -86,7 +89,7 @@ export const HOME: Record<Lang, {
           semana: [
             { cliente: "Clínica San Fernando", inicio: 0, fin: 3 },
             { cliente: "Sastrería Rey", inicio: 1, fin: 4 },
-            { cliente: "Unión Adventista", inicio: 2, fin: 2 },
+            { cliente: "Asociación Central", inicio: 2, fin: 2 },
             { cliente: "Inmobiliaria Sur", inicio: 3, fin: 4 },
           ],
         },
@@ -129,7 +132,7 @@ export const HOME: Record<Lang, {
           carpetas: [{ label: "Todas", n: 312 }, { label: "Contratos", n: 96 }, { label: "Actas", n: 140 }, { label: "Facturas", n: 76 }],
           docs: [
             { nombre: "Contrato Fase 2 · Clínica San Fernando", tipo: "CT", carpeta: 1, estado: { t: "Pendiente de firma", tono: "run" }, fecha: "7 oct" },
-            { nombre: "Acta de junta 08-10 · Unión Adventista", tipo: "AC", carpeta: 2, estado: { t: "Firmada", tono: "ok" }, fecha: "8 oct" },
+            { nombre: "Acta de junta 08-10 · Asociación Central", tipo: "AC", carpeta: 2, estado: { t: "Firmada", tono: "ok" }, fecha: "8 oct" },
             { nombre: "Factura 2026-118 · Academia Norte", tipo: "FA", carpeta: 3, estado: { t: "Emitida", tono: "ok" }, fecha: "6 oct" },
             { nombre: "Acta de miembros · Iglesia Central", tipo: "AC", carpeta: 2, estado: { t: "Firmada", tono: "ok" }, fecha: "5 oct" },
             { nombre: "Contrato sincronización · Inmobiliaria Sur", tipo: "CT", carpeta: 1, estado: { t: "Borrador", tono: "ghost" }, fecha: "4 oct" },
@@ -152,6 +155,7 @@ export const HOME: Record<Lang, {
       bajada: "A team of professionals in Panama that designs and codes your system from scratch. Your time zone, priced in US dollars, a fixed price per phase and a three-month warranty — and you talk directly to the people who build it.",
       cta: { href: "/agendar?lang=en", label: "Book a free call" },
       secundario: { href: "/en/contacto", label: "Request a proposal" },
+      cuenta: { texto: "Your project, live: see its current status and download your invoices from your account, at any moment.", href: "#cuenta", label: "See how it works" },
       metadatos: [
         { k: "What we build", v: "ERP, CRM, SaaS, portals and websites" },
         { k: "Pricing", v: "From USD 40/hour · fixed price per phase" },
@@ -176,7 +180,7 @@ export const HOME: Record<Lang, {
             { label: "In progress", items: [
               { cliente: "San Fernando Clinic", modulo: "Appointments and records", responsable: "M. Ríos", dias: 12 },
               { cliente: "Rey Tailoring", modulo: "Orders and measurements", responsable: "J. Vallejo", dias: 8 },
-              { cliente: "Adventist Union", modulo: "Board minutes", responsable: "L. Pérez", dias: 2 },
+              { cliente: "Central Association", modulo: "Board minutes", responsable: "L. Pérez", dias: 2 },
             ] },
             { label: "Delivered", items: [
               { cliente: "Central Church", modulo: "Members", responsable: "A. Díaz", dias: 0 },
@@ -188,7 +192,7 @@ export const HOME: Record<Lang, {
           semana: [
             { cliente: "San Fernando Clinic", inicio: 0, fin: 3 },
             { cliente: "Rey Tailoring", inicio: 1, fin: 4 },
-            { cliente: "Adventist Union", inicio: 2, fin: 2 },
+            { cliente: "Central Association", inicio: 2, fin: 2 },
             { cliente: "South Realty", inicio: 3, fin: 4 },
           ],
         },
@@ -231,7 +235,7 @@ export const HOME: Record<Lang, {
           carpetas: [{ label: "All", n: 312 }, { label: "Contracts", n: 96 }, { label: "Minutes", n: 140 }, { label: "Invoices", n: 76 }],
           docs: [
             { nombre: "Phase 2 contract · San Fernando Clinic", tipo: "CT", carpeta: 1, estado: { t: "Awaiting signature", tono: "run" }, fecha: "Oct 7" },
-            { nombre: "Board minutes 10-08 · Adventist Union", tipo: "MN", carpeta: 2, estado: { t: "Signed", tono: "ok" }, fecha: "Oct 8" },
+            { nombre: "Board minutes 10-08 · Central Association", tipo: "MN", carpeta: 2, estado: { t: "Signed", tono: "ok" }, fecha: "Oct 8" },
             { nombre: "Invoice 2026-118 · North Academy", tipo: "IN", carpeta: 3, estado: { t: "Issued", tono: "ok" }, fecha: "Oct 6" },
             { nombre: "Members minutes · Central Church", tipo: "MN", carpeta: 2, estado: { t: "Signed", tono: "ok" }, fecha: "Oct 5" },
             { nombre: "Sync contract · South Realty", tipo: "CT", carpeta: 1, estado: { t: "Draft", tono: "ghost" }, fecha: "Oct 4" },

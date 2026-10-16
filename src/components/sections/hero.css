@@ -228,3 +228,13 @@
   /* Sin overscroll-behavior: contain: con él, al llegar al final de la ventana el dedo quedaba atrapado y la página no seguía */
   .hw-main { max-height: 56svh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 }
+
+/* Aviso de la cuenta del cliente: una línea que lleva a la demostración (#cuenta). */
+.hero-cuenta { display: grid; grid-template-columns: 8px minmax(0, 1fr); column-gap: var(--s-3); row-gap: var(--s-1); align-items: center; max-width: 52ch; margin-top: var(--s-6); padding: var(--s-3) var(--s-4); border: var(--border); border-radius: var(--r-lg); background: var(--surface); color: var(--fg); text-decoration: none; transition: border-color var(--dur-fast); }
+.hero-cuenta:hover { border-color: var(--accent); }
+.hero-cuenta:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.hero-cuenta-dot { width: 8px; height: 8px; border-radius: var(--r-round); background: var(--ok); box-shadow: 0 0 0 4px var(--ok-soft); }
+.hero-cuenta-t { font-size: var(--text-sm); line-height: var(--leading-normal); }
+.hero-cuenta-l { grid-column: 2; font-size: var(--text-sm); font-weight: var(--w-semibold); color: var(--accent-ink); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hero-cuenta-l { color: var(--accent-on-dark); } }
+:root[data-theme="dark"] .hero-cuenta-l { color: var(--accent-on-dark); }

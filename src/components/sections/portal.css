@@ -4,6 +4,10 @@
 .po-in { display: grid; gap: var(--s-12); min-width: 0; }
 .po-head { display: grid; gap: var(--s-4); justify-items: start; }
 .po-demo { display: grid; gap: var(--s-6); min-width: 0; }
+.po-sellos { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: var(--s-2) var(--s-6); }
+.po-sellos li { display: inline-flex; align-items: center; gap: var(--s-2); font-size: var(--text-sm); font-weight: var(--w-semibold); color: var(--fg); }
+.po-sello-dot { width: 8px; height: 8px; border-radius: var(--r-round); background: var(--ok); flex: none; }
+.po-fc-pdf { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-3); }
 
 /* ---------- Pasos (pestañas) ---------- */
 .po-steps { display: grid; gap: var(--s-2); min-width: 0; }

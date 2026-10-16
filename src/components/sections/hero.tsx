@@ -29,6 +29,12 @@ export function Hero({ lang }: { lang: Lang }) {
               <Button href={h.cta.href} arrow>{h.cta.label}</Button>
               <TextLink href={h.secundario.href} className="tap">{h.secundario.label}</TextLink>
             </div>
+            {/* El sistema propio de manejo de proyectos: lleva a la demostración de la cuenta del cliente. */}
+            <a href={h.cuenta.href} className="hero-cuenta eager-rise" style={{ "--delay": "520ms" } as React.CSSProperties}>
+              <span className="hero-cuenta-dot" aria-hidden="true" />
+              <span className="hero-cuenta-t">{h.cuenta.texto}</span>
+              <span className="hero-cuenta-l">{h.cuenta.label} <span aria-hidden="true">→</span></span>
+            </a>
           </div>
           <dl className="hero-meta">
             {h.metadatos.map((m, i) => (

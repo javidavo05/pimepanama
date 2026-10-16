@@ -151,7 +151,7 @@ function Tickets({ lang }: { lang: Lang }) {
     setEnviando(true);
     setLista((l) => [{ id, titulo: texto.trim(), estado: "recibido" }, ...l]);
     timers.current.push(window.setTimeout(() => {
-      setLista((l) => l.map((x) => (x.id === id ? { ...x, estado: "en_curso", quien: "Javier", respuesta: true } : x)));
+      setLista((l) => l.map((x) => (x.id === id ? { ...x, estado: "en_curso", quien: t.equipo, respuesta: true } : x)));
       setEnviando(false);
     }, 1600));
     setTexto("");
@@ -231,7 +231,11 @@ function Facturas({ lang }: { lang: Lang }) {
               {open && (
                 <div className="po-fc-d">
                   <ul>{x.lineas.map((l) => <li key={l}>{l}</li>)}</ul>
-                  <span className="po-sub">{x.estado === "pendiente" ? f.pagar : f.pdf}</span>
+                  {x.estado === "pendiente" && <span className="po-sub">{f.pagar}</span>}
+                  <div className="po-fc-pdf">
+                    <a href={f.pdfHref} download className="po-btn ghost sm">{f.pdf}</a>
+                    <span className="po-sub">{f.pdfNota}</span>
+                  </div>
                 </div>
               )}
             </li>

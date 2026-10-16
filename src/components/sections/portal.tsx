@@ -19,6 +19,9 @@ export function Portal({ lang }: { lang: Lang }) {
           <Lines as="h2" className="t-1" lines={p.titulo} />
           <span id="po-title" className="sr-only">{p.titulo.join(" ")}</span>
           <p className="lead" data-reveal="rise" style={{ "--delay": "200ms" } as React.CSSProperties}>{p.bajada}</p>
+          <ul className="po-sellos" data-reveal="rise" style={{ "--delay": "280ms" } as React.CSSProperties}>
+            {p.sellos.map((x) => <li key={x}><span className="po-sello-dot" aria-hidden="true" />{x}</li>)}
+          </ul>
         </header>
         <PortalDemo lang={lang} />
         <div className="po-cta" data-reveal="rise">
