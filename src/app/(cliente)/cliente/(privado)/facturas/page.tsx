@@ -52,7 +52,7 @@ export default async function FacturasCliente() {
                   <p className="text-fg-dim text-sm">Emitida el {fechaCorta(f.issueDate)}{f.dueDate && f.falta > 0 ? ` · vence el ${fechaCorta(f.dueDate)}` : ""}</p>
                   {f.porEmitir > 0.005 && (
                     <p className="text-fg-dim text-xs tabular-nums">
-                      {f.proxima ? `Próxima cuota: ${dinero(f.proxima.monto)} el ${fechaCorta(f.proxima.fecha)}` : `Por emitir: ${dinero(f.porEmitir)} de ${dinero(f.totalContrato)}`}
+                      {f.proxima ? `Próxima cuota: ${dinero(f.proxima.monto)} el ${fechaCorta(f.proxima.fecha)}` : `Contra entrega: ${dinero(f.porEmitir)} de ${dinero(f.totalContrato)}, se cobra al entregar`}
                     </p>
                   )}
                 </div>

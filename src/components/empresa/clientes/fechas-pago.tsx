@@ -2,8 +2,9 @@
 
 /**
  * Fechas de pago del cliente: cada factura con saldo trae su vencimiento y sus cuotas, y cada fecha se mueve en
- * el mismo lugar. Lo que falta emitir de una factura se puede programar como un cobro con fecha. El cliente ve
- * estas fechas en su cuenta y los recordatorios salen de ellas.
+ * el mismo lugar. Lo que falta emitir de una factura se puede programar como un cobro con fecha. Cualquier fecha se
+ * puede quitar: los contratos que se pagan contra producto terminado no tienen fecha y no llevan recordatorios.
+ * El cliente ve estas fechas en su cuenta y los recordatorios salen de ellas.
  */
 import { useActionState, useState } from "react";
 import { correrCuotasAction, moverCuotaAction, moverVencimientoAction, programarCobroAction, type EstadoFecha } from "@/app/(empresa)/empresa/(protected)/acciones-fechas";
@@ -27,17 +28,23 @@ function Resultado({ estado }: { estado: EstadoFecha }) {
 }
 
 /** Una fecha que se mueve: el botón aparece activo solo cuando la fecha cambió. */
-function MoverFecha({ accion, campoId, valorId, nombreId, inicial, etiqueta, children }: { accion: typeof moverVencimientoAction; campoId: string; valorId: string; nombreId: "documentId" | "cuotaId"; inicial: string; etiqueta: string; children: React.ReactNode }) {
+function MoverFecha({ accion, campoId, valorId, nombreId, inicial, etiqueta, sinFechaLabel, children }: { accion: typeof moverVencimientoAction; campoId: string; valorId: string; nombreId: "documentId" | "cuotaId"; inicial: string; etiqueta: string; sinFechaLabel: string; children: React.ReactNode }) {
   const [estado, enviar, enviando] = useActionState(accion, null);
   const [fecha, setFecha] = useState(inicial);
   const cambio = fecha !== inicial && !!fecha;
   return (
     <form action={enviar} className="grid gap-1">
       <input type="hidden" name={nombreId} value={valorId} />
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
         <label htmlFor={campoId} className="col-span-2 sm:col-span-1 min-w-0 text-fg-dim text-xs [overflow-wrap:anywhere]"><span className="sr-only">{etiqueta}: </span>{children}</label>
         <input id={campoId} name="fecha" type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className={campoFecha} />
-        <button type="submit" className={botonGuardar} disabled={!cambio || enviando}>{enviando ? "Guardando…" : "Mover"}</button>
+        <button type="submit" className={botonGuardar} disabled={!cambio || enviando}>{enviando ? "Guardando…" : inicial ? "Mover" : "Poner fecha"}</button>
+        {/* Contra entrega: quita la fecha (y con ella los recordatorios). */}
+        {inicial && (
+          <button type="submit" name="sinFecha" value="1" className="col-span-2 sm:col-span-1 inline-flex items-center justify-center min-h-11 px-3 rounded-lg text-sm font-semibold text-fg-mute hover:text-fg hover:bg-fill whitespace-nowrap disabled:opacity-40" disabled={enviando}>
+            {sinFechaLabel}
+          </button>
+        )}
       </div>
       <Resultado estado={estado} />
     </form>
@@ -74,7 +81,7 @@ function ProgramarCobro({ factura }: { factura: FacturaFechas }) {
   return (
     <form action={enviar} className="grid gap-2 rounded-xl border border-line bg-fill p-3">
       <input type="hidden" name="documentId" value={factura.id} />
-      <p className="text-xs text-fg-dim">Falta programar {dinero(factura.porProgramar)}. El cliente lo ve como próxima cuota y recibe su recordatorio en la fecha.</p>
+      <p className="text-xs text-fg-dim">Falta programar {dinero(factura.porProgramar)}. El cliente lo ve como próxima cuota y recibe su recordatorio en la fecha. Si se paga contra producto terminado, no lo programes: queda contra entrega, sin fecha.</p>
       <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:items-end">
         <div><label htmlFor={`pc-m-${factura.id}`} className="block text-fg-dim text-xs font-semibold mb-1">Monto</label><input id={`pc-m-${factura.id}`} name="monto" inputMode="decimal" defaultValue={factura.porProgramar.toFixed(2)} className={campo} /></div>
         <div><label htmlFor={`pc-f-${factura.id}`} className="block text-fg-dim text-xs font-semibold mb-1">Fecha del cobro</label><input id={`pc-f-${factura.id}`} name="fecha" type="date" min={hoyIso()} required className={campo} /></div>
@@ -97,16 +104,17 @@ export function FechasPago({ facturas }: { facturas: FacturaFechas[] }) {
               <p className="min-w-0 text-fg text-sm font-semibold [overflow-wrap:anywhere]">{f.number ?? "Factura"} · {f.title}</p>
               <p className="text-fg-dim text-xs tabular-nums">Falta {dinero(f.falta)} de {dinero(f.total)}</p>
             </div>
-            {vivas.length === 0 && (
-              <MoverFecha accion={moverVencimientoAction} campoId={`v-${f.id}`} valorId={f.id} nombreId="documentId" inicial={aInput(f.dueDate)} etiqueta={`Vencimiento de ${f.number ?? "la factura"}`}>
-                Vence {f.dueDate ? `el ${legible(f.dueDate)}` : "sin fecha"}
+            {/* Con un pago parcial y sin cuotas, lo que falta se maneja abajo (contra entrega o programado): el vencimiento viejo ya no aplica. */}
+            {vivas.length === 0 && f.porProgramar <= 0.005 && (
+              <MoverFecha accion={moverVencimientoAction} campoId={`v-${f.id}`} valorId={f.id} nombreId="documentId" inicial={aInput(f.dueDate)} etiqueta={`Vencimiento de ${f.number ?? "la factura"}`} sinFechaLabel="Sin fecha">
+                {f.dueDate ? `Vence el ${legible(f.dueDate)}` : <span className="text-fg font-medium">Sin fecha · se cobra contra entrega</span>}
               </MoverFecha>
             )}
             {vivas.length > 0 && (
               <ul className="grid gap-2">
                 {vivas.map((c) => (
                   <li key={c.id}>
-                    <MoverFecha accion={moverCuotaAction} campoId={`c-${c.id}`} valorId={c.id} nombreId="cuotaId" inicial={aInput(c.dueDate)} etiqueta={`Fecha de ${c.description}`}>
+                    <MoverFecha accion={moverCuotaAction} campoId={`c-${c.id}`} valorId={c.id} nombreId="cuotaId" inicial={aInput(c.dueDate)} etiqueta={`Fecha de ${c.description}`} sinFechaLabel="Contra entrega">
                       <span className="text-fg font-medium">{c.description}</span> · <span className="tabular-nums">{dinero(c.amount)}</span> · {c.status === "OVERDUE" ? <span className="text-danger font-semibold">vencida el {legible(c.dueDate)}</span> : `el ${legible(c.dueDate)}`}
                     </MoverFecha>
                   </li>
@@ -114,7 +122,12 @@ export function FechasPago({ facturas }: { facturas: FacturaFechas[] }) {
               </ul>
             )}
             {vivas.length > 1 && <CorrerCuotas documentId={f.id} cuantas={vivas.length} />}
-            {f.porProgramar > 0.005 && <ProgramarCobro factura={f} />}
+            {f.porProgramar > 0.005 && (
+              <div className="grid gap-1">
+                <p className="text-fg-dim text-xs tabular-nums">{dinero(f.porProgramar)} sin fecha: se cobra contra entrega.</p>
+                <ProgramarCobro factura={f} />
+              </div>
+            )}
           </li>
         );
       })}

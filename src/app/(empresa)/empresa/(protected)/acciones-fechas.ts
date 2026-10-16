@@ -29,10 +29,18 @@ function refrescar(clientId: string) {
 
 export async function moverVencimientoAction(_: EstadoFecha, form: FormData): Promise<EstadoFecha> {
   const u = await getEmpresaUser();
+  const sinFecha = form.get("sinFecha") === "1";
   const fecha = fechaDe(txt(form.get("fecha"), 10));
-  if (!fecha) return { error: "Elige una fecha válida." };
+  if (!fecha && !sinFecha) return { error: "Elige una fecha válida." };
   const f = await prisma.document.findFirst({ where: { id: txt(form.get("documentId")), userId: u.id, type: "FACTURA" }, select: { id: true, number: true, clientId: true, dueDate: true } });
   if (!f?.clientId) return { error: "No encontré esa factura." };
+  // Contratos que se pagan contra producto terminado: la factura queda sin vencimiento y sin recordatorios.
+  if (sinFecha || !fecha) {
+    await prisma.document.update({ where: { id: f.id }, data: { dueDate: null } });
+    await registrarEvento({ userId: u.id, clientId: f.clientId, entityType: "factura", entityId: f.id, kind: "vencimiento_movido", title: `${f.number ?? "Factura"}: sin fecha, se cobra contra entrega`, detail: f.dueDate ? `Antes: ${legible(f.dueDate)}` : null, visibility: "interno", actorEmpresaUserId: u.id });
+    refrescar(f.clientId);
+    return { ok: true, mensaje: "Sin fecha: se cobra contra entrega y no lleva recordatorios." };
+  }
   await prisma.document.update({ where: { id: f.id }, data: { dueDate: fecha } });
   await registrarEvento({ userId: u.id, clientId: f.clientId, entityType: "factura", entityId: f.id, kind: "vencimiento_movido", title: `${f.number ?? "Factura"}: vence el ${legible(fecha)}`, detail: f.dueDate ? `Antes: ${legible(f.dueDate)}` : null, visibility: "interno", actorEmpresaUserId: u.id });
   refrescar(f.clientId);
@@ -41,11 +49,22 @@ export async function moverVencimientoAction(_: EstadoFecha, form: FormData): Pr
 
 export async function moverCuotaAction(_: EstadoFecha, form: FormData): Promise<EstadoFecha> {
   const u = await getEmpresaUser();
+  const sinFecha = form.get("sinFecha") === "1";
   const fecha = fechaDe(txt(form.get("fecha"), 10));
-  if (!fecha) return { error: "Elige una fecha válida." };
-  const c = await prisma.paymentSchedule.findFirst({ where: { id: txt(form.get("cuotaId")), userId: u.id }, select: { id: true, description: true, status: true, dueDate: true, document: { select: { id: true, number: true, clientId: true } } } });
+  if (!fecha && !sinFecha) return { error: "Elige una fecha válida." };
+  const c = await prisma.paymentSchedule.findFirst({ where: { id: txt(form.get("cuotaId")), userId: u.id }, select: { id: true, description: true, amount: true, status: true, dueDate: true, document: { select: { id: true, number: true, clientId: true } } } });
   if (!c?.document.clientId) return { error: "No encontré esa cuota." };
   if (c.status === "PAID" || c.status === "CANCELLED") return { error: "Esa cuota ya está pagada o anulada." };
+  // Contra entrega: la cuota deja de tener fecha. Su monto vuelve a «contra entrega» de la factura y no se recuerda.
+  if (sinFecha || !fecha) {
+    await prisma.$transaction([
+      prisma.task.updateMany({ where: { paymentScheduleId: c.id }, data: { paymentScheduleId: null } }),
+      prisma.paymentSchedule.delete({ where: { id: c.id } }),
+    ]);
+    await registrarEvento({ userId: u.id, clientId: c.document.clientId, entityType: "factura", entityId: c.document.id, kind: "cuota_movida", title: `${c.document.number ?? "Factura"} · ${c.description}: sin fecha, contra entrega`, detail: `Antes: ${legible(c.dueDate)} · ${Number(c.amount).toFixed(2)}`, visibility: "interno", actorEmpresaUserId: u.id });
+    refrescar(c.document.clientId);
+    return { ok: true, mensaje: `${c.description} queda contra entrega, sin fecha ni recordatorios.` };
+  }
   // Una cuota vencida que se corre al futuro vuelve a estar pendiente y a recibir su recordatorio.
   const futura = fecha.getTime() > Date.now();
   await prisma.paymentSchedule.update({ where: { id: c.id }, data: { dueDate: fecha, reminderSent: false, ...(futura ? { status: "PENDING" } : {}) } });
