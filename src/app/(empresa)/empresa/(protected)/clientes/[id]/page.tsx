@@ -25,6 +25,10 @@ import { RegistrarInteraccion, BotonRegistrar } from "@/components/empresa/crm-f
 import { Historia } from "@/components/empresa/crm-ficha/historia";
 import { MenuMas, AvisoArchivado } from "@/components/empresa/crm-ficha/archivar";
 import { fechaHora } from "@/components/empresa/crm-ficha/comun";
+import { SaludCliente } from "@/components/empresa/crm/salud-cliente";
+import { OportunidadesCliente } from "@/components/empresa/crm/oportunidades-cliente";
+import { EnviarCorreo } from "@/components/empresa/crm/enviar-correo";
+import { ArchivosCliente } from "@/components/empresa/crm/archivos-cliente";
 
 export const metadata = { title: "Cliente — Pime Suite" };
 
@@ -135,6 +139,7 @@ export default async function FichaCliente({ params, searchParams }: { params: P
                 {c.etiquetas.map((t) => <li key={t} className="rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold text-brand-fg [overflow-wrap:anywhere]">{t}</li>)}
               </ul>
             )}
+            {!interna && <SaludCliente clientId={c.id} />}
             {equipo.length > 1 && <Responsable tipo="cliente" id={c.id} actual={c.responsableId} equipo={equipo} />}
           </div>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:justify-end">
@@ -323,13 +328,17 @@ export default async function FichaCliente({ params, searchParams }: { params: P
               <section className={card} aria-labelledby="historia-titulo">
                 <h2 id="historia-titulo" className={h2}>Historia</h2>
                 <p className="mt-1 text-sm text-fg-dim">Registra cada llamada, WhatsApp o visita en dos toques. Abajo queda todo lo que pasó con este cliente, en orden.</p>
-                <div className="mt-4"><RegistrarInteraccion clientId={c.id} contactos={contactos.map((k) => ({ id: k.id, nombre: k.nombre, principal: k.principal }))} /></div>
+                <div className="mt-4 flex flex-wrap items-start gap-2">
+                  <RegistrarInteraccion clientId={c.id} contactos={contactos.map((k) => ({ id: k.id, nombre: k.nombre, principal: k.principal }))} />
+                  {!interna && <EnviarCorreo clientId={c.id} contactos={contactos.filter((k) => k.email).map((k) => ({ id: k.id, nombre: k.nombre, email: k.email!, principal: k.principal }))} correoCliente={c.email} />}
+                </div>
                 <div className="mt-6 border-t border-line pt-6">
                   <Historia clientId={c.id} inicial={historia} fijadas={fijadas.map(deInteraccion)} />
                 </div>
               </section>
             </div>
             <aside className="space-y-6 min-w-0">
+              {!interna && <OportunidadesCliente clientId={c.id} />}
               <Contactos clientId={c.id} contactos={contactos} sugerido={{ nombre: c.name, email: c.email, telefono: c.phone, rol: "decide" }} />
               <section className={card} aria-labelledby="notas-titulo">
                 <div className="flex items-center justify-between gap-3"><h2 id="notas-titulo" className={h2}>Notas</h2><BotonRegistrar tipo="nota" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline" /></div>
@@ -358,6 +367,7 @@ export default async function FichaCliente({ params, searchParams }: { params: P
         ),
         actividad: (
           <div className="grid gap-6 lg:grid-cols-2 items-start">
+            <div className="lg:col-span-2 min-w-0"><ArchivosCliente clientId={c.id} /></div>
             <section className={card} aria-labelledby="tareas-titulo">
               <div className="flex items-center justify-between gap-3"><h2 id="tareas-titulo" className={h2}>Próximas tareas</h2><Link href="/empresa/tareas" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">Ver tareas</Link></div>
               {tareas === null ? (
