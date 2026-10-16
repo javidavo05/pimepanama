@@ -15,3 +15,6 @@ export const IconClip = (p: SVGProps<SVGSVGElement>) => <svg {...base(p)}><path 
 export const IconCheck = (p: SVGProps<SVGSVGElement>) => <svg {...base(p)}><path d="m5 12.5 4.5 4.5L19 7.5" /></svg>;
 export const IconSalir = (p: SVGProps<SVGSVGElement>) => <svg {...base(p)}><path d="M14 4h5v16h-5" /><path d="M10 8l-4 4 4 4" /><path d="M6 12h10" /></svg>;
 export const IconEscudo = (p: SVGProps<SVGSVGElement>) => <svg {...base(p)}><path d="M12 3 5 6v5c0 4.5 3 8 7 10 4-2 7-5.5 7-10V6Z" /><path d="m9 12 2 2 4-4" /></svg>;
+export const IconDocumentos = (p: SVGProps<SVGSVGElement>) => <svg {...base(p)}><path d="M8 3h7l4 4v11H8Z" /><path d="M15 3v4h4" /><path d="M5 7v14h11" /><path d="M11 12h5" /><path d="M11 15h3" /></svg>;
+export const IconDescargar = (p: SVGProps<SVGSVGElement>) => <svg {...base(p)}><path d="M12 4v11" /><path d="m7.5 10.5 4.5 4.5 4.5-4.5" /><path d="M5 19h14" /></svg>;
+export const IconSubir = (p: SVGProps<SVGSVGElement>) => <svg {...base(p)}><path d="M12 15V4" /><path d="m7.5 8.5 4.5-4.5 4.5 4.5" /><path d="M5 19h14" /></svg>;

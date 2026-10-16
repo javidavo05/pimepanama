@@ -3,17 +3,23 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { IconCuenta, IconFacturas, IconInicio, IconProyectos, IconSalir, IconTickets } from "./iconos";
+import { IconCuenta, IconDocumentos, IconFacturas, IconInicio, IconProyectos, IconSalir, IconTickets } from "./iconos";
 import { LogoPime } from "./marca";
 import { cerrarSesion } from "@/components/auth/totp";
 
-const ITEMS = [
+type Item = { href: string; label: string; corto?: string; Icon: typeof IconInicio; rutas?: string[]; dock?: boolean };
+const ITEMS: Item[] = [
   { href: "/cliente", label: "Inicio", Icon: IconInicio },
   { href: "/cliente/proyectos", label: "Proyectos", Icon: IconProyectos },
   { href: "/cliente/tickets", label: "Tickets", Icon: IconTickets },
   { href: "/cliente/facturas", label: "Facturas", Icon: IconFacturas },
-  { href: "/cliente/cuenta", label: "Cuenta", Icon: IconCuenta },
+  // Propuestas, contratos, reuniones y archivos viven bajo un mismo resumen; en el teléfono la etiqueta es corta
+  // para que quepa en la barra de cinco (un plegable cerrado deja ~68 px por sección).
+  { href: "/cliente/documentos", label: "Documentos", corto: "Docs", Icon: IconDocumentos, rutas: ["/cliente/propuestas", "/cliente/contratos", "/cliente/reuniones", "/cliente/archivos"] },
+  // En el teléfono Cuenta sube a la cabecera (junto a Salir) para dejar la barra en cinco secciones.
+  { href: "/cliente/cuenta", label: "Cuenta", Icon: IconCuenta, dock: false },
 ];
+const DOCK = ITEMS.filter((x) => x.dock !== false);
 
 const useIso = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
@@ -24,8 +30,10 @@ const useIso = typeof window === "undefined" ? useEffect : useLayoutEffect;
  */
 export function NavPortal({ empresa, persona, logo }: { linea: "normal" | "premium"; empresa: string; persona: string; logo?: string | null }) {
   const ruta = usePathname();
-  const activo = (href: string) => (href === "/cliente" ? ruta === "/cliente" : ruta.startsWith(href));
-  const k = Math.max(0, ITEMS.findIndex((x) => activo(x.href)));
+  const activoItem = (x: Item) => (x.href === "/cliente" ? ruta === "/cliente" : [x.href, ...(x.rutas ?? [])].some((r) => ruta.startsWith(r)));
+  const activo = (href: string) => { const x = ITEMS.find((i) => i.href === href); return x ? activoItem(x) : false; };
+  const k = Math.max(0, ITEMS.findIndex((x) => activoItem(x)));
+  const kDock = DOCK.findIndex((x) => activoItem(x));
   const [compacta, setCompacta] = useState(false);
   const tabs = useRef<HTMLDivElement>(null);
   const [ind, setInd] = useState<{ x: number; w: number; o: number }>({ x: 0, w: 0, o: 0 });
@@ -66,15 +74,18 @@ export function NavPortal({ empresa, persona, logo }: { linea: "normal" | "premi
           <nav className="hidden sm:block ml-auto" aria-label="Secciones">
             <div ref={tabs} className="p-tabs flex items-center gap-1" onMouseLeave={() => setCursor(null)}>
               <span className="p-tab-ind" aria-hidden style={{ "--x": `${ind.x}px`, "--w": `${ind.w}px`, "--o": ind.o } as React.CSSProperties} />
-              {ITEMS.map(({ href, label }, i) => (
+              {ITEMS.map(({ href, label, corto }, i) => (
                 <Link key={href} href={href} data-tab aria-current={activo(href) ? "page" : undefined} onMouseEnter={() => setCursor(i)} onFocus={() => setCursor(i)} onBlur={() => setCursor(null)}
                   className={`p-tab rounded-lg px-3 min-h-11 inline-flex items-center text-sm font-semibold focus-visible:outline-none ${activo(href) ? "text-brand-fg" : "text-fg-dim hover:text-fg"}`}>
-                  {label}
+                  {corto ? <><span className="lg:hidden">{corto}</span><span className="hidden lg:inline">{label}</span></> : label}
                 </Link>
               ))}
             </div>
           </nav>
-          <button type="button" onClick={() => void cerrarSesion("/cliente/acceso")} className="ml-auto sm:ml-2 inline-flex items-center gap-2 rounded-lg px-3 min-h-11 text-sm font-semibold text-fg-dim hover:text-fg hover:bg-fill transition-colors" title={`Salir (${persona})`}>
+          <Link href="/cliente/cuenta" aria-current={activo("/cliente/cuenta") ? "page" : undefined} className={`sm:hidden ml-auto inline-flex items-center justify-center rounded-lg min-h-11 min-w-11 transition-colors ${activo("/cliente/cuenta") ? "text-brand-fg bg-fill" : "text-fg-dim hover:text-fg hover:bg-fill"}`} aria-label="Tu cuenta">
+            <IconCuenta />
+          </Link>
+          <button type="button" onClick={() => void cerrarSesion("/cliente/acceso")} className="sm:ml-2 inline-flex items-center gap-2 rounded-lg px-3 min-h-11 text-sm font-semibold text-fg-dim hover:text-fg hover:bg-fill transition-colors" title={`Salir (${persona})`}>
             <IconSalir /><span className="sr-only sm:not-sr-only">Salir</span>
           </button>
         </div>
@@ -82,12 +93,12 @@ export function NavPortal({ empresa, persona, logo }: { linea: "normal" | "premi
       </header>
       <nav className="p-dock sm:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }} aria-label="Secciones">
         <ul className="grid grid-cols-5">
-          <li className="p-dock-ind" role="presentation" aria-hidden style={{ "--k": k } as React.CSSProperties} />
-          {ITEMS.map(({ href, label, Icon }) => (
+          <li className="p-dock-ind" role="presentation" aria-hidden style={{ "--k": Math.max(0, kDock), opacity: kDock < 0 ? 0 : 1 } as React.CSSProperties} />
+          {DOCK.map(({ href, label, corto, Icon }) => (
             <li key={href}>
-              <Link href={href} aria-current={activo(href) ? "page" : undefined}
+              <Link href={href} aria-current={activo(href) ? "page" : undefined} aria-label={corto ? label : undefined}
                 className={`flex flex-col items-center justify-center gap-1 min-h-16 text-xs font-semibold transition-colors ${activo(href) ? "text-brand-fg" : "text-fg-faint"}`}>
-                <Icon width={22} height={22} />{label}
+                <Icon width={22} height={22} />{corto ?? label}
               </Link>
             </li>
           ))}
