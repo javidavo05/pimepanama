@@ -201,6 +201,11 @@ export function crearIssue(owner: string, repo: string, token: string | null, p:
   return apiEscribir<{ number: number; html_url: string }>(`/repos/${owner}/${repo}/issues`, token, { title: p.title.slice(0, 255), body: p.body ?? undefined, milestone: p.milestone, labels: p.labels });
 }
 
+/** Cierra una tarea: se usa al crear la de un entregable que en Pime ya está hecho. */
+export function cerrarIssue(owner: string, repo: string, token: string | null, numero: number) {
+  return apiEscribir<{ number: number }>(`/repos/${owner}/${repo}/issues/${numero}`, token, { state: "closed", state_reason: "completed" }, "PATCH");
+}
+
 export interface HookSummary { id: number; config: { url?: string } ; active: boolean; events: string[] }
 
 export function listarHooks(owner: string, repo: string, token: string | null) {
