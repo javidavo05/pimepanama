@@ -228,3 +228,17 @@ export async function personaDeApi() {
   if (!persona || persona.status !== "activo" || persona.client.archivedAt) return null;
   return persona;
 }
+
+/** Encuestas de satisfacción que el cliente todavía no respondió, con su enlace firmado. */
+export async function encuestasPendientes(clientId: string) {
+  const { tokenDeEncuesta } = await import("@/lib/crm/encuesta-token");
+  const xs = await prisma.encuesta.findMany({
+    where: { clientId, respondidaAt: null },
+    orderBy: { enviadaAt: "desc" },
+    take: 3,
+    select: { id: true, project: { select: { name: true } } },
+  });
+  return xs.flatMap((x) => {
+    try { return [{ id: x.id, proyecto: x.project.name, href: `/encuesta/${tokenDeEncuesta(x.id)}` }]; } catch { return []; }
+  });
+}

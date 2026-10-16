@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getPortalUser } from "@/lib/portal/sesion";
-import { datosInicio, dinero, pendientesDeDocumentos } from "@/lib/portal/datos";
+import { datosInicio, dinero, encuestasPendientes, pendientesDeDocumentos } from "@/lib/portal/datos";
 import { esperaMiFirma, estadoPropuesta } from "@/lib/portal/documentos";
 import { FASE_ESTADO_LABEL, TICKET_ESTADO_LABEL, type FaseEstado, type TicketEstado } from "@/lib/portal/estados";
 import { Anillo, Barra, BloqueOscuro, Cifra, Mezcla, type Tono, Encabezado, Etiqueta, Eyebrow, Fila, Swap, Tarjeta, TituloSeccion, Vacio, btnPrincipal, btnSecundario, enlace, fechaCorta, haceCuanto } from "@/components/portal/ui";
@@ -12,15 +12,16 @@ export const metadata = { title: "Inicio" };
 
 export default async function InicioCliente() {
   const persona = await getPortalUser();
-  const [d, sistemas, docs] = await Promise.all([datosInicio(persona.clientId), sistemasDelCliente(persona.clientId), pendientesDeDocumentos(persona.clientId)]);
+  const [d, sistemas, docs, encuestas] = await Promise.all([datosInicio(persona.clientId), sistemasDelCliente(persona.clientId), pendientesDeDocumentos(persona.clientId), encuestasPendientes(persona.clientId).catch(() => [])]);
   // Propuestas por responder (las vencidas no) y contratos que esperan la firma de esta persona.
-  // Aquí iría también el aviso de la encuesta sin responder (/encuesta/<token>), que construye otro trabajo.
+  // También la encuesta de satisfacción de un proyecto terminado que todavía no respondió.
   const decisiones = [
     ...d.decisiones,
     ...docs.propuestas.filter((x) => estadoPropuesta({ status: "SENT", validUntil: x.validUntil }).tono === "aviso")
       .map((x) => ({ tipo: "propuesta" as const, id: x.id, titulo: `Revisar la propuesta: ${x.title}`, detalle: `${x.number ?? "Propuesta"} · ${dinero(x.total)}`, href: `/cliente/propuestas/${x.id}` })),
     ...docs.contratos.filter((c) => esperaMiFirma({ ...c, clientEmail: c.signingRequest?.clientEmail }, persona.email))
       .map((c) => ({ tipo: "contrato" as const, id: c.id, titulo: `Firmar el contrato: ${c.title}`, detalle: "Contrato", href: "/cliente/contratos" })),
+    ...encuestas.map((e) => ({ tipo: "encuesta" as const, id: e.id, titulo: `Cuéntanos cómo te fue con ${e.proyecto}`, detalle: "Encuesta de un minuto", href: e.href })),
   ];
   const problema = hayProblema(sistemas);
   const nombre = (persona.fullName || "").split(" ")[0];

@@ -3,6 +3,7 @@ import { correrRecordatorios } from "@/lib/portal/recordatorios";
 import { facturacionMensual } from "@/lib/portal/factura-mensual";
 import { correrSeguimientos } from "@/lib/crm/seguimientos";
 import { facturarMantenimientos } from "@/lib/crm/mantenimiento";
+import { enviarEncuestas } from "@/lib/crm/encuesta";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -23,8 +24,10 @@ async function run(req: NextRequest) {
   const r = await correrRecordatorios();
   // Seguimientos del CRM: el del lead el día que toca y las reglas de Configuración → Seguimientos.
   const seguimientos = await correrSeguimientos().catch((e) => ({ error: String(e) }));
+  // Encuesta de satisfacción a los clientes de proyectos recién terminados (una por proyecto).
+  const encuestas = await enviarEncuestas().catch((e) => ({ error: String(e) }));
   // El avance desde GitHub ya no va aquí: lo mueve la revisión única de cada 30 min (motor/sistemas.ts).
-  return NextResponse.json({ ok: true, ...r, horas, mantenimiento, seguimientos });
+  return NextResponse.json({ ok: true, ...r, horas, mantenimiento, seguimientos, encuestas });
 }
 
 export const GET = run;
