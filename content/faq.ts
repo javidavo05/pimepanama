@@ -10,7 +10,7 @@ export type Pregunta = { p: string; r: string };
 
 export const FAQ: Record<Lang, { eyebrow: string; titulo: string[]; preguntas: Pregunta[] }> = {
   es: {
-    eyebrow: "07 · Preguntas",
+    eyebrow: "08 · Preguntas",
     titulo: ["Lo que nos preguntan", "antes de empezar"],
     preguntas: [
       { p: "¿Cuánto cuesta un sistema a medida?", r: "Trabajamos desde USD 40 la hora. Cada proyecto tiene una propuesta con precio cerrado por fase: sabe cuánto paga antes de empezar y ese precio no cambia durante el proyecto." },
@@ -23,7 +23,7 @@ export const FAQ: Record<Lang, { eyebrow: string; titulo: string[]; preguntas: P
     ],
   },
   en: {
-    eyebrow: "07 · Questions",
+    eyebrow: "08 · Questions",
     titulo: ["What companies ask us", "before we start"],
     preguntas: [
       { p: "How much does custom software cost?", r: "Our rates start at USD 40 per hour. Every project gets a proposal with a fixed price per phase: you know what you'll pay before we start, and that price doesn't change during the project." },

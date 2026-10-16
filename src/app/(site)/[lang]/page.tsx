@@ -3,6 +3,7 @@ import { Proof } from "@/components/sections/proof";
 import { Capabilities } from "@/components/sections/capabilities";
 import { FeaturedWork } from "@/components/sections/featured-work";
 import { Process } from "@/components/sections/process";
+import { Portal } from "@/components/sections/portal";
 import { Industries } from "@/components/sections/industries";
 import { Closing } from "@/components/sections/closing";
 import { Faq } from "@/components/sections/faq";
@@ -28,6 +29,7 @@ export default async function Home({ params }: { params: Promise<{ lang: Lang }>
       <Capabilities lang={lang} />
       <FeaturedWork lang={lang} />
       <Process lang={lang} />
+      <Portal lang={lang} />
       <Industries lang={lang} />
       <Faq lang={lang} />
       <Closing lang={lang} />

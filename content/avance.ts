@@ -204,4 +204,20 @@ export const PASOS: Paso[] = [
     notas: ["Pedido por Javier el 2026-10-11: «haz el cambio del landing page entero a este logo, colores y todo»."],
     actualizado: "2026-10-11",
   },
+  {
+    n: 18,
+    titulo: "Su cuenta: el portal de clientes en la home",
+    descripcion: "Sección 06 interactiva que muestra cómo trabaja el cliente dentro del sistema de Pime: avance por fase en vivo desde el código, tickets con estimado para aprobar y facturas. «Entrar» en la navegación lleva a la cuenta del cliente.",
+    estado: "en_revision",
+    ruta: "/es#cuenta",
+    revisar: [
+      "Al verse la ventana, la Fase 2 se completa sola tarea por tarea; al llegar al 100 % avisa que está lista para revisión y muestra su factura. «Pausar» y «Repetir» la controlan.",
+      "Tickets: el ticket viene escrito; al enviarlo aparece arriba, recibe respuesta con estimado y se aprueba.",
+      "Facturas: lo pagado y lo pendiente con su barra; cada factura abre su detalle.",
+      "«Entrar» en la barra (también en el teléfono y en el menú) y «Entrar a su cuenta» abren /cliente/acceso.",
+      "Con movimiento reducido no arranca sola: avanza con «Siguiente avance».",
+    ],
+    notas: ["Pedido por Javier el 2026-10-16: «el portal de clientes hay que agregarlo al landing… y una forma de iniciar sesión desde el front»."],
+    actualizado: "2026-10-16",
+  },
 ];

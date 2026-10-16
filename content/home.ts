@@ -324,15 +324,15 @@ export const PROCESO: Record<Lang, {
 
 /** Industrias (paso 9). Las industrias y los sistemas salen de content/portfolio.ts: nada inventado. */
 export const INDUSTRIAS_SEC: Record<Lang, { eyebrow: string; titulo: string[]; bajada: string; sistemas: (n: number) => string; ver: string; cta: { href: string; label: string } }> = {
-  es: { eyebrow: "06 · Industrias", titulo: ["Operaciones distintas,", "el mismo rigor"], bajada: "Cada industria tiene su propia forma de cobrar, de atender y de rendir cuentas. Estos son los sectores donde ya hay un sistema de Pime en producción.", sistemas: (n) => (n === 1 ? "1 sistema" : `${n} sistemas`), ver: "Ver los casos", cta: { href: "/es/contacto", label: "Pedir una propuesta para mi industria" } },
-  en: { eyebrow: "06 · Industries", titulo: ["Different operations,", "the same rigor"], bajada: "Every industry has its own way of billing, serving and reporting. These are the sectors where a Pime system is already in production.", sistemas: (n) => (n === 1 ? "1 system" : `${n} systems`), ver: "See the cases", cta: { href: "/en/contacto", label: "Request a proposal for my industry" } },
+  es: { eyebrow: "07 · Industrias", titulo: ["Operaciones distintas,", "el mismo rigor"], bajada: "Cada industria tiene su propia forma de cobrar, de atender y de rendir cuentas. Estos son los sectores donde ya hay un sistema de Pime en producción.", sistemas: (n) => (n === 1 ? "1 sistema" : `${n} sistemas`), ver: "Ver los casos", cta: { href: "/es/contacto", label: "Pedir una propuesta para mi industria" } },
+  en: { eyebrow: "07 · Industries", titulo: ["Different operations,", "the same rigor"], bajada: "Every industry has its own way of billing, serving and reporting. These are the sectors where a Pime system is already in production.", sistemas: (n) => (n === 1 ? "1 system" : `${n} systems`), ver: "See the cases", cta: { href: "/en/contacto", label: "Request a proposal for my industry" } },
 };
 
 /** Cierre y contacto (paso 9). Origen: la página de cierre de la propuesta (único fondo oscuro, pasos
  *  numerados en círculos, nombre y dominio). Teléfono de SITE. */
 export const CIERRE: Record<Lang, { eyebrow: string; titulo: string[]; bajada: string; pasos: { titulo: string; texto: string }[]; cta: { href: string; label: string }; gracias: string }> = {
   es: {
-    eyebrow: "08 · Hablemos",
+    eyebrow: "09 · Hablemos",
     titulo: ["Cuéntenos cómo opera", "hoy su empresa"],
     bajada: "En una conversación de media hora sabemos si un sistema a medida le conviene y qué fase tendría sentido primero.",
     pasos: [
@@ -344,7 +344,7 @@ export const CIERRE: Record<Lang, { eyebrow: string; titulo: string[]; bajada: s
     gracias: "Gracias por la confianza.",
   },
   en: {
-    eyebrow: "08 · Let's talk",
+    eyebrow: "09 · Let's talk",
     titulo: ["Tell us how your", "company runs today"],
     bajada: "In a half-hour conversation we know whether a custom system makes sense for you and which phase should come first.",
     pasos: [

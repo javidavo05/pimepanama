@@ -94,7 +94,7 @@ export function Nav({ lang }: { lang: Lang }) {
           <Logo height={22} />
         </Link>
 
-        <nav className="nav-links" aria-label={lang === "es" ? "Secciones" : "Sections"} ref={linksRef}>
+        <nav className="nav-links" aria-label={lang === "es" ? "Secciones" : "Sections"} ref={linksRef} data-muchos={items.length > 7 || undefined}>
           {items.map((i) => (
             <Link key={i.key} href={i.href} data-key={i.key} data-sec={i.sec || undefined} aria-current={activeKey === i.key ? "true" : undefined}>{i.label}</Link>
           ))}
@@ -106,6 +106,8 @@ export function Nav({ lang }: { lang: Lang }) {
           <PaletteButton lang={lang} />
           <span className="nav-theme"><ThemeToggle lang={lang} compact /></span>
           <Link href={hrefIdioma} className="nav-lang" hrefLang={otro} title={n.idioma.title}>{n.idioma.label}</Link>
+          {/* La cuenta del cliente la sirve el CMS: navegación completa, no del enrutador de este sitio. */}
+          <a href={n.entrar.href} className="nav-entrar" title={n.entrar.title}>{n.entrar.label}</a>
           <Button href={n.cta.href} size="sm" className="nav-cta">{n.cta.label}</Button>
           <button type="button" className="nav-burger" aria-expanded={open} aria-controls="nav-menu" aria-label={open ? n.cerrar : n.abrir} onClick={() => setOpen((v) => !v)}>
             <span /><span />
@@ -126,6 +128,7 @@ export function Nav({ lang }: { lang: Lang }) {
           <div className="nav-menu-actions">
             <ThemeToggle lang={lang} />
             <Link href={hrefIdioma} className="nav-lang" title={n.idioma.title}>{n.idioma.label}</Link>
+            <a href={n.entrar.href} className="nav-entrar" title={n.entrar.title}>{n.entrar.label}</a>
             <Button href={n.cta.href} arrow>{n.cta.label}</Button>
           </div>
         </div>
