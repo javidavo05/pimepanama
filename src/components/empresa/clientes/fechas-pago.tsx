@@ -68,6 +68,20 @@ function CorrerCuotas({ documentId, cuantas }: { documentId: string; cuantas: nu
   );
 }
 
+/** Una factura con anticipo y el resto contra entrega todavía puede traer el vencimiento viejo, que la hace ver vencida. */
+function QuitarVencimiento({ factura }: { factura: FacturaFechas }) {
+  const [estado, enviar, enviando] = useActionState(moverVencimientoAction, null);
+  return (
+    <form action={enviar} className="flex flex-wrap items-center gap-2">
+      <input type="hidden" name="documentId" value={factura.id} />
+      <input type="hidden" name="sinFecha" value="1" />
+      <span className="text-xs text-warn">La factura todavía vence el {legible(factura.dueDate!)} y por eso aparece vencida.</span>
+      <button type="submit" className="inline-flex items-center min-h-11 px-3 rounded-lg text-sm font-semibold text-fg-mute hover:text-fg hover:bg-fill" disabled={enviando}>{enviando ? "Guardando…" : "Quitar ese vencimiento"}</button>
+      <Resultado estado={estado} />
+    </form>
+  );
+}
+
 function ProgramarCobro({ factura }: { factura: FacturaFechas }) {
   const [estado, enviar, enviando] = useActionState(programarCobroAction, null);
   const [abierto, setAbierto] = useState(false);
@@ -125,6 +139,7 @@ export function FechasPago({ facturas }: { facturas: FacturaFechas[] }) {
             {f.porProgramar > 0.005 && (
               <div className="grid gap-1">
                 <p className="text-fg-dim text-xs tabular-nums">{dinero(f.porProgramar)} sin fecha: se cobra contra entrega.</p>
+                {vivas.length === 0 && f.dueDate && <QuitarVencimiento factura={f} />}
                 <ProgramarCobro factura={f} />
               </div>
             )}

@@ -245,6 +245,16 @@ model EmpresaUser {
   email                 String                   @unique
   fullName              String?
   role                  EmpresaRole              @default(USER)
+  /// Dueño de la empresa cuyos datos usa este miembro; null = es el dueño (migración 0056).
+  ownerId               String?
+  owner                 EmpresaUser?             @relation("Equipo", fields: [ownerId], references: [id], onDelete: SetNull)
+  miembros              EmpresaUser[]            @relation("Equipo")
+  /// "dueno" | "ventas" | "proyectos" | "finanzas": qué secciones ve (src/lib/auth/permisos.ts).
+  area                  String                   @default("dueno")
+  activo                Boolean                  @default(true)
+  invitaciones          EmpresaInvite[]
+  clientesACargo        Client[]                 @relation("ClienteResponsable")
+  leadsACargo           Lead[]                   @relation("LeadResponsable")
   documents             Document[]
   clients               Client[]
   paymentMethods        PaymentMethod[]
@@ -300,6 +310,9 @@ model EmpresaUser {
 
 model Client {
   id                 String          @id @default(cuid())
+  /// Miembro del equipo a cargo de la cuenta (migración 0056).
+  responsableId      String?
+  responsable        EmpresaUser?    @relation("ClienteResponsable", fields: [responsableId], references: [id], onDelete: SetNull)
   name               String
   company            String?
   ruc                String?
@@ -371,6 +384,9 @@ enum LeadSource {
 
 model Lead {
   id                String      @id @default(cuid())
+  /// Miembro del equipo a cargo del lead (migración 0056).
+  responsableId    String?
+  responsable      EmpresaUser?    @relation("LeadResponsable", fields: [responsableId], references: [id], onDelete: SetNull)
   name              String
   company           String?
   email             String?
@@ -1788,4 +1804,17 @@ model AssistantAction {
   decidedAt  DateTime?
 
   @@index([userId, createdAt(sort: Desc)])
+}
+
+/// Invitación al equipo (migración 0056): al entrar por primera vez con ese correo se crea su EmpresaUser.
+model EmpresaInvite {
+  id         String      @id @default(cuid())
+  ownerId    String
+  owner      EmpresaUser @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  email      String      @unique
+  area       String      @default("ventas")
+  fullName   String?
+  createdAt  DateTime    @default(now())
+  acceptedAt DateTime?
+  revokedAt  DateTime?
 }

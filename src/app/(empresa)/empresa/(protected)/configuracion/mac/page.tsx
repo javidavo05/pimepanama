@@ -14,7 +14,7 @@ export default async function MacPage({
   const user = await getEmpresaUser();
   const { conectar } = await searchParams;
   const devices = await prisma.deviceToken.findMany({
-    where: { userId: user.id, revokedAt: null },
+    where: { userId: user.miembro.id, revokedAt: null },
     select: { id: true, name: true, createdAt: true, lastUsedAt: true },
     orderBy: { createdAt: "desc" },
   });

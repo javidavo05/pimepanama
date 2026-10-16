@@ -14,6 +14,7 @@ const COLUMNAS = "md:grid-cols-[minmax(0,1fr)_128px] xl:grid-cols-[minmax(0,1fr)
 
 const FILTROS = [
   { id: "", label: "Todos" },
+  { id: "mios", label: "Mis clientes" },
   { id: "saldo", label: "Con saldo" },
   { id: "tickets", label: "Tickets abiertos" },
   { id: "proyectos", label: "Proyectos en curso" },
@@ -39,7 +40,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
   const [clientes, mDocs, mPagos, mTickets, mProyectos] = await Promise.all([prisma.client.findMany({
     where: { userId: u.id, archivedAt: null, ...(busca ? { OR: [{ name: { contains: busca, mode: "insensitive" } }, { company: { contains: busca, mode: "insensitive" } }, { email: { contains: busca, mode: "insensitive" } }, { ruc: { contains: busca } }] } : {}) },
     select: {
-      id: true, name: true, company: true, email: true, brandLine: true, internal: true, updatedAt: true,
+      id: true, name: true, company: true, email: true, brandLine: true, internal: true, updatedAt: true, responsableId: true,
       documents: { where: { type: "FACTURA" }, select: { id: true, status: true, total: true, amountPaid: true } },
       payments: { select: { documentId: true, phaseId: true, amount: true, status: true } },
       // Fases iniciadas sin factura: se deben igual (saldo.ts).
@@ -65,7 +66,9 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
   const externos = todas.filter((c) => !c.internal).length;
 
   const pasa = (c: (typeof todas)[number]) =>
-    filtro === "saldo" ? !c.internal && c.saldo.pendiente > 0
+    // «Mis clientes»: los que tengo a cargo (el dueño, también los que no tienen responsable).
+    filtro === "mios" ? c.responsableId === u.miembro.id || (u.miembro.esDueno && !c.responsableId)
+    : filtro === "saldo" ? !c.internal && c.saldo.pendiente > 0
     : filtro === "tickets" ? c.tickets.length > 0
     : filtro === "proyectos" ? c.proyectos > 0
     : filtro === "premium" ? !c.internal && c.brandLine === "premium"

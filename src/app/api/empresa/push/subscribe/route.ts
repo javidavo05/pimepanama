@@ -13,7 +13,7 @@ export async function GET(request: Request) {
     const endpoint = new URL(request.url).searchParams.get("endpoint");
 
     const subscribed = endpoint
-      ? (await prisma.pushSubscription.count({ where: { userId: user.id, endpoint } })) > 0
+      ? (await prisma.pushSubscription.count({ where: { userId: user.miembro.id, endpoint } })) > 0
       : false;
 
     return NextResponse.json({ publicKey, subscribed });
@@ -44,14 +44,14 @@ export async function POST(request: Request) {
     await prisma.pushSubscription.upsert({
       where: { endpoint },
       create: {
-        userId: user.id,
+        userId: user.miembro.id,
         endpoint,
         p256dh,
         auth,
         userAgent: request.headers.get("user-agent")?.slice(0, 255) ?? null,
       },
       update: {
-        userId: user.id,
+        userId: user.miembro.id,
         p256dh,
         auth,
         userAgent: request.headers.get("user-agent")?.slice(0, 255) ?? null,
@@ -73,7 +73,7 @@ export async function DELETE(request: Request) {
     const endpoint = body.endpoint?.trim();
     if (!endpoint) return NextResponse.json({ error: "Falta endpoint" }, { status: 400 });
 
-    await prisma.pushSubscription.deleteMany({ where: { userId: user.id, endpoint } });
+    await prisma.pushSubscription.deleteMany({ where: { userId: user.miembro.id, endpoint } });
     return NextResponse.json({ ok: true });
   } catch (err) {
     if (err instanceof Response) return err;

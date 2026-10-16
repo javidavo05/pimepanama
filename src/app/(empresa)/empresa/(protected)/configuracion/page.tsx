@@ -9,22 +9,32 @@ import { PasskeysSettings } from "@/components/empresa/passkeys-settings";
 import { CuentasGithub } from "@/components/empresa/github/cuentas-github";
 import { CalendarioConfig } from "@/components/empresa/calendario/asistente-calendario";
 import { PimeEnGoogleConfig } from "@/components/empresa/calendario/pime-en-google";
+import { EquipoConfig, type FilaEquipo } from "@/components/empresa/equipo/equipo-config";
 
 export const metadata = { title: "Configuración — Pime Suite" };
 
 export default async function ConfiguracionPage() {
   const user = await getEmpresaUser();
-  const paymentMethods = await prisma.paymentMethod.findMany({
-    where: { userId: user.id, isActive: true },
-    orderBy: { name: "asc" },
-  });
+  const dueno = user.miembro.esDueno;
+  // Los ajustes de la empresa (equipo, marca, cobros, cuentas) son del dueño; cada miembro ve solo lo personal.
+  const [paymentMethods, miembros, invitaciones] = dueno
+    ? await Promise.all([
+        prisma.paymentMethod.findMany({ where: { userId: user.id, isActive: true }, orderBy: { name: "asc" } }),
+        prisma.empresaUser.findMany({ where: { ownerId: user.id }, orderBy: { createdAt: "asc" }, select: { id: true, email: true, fullName: true, area: true, activo: true } }),
+        prisma.empresaInvite.findMany({ where: { ownerId: user.id, acceptedAt: null, revokedAt: null }, orderBy: { createdAt: "asc" }, select: { id: true, email: true, fullName: true, area: true } }),
+      ])
+    : [[], [], []];
+  const filasEquipo: FilaEquipo[] = [
+    ...miembros.map((m) => ({ ...m, pendiente: false })),
+    ...invitaciones.map((i) => ({ ...i, activo: true, pendiente: true })),
+  ];
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div>
         <h1 className="text-fg text-2xl font-semibold tracking-tight">Configuración</h1>
         <p className="text-fg-dim text-sm mt-1">
-          Datos de la empresa que aparecen en todos los documentos
+          {dueno ? "El equipo, los datos de la empresa que aparecen en todos los documentos y tus ajustes personales." : "Tus ajustes personales: apariencia, huella y la Mac."}
         </p>
       </div>
 
@@ -36,6 +46,9 @@ export default async function ConfiguracionPage() {
         <ThemeToggleCards />
       </section>
 
+      {dueno && <EquipoConfig dueno={{ email: user.miembro.email, fullName: user.miembro.fullName }} filas={filasEquipo} />}
+
+      {dueno && (<>
       <Link
         href="/empresa/configuracion/clientes"
         className="flex items-center justify-between gap-4 bg-panel border border-line rounded-2xl p-6 hover:border-line-mid transition-colors"
@@ -54,6 +67,7 @@ export default async function ConfiguracionPage() {
       <CalendarioConfig />
 
       <CuentasGithub />
+      </>)}
 
       <PasskeysSettings />
 
@@ -70,8 +84,8 @@ export default async function ConfiguracionPage() {
         <span className="text-fg-faint text-sm">→</span>
       </Link>
 
-      <ConfigForm config={serializeCompanyConfig(user.config)} />
-      <PaymentMethodsSettings methods={paymentMethods.map(serializePaymentMethod)} />
+      {dueno && <ConfigForm config={serializeCompanyConfig(user.config)} />}
+      {dueno && <PaymentMethodsSettings methods={paymentMethods.map(serializePaymentMethod)} />}
     </div>
   );
 }

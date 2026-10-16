@@ -26,7 +26,7 @@ export const POST = withEmpresaRoute(async (request) => {
 
   const user = await requireEmpresaUser(request);
   const passkeys = await prisma.passkey.findMany({
-    where: { userId: user.id },
+    where: { userId: user.miembro.id },
     select: { credentialId: true, transports: true },
   });
   const options = await generateAuthenticationOptions({
@@ -34,6 +34,6 @@ export const POST = withEmpresaRoute(async (request) => {
     userVerification: "required",
     allowCredentials: passkeys.map((p) => ({ id: p.credentialId, transports: p.transports })),
   });
-  await setChallenge(options.challenge, "vault", user.id);
+  await setChallenge(options.challenge, "vault", user.miembro.id);
   return NextResponse.json(options);
 });

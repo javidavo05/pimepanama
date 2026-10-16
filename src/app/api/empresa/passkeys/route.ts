@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export const GET = withEmpresaRoute(async (request) => {
   const user = await requireEmpresaUser(request);
   const passkeys = await prisma.passkey.findMany({
-    where: { userId: user.id },
+    where: { userId: user.miembro.id },
     orderBy: { createdAt: "desc" },
     select: { id: true, name: true, vaultAccess: true, lastUsedAt: true, createdAt: true },
   });

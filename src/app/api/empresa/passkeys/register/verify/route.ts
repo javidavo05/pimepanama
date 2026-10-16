@@ -20,7 +20,7 @@ export const runtime = "nodejs";
 export const POST = withEmpresaRoute(async (request) => {
   const user = await requireEmpresaUser(request);
   const body = (await request.json()) as { response: RegistrationResponseJSON; vaultToken?: string };
-  const expectedChallenge = await consumeChallenge("register", user.id);
+  const expectedChallenge = await consumeChallenge("register", user.miembro.id);
   if (!expectedChallenge) {
     return NextResponse.json({ error: "El registro venció. Inténtalo de nuevo." }, { status: 400 });
   }
@@ -46,7 +46,7 @@ export const POST = withEmpresaRoute(async (request) => {
   const vaultAccess = Boolean(body.vaultToken && verifyVaultToken(body.vaultToken, user.id));
   const passkey = await prisma.passkey.create({
     data: {
-      userId: user.id,
+      userId: user.miembro.id,
       credentialId: credential.id,
       publicKey: Buffer.from(credential.publicKey).toString("base64url"),
       counter: credential.counter,

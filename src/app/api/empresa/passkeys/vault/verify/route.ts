@@ -23,12 +23,12 @@ export const POST = withEmpresaRoute(async (request) => {
     response: AuthenticationResponseJSON;
     enableWith?: string;
   };
-  const expectedChallenge = await consumeChallenge("vault", user.id);
+  const expectedChallenge = await consumeChallenge("vault", user.miembro.id);
   if (!expectedChallenge) {
     return NextResponse.json({ error: "La solicitud venció. Inténtalo de nuevo." }, { status: 400 });
   }
 
-  const passkey = await verifyPasskeyAssertion(request, body.response, expectedChallenge, user.id);
+  const passkey = await verifyPasskeyAssertion(request, body.response, expectedChallenge, user.miembro.id);
   if (!passkey) {
     return NextResponse.json({ error: "No se pudo verificar la huella." }, { status: 401 });
   }

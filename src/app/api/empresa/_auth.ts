@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import { puedeVer, type Seccion } from "@/lib/auth/permisos";
 import { resolverEquipo, type EmpresaUserWithConfig } from "@/lib/auth/equipo";
 import { MFA_COOKIE, sesionVerificada } from "@/lib/auth/mfa";
 import { leerPermisoDirecto } from "@/lib/directo";
@@ -54,5 +55,24 @@ export async function requireEmpresaUser(request: Request): Promise<EmpresaUserW
     throw negar(403, "Falta la doble verificación de esta sesión.", "mfa_required");
   }
 
+  // Un miembro del equipo solo llama a las API de las secciones de su área (el correo y la configuración son del dueño).
+  const seccion = seccionDeApi(new URL(request.url).pathname);
+  if (seccion && !puedeVer(r.user.miembro.area, seccion)) throw negar(403, "Tu área del equipo no tiene acceso a esta sección.", "sin_permiso");
+
   return r.user;
+}
+
+/** Sección de una ruta /api/empresa/… que no es común a todo el equipo; null = la puede usar cualquier área. */
+function seccionDeApi(path: string): Seccion | null {
+  const resto = path.replace(/^\/api\/empresa\//, "");
+  // La campana de avisos es de todo el equipo, aunque viva bajo /mail.
+  if (resto.startsWith("mail/notifications")) return null;
+  const p = resto.split("/")[0] ?? "";
+  const mapa: Record<string, Seccion> = {
+    mail: "correos", company: "empresa", branding: "empresa", "payment-methods": "empresa",
+    platforms: "sistemas", pulso: "sistemas", github: "sistemas",
+    ar: "cobros", pagos: "cobros", "payment-schedules": "cobros", expenses: "dinero",
+    leads: "leads", bookings: "citas", "booking-settings": "citas", contracts: "contratos",
+  };
+  return mapa[p] ?? null;
 }

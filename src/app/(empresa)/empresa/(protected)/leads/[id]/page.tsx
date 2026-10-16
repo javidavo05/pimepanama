@@ -4,6 +4,8 @@ import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { serializeLead } from "@/lib/serializers";
 import { LeadDetailClient } from "./lead-detail-client";
+import { Responsable } from "@/components/empresa/equipo/responsable";
+import { equipoDeLaEmpresa } from "@/lib/auth/equipo-lista";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +25,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   });
 
   if (!lead) notFound();
+  const equipo = await equipoDeLaEmpresa(user.id).catch(() => []);
 
   const serialized = {
     ...serializeLead(lead),
@@ -47,6 +50,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         <span className="text-fg-dim truncate min-w-0 max-w-xs">{lead.name}</span>
       </div>
 
+      {equipo.length > 1 && <div className="mb-4"><Responsable tipo="lead" id={lead.id} actual={lead.responsableId} equipo={equipo} /></div>}
       <LeadDetailClient lead={serialized} />
     </div>
   );

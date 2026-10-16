@@ -31,7 +31,8 @@ export async function middleware(request: NextRequest) {
   }
 
   // ── /empresa auth guard ──────────────────────────────────────────────────
-  if (pathname === "/empresa/login") {
+  // Login y «crear contraseña» del invitado al equipo: todavía no hay sesión.
+  if (pathname === "/empresa/login" || pathname === "/empresa/crear-clave") {
     return NextResponse.next();
   }
 

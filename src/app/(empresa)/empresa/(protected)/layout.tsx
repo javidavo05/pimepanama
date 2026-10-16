@@ -26,7 +26,8 @@ export default async function EmpresaProtectedLayout({
   return (
     <div className="min-h-screen bg-canvas">
       <SidebarNav
-        userEmail={user.email}
+        userEmail={user.miembro.email}
+        area={user.miembro.area}
         companyName={user.config?.name ?? "Pime Panamá"}
         logoUrl={resolveCompanyLogoUrl(user.config?.logoUrl)}
       >

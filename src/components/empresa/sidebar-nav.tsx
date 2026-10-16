@@ -1,5 +1,6 @@
 "use client";
 
+import { puedeVer, seccionDeRuta } from "@/lib/auth/permisos";
 import Link from "@/components/empresa/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -107,10 +108,11 @@ function groupItems(items: NavItem[]) {
   return order.map((group) => ({ group, items: byGroup.get(group)! }));
 }
 
-const DRAWER_GROUPS = groupItems([...NAV_ITEMS, ...BOTTOM_ITEMS]);
 
 interface SidebarNavProps {
   userEmail: string;
+  /** Área del miembro (src/lib/auth/permisos.ts): el menú muestra solo sus secciones. */
+  area?: string;
   companyName: string;
   logoUrl?: string;
   /** Toda la página: en el celular se aparta entera para revelar el menú. */
@@ -127,8 +129,14 @@ interface SidebarNavProps {
  *   Por eso este componente envuelve a TODA la página (barras incluidas): para
  *   apartarla hay que poder transformarla entera.
  */
-export function SidebarNav({ userEmail, companyName, logoUrl, children }: SidebarNavProps) {
+export function SidebarNav({ userEmail, area = "dueno", companyName, logoUrl, children }: SidebarNavProps) {
   const pathname = usePathname();
+  // Cada miembro ve solo las secciones de su área; el dueño, todas.
+  const visible = (i: NavItem) => puedeVer(area, seccionDeRuta(i.href));
+  const navItems = NAV_ITEMS.filter(visible);
+  const bottomItems = BOTTOM_ITEMS.filter(visible);
+  const tabItems = TAB_ITEMS.filter(visible);
+  const drawerGroups = groupItems([...navItems, ...bottomItems]);
   const [logoFailed, setLogoFailed] = useState(false);
   const [open, setOpen] = useState(false);
   // El chip del menú es cuadrado: sin logo propio va el ícono de la marca (no el logo horizontal).
@@ -226,7 +234,7 @@ export function SidebarNav({ userEmail, companyName, logoUrl, children }: Sideba
   }
 
   // «Más» se marca cuando la sección abierta no tiene pestaña propia.
-  const moreActive = open || !TAB_ITEMS.some((t) => matches(t, pendingHref ?? pathname));
+  const moreActive = open || !tabItems.some((t) => matches(t, pendingHref ?? pathname));
 
   function onNavigate(e: React.MouseEvent, href: string) {
     // Abrir en otra pestaña no cambia esta página: nada que marcar.
@@ -252,7 +260,7 @@ export function SidebarNav({ userEmail, companyName, logoUrl, children }: Sideba
         </div>
 
         <nav className="flex-1 px-3 py-4 overflow-y-auto">
-          {groupItems(NAV_ITEMS).map((block) => (
+          {groupItems(navItems).map((block) => (
             <div key={block.group} className="space-y-0.5 mb-4">
               {block.group !== "Principal" && <p className="px-3 pt-2 pb-1 text-fg-faint text-[11px] font-semibold uppercase tracking-[0.14em]">{block.group}</p>}
               {block.items.map((item) => (
@@ -266,7 +274,7 @@ export function SidebarNav({ userEmail, companyName, logoUrl, children }: Sideba
         </nav>
 
         <div className="px-3 py-3 border-t border-line space-y-0.5">
-          {BOTTOM_ITEMS.map((item) => (
+          {bottomItems.map((item) => (
             <Link key={item.href} href={item.href} onClick={(e) => onNavigate(e, item.href)} className={linkClass(isActive(item))}>
               <NavIcon name={item.icon} />
               {item.label}
@@ -313,7 +321,7 @@ export function SidebarNav({ userEmail, companyName, logoUrl, children }: Sideba
           </div>
 
           <div className="cajon-lista px-2 pb-[calc(1.5rem+env(safe-area-inset-bottom))]">
-            {DRAWER_GROUPS.map((block, i) => (
+            {drawerGroups.map((block, i) => (
               <div
                 key={block.group}
                 className="grid gap-0.5"
@@ -376,7 +384,7 @@ export function SidebarNav({ userEmail, companyName, logoUrl, children }: Sideba
             className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-panel-2 border-t border-line pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]"
           >
             <div className="grid grid-cols-5 h-16">
-              {TAB_ITEMS.map((item) => {
+              {tabItems.map((item) => {
                 const active = !open && isActive(item);
                 return (
                   <Link

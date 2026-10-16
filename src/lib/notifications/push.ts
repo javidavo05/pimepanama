@@ -44,7 +44,7 @@ export function getVapidPublicKey(): string | null {
 }
 
 /**
- * Envía un push a todos los dispositivos suscritos del usuario.
+ * Envía un push a todos los dispositivos suscritos del usuario y de los miembros de su equipo.
  * Nunca lanza: un teléfono con el permiso revocado no puede tumbar el flujo
  * que dispara el aviso. Las suscripciones muertas (404/410) se borran solas.
  */
@@ -53,7 +53,8 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
 
   let subs;
   try {
-    subs = await prisma.pushSubscription.findMany({ where: { userId } });
+    // Los avisos del negocio llegan al dueño y a su equipo activo (cada miembro con sus propios dispositivos).
+    subs = await prisma.pushSubscription.findMany({ where: { OR: [{ userId }, { user: { ownerId: userId, activo: true } }] } });
   } catch (err) {
     console.error("[push] no se pudieron leer las suscripciones", err);
     return { sent: 0, removed: 0 };

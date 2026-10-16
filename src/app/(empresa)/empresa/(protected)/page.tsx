@@ -1,4 +1,5 @@
 import Link from "@/components/empresa/link";
+import { puedeVer } from "@/lib/auth/permisos";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { prisma } from "@/lib/prisma";
 import { datosHoy, type ItemAgenda } from "@/lib/motor/hoy";
@@ -17,39 +18,49 @@ const h2 = "text-fg text-base font-semibold tracking-tight";
 const hora = (d: Date) => d.toLocaleTimeString("es-PA", { hour: "numeric", minute: "2-digit", timeZone: "America/Panama" });
 const TIPO: Record<ItemAgenda["tipo"], string> = { tarea: "Tarea", cita: "Cita", reunion: "Reunión", cuota: "Cobro", factura: "Cobro", evento: "Evento" };
 
-export default async function HoyPage() {
+export default async function HoyPage({ searchParams }: { searchParams: Promise<{ sin_permiso?: string }> }) {
   const user = await getEmpresaUser();
+  const { sin_permiso } = await searchParams;
+  // El dinero de la empresa (cifras, cobrar e ingresos) lo ven el dueño y Finanzas.
+  const veDinero = puedeVer(user.miembro.area, "dinero");
   const [d, clientes, pagadas] = await Promise.all([
     datosHoy(user.id),
     prisma.client.findMany({ where: { userId: user.id, archivedAt: null, internal: false }, orderBy: { name: "asc" }, select: { id: true, name: true, company: true } }),
     prisma.document.findMany({ where: paidInvoiceWhere(user.id), select: PAID_INVOICE_REVENUE_SELECT, orderBy: { issueDate: "asc" } }),
   ]);
   const filas = pagadas.map((x) => ({ issueDate: x.issueDate, ...effectiveInvoiceAmount(x) }));
-  const nombre = (user.fullName || "").split(" ")[0];
+  const nombre = (user.miembro.fullName || "").split(" ")[0];
   const fecha = new Date().toLocaleDateString("es-PA", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Panama" });
   const ahora = Date.now();
 
   const resumen = [
     d.agenda.length ? `${d.agenda.length} ${d.agenda.length === 1 ? "cosa en la agenda" : "cosas en la agenda"}` : null,
-    d.totalVencidas ? `${d.totalVencidas} ${d.totalVencidas === 1 ? "cobro vencido" : "cobros vencidos"}` : null,
+    veDinero && d.totalVencidas ? `${d.totalVencidas} ${d.totalVencidas === 1 ? "cobro vencido" : "cobros vencidos"}` : null,
     d.sistemas.length ? `${d.sistemas.length} ${d.sistemas.length === 1 ? "sistema con problemas" : "sistemas con problemas"}` : null,
   ].filter(Boolean).join(" · ") || "Nada urgente: todo al día.";
-  const hayAlertas = d.vencidas.length > 0 || d.sistemas.length > 0 || d.tickets.sinResponder.length > 0;
+  // Sin acceso al dinero, los cobros vencidos no son una alerta para este miembro.
+  const vencidas = veDinero ? d.vencidas : [];
+  const hayAlertas = vencidas.length > 0 || d.sistemas.length > 0 || d.tickets.sinResponder.length > 0;
   const cambioMes = d.dinero.entroMesPasado > 0 ? Math.round(((d.dinero.entroMes - d.dinero.entroMesPasado) / d.dinero.entroMesPasado) * 100) : null;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
+      {sin_permiso && (
+        <p role="status" className="rounded-xl border border-warn/30 bg-warn/10 px-4 py-3 text-sm text-warn">
+          Esa sección no es de tu área del equipo. Si la necesitas, pídele acceso al dueño.
+        </p>
+      )}
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <p className="text-fg-dim text-sm first-letter:uppercase">{fecha}</p>
           <h1 className="text-fg text-2xl font-semibold tracking-tight">{nombre ? `Hola, ${nombre}` : "Hoy"}</h1>
           <p className="text-fg-mute text-sm mt-1">{resumen}</p>
         </div>
-        <BotonCobrar clientes={clientes.map((c) => ({ id: c.id, nombre: c.company || c.name }))} className="inline-flex items-center justify-center min-h-12 sm:min-h-11 px-6 rounded-xl bg-brand text-on-brand text-sm font-semibold hover:bg-brand-hi" />
+        {veDinero && <BotonCobrar clientes={clientes.map((c) => ({ id: c.id, nombre: c.company || c.name }))} className="inline-flex items-center justify-center min-h-12 sm:min-h-11 px-6 rounded-xl bg-brand text-on-brand text-sm font-semibold hover:bg-brand-hi" />}
       </header>
 
       {/* Dinero con colores: rojo vencido, azul por cobrar, verde entró. */}
-      <section aria-label="Dinero" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {veDinero && <section aria-label="Dinero" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <Link href="/empresa/cuentas-por-cobrar" className={`rounded-2xl border p-4 sm:p-6 ${d.dinero.vencido > 0 ? "border-danger/40 bg-danger/5" : "border-line bg-panel"}`}>
           <p className={`text-sm font-semibold ${d.dinero.vencido > 0 ? "text-danger" : "text-fg-dim"}`}>{d.dinero.vencido > 0 ? "● Vencido" : "Vencido"}</p>
           <p className={`text-2xl font-bold tabular-nums tracking-tight ${d.dinero.vencido > 0 ? "text-danger" : "text-fg-dim"}`}>{usd(d.dinero.vencido)}</p>
@@ -65,7 +76,7 @@ export default async function HoyPage() {
           <p className="text-ok text-2xl font-bold tabular-nums tracking-tight">{usd(d.dinero.entroMes)}</p>
           <p className="text-fg-dim text-xs mt-1">{cambioMes === null ? `Mes pasado: ${usd(d.dinero.entroMesPasado)}` : `${cambioMes >= 0 ? "+" : ""}${cambioMes} % contra el mes pasado`}</p>
         </Link>
-      </section>
+      </section>}
 
       {hayAlertas && (
         <section className={`${card} border-danger/30`} aria-label="Alertas">
@@ -77,7 +88,7 @@ export default async function HoyPage() {
                 <span className="rounded-full bg-danger/10 px-3 py-1 text-xs font-semibold text-danger">{s.estado === "caido" ? "Caído" : "Con fallas"}</span>
               </Link></li>
             ))}
-            {d.vencidas.map((v) => (
+            {vencidas.map((v) => (
               <li key={v.id}><Link href={v.href} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3 min-h-12">
                 <span className="min-w-0"><span className="block text-fg text-sm font-semibold truncate">{v.cliente} te debe {usd(v.falta)}</span><span className="block text-fg-dim text-xs">{v.numero ?? "Factura"} · vencida hace {v.dias} {v.dias === 1 ? "día" : "días"}</span></span>
                 <span className="text-danger text-sm font-semibold whitespace-nowrap">Cobrar →</span>
@@ -90,7 +101,7 @@ export default async function HoyPage() {
               </Link></li>
             ))}
           </ul>
-          {d.totalVencidas > d.vencidas.length && <Link href="/empresa/cuentas-por-cobrar" className="mt-2 inline-flex items-center min-h-11 text-sm font-semibold text-danger hover:underline">Ver las {d.totalVencidas} vencidas</Link>}
+          {veDinero && d.totalVencidas > d.vencidas.length && <Link href="/empresa/cuentas-por-cobrar" className="mt-2 inline-flex items-center min-h-11 text-sm font-semibold text-danger hover:underline">Ver las {d.totalVencidas} vencidas</Link>}
         </section>
       )}
 
@@ -168,9 +179,11 @@ export default async function HoyPage() {
         </div>
       </div>
 
-      <section className={card} aria-label="Ingresos">
-        <DashboardRevenueChart monthlyData={buildMonthlyRevenue(filas)} yearlyData={buildYearlyRevenue(filas)} />
-      </section>
+      {veDinero && (
+        <section className={card} aria-label="Ingresos">
+          <DashboardRevenueChart monthlyData={buildMonthlyRevenue(filas)} yearlyData={buildYearlyRevenue(filas)} />
+        </section>
+      )}
     </div>
   );
 }

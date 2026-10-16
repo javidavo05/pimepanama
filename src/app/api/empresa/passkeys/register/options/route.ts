@@ -12,16 +12,16 @@ export const POST = withEmpresaRoute(async (request) => {
   const user = await requireEmpresaUser(request);
   const { rpID } = relyingParty(request);
   const existing = await prisma.passkey.findMany({
-    where: { userId: user.id },
+    where: { userId: user.miembro.id },
     select: { credentialId: true, transports: true },
   });
 
   const options = await generateRegistrationOptions({
     rpName: RP_NAME,
     rpID,
-    userName: user.email,
-    userDisplayName: user.fullName ?? user.email,
-    userID: new TextEncoder().encode(user.id),
+    userName: user.miembro.email,
+    userDisplayName: user.miembro.fullName ?? user.miembro.email,
+    userID: new TextEncoder().encode(user.miembro.id),
     attestationType: "none",
     // Un dispositivo ya registrado responde con error y el cliente pasa a
     // vincularlo por autenticación en lugar de duplicarlo.
@@ -32,6 +32,6 @@ export const POST = withEmpresaRoute(async (request) => {
     },
   });
 
-  await setChallenge(options.challenge, "register", user.id);
+  await setChallenge(options.challenge, "register", user.miembro.id);
   return NextResponse.json(options);
 });

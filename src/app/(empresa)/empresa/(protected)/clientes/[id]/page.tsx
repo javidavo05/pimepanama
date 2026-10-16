@@ -7,6 +7,8 @@ import { formatoHoras } from "@/lib/portal/horas";
 import { PAGO_METODO_LABEL, TICKET_ESTADO_LABEL, type PagoMetodo, type TicketEstado } from "@/lib/portal/estados";
 import { ListaFacturas } from "@/components/empresa/facturas/lista-facturas";
 import { FechasPago, type FacturaFechas } from "@/components/empresa/clientes/fechas-pago";
+import { Responsable } from "@/components/empresa/equipo/responsable";
+import { equipoDeLaEmpresa } from "@/lib/auth/equipo-lista";
 import { btn } from "@/components/empresa/page-header";
 import { FacturarHorasForm, HorasForm, InvitarForm, PagoForm, PagoPorConfirmar, PersonaAcciones } from "@/components/empresa/clientes/formularios";
 import { ZonaLinea } from "@/components/empresa/clientes/zona-linea";
@@ -33,11 +35,13 @@ const tiempo = (d: Date) => {
 export default async function FichaCliente({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
   const [{ id }, { tab: tabInicial = "resumen" }] = await Promise.all([params, searchParams]);
   const u = await getEmpresaUser();
-  const [f, todos, plataformas] = await Promise.all([
+  const [f, todos, plataformas, equipo] = await Promise.all([
     fichaCliente(u.id, id),
     prisma.client.findMany({ where: { userId: u.id, archivedAt: null, internal: false }, orderBy: { name: "asc" }, select: { id: true, name: true, company: true } }),
     // Si falla, la pestaña Plataformas lo dice; el resto de la ficha sigue.
     plataformasDeCliente(u.id, id).catch(() => null),
+    // Responsable de la cuenta: solo se muestra si hay equipo (más de una persona).
+    equipoDeLaEmpresa(u.id).catch(() => []),
   ]);
   if (!f) notFound();
   // Empresa interna: su dinero son los gastos de sus productos, no cobros.
@@ -100,6 +104,7 @@ export default async function FichaCliente({ params, searchParams }: { params: P
             </div>
             <h1 className="text-fg text-2xl font-semibold tracking-tight break-words">{c.company || c.name}</h1>
             <p className="text-fg-dim text-sm break-words">{[c.company ? c.name : null, c.email, c.phone, c.ruc ? `RUC ${c.ruc}` : null].filter(Boolean).join(" · ") || "Sin datos de contacto"}</p>
+            {equipo.length > 1 && <Responsable tipo="cliente" id={c.id} actual={c.responsableId} equipo={equipo} />}
           </div>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:justify-end">
             <Link href={`/empresa/tickets/nuevo?clientId=${c.id}`} className={btn.primary}>+ Ticket</Link>

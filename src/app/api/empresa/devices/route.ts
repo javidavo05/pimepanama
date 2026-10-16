@@ -13,6 +13,6 @@ export const POST = withEmpresaRoute(async (request) => {
   const user = await requireEmpresaUser(request);
   const body = (await request.json().catch(() => ({}))) as { name?: string };
   const name = body.name?.trim() || "Mac";
-  const { token, device } = await createDeviceToken(user.id, name);
+  const { token, device } = await createDeviceToken(user.miembro.id, name);
   return NextResponse.json({ token, device });
 });
