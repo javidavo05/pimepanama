@@ -6,6 +6,7 @@ import { serializeLead } from "@/lib/serializers";
 import { LeadDetailClient } from "./lead-detail-client";
 import { Responsable } from "@/components/empresa/equipo/responsable";
 import { equipoDeLaEmpresa } from "@/lib/auth/equipo-lista";
+import { OportunidadesCliente } from "@/components/empresa/crm/oportunidades-cliente";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +53,9 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
       {equipo.length > 1 && <div className="mb-4"><Responsable tipo="lead" id={lead.id} actual={lead.responsableId} equipo={equipo} /></div>}
       <LeadDetailClient lead={serialized} />
+      <div className="mt-6">
+        <OportunidadesCliente leadId={lead.id} />
+      </div>
     </div>
   );
 }
