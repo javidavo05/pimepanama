@@ -29,7 +29,7 @@ import { DocumentType, DocumentStatus, ProjectStatus, ContractStatus, LeadStatus
 import type { FinancingPlan } from "@/lib/financing";
 import { serializeProject, serializeContract, serializeSchedule, serializeLead } from "@/lib/serializers";
 import { sincronizarPagosDeFactura } from "@/lib/portal/sincronizar-pagos";
-import { enlacesDeDocumento, asignarClienteDeLead, unirClienteAProyecto } from "@/lib/motor/enlaces";
+import { enlacesDeDocumento, unirClienteAProyecto } from "@/lib/motor/enlaces";
 import { siguienteNumero } from "@/lib/numeracion";
 
 const DOCUMENT_LIST_PATH: Record<DocumentType, string> = {
@@ -984,31 +984,9 @@ export async function updateLeadStatusAction(id: string, status: LeadStatus) {
   if (!existing) throw new Error("Lead no encontrado");
 
   if (status === "GANADO" && !existing.convertedClientId) {
-    const [, lead] = await prisma.$transaction(async (tx) => {
-      const client = await tx.client.create({
-        data: {
-          name: existing.name,
-          company: existing.company,
-          email: existing.email,
-          phone: existing.phone,
-          address: existing.address,
-          city: existing.city,
-          country: existing.country,
-          userId: user.id,
-        },
-      });
-      const updatedLead = await tx.lead.update({
-        where: { id },
-        data: { status, convertedClientId: client.id, convertedAt: new Date() },
-      });
-      await tx.document.updateMany({
-        where: { leadId: id },
-        data: { clientId: client.id },
-      });
-      // Y las facturas que salieron de esas cotizaciones, con sus pagos.
-      await asignarClienteDeLead(id, client.id, tx);
-      return [client, updatedLead];
-    });
+    // Reutiliza el cliente que ya tenga su correo (sin importar mayúsculas) y copia fuente y notas del lead.
+    const { convertirLeadEnCliente } = await import("@/lib/crm/embudo-datos");
+    const { lead } = await prisma.$transaction((tx) => convertirLeadEnCliente(tx, user.id, existing), { timeout: 20_000 });
     revalidatePath("/empresa/leads");
     revalidatePath(`/empresa/leads/${id}`);
     revalidatePath("/empresa/clientes");

@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { updateLeadStatusAction, updateLeadAction } from "@/app/(empresa)/empresa/actions";
 import type { LeadStatus, LeadPriority } from "@prisma/client";
 import { LEAD_PRIORITIES } from "@/components/empresa/lead-priority-badge";
+import { DatosLeadForm } from "./datos-lead-form";
+import { btn } from "@/components/empresa/page-header";
 
 interface LeadDocument {
   id: string;
@@ -33,6 +35,8 @@ interface Lead {
   estimatedValue: number | null;
   notes: string | null;
   nextFollowUpAt: string | null;
+  lostReason: string | null;
+  etiquetas: string[];
   convertedClientId: string | null;
   convertedClient: { id: string; name: string } | null;
   documents: LeadDocument[];
@@ -56,8 +60,6 @@ export function LeadDetailClient({ lead: initialLead }: { lead: Lead }) {
   const [lead, setLead] = useState(initialLead);
   const [savingStatus, setSavingStatus] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
-  const [notes, setNotes] = useState(lead.notes ?? "");
-  const [savingNotes, setSavingNotes] = useState(false);
   const [savingPriority, setSavingPriority] = useState(false);
 
   async function handlePriorityChange(priority: LeadPriority) {
@@ -82,7 +84,7 @@ export function LeadDetailClient({ lead: initialLead }: { lead: Lead }) {
       const updated = await updateLeadStatusAction(lead.id, status);
       setLead((prev) => ({ ...prev, status: updated.status, convertedClientId: updated.convertedClientId }));
       if (status === "GANADO" && !lead.convertedClientId) {
-        setNotice("Se creó un cliente automáticamente a partir de este lead.");
+        setNotice("Quedó como cliente: se usó el que ya tenía su correo o se creó uno nuevo con sus datos.");
         router.refresh();
       }
     } finally {
@@ -90,21 +92,15 @@ export function LeadDetailClient({ lead: initialLead }: { lead: Lead }) {
     }
   }
 
-  async function handleSaveNotes() {
-    setSavingNotes(true);
-    try {
-      await updateLeadAction(lead.id, { notes });
-    } finally {
-      setSavingNotes(false);
-    }
-  }
-
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="min-w-0">
-        <h1 className="text-fg text-2xl font-semibold tracking-tight break-words">{lead.name}</h1>
-        {lead.company && <p className="text-fg-dim text-sm mt-0.5">{lead.company}</p>}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-fg text-2xl font-semibold tracking-tight break-words">{lead.name}</h1>
+          {lead.company && <p className="text-fg-dim text-sm mt-1 break-words">{lead.company}</p>}
+        </div>
+        <Link href={`/empresa/ventas/nueva?leadId=${lead.id}`} className={btn.primary}>Nueva oportunidad</Link>
       </div>
 
       {(notice || lead.convertedClientId) && (
@@ -179,38 +175,11 @@ export function LeadDetailClient({ lead: initialLead }: { lead: Lead }) {
         </a>
       </div>
 
-      {/* Info */}
-      <div className="bg-panel border border-line rounded-xl p-5 grid grid-cols-2 gap-4 [&>div]:min-w-0 [&_p]:break-words">
-        {lead.email && (
-          <div><p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Correo</p><p className="text-fg-mute text-sm">{lead.email}</p></div>
-        )}
-        {lead.phone && (
-          <div><p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Teléfono</p><p className="text-fg-mute text-sm">{lead.phone}</p></div>
-        )}
-        {(lead.address || lead.city) && (
-          <div><p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Dirección</p><p className="text-fg-mute text-sm">{[lead.address, lead.city].filter(Boolean).join(", ")}</p></div>
-        )}
-        {lead.estimatedValue != null && (
-          <div><p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Valor estimado</p><p className="text-sand-fg text-sm font-mono">${lead.estimatedValue.toLocaleString("en-US", { minimumFractionDigits: 2 })}</p></div>
-        )}
-        {lead.nextFollowUpAt && (
-          <div><p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Próximo seguimiento</p><p className="text-fg-mute text-sm">{new Date(lead.nextFollowUpAt).toLocaleDateString("es-PA")}</p></div>
-        )}
-        <div><p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Fuente</p><p className="text-fg-mute text-sm">{lead.source}</p></div>
-      </div>
-
-      {/* Notes */}
-      <div className="bg-panel border border-line rounded-xl p-5 space-y-3">
-        <div className="flex items-center justify-between gap-3">
-          <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Notas</h3>
-          <button type="button" onClick={handleSaveNotes} disabled={savingNotes || notes === (lead.notes ?? "")}
-            className="inline-flex items-center justify-center min-h-11 sm:min-h-8 -my-2 sm:my-0 px-2 sm:px-0 text-brand-fg text-sm sm:text-xs font-medium hover:text-brand-hi disabled:opacity-30 disabled:cursor-not-allowed transition-colors">
-            {savingNotes ? "Guardando..." : "Guardar"}
-          </button>
-        </div>
-        <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4}
-          placeholder="Contexto, necesidades, próximos pasos..."
-          className="w-full bg-fill border border-line rounded-lg px-3 py-2.5 text-fg-soft text-sm placeholder-fg-trace focus:outline-none focus:border-brand/40 resize-none transition-all" />
+      {/* Datos: todo se edita aquí (contacto, valor, seguimiento, motivo de pérdida, etiquetas y notas). */}
+      <div className="bg-panel border border-line rounded-xl p-4 sm:p-6">
+        <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium mb-1">Datos del lead</h3>
+        <p className="text-fg-faint text-xs mb-4">Lo que cambies aquí se copia al cliente cuando el lead se gana.</p>
+        <DatosLeadForm lead={lead} />
       </div>
 
       {/* Cotizaciones */}
