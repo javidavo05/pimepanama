@@ -10,9 +10,9 @@ export type Area = (typeof AREAS)[number];
 export const AREA_LABEL: Record<Area, string> = { dueno: "Dueño", ventas: "Ventas", proyectos: "Proyectos", finanzas: "Finanzas" };
 export const AREA_DETALLE: Record<Area, string> = {
   dueno: "Todo, incluidos el correo, la configuración y el equipo.",
-  ventas: "Clientes, leads, citas, reuniones, cotizaciones, contratos y tareas.",
+  ventas: "Clientes, embudo de ventas, leads, citas, reuniones, cotizaciones, contratos, campañas, reportes y tareas.",
   proyectos: "Clientes, proyectos, tickets, sistemas, reuniones, bitácoras y tareas.",
-  finanzas: "Clientes, dinero, facturas, cobros, cotizaciones, contratos y tareas.",
+  finanzas: "Clientes, dinero, facturas, cobros, cotizaciones, contratos, reportes y tareas.",
 };
 
 export type Seccion =
@@ -20,13 +20,14 @@ export type Seccion =
   | "leads" | "citas" | "cotizaciones" | "contratos"
   | "proyectos" | "tickets" | "sistemas" | "bitacoras"
   | "dinero" | "facturas" | "cobros"
-  | "correos" | "configuracion" | "empresa";
+  | "correos" | "configuracion" | "empresa"
+  | "ventas" | "campanas" | "reportes";
 
 const TODAS: Seccion[] = ["inicio", "clientes", "tareas", "reuniones", "configuracion"];
 const POR_AREA: Record<Exclude<Area, "dueno">, Seccion[]> = {
-  ventas: [...TODAS, "leads", "citas", "cotizaciones", "contratos"],
+  ventas: [...TODAS, "leads", "citas", "cotizaciones", "contratos", "ventas", "campanas", "reportes"],
   proyectos: [...TODAS, "proyectos", "tickets", "sistemas", "bitacoras"],
-  finanzas: [...TODAS, "dinero", "facturas", "cobros", "cotizaciones", "contratos"],
+  finanzas: [...TODAS, "dinero", "facturas", "cobros", "cotizaciones", "contratos", "reportes"],
 };
 
 export function areaValida(v: unknown): v is Area {
@@ -46,6 +47,7 @@ export function seccionDeRuta(path: string): Seccion {
     cotizaciones: "cotizaciones", contratos: "contratos", proyectos: "proyectos", tickets: "tickets",
     sistemas: "sistemas", platforms: "sistemas", bitacoras: "bitacoras", dinero: "dinero", facturas: "facturas",
     "cuentas-por-cobrar": "cobros", "por-pagar": "cobros", correos: "correos", configuracion: "configuracion",
+    ventas: "ventas", campanas: "campanas", reportes: "reportes",
   };
   return mapa[p] ?? "inicio";
 }

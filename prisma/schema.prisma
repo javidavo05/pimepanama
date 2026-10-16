@@ -306,6 +306,21 @@ model EmpresaUser {
   configId              String?
   createdAt             DateTime                 @default(now())
   updatedAt             DateTime                 @updatedAt
+  /// CRM (migración 0057)
+  contactos              Contacto[]
+  camposPersonalizados   CampoPersonalizado[]
+  interacciones          Interaccion[]        @relation("InteraccionDueno")
+  interaccionesAutor     Interaccion[]        @relation("InteraccionAutor")
+  etapasEmbudo           EtapaEmbudo[]
+  oportunidades          Oportunidad[]        @relation("OportunidadDueno")
+  oportunidadesACargo    Oportunidad[]        @relation("OportunidadResponsable")
+  tareasACargo           Task[]               @relation("TareaResponsable")
+  plantillasCorreo       PlantillaCorreo[]
+  campanas               Campana[]
+  bajasCorreo            BajaCorreo[]
+  vistasGuardadas        VistaGuardada[]
+  encuestas              Encuesta[]
+  archivosCliente        ArchivoCliente[]
 }
 
 model Client {
@@ -353,6 +368,19 @@ model Client {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
 
+  /// CRM (migración 0057)
+  fuente           String?
+  industria        String?
+  etiquetas        String[]         @default([])
+  camposExtra      Json?
+  ultimoContactoAt DateTime?
+  contactos        Contacto[]
+  interacciones    Interaccion[]
+  oportunidades    Oportunidad[]
+  tareasCrm        Task[]           @relation("TareaCliente")
+  campanaEnvios    CampanaEnvio[]
+  encuestas        Encuesta[]
+  archivos         ArchivoCliente[]
   @@index([userId])
 }
 
@@ -413,6 +441,11 @@ model Lead {
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
+  /// CRM (migración 0057)
+  etiquetas        String[]      @default([])
+  interacciones    Interaccion[]
+  oportunidades    Oportunidad[]
+  tareasCrm        Task[]        @relation("TareaLead")
   @@index([userId])
   @@index([userId, status])
 }
@@ -472,6 +505,8 @@ model CompanyConfig {
   documents            Document[]
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
+  /// {"leadSinRespuestaDias","clienteSinContactoDias","renovacionDias"} (migración 0057)
+  reglasCrm               Json?
 }
 
 model Document {
@@ -529,6 +564,10 @@ model Document {
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
 
+  /// Aceptación de una cotización desde el portal (migración 0057)
+  aceptadaAt        DateTime?
+  aceptadaPor       String?
+  oportunidades     Oportunidad[]
   @@index([type, userId])
   @@index([status, userId])
   @@index([clientId])
@@ -616,6 +655,14 @@ model Project {
   createdAt       DateTime        @default(now())
   updatedAt       DateTime        @updatedAt
 
+  /// Mantenimiento mensual (migración 0057)
+  mantenimientoActivo   Boolean          @default(false)
+  mantenimientoMonto    Decimal?         @db.Decimal(12, 2)
+  mantenimientoDia      Int              @default(1)
+  mantenimientoUltimoAt DateTime?
+  oportunidades         Oportunidad[]
+  encuesta              Encuesta?
+  archivos              ArchivoCliente[]
   @@index([userId])
   @@index([userId, status])
 }
@@ -891,6 +938,15 @@ model Task {
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
 
+  /// CRM (migración 0057)
+  clientId          String?
+  client            Client?             @relation("TareaCliente", fields: [clientId], references: [id], onDelete: SetNull)
+  leadId            String?
+  lead              Lead?               @relation("TareaLead", fields: [leadId], references: [id], onDelete: SetNull)
+  oportunidadId     String?
+  oportunidad       Oportunidad?        @relation(fields: [oportunidadId], references: [id], onDelete: SetNull)
+  responsableId     String?
+  responsable       EmpresaUser?        @relation("TareaResponsable", fields: [responsableId], references: [id], onDelete: SetNull)
   @@index([userId, completed])
   @@index([dueDate])
   @@index([documentId])
@@ -1306,6 +1362,8 @@ model Meeting {
   createdAt            DateTime            @default(now())
   updatedAt            DateTime            @updatedAt
 
+  /// La minuta se ve en la cuenta del cliente (migración 0057)
+  compartidaCliente Boolean @default(false)
   @@index([userId])
   @@index([projectId])
   @@index([clientId])
@@ -1417,6 +1475,7 @@ model ClientUser {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
+  contactos       Contacto[]
   @@index([userId])
 }
 
@@ -1817,4 +1876,235 @@ model EmpresaInvite {
   createdAt  DateTime    @default(now())
   acceptedAt DateTime?
   revokedAt  DateTime?
+}
+
+/// Contacto de una empresa cliente (migración 0057). No es una cuenta del portal; puede ligarse a una.
+model Contacto {
+  id           String        @id @default(cuid())
+  userId       String
+  user         EmpresaUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId     String
+  client       Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  nombre       String
+  cargo        String?
+  email        String?
+  telefono     String?
+  /// "decide" | "paga" | "tecnico" | "otro"
+  rol          String        @default("otro")
+  principal    Boolean       @default(false)
+  notas        String?
+  clientUserId String?
+  clientUser   ClientUser?   @relation(fields: [clientUserId], references: [id], onDelete: SetNull)
+  interacciones Interaccion[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([clientId])
+  @@index([userId, email])
+}
+
+/// Campo propio definido por el dueño (migración 0057). El valor vive en Client.camposExtra[clave].
+model CampoPersonalizado {
+  id        String      @id @default(cuid())
+  userId    String
+  user      EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// "cliente" | "lead"
+  entidad   String      @default("cliente")
+  clave     String
+  etiqueta  String
+  /// "texto" | "numero" | "fecha" | "opcion"
+  tipo      String      @default("texto")
+  opciones  String[]    @default([])
+  orden     Int         @default(0)
+  createdAt DateTime    @default(now())
+
+  @@unique([userId, entidad, clave])
+}
+
+/// Interacción registrada a mano: llamada, WhatsApp, visita, nota… (migración 0057).
+model Interaccion {
+  id          String       @id @default(cuid())
+  userId      String
+  user        EmpresaUser  @relation("InteraccionDueno", fields: [userId], references: [id], onDelete: Cascade)
+  clientId    String?
+  client      Client?      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  leadId      String?
+  lead        Lead?        @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  contactoId  String?
+  contacto    Contacto?    @relation(fields: [contactoId], references: [id], onDelete: SetNull)
+  autorId     String?
+  autor       EmpresaUser? @relation("InteraccionAutor", fields: [autorId], references: [id], onDelete: SetNull)
+  /// "llamada" | "whatsapp" | "correo" | "reunion" | "visita" | "nota"
+  tipo        String
+  /// "entrante" | "saliente"
+  direccion   String?
+  resumen     String
+  resultado   String?
+  duracionMin Int?
+  proximoPaso String?
+  fijada      Boolean      @default(false)
+  ocurrioAt   DateTime     @default(now())
+  createdAt   DateTime     @default(now())
+
+  @@index([clientId, ocurrioAt(sort: Desc)])
+  @@index([leadId])
+}
+
+/// Etapa del embudo de ventas, editable (migración 0057).
+model EtapaEmbudo {
+  id            String        @id @default(cuid())
+  userId        String
+  user          EmpresaUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nombre        String
+  orden         Int           @default(0)
+  probabilidad  Int           @default(10)
+  /// "abierta" | "ganada" | "perdida"
+  tipo          String        @default("abierta")
+  oportunidades Oportunidad[]
+  createdAt     DateTime      @default(now())
+
+  @@index([userId, orden])
+}
+
+/// Oportunidad de venta: para un prospecto (lead) o para un cliente que compra algo más (migración 0057).
+model Oportunidad {
+  id             String       @id @default(cuid())
+  userId         String
+  user           EmpresaUser  @relation("OportunidadDueno", fields: [userId], references: [id], onDelete: Cascade)
+  titulo         String
+  clientId       String?
+  client         Client?      @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  leadId         String?
+  lead           Lead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  etapaId        String
+  etapa          EtapaEmbudo  @relation(fields: [etapaId], references: [id])
+  valor          Decimal      @default(0) @db.Decimal(12, 2)
+  probabilidad   Int          @default(10)
+  cierreEsperado DateTime?
+  responsableId  String?
+  responsable    EmpresaUser? @relation("OportunidadResponsable", fields: [responsableId], references: [id], onDelete: SetNull)
+  /// "abierta" | "ganada" | "perdida"
+  estado         String       @default("abierta")
+  motivoPerdida  String?
+  fuente         String?
+  notas          String?
+  cotizacionId   String?
+  cotizacion     Document?    @relation(fields: [cotizacionId], references: [id], onDelete: SetNull)
+  projectId      String?
+  project        Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  tareas         Task[]
+  cerradaAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([userId, estado])
+  @@index([clientId])
+  @@index([leadId])
+}
+
+/// Plantilla de correo del usuario con {{variables}} (migración 0057).
+model PlantillaCorreo {
+  id        String      @id @default(cuid())
+  userId    String
+  user      EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nombre    String
+  asunto    String
+  cuerpo    String
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+}
+
+/// Envío a un segmento de clientes, con baja obligatoria (migración 0057).
+model Campana {
+  id        String         @id @default(cuid())
+  userId    String
+  user      EmpresaUser    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  nombre    String
+  asunto    String
+  cuerpo    String
+  filtro    Json?
+  /// "borrador" | "enviando" | "enviada"
+  estado    String         @default("borrador")
+  enviados  Int            @default(0)
+  abiertos  Int            @default(0)
+  enviadaAt DateTime?
+  envios    CampanaEnvio[]
+  createdAt DateTime       @default(now())
+}
+
+model CampanaEnvio {
+  id        String    @id @default(cuid())
+  campanaId String
+  campana   Campana   @relation(fields: [campanaId], references: [id], onDelete: Cascade)
+  email     String
+  nombre    String?
+  clientId  String?
+  client    Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  /// "pendiente" | "enviado" | "fallo" | "abierto"
+  estado    String    @default("pendiente")
+  error     String?
+  enviadoAt DateTime?
+  abiertoAt DateTime?
+
+  @@index([campanaId])
+}
+
+/// Correo que pidió no recibir envíos (migración 0057).
+model BajaCorreo {
+  id        String      @id @default(cuid())
+  userId    String
+  user      EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String
+  createdAt DateTime    @default(now())
+
+  @@unique([userId, email])
+}
+
+/// Vista guardada de una lista (de cada miembro) (migración 0057).
+model VistaGuardada {
+  id        String      @id @default(cuid())
+  miembroId String
+  miembro   EmpresaUser @relation(fields: [miembroId], references: [id], onDelete: Cascade)
+  entidad   String      @default("clientes")
+  nombre    String
+  filtros   Json
+  createdAt DateTime    @default(now())
+
+  @@index([miembroId])
+}
+
+/// Encuesta de satisfacción al terminar el proyecto (migración 0057).
+model Encuesta {
+  id           String      @id @default(cuid())
+  userId       String
+  user         EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId    String      @unique
+  project      Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  clientId     String
+  client       Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  puntaje      Int?
+  comentario   String?
+  enviadaAt    DateTime    @default(now())
+  respondidaAt DateTime?
+}
+
+/// Archivo de un cliente, visible en su cuenta si se marca (migración 0057).
+model ArchivoCliente {
+  id             String      @id @default(cuid())
+  userId         String
+  user           EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clientId       String
+  client         Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  projectId      String?
+  project        Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  nombre         String
+  r2Key          String
+  tipo           String?
+  tamano         Int?
+  /// "pime" | "cliente"
+  subidoPor      String      @default("pime")
+  visibleCliente Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+
+  @@index([clientId])
 }
