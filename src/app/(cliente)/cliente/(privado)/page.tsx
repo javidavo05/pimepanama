@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getPortalUser } from "@/lib/portal/sesion";
-import { datosInicio, dinero } from "@/lib/portal/datos";
+import { datosInicio, dinero, pendientesDeDocumentos } from "@/lib/portal/datos";
+import { esperaMiFirma, estadoPropuesta } from "@/lib/portal/documentos";
 import { FASE_ESTADO_LABEL, TICKET_ESTADO_LABEL, type FaseEstado, type TicketEstado } from "@/lib/portal/estados";
 import { Anillo, Barra, BloqueOscuro, Cifra, Mezcla, type Tono, Encabezado, Etiqueta, Eyebrow, Fila, Swap, Tarjeta, TituloSeccion, Vacio, btnPrincipal, btnSecundario, enlace, fechaCorta, haceCuanto } from "@/components/portal/ui";
 import { IconCheck, IconFlecha, IconMas } from "@/components/portal/iconos";
@@ -11,7 +12,16 @@ export const metadata = { title: "Inicio" };
 
 export default async function InicioCliente() {
   const persona = await getPortalUser();
-  const [d, sistemas] = await Promise.all([datosInicio(persona.clientId), sistemasDelCliente(persona.clientId)]);
+  const [d, sistemas, docs] = await Promise.all([datosInicio(persona.clientId), sistemasDelCliente(persona.clientId), pendientesDeDocumentos(persona.clientId)]);
+  // Propuestas por responder (las vencidas no) y contratos que esperan la firma de esta persona.
+  // Aquí iría también el aviso de la encuesta sin responder (/encuesta/<token>), que construye otro trabajo.
+  const decisiones = [
+    ...d.decisiones,
+    ...docs.propuestas.filter((x) => estadoPropuesta({ status: "SENT", validUntil: x.validUntil }).tono === "aviso")
+      .map((x) => ({ tipo: "propuesta" as const, id: x.id, titulo: `Revisar la propuesta: ${x.title}`, detalle: `${x.number ?? "Propuesta"} · ${dinero(x.total)}`, href: `/cliente/propuestas/${x.id}` })),
+    ...docs.contratos.filter((c) => esperaMiFirma({ ...c, clientEmail: c.signingRequest?.clientEmail }, persona.email))
+      .map((c) => ({ tipo: "contrato" as const, id: c.id, titulo: `Firmar el contrato: ${c.title}`, detalle: "Contrato", href: "/cliente/contratos" })),
+  ];
   const problema = hayProblema(sistemas);
   const nombre = (persona.fullName || "").split(" ")[0];
   const principal = d.activos[0] ?? null;
@@ -35,11 +45,11 @@ export default async function InicioCliente() {
 
       {problema && <EstadoSistemas sistemas={sistemas} />}
 
-      {d.decisiones.length > 0 && (
+      {decisiones.length > 0 && (
         <Tarjeta className="p-aviso" i={1}>
-          <TituloSeccion accion={<Etiqueta tono="aviso">{d.decisiones.length} {d.decisiones.length === 1 ? "pendiente" : "pendientes"}</Etiqueta>}>Espera tu decisión</TituloSeccion>
+          <TituloSeccion accion={<Etiqueta tono="aviso">{decisiones.length} {decisiones.length === 1 ? "pendiente" : "pendientes"}</Etiqueta>}>Espera tu decisión</TituloSeccion>
           <ul className="p-lista divide-y divide-line">
-            {d.decisiones.map((x, i) => <Fila key={`${x.tipo}-${x.id}`} i={i} tono="aviso" href={x.href} titulo={x.titulo} detalle={x.detalle} />)}
+            {decisiones.map((x, i) => <Fila key={`${x.tipo}-${x.id}`} i={i} tono="aviso" href={x.href} titulo={x.titulo} detalle={x.detalle} />)}
           </ul>
         </Tarjeta>
       )}

@@ -146,3 +146,85 @@ export function dinero(v: unknown): string {
   const n = Number(v);
   return fmt.format(Number.isFinite(n) ? n : 0);
 }
+
+// ─── Documentos: propuestas, contratos, reuniones y archivos (fase 8 del CRM) ────────────────
+
+/** Cotizaciones que Pime ya envió a este cliente (reglas en documentos.ts → PROPUESTA_VISIBLE). */
+export async function propuestasDelCliente(clientId: string) {
+  return prisma.document.findMany({
+    where: { clientId, type: "COTIZACION", status: { in: ["SENT", "ACCEPTED"] } },
+    orderBy: [{ issueDate: "desc" }],
+    select: { id: true, number: true, title: true, status: true, total: true, currency: true, issueDate: true, validUntil: true, sentAt: true, aceptadaAt: true, aceptadaPor: true, project: { select: { name: true } } },
+  });
+}
+
+export async function propuestaDelCliente(clientId: string, id: string) {
+  return prisma.document.findFirst({
+    where: { id, clientId, type: "COTIZACION", status: { in: ["SENT", "ACCEPTED"] } },
+    select: { id: true, number: true, title: true, status: true, total: true, subtotal: true, taxAmount: true, currency: true, issueDate: true, validUntil: true, aceptadaAt: true, aceptadaPor: true, content: true, projectId: true, project: { select: { name: true } } },
+  });
+}
+
+/** Contratos del cliente con su proceso de firma. El filtro de borradores internos va en documentos.ts → contratoVisible. */
+export async function contratosDelCliente(clientId: string) {
+  return prisma.contract.findMany({
+    where: { clientId },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true, title: true, description: true, status: true, signingStatus: true, signedAt: true, signingCompletedAt: true, startsAt: true, endsAt: true, value: true, createdAt: true,
+      project: { select: { name: true } },
+      signingRequest: { select: { status: true, clientEmail: true, expiresAt: true, signedPdfR2Key: true, basePdfR2Key: true } },
+    },
+  });
+}
+
+/** Reuniones que Pime compartió con el cliente. Nunca se leen la minuta técnica, el prompt ni la transcripción. */
+export async function reunionesCompartidas(clientId: string) {
+  return prisma.meeting.findMany({
+    where: { clientId, compartidaCliente: true },
+    orderBy: { meetingDate: "desc" },
+    select: { id: true, title: true, meetingDate: true, durationMs: true, executiveMinutes: true, project: { select: { name: true } } },
+  });
+}
+
+export async function reunionCompartida(clientId: string, id: string) {
+  return prisma.meeting.findFirst({
+    where: { id, clientId, compartidaCliente: true },
+    select: { id: true, title: true, meetingDate: true, durationMs: true, executiveMinutes: true, project: { select: { id: true, name: true } } },
+  });
+}
+
+/** Archivos compartidos visibles para el cliente. */
+export async function archivosDelCliente(clientId: string) {
+  return prisma.archivoCliente.findMany({
+    where: { clientId, visibleCliente: true },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, nombre: true, tipo: true, tamano: true, subidoPor: true, createdAt: true, project: { select: { name: true } } },
+  });
+}
+
+/** Lo que espera a la persona en Documentos: propuestas por responder y contratos por firmar. Para Inicio y el resumen. */
+export async function pendientesDeDocumentos(clientId: string) {
+  const [propuestas, contratos, reuniones, archivos] = await Promise.all([
+    prisma.document.findMany({ where: { clientId, type: "COTIZACION", status: "SENT" }, select: { id: true, number: true, title: true, total: true, validUntil: true } }),
+    prisma.contract.findMany({ where: { clientId, signingStatus: "PENDING_CLIENT" }, select: { id: true, title: true, status: true, signingStatus: true, signingRequest: { select: { clientEmail: true } } } }),
+    prisma.meeting.count({ where: { clientId, compartidaCliente: true } }),
+    prisma.archivoCliente.count({ where: { clientId, visibleCliente: true } }),
+  ]);
+  return { propuestas, contratos, reuniones, archivos };
+}
+
+/**
+ * La persona del cliente en una ruta de API (descargas y subidas), sin redirigir: devuelve null si no hay
+ * sesión activa de cliente. Las páginas usan getPortalUser.
+ */
+export async function personaDeApi() {
+  const { createSupabaseServerClient } = await import("@/lib/supabase/server");
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase.auth.getClaims();
+  const uid = data?.claims?.sub;
+  if (!uid) return null;
+  const persona = await prisma.clientUser.findUnique({ where: { supabaseUid: uid }, select: { id: true, clientId: true, status: true, role: true, email: true, fullName: true, userId: true, client: { select: { archivedAt: true } } } });
+  if (!persona || persona.status !== "activo" || persona.client.archivedAt) return null;
+  return persona;
+}

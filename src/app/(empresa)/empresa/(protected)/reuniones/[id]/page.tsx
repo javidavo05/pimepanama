@@ -12,6 +12,7 @@ import { parseTechnicalMinutes } from "@/lib/meetings/technical";
 import { loadTaskWorkspace } from "@/lib/tasks";
 import { TaskWorkspace } from "@/components/empresa/tasks/task-workspace";
 import { MeetingDetail } from "./meeting-detail";
+import { CompartirMinuta } from "./compartir-cliente";
 import { proyectosCandidatos } from "@/lib/proyectos/candidatos";
 import { MOTIVO_LABEL, sugerirProyecto } from "@/lib/proyectos/sugerir-proyecto";
 import { contextoClientes, proyectoUnicoDelCliente } from "@/lib/meetings/clientes-contexto";
@@ -83,6 +84,9 @@ export default async function ReunionPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="max-w-4xl mx-auto">
+      {meeting.client && (
+        <CompartirMinuta meetingId={meeting.id} compartida={meeting.compartidaCliente} cliente={meeting.client.company || meeting.client.name} lista={!!meeting.executiveMinutes} />
+      )}
       <TaskWorkspace tasks={workspace.tasks} projects={workspace.projects}>
       <MeetingDetail
         meeting={serializeMeeting(meeting, segments.length)}
