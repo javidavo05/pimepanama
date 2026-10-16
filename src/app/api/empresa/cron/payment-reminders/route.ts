@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { correrRecordatorios } from "@/lib/portal/recordatorios";
 import { facturacionMensual } from "@/lib/portal/factura-mensual";
+import { correrSeguimientos } from "@/lib/crm/seguimientos";
+import { facturarMantenimientos } from "@/lib/crm/mantenimiento";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -16,9 +18,13 @@ async function run(req: NextRequest) {
   }
   // Los primeros días del mes: borradores de la factura de horas del mes anterior (no se envían solos).
   const horas = await facturacionMensual().catch((e) => ({ error: String(e) }));
+  // Mantenimiento mensual de los proyectos: borrador el día elegido (tampoco se envía solo).
+  const mantenimiento = await facturarMantenimientos().catch((e) => ({ error: String(e) }));
   const r = await correrRecordatorios();
+  // Seguimientos del CRM: el del lead el día que toca y las reglas de Configuración → Seguimientos.
+  const seguimientos = await correrSeguimientos().catch((e) => ({ error: String(e) }));
   // El avance desde GitHub ya no va aquí: lo mueve la revisión única de cada 30 min (motor/sistemas.ts).
-  return NextResponse.json({ ok: true, ...r, horas });
+  return NextResponse.json({ ok: true, ...r, horas, mantenimiento, seguimientos });
 }
 
 export const GET = run;

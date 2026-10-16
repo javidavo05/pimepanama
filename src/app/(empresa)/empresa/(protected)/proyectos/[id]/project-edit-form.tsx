@@ -13,6 +13,7 @@ import { ActionRow, btn } from "@/components/empresa/page-header";
 import { FinancingPlanner } from "@/components/empresa/financing-planner";
 import { AiEnhanceButton } from "@/components/empresa/document-builder/ai-enhance-button";
 import { validatePlan, type FinancingPlan } from "@/lib/financing";
+import { guardarMantenimientoAction } from "@/lib/crm/mantenimiento-acciones";
 import {
   INPUT_CLASS,
   LABEL_CLASS,
@@ -38,6 +39,9 @@ const EMPTY_PLAN: FinancingPlan = {
 };
 
 export type EditSection = "form" | "financing";
+
+/** Campos del mantenimiento mensual que trae el proyecto serializado (page.tsx los pasa con el resto). */
+type ConMantenimiento = Project & { mantenimientoActivo?: boolean; mantenimientoMonto?: number | null; mantenimientoDia?: number };
 
 interface ProjectEditFormProps {
   project: Project;
@@ -76,6 +80,11 @@ export function ProjectEditForm({
   const [financingEnabled, setFinancingEnabled] = useState(project.financingPlan != null);
   const [financing, setFinancing] = useState<FinancingPlan>(project.financingPlan ?? EMPTY_PLAN);
 
+  const mant = project as ConMantenimiento;
+  const [mantActivo, setMantActivo] = useState(Boolean(mant.mantenimientoActivo));
+  const [mantMonto, setMantMonto] = useState(mant.mantenimientoMonto != null ? String(mant.mantenimientoMonto) : "");
+  const [mantDia, setMantDia] = useState(String(mant.mantenimientoDia ?? 1));
+
   // El formulario se abre arriba del todo; si se pidió desde un atajo de la
   // barra lateral hay que llevar la vista, o parece que el botón no hizo nada.
   useEffect(() => {
@@ -104,6 +113,16 @@ export function ProjectEditForm({
       setError("El presupuesto no es un número válido.");
       return;
     }
+    const montoMant = mantMonto.trim() === "" ? null : Number(mantMonto);
+    const diaMant = Number(mantDia);
+    if (mantActivo && !(montoMant != null && montoMant > 0)) {
+      setError("Escribe el monto mensual del mantenimiento o apágalo.");
+      return;
+    }
+    if (!Number.isInteger(diaMant) || diaMant < 1 || diaMant > 28) {
+      setError("El día del mes del mantenimiento va del 1 al 28.");
+      return;
+    }
     if (financingEnabled) {
       const planError = validatePlan(plan);
       if (planError) {
@@ -129,6 +148,15 @@ export function ProjectEditForm({
       const after = clients.map((c) => c.id).join(",");
       if (before !== after) {
         await setProjectClientsAction(project.id, clients.map((c) => c.id));
+      }
+
+      const mantCambio =
+        mantActivo !== Boolean(mant.mantenimientoActivo) ||
+        (montoMant ?? null) !== (mant.mantenimientoMonto ?? null) ||
+        diaMant !== (mant.mantenimientoDia ?? 1);
+      if (mantCambio) {
+        const r = await guardarMantenimientoAction(project.id, { activo: mantActivo, monto: montoMant, dia: diaMant });
+        if (r.error) throw new Error(r.error);
       }
 
       router.refresh();
@@ -292,6 +320,51 @@ export function ProjectEditForm({
             className={TEXTAREA_CLASS}
           />
         </div>
+      </div>
+
+      <div className="bg-panel border border-line rounded-xl p-5 space-y-4">
+        <label className="flex items-start justify-between gap-4 cursor-pointer">
+          <span className="min-w-0">
+            <span className="block text-fg text-sm font-semibold">Mantenimiento mensual</span>
+            <span className="block text-fg-dim text-xs mt-1">
+              La factura se arma sola en borrador ese día; tú la revisas y la envías.
+            </span>
+          </span>
+          <span className="relative inline-flex items-center min-h-11 shrink-0">
+            <input type="checkbox" checked={mantActivo} onChange={(e) => setMantActivo(e.target.checked)} className="peer sr-only" />
+            <span aria-hidden className="w-12 h-7 rounded-full bg-fill-2 border border-line-mid peer-checked:bg-brand peer-checked:border-brand peer-focus-visible:ring-2 peer-focus-visible:ring-brand/40 transition-colors" />
+            <span aria-hidden className="absolute left-1 w-5 h-5 rounded-full bg-panel shadow transition-transform peer-checked:translate-x-5" />
+          </span>
+        </label>
+        {mantActivo && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="min-w-0">
+              <label className={LABEL_CLASS}>Monto al mes (USD)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                inputMode="decimal"
+                value={mantMonto}
+                onChange={(e) => setMantMonto(e.target.value)}
+                placeholder="0.00"
+                className={`${INPUT_CLASS} font-mono`}
+              />
+              <p className="text-fg-faint text-xs mt-1">Antes de impuestos; el ITBMS se suma como en las demás facturas.</p>
+            </div>
+            <div className="min-w-0">
+              <label className={LABEL_CLASS}>Día del mes</label>
+              <select value={mantDia} onChange={(e) => setMantDia(e.target.value)} className={INPUT_CLASS}>
+                {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
+                  <option key={d} value={d}>
+                    Día {d}
+                  </option>
+                ))}
+              </select>
+              <p className="text-fg-faint text-xs mt-1">Hasta el 28, para que exista en todos los meses.</p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div ref={financingRef} className="scroll-mt-6">

@@ -144,6 +144,8 @@ export default async function ProyectoDetailPage({
   const serialized = {
     ...sinMapa,
     totalBudget: project.totalBudget != null ? Number(project.totalBudget) : null,
+    // Decimal no viaja al navegador: el mantenimiento mensual (fase 4 CRM) va como número.
+    mantenimientoMonto: project.mantenimientoMonto != null ? Number(project.mantenimientoMonto) : null,
     startDate: project.startDate?.toISOString() ?? null,
     endDate: project.endDate?.toISOString() ?? null,
     createdAt: project.createdAt.toISOString(),

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
-import { TASK_INCLUDE, resolveTaskPlacement, serializeTask } from "@/lib/tasks";
+import { TASK_INCLUDE, resolveTaskPlacement, resolverVinculosCrm, serializeTask } from "@/lib/tasks";
 
 export const runtime = "nodejs";
 
@@ -9,6 +9,7 @@ const EDITABLE = [
   "title", "description", "assignee", "priority", "dueDate", "endDate",
   "allDay", "completed", "sortOrder", "projectId", "sectionId",
 ] as const;
+const VINCULOS = ["clientId", "leadId", "oportunidadId", "responsableId"] as const;
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -52,6 +53,15 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         update.projectId = placement.projectId;
         update.sectionId = placement.sectionId;
       }
+    }
+
+    // Cliente, lead, oportunidad y responsable: solo de la empresa y de su equipo.
+    if (VINCULOS.some((k) => k in data)) {
+      const pedidos: Record<string, unknown> = {};
+      for (const k of VINCULOS) if (k in data) pedidos[k] = data[k];
+      const vinculos = await resolverVinculosCrm(user.id, pedidos);
+      if ("error" in vinculos) return NextResponse.json({ error: vinculos.error }, { status: 400 });
+      Object.assign(update, vinculos);
     }
 
     const task = await prisma.task.update({ where: { id }, data: update, include: TASK_INCLUDE });

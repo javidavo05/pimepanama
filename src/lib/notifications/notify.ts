@@ -15,6 +15,11 @@ export type NotifyInput = {
    * solicitud que la IA marcó como spam o publicidad entrante).
    */
   push?: boolean;
+  /**
+   * Solo el teléfono de esta persona (dueño o miembro del equipo). Sin esto, el push llega al dueño y a
+   * todo su equipo. La campana es de la empresa y se ve igual.
+   */
+  soloMiembroId?: string | null;
 };
 
 /**
@@ -24,7 +29,7 @@ export type NotifyInput = {
  * Nunca lanza. Se llama desde flujos donde lo importante ya quedó guardado
  * (un lead, una tarea): que falle el aviso no puede tumbar el guardado.
  */
-export async function notifyUser({ userId, title, body, link, tag, push = true }: NotifyInput) {
+export async function notifyUser({ userId, title, body, link, tag, push = true, soloMiembroId }: NotifyInput) {
   const result = { bell: false, push: 0 };
 
   try {
@@ -38,7 +43,7 @@ export async function notifyUser({ userId, title, body, link, tag, push = true }
 
   if (push) {
     try {
-      const sent = await sendPushToUser(userId, { title, body, url: link, tag });
+      const sent = await sendPushToUser(userId, { title, body, url: link, tag }, { soloMiembroId });
       result.push = sent.sent;
     } catch (err) {
       console.error("[notify] no se pudo enviar el push", err);

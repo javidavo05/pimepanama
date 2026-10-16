@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
-import type { ProjectOption, SectionOption, TaskItem } from "./types";
+import type { EquipoInfo, ProjectOption, SectionOption, TaskItem } from "./types";
 
 interface Notice {
   id: number;
@@ -13,13 +13,16 @@ interface Notice {
 interface TaskStore {
   tasks: TaskItem[];
   projects: ProjectOption[];
+  /** Equipo y quién entró; null mientras se carga (las vistas que no lo pasan lo piden a la API). */
+  equipoInfo: EquipoInfo | null;
   /** Tareas completadas en esta visita: siguen visibles en "Pendientes" hasta recargar. */
   completedThisVisit: Set<string>;
   openTaskId: string | null;
   notice: Notice | null;
   openTask: (id: string | null) => void;
   createTask: (payload: Record<string, unknown>) => Promise<TaskItem | null>;
-  patchTask: (id: string, data: Record<string, unknown>) => Promise<void>;
+  /** `vista`: cómo se ve la tarea mientras guarda (p. ej. el nombre del cliente elegido). */
+  patchTask: (id: string, data: Record<string, unknown>, vista?: Partial<TaskItem>) => Promise<void>;
   toggleComplete: (id: string) => void;
   deleteTask: (id: string) => Promise<void>;
   createSection: (projectId: string, name: string) => Promise<SectionOption | null>;
@@ -51,13 +54,31 @@ async function send(url: string, method: string, body?: unknown) {
 export function TaskProvider({
   initialTasks,
   projects: initialProjects,
+  equipoInfo: initialEquipo = null,
   children,
 }: {
   initialTasks: TaskItem[];
   projects: ProjectOption[];
+  equipoInfo?: EquipoInfo | null;
   children: React.ReactNode;
 }) {
   const [tasks, setTasks] = useState(initialTasks);
+  const [equipoInfo, setEquipoInfo] = useState<EquipoInfo | null>(initialEquipo);
+
+  // Proyectos y reuniones no pasan el equipo: se pide una vez para el selector de responsable.
+  useEffect(() => {
+    if (equipoInfo) return;
+    let vivo = true;
+    fetch("/api/empresa/tasks/equipo")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: EquipoInfo | null) => {
+        if (vivo && d) setEquipoInfo(d);
+      })
+      .catch(() => {});
+    return () => {
+      vivo = false;
+    };
+  }, [equipoInfo]);
   const [projects, setProjects] = useState(initialProjects);
   const [completedThisVisit, setCompletedThisVisit] = useState<Set<string>>(new Set());
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
@@ -106,6 +127,18 @@ export function TaskProvider({
         title: String(payload.title),
         description: (payload.description as string) ?? null,
         assignee: (payload.assignee as string) ?? null,
+        clientId: (payload.clientId as string) ?? null,
+        leadId: (payload.leadId as string) ?? null,
+        oportunidadId: (payload.oportunidadId as string) ?? null,
+        responsableId: (payload.responsableId as string) ?? equipoInfo?.miembroId ?? null,
+        client: null,
+        lead: null,
+        oportunidad: null,
+        responsable: (() => {
+          const id = (payload.responsableId as string) ?? equipoInfo?.miembroId;
+          const m = equipoInfo?.equipo.find((x) => x.id === id);
+          return m ? { id: m.id, nombre: m.nombre } : null;
+        })(),
         priority: (payload.priority as TaskItem["priority"]) ?? "MEDIUM",
         dueDate: (payload.dueDate as string) ?? null,
         endDate: (payload.endDate as string) ?? null,
@@ -138,16 +171,16 @@ export function TaskProvider({
         return null;
       }
     },
-    [notify, projects],
+    [notify, projects, equipoInfo],
   );
 
   const patchTask = useCallback(
-    async (id: string, data: Record<string, unknown>) => {
+    async (id: string, data: Record<string, unknown>, vista?: Partial<TaskItem>) => {
       const before = tasksRef.current.find((t) => t.id === id);
       if (!before) return;
       // Optimista: el proyecto y la sección se resuelven localmente para que
       // la tarea cambie de grupo al instante.
-      const optimistic = { ...before, ...data } as TaskItem;
+      const optimistic = { ...before, ...data, ...vista } as TaskItem;
       if ("projectId" in data) {
         const p = projects.find((x) => x.id === data.projectId);
         optimistic.project = p ? { id: p.id, name: p.name } : null;
@@ -259,6 +292,7 @@ export function TaskProvider({
     () => ({
       tasks,
       projects,
+      equipoInfo,
       completedThisVisit,
       openTaskId,
       notice,
@@ -279,7 +313,7 @@ export function TaskProvider({
           return [...prev.filter((t) => !ids.has(t.id)), ...incoming];
         }),
     }),
-    [tasks, projects, completedThisVisit, openTaskId, notice, createTask, patchTask, toggleComplete, deleteTask, createSection, renameSection, deleteSection],
+    [tasks, projects, equipoInfo, completedThisVisit, openTaskId, notice, createTask, patchTask, toggleComplete, deleteTask, createSection, renameSection, deleteSection],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

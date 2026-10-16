@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
-import { TASK_INCLUDE, resolveTaskPlacement, serializeTask } from "@/lib/tasks";
+import { TASK_INCLUDE, resolveTaskPlacement, resolverVinculosCrm, serializeTask } from "@/lib/tasks";
 
 export const runtime = "nodejs";
 
@@ -13,6 +13,11 @@ export async function GET(request: Request) {
     const documentId = searchParams.get("documentId");
     const paymentScheduleId = searchParams.get("paymentScheduleId");
     const projectId = searchParams.get("projectId");
+    const clientId = searchParams.get("clientId");
+    const leadId = searchParams.get("leadId");
+    const oportunidadId = searchParams.get("oportunidadId");
+    // «Mis tareas»: las que tiene a cargo quien entró
+    const mias = searchParams.get("mias") === "1";
 
     const tasks = await prisma.task.findMany({
       where: {
@@ -21,6 +26,10 @@ export async function GET(request: Request) {
         ...(documentId ? { documentId } : {}),
         ...(paymentScheduleId ? { paymentScheduleId } : {}),
         ...(projectId ? { projectId } : {}),
+        ...(clientId ? { clientId } : {}),
+        ...(leadId ? { leadId } : {}),
+        ...(oportunidadId ? { oportunidadId } : {}),
+        ...(mias ? { responsableId: user.miembro.id } : {}),
       },
       include: TASK_INCLUDE,
       orderBy: { createdAt: "desc" },
@@ -57,8 +66,18 @@ export async function POST(request: Request) {
       sectionId = null;
     }
 
-    const placement = await resolveTaskPlacement(user.id, projectId, sectionId);
+    // Quien la crea queda de responsable, salvo que se elija a otra persona (o a nadie, con null).
+    const [placement, vinculos] = await Promise.all([
+      resolveTaskPlacement(user.id, projectId, sectionId),
+      resolverVinculosCrm(user.id, {
+        ...("clientId" in data ? { clientId: data.clientId } : {}),
+        ...("leadId" in data ? { leadId: data.leadId } : {}),
+        ...("oportunidadId" in data ? { oportunidadId: data.oportunidadId } : {}),
+        responsableId: "responsableId" in data ? data.responsableId : user.miembro.id,
+      }),
+    ]);
     if ("error" in placement) return NextResponse.json({ error: placement.error }, { status: 400 });
+    if ("error" in vinculos) return NextResponse.json({ error: vinculos.error }, { status: 400 });
 
     // Al final de su grupo: la tarea nueva aparece donde se escribió.
     const last = await prisma.task.findFirst({
@@ -83,6 +102,10 @@ export async function POST(request: Request) {
         sectionId: placement.sectionId,
         parentId,
         sortOrder: (last?.sortOrder ?? 0) + 1,
+        clientId: vinculos.clientId ?? null,
+        leadId: vinculos.leadId ?? null,
+        oportunidadId: vinculos.oportunidadId ?? null,
+        responsableId: vinculos.responsableId ?? null,
       },
       include: TASK_INCLUDE,
     });
