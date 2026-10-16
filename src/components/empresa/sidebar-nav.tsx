@@ -41,6 +41,11 @@ const ICONS = {
   more: "M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5",
   ticket: "M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 0 1 1.037-.443 48.282 48.282 0 0 0 5.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z",
   close: "M6 18 18 6M6 6l12 12",
+  trending: "M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941",
+  chart:
+    "M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z",
+  megaphone:
+    "M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 1 1 0-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 0 1-1.44-4.282m3.102.069a18.03 18.03 0 0 1-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 0 1 8.835 2.535M10.34 6.66a23.847 23.847 0 0 0 8.835-2.535m0 0A23.74 23.74 0 0 0 18.795 3m.38 1.125a23.91 23.91 0 0 1 1.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 0 0 1.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 0 1 0 3.46",
 } as const;
 
 type IconName = keyof typeof ICONS;
@@ -72,6 +77,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { href: "/empresa", label: "Inicio", icon: "home", exact: true, group: "Principal" },
   { href: "/empresa/clientes", label: "Clientes", icon: "users", group: "Principal" },
+  { href: "/empresa/ventas", label: "Ventas", icon: "trending", group: "Principal" },
   { href: "/empresa/tickets", label: "Tickets", icon: "ticket", group: "Principal" },
   { href: "/empresa/proyectos", label: "Proyectos", icon: "folder", group: "Principal" },
   { href: "/empresa/dinero", label: "Dinero", icon: "cash", match: "/empresa/(dinero|facturas|cotizaciones|cuentas-por-cobrar|por-pagar)", group: "Principal" },
@@ -81,6 +87,8 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/empresa/reuniones", label: "Reuniones", icon: "mic", group: "Herramientas" },
   { href: "/empresa/citas", label: "Citas", icon: "calendar", group: "Herramientas" },
   { href: "/empresa/leads", label: "Leads", icon: "funnel", group: "Herramientas" },
+  { href: "/empresa/campanas", label: "Campañas", icon: "megaphone", group: "Herramientas" },
+  { href: "/empresa/reportes", label: "Reportes", icon: "chart", group: "Herramientas" },
   { href: "/empresa/contratos", label: "Contratos", icon: "contract", group: "Herramientas" },
   { href: "/empresa/bitacoras", label: "Bitácoras", icon: "pencil", group: "Herramientas" },
 ];
