@@ -9,7 +9,7 @@ import { prisma } from "@/lib/prisma";
 import { siguienteNumero } from "@/lib/numeracion";
 import { registrarEvento } from "@/lib/portal/eventos";
 import { notifyUser } from "@/lib/notifications/notify";
-import { dinero } from "@/lib/portal/datos";
+import { dinero } from "@/lib/portal/dinero";
 import { inicioDeMesPanama, lineaMantenimiento, tocaFacturar } from "./mantenimiento-reglas";
 import { diaPanama } from "./seguimientos-reglas";
 

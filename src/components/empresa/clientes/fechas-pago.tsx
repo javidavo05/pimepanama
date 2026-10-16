@@ -9,7 +9,7 @@
 import { useActionState, useState } from "react";
 import { correrCuotasAction, moverCuotaAction, moverVencimientoAction, programarCobroAction, type EstadoFecha } from "@/app/(empresa)/empresa/(protected)/acciones-fechas";
 import { campo } from "./formularios";
-import { dinero } from "@/lib/portal/datos";
+import { dinero } from "@/lib/portal/dinero";
 
 export type CuotaFila = { id: string; description: string; amount: number; dueDate: string; status: string };
 export type FacturaFechas = { id: string; number: string | null; title: string; total: number; falta: number; dueDate: string | null; porProgramar: number; cuotas: CuotaFila[] };

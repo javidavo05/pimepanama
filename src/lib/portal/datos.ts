@@ -141,11 +141,8 @@ export async function datosDeTransferencia(empresaUserId: string) {
   });
 }
 
-const fmt = new Intl.NumberFormat("es-PA", { style: "currency", currency: "USD", minimumFractionDigits: 2 });
-export function dinero(v: unknown): string {
-  const n = Number(v);
-  return fmt.format(Number.isFinite(n) ? n : 0);
-}
+import { dinero } from "./dinero";
+export { dinero };
 
 // ─── Documentos: propuestas, contratos, reuniones y archivos (fase 8 del CRM) ────────────────
 

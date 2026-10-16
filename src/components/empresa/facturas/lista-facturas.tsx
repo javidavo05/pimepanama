@@ -5,7 +5,7 @@
 import Link from "@/components/empresa/link";
 import { StatusBadge } from "@/components/empresa/document-builder/status-badge";
 import type { DocumentStatus } from "@prisma/client";
-import { dinero } from "@/lib/portal/datos";
+import { dinero } from "@/lib/portal/dinero";
 
 export type FilaFactura = {
   id: string;

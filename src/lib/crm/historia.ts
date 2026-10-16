@@ -254,7 +254,7 @@ export async function historiaDelCliente(
       : nada,
   ]);
 
-  const { dinero } = await import("@/lib/portal/datos");
+  const { dinero } = await import("@/lib/portal/dinero");
   const todos = fusionarEventos(
     actividad.map(deActividad),
     interacciones.map(deInteraccion),
