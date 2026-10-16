@@ -45,16 +45,20 @@ export function getVapidPublicKey(): string | null {
 
 /**
  * Envía un push a todos los dispositivos suscritos del usuario y de los miembros de su equipo.
+ * Con `soloMiembroId`, solo a los dispositivos de esa persona (el dueño o un miembro activo de su equipo):
+ * sirve para lo que es de alguien en particular, como la tarea de la que es responsable.
  * Nunca lanza: un teléfono con el permiso revocado no puede tumbar el flujo
  * que dispara el aviso. Las suscripciones muertas (404/410) se borran solas.
  */
-export async function sendPushToUser(userId: string, payload: PushPayload) {
+export async function sendPushToUser(userId: string, payload: PushPayload, opciones: { soloMiembroId?: string | null } = {}) {
   if (!ensureVapid()) return { sent: 0, removed: 0, skipped: "vapid-missing" as const };
 
   let subs;
   try {
     // Los avisos del negocio llegan al dueño y a su equipo activo (cada miembro con sus propios dispositivos).
-    subs = await prisma.pushSubscription.findMany({ where: { OR: [{ userId }, { user: { ownerId: userId, activo: true } }] } });
+    const equipo = { OR: [{ userId }, { user: { ownerId: userId, activo: true } }] };
+    const solo = opciones.soloMiembroId;
+    subs = await prisma.pushSubscription.findMany({ where: solo ? { AND: [equipo, { userId: solo }] } : equipo });
   } catch (err) {
     console.error("[push] no se pudieron leer las suscripciones", err);
     return { sent: 0, removed: 0 };
@@ -106,7 +110,7 @@ export async function sendPushToUser(userId: string, payload: PushPayload) {
   if (sent > 0) {
     try {
       await prisma.pushSubscription.updateMany({
-        where: { userId, id: { notIn: dead } },
+        where: { id: { in: subs.map((s) => s.id).filter((id) => !dead.includes(id)) } },
         data: { lastUsedAt: new Date() },
       });
     } catch {

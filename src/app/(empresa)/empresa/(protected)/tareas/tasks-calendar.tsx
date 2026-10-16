@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { TaskPriority } from "@prisma/client";
 import type { SerializedTask } from "./tasks-view";
 import type { ProjectOption } from "@/components/empresa/tasks/types";
+import { useTaskStore } from "@/components/empresa/tasks/task-store";
+import { SelectorResponsable, type Vinculo } from "@/components/empresa/tasks/task-crm";
 import { addDays, allDayISO, mondayOf, sameDay, startOfDay, taskLocalDate, taskLocalEndDate, timedISO } from "@/components/empresa/tasks/date-utils";
 
 const PRIORITY_DOT: Record<TaskPriority, string> = {
@@ -216,7 +218,10 @@ export function TasksCalendar({ mode, tasks, projects, onPatch, onDelete, onCrea
     const initialEndTime = isEdit && initialLocalEnd && !task!.allDay ? fmtTime(initialLocalEnd) : addMinutesToTime(initialStartTime, DEFAULT_DURATION_MIN);
 
     const [title, setTitle] = useState(task?.title ?? "");
-    const [assignee, setAssignee] = useState(task?.assignee ?? "");
+    const { equipoInfo } = useTaskStore();
+    // Nueva tarea: queda a cargo de quien la crea; se puede cambiar.
+    const yo = equipoInfo?.equipo.find((m) => m.id === equipoInfo.miembroId) ?? null;
+    const [responsable, setResponsable] = useState<Vinculo | null>(isEdit ? task!.responsable : yo);
     const [allDay, setAllDay] = useState(initialAllDay);
     const [startTime, setStartTime] = useState(initialStartTime);
     const [endTime, setEndTime] = useState(initialEndTime);
@@ -247,7 +252,7 @@ export function TasksCalendar({ mode, tasks, projects, onPatch, onDelete, onCrea
       setSaving(true);
       const payload = {
         title: title.trim(),
-        assignee: assignee.trim() || null,
+        responsableId: responsable?.id ?? null,
         priority,
         ...(task?.parentId ? {} : { projectId: projectId || null }),
         allDay,
@@ -308,12 +313,11 @@ export function TasksCalendar({ mode, tasks, projects, onPatch, onDelete, onCrea
           />
 
           <div className="flex items-center gap-2">
-            <input
-              value={assignee}
-              onChange={(e) => setAssignee(e.target.value)}
-              list="task-assignees"
-              placeholder="Responsable"
-              className="flex-1 bg-fill border border-line rounded-lg px-3 py-2 text-xs text-fg-mute placeholder:text-fg-trace outline-none focus:border-brand/40"
+            <SelectorResponsable
+              valor={responsable}
+              equipo={equipoInfo?.equipo ?? null}
+              onChange={setResponsable}
+              className="flex-1 min-w-0 min-h-11 bg-fill border border-line rounded-lg px-3 text-xs text-fg-mute outline-none focus:border-brand/40"
             />
             <select
               value={priority}

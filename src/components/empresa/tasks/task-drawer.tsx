@@ -7,6 +7,7 @@ import { taskLocalDate } from "./date-utils";
 import { useTaskStore } from "./task-store";
 import { CheckButton, Icon, ICON, QuickAdd } from "./task-parts";
 import { PRIORITY_LABEL, PRIORITY_PILL, type TaskItem } from "./types";
+import { BuscadorVinculo, SelectorResponsable } from "./task-crm";
 
 // Sin ancho: al concatenar w-auto sobre w-full, Tailwind no lo sobreescribe.
 const FIELD_BASE = "min-h-11 bg-transparent border border-transparent hover:border-line focus:border-brand/40 rounded-lg px-3 text-sm text-fg-soft outline-none transition-colors";
@@ -76,7 +77,7 @@ export function TaskDrawer() {
 }
 
 function DrawerBody({ task }: { task: TaskItem }) {
-  const { tasks, projects, openTask, patchTask, toggleComplete, deleteTask } = useTaskStore();
+  const { tasks, projects, equipoInfo, openTask, patchTask, toggleComplete, deleteTask } = useTaskStore();
   const [title, setTitle] = useState(task.title);
   const [description, setDescription] = useState(task.description ?? "");
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -89,7 +90,8 @@ function DrawerBody({ task }: { task: TaskItem }) {
     .sort((a, b) => a.sortOrder - b.sortOrder || a.createdAt.localeCompare(b.createdAt));
   const project = projects.find((p) => p.id === task.projectId) ?? null;
   const link = linkOf(task);
-  const assignees = Array.from(new Set(tasks.map((t) => t.assignee).filter(Boolean))) as string[];
+  const nombreCliente = task.client ? task.client.company || task.client.name : null;
+  const nombreLead = task.lead ? (task.lead.company ? `${task.lead.name} · ${task.lead.company}` : task.lead.name) : null;
 
   useEffect(() => {
     closeRef.current?.focus();
@@ -262,23 +264,48 @@ function DrawerBody({ task }: { task: TaskItem }) {
           )}
 
           <Field label="Responsable">
-            <input
-              defaultValue={task.assignee ?? ""}
-              list="task-drawer-assignees"
-              placeholder="Sin asignar"
-              onBlur={(e) => {
-                const v = e.target.value.trim() || null;
-                if (v !== task.assignee) void patchTask(task.id, { assignee: v });
-              }}
-              onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLInputElement).blur()}
-              className={`${FIELD} placeholder:text-fg-faint`}
+            <SelectorResponsable
+              valor={task.responsable}
+              equipo={equipoInfo?.equipo ?? null}
+              onChange={(v) => void patchTask(task.id, { responsableId: v?.id ?? null }, { responsable: v })}
+              className={FIELD}
             />
-            <datalist id="task-drawer-assignees">
-              {assignees.map((a) => (
-                <option key={a} value={a} />
-              ))}
-            </datalist>
+            {/* Tareas de antes del CRM: el responsable era un texto libre */}
+            {!task.responsable && task.assignee && (
+              <p className="px-3 pt-1 text-xs text-fg-faint [overflow-wrap:anywhere]">Anotado antes como «{task.assignee}». Elige a la persona del equipo.</p>
+            )}
           </Field>
+
+          <Field label="Cliente">
+            <BuscadorVinculo
+              tipo="cliente"
+              valor={task.client && nombreCliente ? { id: task.client.id, nombre: nombreCliente } : null}
+              onChange={(v) => void patchTask(task.id, { clientId: v?.id ?? null }, { client: v ? { id: v.id, name: v.nombre, company: null } : null })}
+              fieldClass={FIELD}
+            />
+          </Field>
+
+          {(equipoInfo?.puede.leads ?? true) && (
+            <Field label="Lead">
+              <BuscadorVinculo
+                tipo="lead"
+                valor={task.lead && nombreLead ? { id: task.lead.id, nombre: nombreLead } : null}
+                onChange={(v) => void patchTask(task.id, { leadId: v?.id ?? null }, { lead: v ? { id: v.id, name: v.nombre, company: null } : null })}
+                fieldClass={FIELD}
+              />
+            </Field>
+          )}
+
+          {(equipoInfo?.puede.oportunidades ?? true) && (
+            <Field label="Oportunidad">
+              <BuscadorVinculo
+                tipo="oportunidad"
+                valor={task.oportunidad ? { id: task.oportunidad.id, nombre: task.oportunidad.titulo } : null}
+                onChange={(v) => void patchTask(task.id, { oportunidadId: v?.id ?? null }, { oportunidad: v ? { id: v.id, titulo: v.nombre } : null })}
+                fieldClass={FIELD}
+              />
+            </Field>
+          )}
 
           <Field label="Entrega">
             <div className="flex flex-wrap items-center gap-2">

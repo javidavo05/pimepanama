@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { byOrder, useTaskStore, visibleTasks } from "./task-store";
 import { AssigneeAvatar, CheckButton, dueInfo, FilterControl, Icon, ICON, PriorityPill, QuickAdd, Segmented, TaskListHeader, TaskRow } from "./task-parts";
-import type { SectionOption, TaskFilter, TaskItem } from "./types";
+import { nombreResponsable, type SectionOption, type TaskFilter, type TaskItem } from "./types";
 
 type Layout = "list" | "board";
 
@@ -448,9 +448,9 @@ function BoardCard({ task }: { task: TaskItem }) {
           {task.title}
         </p>
       </div>
-      {(due || task.assignee || subtasks.length > 0 || task.priority === "HIGH") && (
+      {(due || nombreResponsable(task) || subtasks.length > 0 || task.priority === "HIGH") && (
         <div className="flex items-center gap-2 mt-3 text-xs">
-          {task.assignee && <AssigneeAvatar name={task.assignee} />}
+          {nombreResponsable(task) && <AssigneeAvatar name={nombreResponsable(task)!} />}
           {due && <span className={due.tone}>{due.label}</span>}
           {subtasks.length > 0 && (
             <span className="flex items-center gap-1 text-fg-faint">

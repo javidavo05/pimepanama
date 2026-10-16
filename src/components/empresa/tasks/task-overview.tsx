@@ -6,6 +6,7 @@ import { daysDiff, taskLocalDate } from "./date-utils";
 import { byOrder, useTaskStore, visibleTasks } from "./task-store";
 import { FilterControl, Icon, ICON, QuickAdd, Segmented, TaskListHeader, TaskRow } from "./task-parts";
 import type { TaskFilter, TaskItem } from "./types";
+import { BuscadorVinculo, SelectorResponsable, type Vinculo } from "./task-crm";
 
 type GroupBy = "project" | "date";
 
@@ -27,9 +28,22 @@ function byDue(a: TaskItem, b: TaskItem) {
   return da - db || byOrder(a, b);
 }
 
-/** Todas las tareas, agrupadas por proyecto o por fecha de entrega. */
-export function TaskOverview({ defaultGroupBy = "project" }: { defaultGroupBy?: GroupBy }) {
-  const { tasks, projects, completedThisVisit, createTask } = useTaskStore();
+const ADD_FIELD = "w-full min-w-0 bg-fill border border-line rounded-lg px-3 min-h-11 text-sm text-fg-mute outline-none focus:border-brand/40";
+
+/**
+ * Todas las tareas, agrupadas por proyecto o por fecha de entrega.
+ * `soloMias`: solo las que tiene a cargo quien entró («Mis tareas»).
+ */
+export function TaskOverview({ defaultGroupBy = "project", soloMias = false }: { defaultGroupBy?: GroupBy; soloMias?: boolean }) {
+  const { tasks: todas, projects, equipoInfo, completedThisVisit, createTask } = useTaskStore();
+  const tasks = soloMias && equipoInfo ? todas.filter((t) => t.responsableId === equipoInfo.miembroId) : todas;
+  const [vincular, setVincular] = useState(false);
+  const [cliente, setCliente] = useState<Vinculo | null>(null);
+  const [lead, setLead] = useState<Vinculo | null>(null);
+  const [oportunidad, setOportunidad] = useState<Vinculo | null>(null);
+  // undefined = quien la crea (lo pone la API); null = sin responsable
+  const [responsable, setResponsable] = useState<Vinculo | null | undefined>(undefined);
+  const yo = equipoInfo?.equipo.find((m) => m.id === equipoInfo.miembroId) ?? null;
   const [filter, setFilter] = useState<TaskFilter>("open");
   const [groupBy, setGroupBy] = useState<GroupBy>(defaultGroupBy);
   const [newTitle, setNewTitle] = useState("");
@@ -54,7 +68,14 @@ export function TaskOverview({ defaultGroupBy = "project" }: { defaultGroupBy?: 
     if (!title) return;
     // El proyecto elegido se queda: lo normal es cargar varias del mismo.
     setNewTitle("");
-    void createTask({ title, projectId: newProject || null });
+    void createTask({
+      title,
+      projectId: newProject || null,
+      ...(cliente ? { clientId: cliente.id } : {}),
+      ...(lead ? { leadId: lead.id } : {}),
+      ...(oportunidad ? { oportunidadId: oportunidad.id } : {}),
+      ...(responsable !== undefined ? { responsableId: responsable?.id ?? null } : {}),
+    });
   }
 
   const shown = visibleTasks(tasks, filter, completedThisVisit);
@@ -103,7 +124,7 @@ export function TaskOverview({ defaultGroupBy = "project" }: { defaultGroupBy?: 
           aria-label="Nueva tarea"
           className="flex-1 min-w-0 bg-transparent px-3 min-h-11 text-sm text-fg placeholder:text-fg-faint outline-none rounded-lg focus:bg-fill"
         />
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <select
             value={newProject}
             onChange={(e) => setNewProject(e.target.value)}
@@ -119,6 +140,16 @@ export function TaskOverview({ defaultGroupBy = "project" }: { defaultGroupBy?: 
           </select>
           <button
             type="button"
+            onClick={() => setVincular((v) => !v)}
+            aria-expanded={vincular}
+            className={`px-3 min-h-11 text-sm rounded-lg border whitespace-nowrap transition-colors ${
+              vincular || cliente || lead || oportunidad ? "border-brand/40 text-brand-fg" : "border-line text-fg-dim hover:text-fg-mute"
+            }`}
+          >
+            {vincular ? "Ocultar detalles" : "Más detalles"}
+          </button>
+          <button
+            type="button"
             onClick={add}
             disabled={!newTitle.trim()}
             className="px-4 min-h-11 bg-brand hover:bg-brand-hi disabled:opacity-40 disabled:hover:bg-brand text-on-brand text-sm font-semibold rounded-lg transition-colors whitespace-nowrap"
@@ -127,6 +158,40 @@ export function TaskOverview({ defaultGroupBy = "project" }: { defaultGroupBy?: 
           </button>
         </div>
       </div>
+      {vincular && (
+        <div className="bg-panel border border-line rounded-xl p-4 -mt-4 mb-6">
+          <p className="text-xs text-fg-dim mb-3">
+            De quién es y quién la lleva. Se quedan puestos para las siguientes tareas que agregues.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block min-w-0">
+              <span className="block text-xs text-fg-dim mb-1">Responsable</span>
+              <SelectorResponsable
+                valor={responsable === undefined ? yo : responsable}
+                equipo={equipoInfo?.equipo ?? null}
+                onChange={setResponsable}
+                className={ADD_FIELD}
+              />
+            </label>
+            <div className="min-w-0">
+              <span className="block text-xs text-fg-dim mb-1">Cliente</span>
+              <BuscadorVinculo tipo="cliente" valor={cliente} onChange={setCliente} fieldClass={ADD_FIELD} />
+            </div>
+            {(equipoInfo?.puede.leads ?? true) && (
+              <div className="min-w-0">
+                <span className="block text-xs text-fg-dim mb-1">Lead</span>
+                <BuscadorVinculo tipo="lead" valor={lead} onChange={setLead} fieldClass={ADD_FIELD} />
+              </div>
+            )}
+            {(equipoInfo?.puede.oportunidades ?? true) && (
+              <div className="min-w-0">
+                <span className="block text-xs text-fg-dim mb-1">Oportunidad</span>
+                <BuscadorVinculo tipo="oportunidad" valor={oportunidad} onChange={setOportunidad} fieldClass={ADD_FIELD} />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <Segmented
@@ -141,7 +206,14 @@ export function TaskOverview({ defaultGroupBy = "project" }: { defaultGroupBy?: 
         <FilterControl value={filter} onChange={setFilter} />
       </div>
 
-      {tasks.filter((t) => !t.parentId).length === 0 ? (
+      {soloMias && tasks.filter((t) => !t.parentId).length === 0 ? (
+        <div className="bg-panel border border-line rounded-xl px-6 py-12 text-center">
+          <p className="text-fg-mute font-medium">No tienes tareas a tu cargo</p>
+          <p className="text-fg-dim text-sm mt-1 max-w-md mx-auto leading-relaxed">
+            Aquí aparecen las tareas en las que eres responsable: las que creas tú y las que te asigna el equipo. Escribe arriba la primera.
+          </p>
+        </div>
+      ) : tasks.filter((t) => !t.parentId).length === 0 ? (
         <div className="bg-panel border border-line rounded-xl px-6 py-12 text-center">
           <p className="text-fg-mute font-medium">Aún no tienes tareas</p>
           <p className="text-fg-dim text-sm mt-1 max-w-md mx-auto leading-relaxed">

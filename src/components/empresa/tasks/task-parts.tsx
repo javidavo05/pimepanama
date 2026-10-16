@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { daysDiff, taskLocalDate } from "./date-utils";
 import { useTaskStore } from "./task-store";
-import { PRIORITY_LABEL, PRIORITY_PILL, type TaskFilter, type TaskItem } from "./types";
+import { PRIORITY_LABEL, PRIORITY_PILL, nombreResponsable, type TaskFilter, type TaskItem } from "./types";
 
 // ─── Iconos (outline, trazo 2, 16 px) ────────────────────────────────────────
 
@@ -129,6 +129,8 @@ export function TaskRow({
   const doneSubtasks = subtasks.filter((t) => t.completed).length;
   const due = dueInfo(task);
   const selected = openTaskId === task.id;
+  const responsable = nombreResponsable(task);
+  const deQuien = task.client ? task.client.company || task.client.name : task.lead ? task.lead.name : null;
 
   return (
     <div
@@ -160,6 +162,12 @@ export function TaskRow({
           {showProject && task.project && (
             <span className="text-fg-dim truncate max-w-48">{task.project.name}</span>
           )}
+          {deQuien && (
+            <span className="text-fg-dim truncate max-w-48" title={task.client ? "Cliente" : "Lead"}>
+              {deQuien}
+            </span>
+          )}
+          {responsable && <span className="md:hidden text-fg-faint truncate max-w-40">{responsable}</span>}
           {showMeeting && task.meeting && (
             <span className="flex items-center gap-1 text-fg-faint min-w-0" title={`Salió de la reunión «${task.meeting.title}»`}>
               <Icon d={ICON.mic} className="w-3 h-3 shrink-0" />
@@ -186,10 +194,10 @@ export function TaskRow({
 
       {/* Columnas en escritorio */}
       <div className="hidden md:flex items-center gap-3 w-32 shrink-0 min-w-0">
-        {task.assignee ? (
+        {responsable ? (
           <>
-            <AssigneeAvatar name={task.assignee} />
-            <span className="text-xs text-fg-dim truncate">{task.assignee}</span>
+            <AssigneeAvatar name={responsable} />
+            <span className="text-xs text-fg-dim truncate">{responsable}</span>
           </>
         ) : (
           <span className="text-xs text-fg-ghost">—</span>
