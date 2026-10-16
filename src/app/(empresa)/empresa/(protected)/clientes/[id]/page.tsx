@@ -6,6 +6,7 @@ import { dinero } from "@/lib/portal/datos";
 import { formatoHoras } from "@/lib/portal/horas";
 import { PAGO_METODO_LABEL, TICKET_ESTADO_LABEL, type PagoMetodo, type TicketEstado } from "@/lib/portal/estados";
 import { ListaFacturas } from "@/components/empresa/facturas/lista-facturas";
+import { FechasPago, type FacturaFechas } from "@/components/empresa/clientes/fechas-pago";
 import { btn } from "@/components/empresa/page-header";
 import { FacturarHorasForm, HorasForm, InvitarForm, PagoForm, PagoPorConfirmar, PersonaAcciones } from "@/components/empresa/clientes/formularios";
 import { ZonaLinea } from "@/components/empresa/clientes/zona-linea";
@@ -63,6 +64,18 @@ export default async function FichaCliente({ params, searchParams }: { params: P
   // Abonos de cada factura, del más viejo al más nuevo: cada uno lleva su recibo.
   const pagosDe = (facturaId: string) => f.pagos.filter((p) => p.documentId === facturaId && p.status === "confirmado").map((p) => ({ id: p.id, monto: Number(p.amount), fecha: p.paidAt })).sort((a, b) => a.fecha.getTime() - b.fecha.getTime());
   const facturasAbiertas = f.facturas.filter((x) => x.falta > 0.005 && x.status !== "DRAFT" && x.status !== "CANCELLED");
+  // Fechas de pago que el dueño puede mover: vencimiento de cada factura con saldo, sus cuotas y lo que falta programar.
+  const fechasPago: FacturaFechas[] = facturasAbiertas.map((x) => {
+    const vivas = x.paymentSchedules.filter((c) => c.status === "PENDING" || c.status === "OVERDUE");
+    const programado = vivas.reduce((a, c) => a + Number(c.amount), 0);
+    return {
+      id: x.id, number: x.number, title: x.title, total: Number(x.total ?? 0), falta: x.falta,
+      dueDate: x.dueDate ? x.dueDate.toISOString() : null,
+      // Solo hay algo que programar si ya hay cuotas o pagos parciales: una factura sin pagos se mueve con su vencimiento.
+      porProgramar: vivas.length || x.pagado > 0.005 ? Math.max(0, Math.round((x.falta - programado) * 100) / 100) : 0,
+      cuotas: x.paymentSchedules.map((c) => ({ id: c.id, description: c.description, amount: Number(c.amount), dueDate: c.dueDate.toISOString(), status: c.status })),
+    };
+  });
 
   return (
     <ZonaLinea linea={c.brandLine}>
@@ -339,6 +352,11 @@ export default async function FichaCliente({ params, searchParams }: { params: P
                 <div className="flex items-center justify-between gap-3"><h2 className={h2}>Facturas{f.facturas.length ? ` · ${f.facturas.length}` : ""}</h2><BotonCobrar clientes={clientesCobro} clienteInicial={c.id} etiqueta="Cobrar" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline" /></div>
                 <ListaFacturas facturas={f.facturas.map((x) => ({ id: x.id, number: x.number, title: x.title, status: x.status, total: Number(x.total ?? 0), falta: x.falta, issueDate: x.issueDate, pagos: pagosDe(x.id) }))} vacio="Sin facturas todavía. Cada pago que registres sale con su factura." />
                 {f.cotizaciones.length > 0 && <p className="mt-4 text-xs text-fg-dim">{f.cotizaciones.length} cotización(es): {f.cotizaciones.slice(0, 3).map((q) => <Link key={q.id} href={`/empresa/cotizaciones/${q.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-brand-fg hover:underline mr-2">{q.number}</Link>)}</p>}
+              </section>
+              <section className={card} id="fechas-pago">
+                <h2 className={h2}>Fechas de pago</h2>
+                <p className="mt-1 text-sm text-fg-dim">Mueve el vencimiento de una factura o de una cuota, o programa el cobro de lo que falta. El cliente ve estas fechas en su cuenta y sus recordatorios salen de ellas.</p>
+                <FechasPago facturas={fechasPago} />
               </section>
             </div>
             <aside className="space-y-6 min-w-0">
