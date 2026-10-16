@@ -122,7 +122,7 @@ export function TablaClientes({ filas, equipo, etiquetas }: { filas: FilaTabla[]
         </li>
         {filas.map((c) => (
           <li key={c.id} className={`flex items-start gap-3 pl-4 sm:pl-6 ${marcados.has(c.id) ? "bg-brand/5" : c.internal ? "bg-fill/60" : ""}`}>
-            <label className="flex min-h-11 items-center pt-3 xl:pt-0 xl:self-center cursor-pointer">
+            <label className="-ml-3 flex min-h-11 min-w-11 items-center justify-center pt-3 xl:pt-0 xl:self-center cursor-pointer">
               <input type="checkbox" className={casilla} checked={marcados.has(c.id)} onChange={() => cambiar(c.id)} aria-label={`Marcar ${c.titulo}`} />
             </label>
             <Link href={`/empresa/clientes/${c.id}`} className={`grid min-w-0 flex-1 gap-x-6 gap-y-2 pr-4 sm:pr-6 py-4 hover:bg-fill md:items-center ${COLUMNAS}`}>

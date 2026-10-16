@@ -72,14 +72,14 @@ export function RegistrarInteraccion({ clientId, contactos }: { clientId: string
       <input type="hidden" name="tipo" value={tipo} />
       <fieldset>
         <legend className="sr-only">Qué fue</legend>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-3 gap-2 lg:grid-cols-6">
           {TIPOS_INTERACCION.map((t) => (
             <button
               key={t}
               type="button"
               aria-pressed={tipo === t}
               onClick={() => setTipo(t)}
-              className={`inline-flex items-center min-h-11 sm:min-h-9 rounded-full border px-4 text-sm font-medium transition-colors ${tipo === t ? "border-brand bg-brand/10 text-brand-fg" : "border-line-mid text-fg-mute hover:border-line-loud hover:text-fg"}`}
+              className={`inline-flex items-center justify-center min-h-11 rounded-full border px-3 text-sm font-medium transition-colors ${tipo === t ? "border-brand bg-brand/10 text-brand-fg" : "border-line-mid text-fg-mute hover:border-line-loud hover:text-fg"}`}
             >
               {TIPO_INTERACCION_LABEL[t]}
             </button>

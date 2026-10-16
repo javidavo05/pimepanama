@@ -129,7 +129,7 @@ export function TaskOverview({ defaultGroupBy = "project", soloMias = false }: {
             value={newProject}
             onChange={(e) => setNewProject(e.target.value)}
             aria-label="Proyecto de la tarea"
-            className="flex-1 sm:flex-none sm:w-48 min-w-0 bg-fill border border-line rounded-lg px-3 min-h-11 text-sm text-fg-mute outline-none focus:border-brand/40 truncate"
+            className="w-full sm:w-48 min-w-0 bg-fill border border-line rounded-lg px-3 min-h-11 text-sm text-fg-mute outline-none focus:border-brand/40 truncate"
           >
             <option value="">Sin proyecto</option>
             {projects.map((p) => (
@@ -142,7 +142,7 @@ export function TaskOverview({ defaultGroupBy = "project", soloMias = false }: {
             type="button"
             onClick={() => setVincular((v) => !v)}
             aria-expanded={vincular}
-            className={`px-3 min-h-11 text-sm rounded-lg border whitespace-nowrap transition-colors ${
+            className={`flex-1 sm:flex-none px-3 min-h-11 text-sm rounded-lg border whitespace-nowrap transition-colors ${
               vincular || cliente || lead || oportunidad ? "border-brand/40 text-brand-fg" : "border-line text-fg-dim hover:text-fg-mute"
             }`}
           >
@@ -152,7 +152,7 @@ export function TaskOverview({ defaultGroupBy = "project", soloMias = false }: {
             type="button"
             onClick={add}
             disabled={!newTitle.trim()}
-            className="px-4 min-h-11 bg-brand hover:bg-brand-hi disabled:opacity-40 disabled:hover:bg-brand text-on-brand text-sm font-semibold rounded-lg transition-colors whitespace-nowrap"
+            className="flex-1 sm:flex-none px-4 min-h-11 bg-brand hover:bg-brand-hi disabled:opacity-40 disabled:hover:bg-brand text-on-brand text-sm font-semibold rounded-lg transition-colors whitespace-nowrap"
           >
             Agregar tarea
           </button>

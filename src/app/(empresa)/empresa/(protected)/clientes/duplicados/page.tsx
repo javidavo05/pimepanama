@@ -30,7 +30,7 @@ export default async function DuplicadosPage({ searchParams }: { searchParams: P
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <PageHeader
-        eyebrow={<Link href="/empresa/clientes" className="inline-flex min-h-11 items-center text-sm text-fg-dim hover:text-fg sm:min-h-0 sm:mb-2">← Clientes</Link>}
+        eyebrow={<Link href="/empresa/clientes" className="inline-flex min-h-11 items-center text-sm text-fg-dim hover:text-fg lg:min-h-0 sm:mb-2">← Clientes</Link>}
         title="Clientes duplicados"
         description="Posibles repetidos por correo, RUC o nombre casi igual. Al fusionar, todo pasa al cliente que eliges y el otro se borra."
       />

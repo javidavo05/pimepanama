@@ -13,8 +13,8 @@ type Quien = { id: string; miembro: { id: string; esDueno: boolean } };
 
 export async function cargarClientes(u: Quien, f: Filtros) {
   const busca = f.q;
-  const maxPor = (rows: { clientId: string | null; _max: { updatedAt?: Date | null; ocurrioAt?: Date | null } }[]) =>
-    new Map(rows.map((r) => [r.clientId, (r._max.updatedAt ?? r._max.ocurrioAt)?.getTime() ?? 0]));
+  const maxPor = (rows: { clientId: string | null; _max: { updatedAt?: Date | null; createdAt?: Date | null; ocurrioAt?: Date | null } }[]) =>
+    new Map(rows.map((r) => [r.clientId, (r._max.updatedAt ?? r._max.createdAt ?? r._max.ocurrioAt)?.getTime() ?? 0]));
   const [clientes, mDocs, mPagos, mTickets, mProyectos, mInteracciones, equipo] = await Promise.all([
     prisma.client.findMany({
       where: {
@@ -33,10 +33,10 @@ export async function cargarClientes(u: Quien, f: Filtros) {
         _count: { select: { projects: { where: { status: "ACTIVE" } }, projectLinks: { where: { project: { status: "ACTIVE" } } } } },
       },
     }),
-    prisma.document.groupBy({ by: ["clientId"], where: { userId: u.id, clientId: { not: null } }, _max: { updatedAt: true } }).then(maxPor),
-    prisma.payment.groupBy({ by: ["clientId"], where: { userId: u.id, clientId: { not: null } }, _max: { updatedAt: true } }).then(maxPor),
+    prisma.document.groupBy({ by: ["clientId"], where: { userId: u.id, clientId: { not: null } }, _max: { createdAt: true } }).then(maxPor),
+    prisma.payment.groupBy({ by: ["clientId"], where: { userId: u.id, clientId: { not: null } }, _max: { createdAt: true } }).then(maxPor),
     prisma.ticket.groupBy({ by: ["clientId"], where: { userId: u.id }, _max: { updatedAt: true } }).then(maxPor),
-    prisma.project.groupBy({ by: ["clientId"], where: { userId: u.id, clientId: { not: null } }, _max: { updatedAt: true } }).then(maxPor),
+    prisma.project.groupBy({ by: ["clientId"], where: { userId: u.id, clientId: { not: null } }, _max: { createdAt: true } }).then(maxPor),
     prisma.interaccion.groupBy({ by: ["clientId"], where: { userId: u.id, clientId: { not: null } }, _max: { ocurrioAt: true } }).then(maxPor),
     equipoDeLaEmpresa(u.id),
   ]);
@@ -45,8 +45,9 @@ export async function cargarClientes(u: Quien, f: Filtros) {
   const todas = clientes.map((c) => {
     const trato = Math.max(0, ...[mDocs, mPagos, mTickets, mProyectos].map((m) => m.get(c.id) ?? 0));
     const movimiento = Math.max(c.updatedAt.getTime(), trato);
-    // Último contacto: lo anotado (ficha o interacciones) o, si es más reciente, el último documento, pago, ticket o
-    // proyecto. Editar la ficha (asignar responsable, etiquetas) no cuenta como contacto.
+    // Último contacto: lo anotado (ficha o interacciones) o, si es más reciente, el último documento, pago o proyecto
+    // creado, o el último movimiento de un ticket. De documentos, pagos y proyectos cuenta la creación: la revisión de
+    // GitHub y los recordatorios los tocan solos cada día y todos parecerían contactados «hoy». Editar la ficha (asignar responsable, etiquetas) no cuenta como contacto.
     const contacto = Math.max(c.ultimoContactoAt?.getTime() ?? 0, mInteracciones.get(c.id) ?? 0, trato);
     return {
       id: c.id, name: c.name, company: c.company, email: c.email, phone: c.phone, ruc: c.ruc,

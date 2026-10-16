@@ -34,9 +34,9 @@ export async function SaludCliente({ clientId }: { clientId: string }) {
         <span className={`h-2 w-2 rounded-full ${n.punto}`} aria-hidden />
         Salud: {n.label}
       </span>
-      <span className="min-w-0 flex-1 text-fg-mute [overflow-wrap:anywhere]">{motivo}</span>
+      <span className="min-w-0 grow basis-48 text-fg-mute [overflow-wrap:anywhere]">{motivo}</span>
       {verReportes && s.nivel !== "sana" && (
-        <Link href="/empresa/reportes?vista=riesgo" className="inline-flex min-h-11 shrink-0 items-center text-brand-fg text-xs font-semibold hover:underline sm:min-h-0">Ver clientes en riesgo</Link>
+        <Link href="/empresa/reportes?vista=riesgo" className="inline-flex min-h-11 shrink-0 items-center text-brand-fg text-xs font-semibold hover:underline lg:min-h-0">Ver clientes en riesgo</Link>
       )}
     </div>
   );

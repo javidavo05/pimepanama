@@ -328,7 +328,7 @@ export default async function FichaCliente({ params, searchParams }: { params: P
               <section className={card} aria-labelledby="historia-titulo">
                 <h2 id="historia-titulo" className={h2}>Historia</h2>
                 <p className="mt-1 text-sm text-fg-dim">Registra cada llamada, WhatsApp o visita en dos toques. Abajo queda todo lo que pasó con este cliente, en orden.</p>
-                <div className="mt-4 flex flex-wrap items-start gap-2">
+                <div className="mt-4 space-y-4">
                   <RegistrarInteraccion clientId={c.id} contactos={contactos.map((k) => ({ id: k.id, nombre: k.nombre, principal: k.principal }))} />
                   {!interna && <EnviarCorreo clientId={c.id} contactos={contactos.filter((k) => k.email).map((k) => ({ id: k.id, nombre: k.nombre, email: k.email!, principal: k.principal }))} correoCliente={c.email} />}
                 </div>

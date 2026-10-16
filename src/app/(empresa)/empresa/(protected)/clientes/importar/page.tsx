@@ -13,7 +13,7 @@ export default async function ImportarClientesPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <PageHeader
-        eyebrow={<Link href="/empresa/clientes" className="inline-flex min-h-11 items-center text-sm text-fg-dim hover:text-fg sm:min-h-0 sm:mb-2">← Clientes</Link>}
+        eyebrow={<Link href="/empresa/clientes" className="inline-flex min-h-11 items-center text-sm text-fg-dim hover:text-fg lg:min-h-0 sm:mb-2">← Clientes</Link>}
         title="Importar clientes"
         description="Sube una hoja CSV (desde Excel, Google Sheets o Numbers). Revisas las columnas y una vista previa antes de crear nada."
       />
