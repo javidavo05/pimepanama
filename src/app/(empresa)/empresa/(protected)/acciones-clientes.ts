@@ -16,6 +16,8 @@ import { decidirPagoReportado, facturarHoras, fijarEstimado, registrarHoras, reg
 import { FASE_COBRO, FASE_ESTADOS, PAGO_METODOS, PROYECTO_TIPOS, TICKET_PRIORIDADES, TICKET_TIPOS, TICKET_TIPOS_INTERNOS, esUno } from "@/lib/portal/estados";
 import { dinero } from "@/lib/portal/datos";
 import { getSiteUrl } from "@/lib/site-url";
+import { FUENTES_CLIENTE, limpiarEtiquetas, valorDeCampo } from "@/lib/crm/ficha";
+import type { Prisma } from "@prisma/client";
 
 export type Estado = { error?: string; ok?: boolean; mensaje?: string; enlace?: string; aviso?: boolean } | null;
 const txt = (v: FormDataEntryValue | null, max = 500) => String(v ?? "").trim().slice(0, max);
@@ -46,17 +48,23 @@ export async function guardarClienteAction(_: Estado, form: FormData): Promise<E
     hourlyRate: txt(form.get("hourlyRate"), 20) ? num(form.get("hourlyRate")) : null,
   };
   if (!datos.name) return { error: "Escribe el nombre del contacto o de la empresa." };
+  // Datos del CRM (fuente, industria, etiquetas y campos propios): solo si el formulario los trae.
+  const crm: Partial<DatosCrm> = form.get("crm") === "1" ? await datosCrm(u.id, form, id) : {};
   if (datos.hourlyRate != null && (!Number.isFinite(datos.hourlyRate) || datos.hourlyRate < 0)) return { error: "La tarifa por hora no es válida." };
   let clientId = id;
   if (id) {
     const c = await prisma.client.findFirst({ where: { id, userId: u.id }, select: { id: true } });
     if (!c) return { error: "No encontré ese cliente." };
-    await prisma.client.update({ where: { id }, data: datos });
+    await prisma.client.update({ where: { id }, data: { ...datos, ...crm } });
   } else {
     const dup = datos.email ? await prisma.client.findFirst({ where: { userId: u.id, email: { equals: datos.email, mode: "insensitive" } }, select: { id: true, name: true } }) : null;
     if (dup && form.get("confirmarDuplicado") !== "1") return { error: `Ya existe un cliente con ese correo: ${dup.name}. Ábrelo desde Clientes o vuelve a guardar para crear otro.` };
-    const c = await prisma.client.create({ data: { ...datos, userId: u.id } });
+    const c = await prisma.client.create({ data: { ...datos, ...crm, userId: u.id } });
     clientId = c.id;
+    // El primer contacto principal sale de los datos del cliente: nadie tiene que escribirlos dos veces.
+    // El campo «Contacto» del formulario es la persona; se guarda como principal y decide.
+    await prisma.contacto.create({ data: { userId: u.id, clientId: c.id, nombre: datos.name, email: datos.email, telefono: datos.phone, rol: "decide", principal: true } })
+      .catch((e) => console.error("[clientes] contacto principal", e));
     await registrarEvento({ userId: u.id, clientId: c.id, entityType: "cliente", entityId: c.id, kind: "cliente_creado", title: "Cliente creado", visibility: "interno", actorEmpresaUserId: u.id });
     if (form.get("invitar") === "1" && datos.email) {
       await invitarPersona({ empresaUserId: u.id, clientId: c.id, email: datos.email, fullName: datos.name, role: "principal", invitadoPor: u.fullName || "El equipo de Pime" });
@@ -64,6 +72,30 @@ export async function guardarClienteAction(_: Estado, form: FormData): Promise<E
   }
   refrescar(clientId);
   redirect(`/empresa/clientes/${clientId}`);
+}
+
+/** Fuente, industria, etiquetas y campos propios del formulario. Los campos propios se mezclan con lo ya guardado. */
+type DatosCrm = { fuente: string | null; industria: string | null; etiquetas: string[]; camposExtra: Prisma.InputJsonValue };
+async function datosCrm(userId: string, form: FormData, id: string | null): Promise<DatosCrm> {
+  const fuente = txt(form.get("fuente"), 60);
+  let etiquetas: unknown[] = [];
+  try { const v = JSON.parse(String(form.get("etiquetas") ?? "[]")); if (Array.isArray(v)) etiquetas = v; } catch { etiquetas = []; }
+  const [campos, previo] = await Promise.all([
+    prisma.campoPersonalizado.findMany({ where: { userId, entidad: "cliente" }, select: { clave: true, tipo: true, opciones: true } }),
+    id ? prisma.client.findFirst({ where: { id, userId }, select: { camposExtra: true } }) : null,
+  ]);
+  const extra: Record<string, unknown> = previo?.camposExtra && typeof previo.camposExtra === "object" && !Array.isArray(previo.camposExtra) ? { ...(previo.camposExtra as Record<string, unknown>) } : {};
+  for (const k of campos) {
+    if (!form.has(`campo_${k.clave}`)) continue;
+    const v = valorDeCampo(k.tipo, k.opciones, txt(form.get(`campo_${k.clave}`), 500));
+    if (v == null) delete extra[k.clave]; else extra[k.clave] = v;
+  }
+  return {
+    fuente: (FUENTES_CLIENTE as readonly string[]).includes(fuente) ? fuente : null,
+    industria: txt(form.get("industria"), 80) || null,
+    etiquetas: limpiarEtiquetas(etiquetas),
+    camposExtra: extra as Prisma.InputJsonValue,
+  };
 }
 
 /** Lo que se le dice a quien invitó: enviada, o creada pero con el motivo exacto por el que el correo no salió. */

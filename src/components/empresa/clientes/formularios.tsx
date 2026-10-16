@@ -4,7 +4,7 @@
  * Formularios cortos del equipo para Pime Clientes. Cada uno pide lo mínimo, trae los valores más
  * comunes ya puestos y dice qué va a pasar en el botón.
  */
-import { useActionState, useEffect, useId, useRef, useState } from "react";
+import { useActionState, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   decidirPagoAction, estimarTicketAction, facturarHorasAction, guardarClienteAction, invitarAlPortalAction, marcarGarantiaAction,
@@ -38,7 +38,8 @@ const hoy = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/Pa
 
 type ClienteDatos = { id?: string; name?: string; company?: string | null; ruc?: string | null; email?: string | null; phone?: string | null; address?: string | null; city?: string | null; country?: string | null; notes?: string | null; brandLine?: string; hourlyRate?: string | null };
 
-export function ClienteForm({ c, tarifas }: { c?: ClienteDatos; tarifas: { normal: number; premium: number } }) {
+/** `extra`: bloque opcional que va antes de las notas (fuente, industria, etiquetas y campos propios del CRM). */
+export function ClienteForm({ c, tarifas, extra }: { c?: ClienteDatos; tarifas: { normal: number; premium: number }; extra?: ReactNode }) {
   const [estado, accion, enviando] = useActionState(guardarClienteAction, null);
   const [linea, setLinea] = useState(c?.brandLine ?? "normal");
   const dup = estado?.error?.startsWith("Ya existe un cliente con ese correo");
@@ -73,6 +74,7 @@ export function ClienteForm({ c, tarifas }: { c?: ClienteDatos; tarifas: { norma
       <div className="grid gap-4 sm:grid-cols-2">
         <div><label htmlFor="hourlyRate" className={etiqueta}>Tarifa propia por hora (opcional)</label><input id="hourlyRate" name="hourlyRate" inputMode="decimal" defaultValue={c?.hourlyRate ?? ""} className={campo} placeholder="Vacío = la de su línea" /></div>
       </div>
+      {extra}
       <div><label htmlFor="notes" className={etiqueta}>Notas internas</label><textarea id="notes" name="notes" rows={3} defaultValue={c?.notes ?? ""} className={`${campo} py-2`} /></div>
       {!c?.id && (
         <label className="flex items-center gap-3 text-sm text-fg-mute"><input type="checkbox" name="invitar" value="1" defaultChecked className="h-5 w-5 accent-[rgb(var(--c-brand))]" />Enviarle la invitación a su cuenta en Pime</label>
