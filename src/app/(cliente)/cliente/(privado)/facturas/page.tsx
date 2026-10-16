@@ -19,7 +19,7 @@ export default async function FacturasCliente() {
 
   return (
     <>
-      <Encabezado eyebrow="Tu cuenta con Pime" titulo="Facturas y pagos" detalle="Lo facturado, lo que pagaste y lo que falta, con cada factura y cada recibo de pago en PDF." />
+      <Encabezado eyebrow="Tu cuenta con Pime" titulo="Facturas y pagos" detalle="Lo que Pime te ha facturado hasta hoy, lo que pagaste y lo que falta, con cada factura y cada recibo en PDF. Lo que todavía no se emite no se cobra." />
       <BloqueOscuro i={1}>
         <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-end">
           <div className="min-w-0 space-y-2">
@@ -50,6 +50,11 @@ export default async function FacturasCliente() {
                 <div className="min-w-0 flex-1">
                   <p className="text-fg font-semibold truncate">{f.number ?? "Factura"} · {f.title}</p>
                   <p className="text-fg-dim text-sm">Emitida el {fechaCorta(f.issueDate)}{f.dueDate && f.falta > 0 ? ` · vence el ${fechaCorta(f.dueDate)}` : ""}</p>
+                  {f.porEmitir > 0.005 && (
+                    <p className="text-fg-dim text-xs tabular-nums">
+                      {f.proxima ? `Próxima cuota: ${dinero(f.proxima.monto)} el ${fechaCorta(f.proxima.fecha)}` : `Por emitir: ${dinero(f.porEmitir)} de ${dinero(f.totalContrato)}`}
+                    </p>
+                  )}
                 </div>
                 <div className="flex items-center gap-4 sm:justify-end">
                   <div className="text-right"><p className="text-fg text-lg font-extrabold"><Cifra texto={dinero(f.total)} moneda demora={200 + i * 60} /></p>{f.falta > 0.005 && f.pagado > 0 && <p className="text-fg-dim text-xs tabular-nums">Falta {dinero(f.falta)}</p>}</div>

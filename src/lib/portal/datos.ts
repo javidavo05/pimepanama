@@ -5,7 +5,7 @@
  */
 import { prisma } from "@/lib/prisma";
 import { avanceDeProyecto, faseActual } from "./avance";
-import { saldoCliente, FACTURA_CUENTA, FASE_INICIADA } from "./saldo";
+import { saldoCliente, facturasEmitidas, FACTURA_CUENTA, FASE_INICIADA } from "./saldo";
 import { TICKET_ABIERTOS } from "./estados";
 
 /** Fases que cuentan: las del proyecto y las de órdenes de cambio ya aprobadas. */
@@ -27,7 +27,7 @@ export const proyectosDelCliente = (clientId: string) => ({
 });
 
 export async function datosInicio(clientId: string) {
-  const [proyectos, facturas, pagos, ordenes, tickets, eventos, fasesSinFactura] = await Promise.all([
+  const [proyectos, facturasDoc, pagos, ordenes, tickets, eventos, fasesSinFactura, cuotas] = await Promise.all([
     prisma.project.findMany({
       where: proyectosDelCliente(clientId),
       select: { id: true, name: true, kind: true, status: true, updatedAt: true, phases: { where: fasesVigentes, orderBy: { sortOrder: "asc" }, select: { id: true, name: true, status: true, progress: true, price: true, sortOrder: true, billingPoint: true } } },
@@ -43,13 +43,16 @@ export async function datosInicio(clientId: string) {
     }),
     prisma.activityEvent.findMany({ where: { clientId, visibility: "cliente" }, orderBy: { createdAt: "desc" }, take: 6, select: { id: true, title: true, detail: true, createdAt: true, kind: true } }),
     prisma.projectPhase.findMany({ where: fasesDelClientePorCobrar(clientId), select: FASE_COBRABLE }),
+    cuotasDelCliente(clientId),
   ]);
+  // El cliente ve lo emitido de cada factura, no el total del contrato.
+  const facturas = facturasEmitidas(facturasDoc, pagos, cuotas);
 
   const proyectosConAvance = proyectos.map((p) => ({ ...p, avance: avanceDeProyecto(p.phases), actual: faseActual(p.phases) }));
   const activos = proyectosConAvance.filter((p) => p.status === "ACTIVE" || p.status === "PAUSED");
   const saldo = saldoCliente(facturas, pagos, fasesSinFactura);
   const proximo = facturas
-    .filter((f) => FACTURA_CUENTA(f.status) && f.status !== "PAID" && f.dueDate)
+    .filter((f) => FACTURA_CUENTA(f.status) && f.status !== "PAID" && f.dueDate && f.total - Number(f.amountPaid ?? 0) > 0.005)
     .sort((a, b) => a.dueDate!.getTime() - b.dueDate!.getTime())[0] ?? null;
 
   const decisiones = [
@@ -99,8 +102,13 @@ export async function ticketDelCliente(clientId: string, id: string) {
   });
 }
 
+/** Cuotas de los planes de pago de las facturas del cliente: definen qué parte de cada factura ya se emitió. */
+function cuotasDelCliente(clientId: string) {
+  return prisma.paymentSchedule.findMany({ where: { document: { clientId, type: "FACTURA" } }, select: { documentId: true, amount: true, dueDate: true, status: true } });
+}
+
 export async function facturasDelCliente(clientId: string) {
-  const [facturas, pagos, fases] = await Promise.all([
+  const [facturasDoc, pagos, fases, cuotas] = await Promise.all([
     prisma.document.findMany({
       where: { clientId, type: "FACTURA", status: { notIn: ["DRAFT", "CANCELLED"] } },
       orderBy: { issueDate: "desc" },
@@ -108,7 +116,9 @@ export async function facturasDelCliente(clientId: string) {
     }),
     prisma.payment.findMany({ where: { clientId }, orderBy: { paidAt: "desc" }, select: { id: true, documentId: true, phaseId: true, amount: true, paidAt: true, method: true, reference: true, status: true } }),
     prisma.projectPhase.findMany({ where: fasesDelClientePorCobrar(clientId), select: FASE_COBRABLE }),
+    cuotasDelCliente(clientId),
   ]);
+  const facturas = facturasEmitidas(facturasDoc, pagos, cuotas);
   return { facturas, pagos, saldo: saldoCliente(facturas, pagos, fases) };
 }
 

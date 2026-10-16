@@ -73,3 +73,36 @@ export function estadoPorPago(total: unknown, pagado: number): "PAID" | "PARTIAL
   if (pagado > 0) return "PARTIALLY_PAID";
   return null;
 }
+
+/** Cuota de un plan de pagos (PaymentSchedule) de una factura. */
+export type Cuota = { documentId: string; amount: unknown; dueDate: Date; status: string };
+
+/**
+ * Lo emitido de una factura (pedido de Javier, 2026-10-16: «las facturas deben ser solo las que fueron emitidas,
+ * no el total»). Una factura por el total de un contrato no se le cobra entera al cliente:
+ * - con plan de cuotas: lo emitido es lo pagado más las cuotas ya vencidas; la siguiente se anuncia aparte;
+ * - sin plan y con un pago parcial: lo emitido es lo pagado (el anticipo); el resto se factura después;
+ * - sin pagos y sin plan, o pagada completa: la factura entera.
+ */
+export function emitidoDe(total: unknown, pagado: number, cuotas: Cuota[], ahora = new Date()) {
+  const t = n(total);
+  if (pagado >= t - 0.005) return { emitido: r2(t), porEmitir: 0, proxima: null as { monto: number; fecha: Date } | null };
+  const vivas = cuotas.filter((c) => c.status !== "PAID" && c.status !== "CANCELLED").sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime());
+  if (vivas.length) {
+    const vencidas = vivas.filter((c) => c.dueDate.getTime() <= ahora.getTime()).reduce((a, c) => a + n(c.amount), 0);
+    const emitido = r2(Math.min(t, pagado + vencidas));
+    const sig = vivas.find((c) => c.dueDate.getTime() > ahora.getTime());
+    return { emitido, porEmitir: r2(t - emitido), proxima: sig ? { monto: r2(n(sig.amount)), fecha: sig.dueDate } : null };
+  }
+  if (pagado > 0.005) return { emitido: r2(pagado), porEmitir: r2(t - pagado), proxima: null };
+  return { emitido: r2(t), porEmitir: 0, proxima: null };
+}
+
+/** Las facturas como las ve el cliente: `total` pasa a ser lo emitido y se guardan el total del contrato y lo que falta emitir. */
+export function facturasEmitidas<F extends Factura>(facturas: F[], pagos: Pago[], cuotas: Cuota[], ahora = new Date()) {
+  return facturas.map((f) => {
+    const pagado = pagadoEfectivo(f, pagos);
+    const e = emitidoDe(f.total, pagado, cuotas.filter((c) => c.documentId === f.id), ahora);
+    return { ...f, totalContrato: n(f.total), total: e.emitido, porEmitir: e.porEmitir, proxima: e.proxima };
+  });
+}

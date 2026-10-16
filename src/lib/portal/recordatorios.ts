@@ -10,7 +10,7 @@ import { prisma } from "@/lib/prisma";
 import { getPortalInvoiceReminderEmail } from "@/lib/email-templates";
 import { getSiteUrl } from "@/lib/site-url";
 import { notifyUser } from "@/lib/notifications/notify";
-import { pagadoDeFactura } from "./saldo";
+import { emitidoDe, pagadoDeFactura } from "./saldo";
 import { dinero } from "./datos";
 import { registrarEvento } from "./eventos";
 
@@ -37,8 +37,13 @@ export async function correrRecordatorios(hoy = new Date()) {
     const marca = `recordatorio_${etapa}`;
     const ya = await prisma.activityEvent.findFirst({ where: { entityType: "factura", entityId: f.id, kind: marca }, select: { id: true } });
     if (ya) continue;
-    const pagos = await prisma.payment.findMany({ where: { documentId: f.id }, select: { documentId: true, amount: true, status: true } });
-    const falta = Number(f.total ?? 0) - Math.max(pagadoDeFactura(f.id, pagos), Number(f.amountPaid ?? 0));
+    const [pagos, cuotas] = await Promise.all([
+      prisma.payment.findMany({ where: { documentId: f.id }, select: { documentId: true, amount: true, status: true } }),
+      prisma.paymentSchedule.findMany({ where: { documentId: f.id }, select: { documentId: true, amount: true, dueDate: true, status: true } }),
+    ]);
+    // Al cliente solo se le recuerda lo emitido, no el total de un contrato con anticipo o cuotas.
+    const pagado = Math.max(pagadoDeFactura(f.id, pagos), Number(f.amountPaid ?? 0));
+    const falta = emitidoDe(f.total, pagado, cuotas, hoy).emitido - pagado;
     if (falta <= 0.005) continue;
     const vence = f.dueDate!.toLocaleDateString("es-PA", { day: "numeric", month: "long", timeZone: "UTC" });
 
