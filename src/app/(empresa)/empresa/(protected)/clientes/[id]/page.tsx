@@ -19,6 +19,12 @@ import { plataformasDeCliente } from "@/lib/platforms/cliente";
 import { PlataformasCliente } from "@/components/empresa/clientes/plataformas-cliente";
 import { FichaTabs } from "@/components/empresa/clientes/ficha-tabs";
 import { totalesGastos } from "@/lib/gastos/totales";
+import { historiaDelCliente, deInteraccion } from "@/lib/crm/historia";
+import { Contactos } from "@/components/empresa/crm-ficha/contactos";
+import { RegistrarInteraccion, BotonRegistrar } from "@/components/empresa/crm-ficha/registrar";
+import { Historia } from "@/components/empresa/crm-ficha/historia";
+import { MenuMas, AvisoArchivado } from "@/components/empresa/crm-ficha/archivar";
+import { fechaHora } from "@/components/empresa/crm-ficha/comun";
 
 export const metadata = { title: "Cliente — Pime Suite" };
 
@@ -31,17 +37,30 @@ const tiempo = (d: Date) => {
   return m < 60 ? `hace ${Math.max(1, m)} min` : m < 1440 ? `hace ${Math.round(m / 60)} h` : fecha(d);
 };
 
-/** ?tab=resumen|tickets|proyectos|facturas|plataformas|cuenta — Resumen por defecto. */
+const interaccionSelect = { id: true, tipo: true, direccion: true, resumen: true, resultado: true, duracionMin: true, proximoPaso: true, fijada: true, ocurrioAt: true, contacto: { select: { nombre: true } }, autor: { select: { fullName: true, email: true } } } as const;
+const ESTADO_REUNION: Record<string, string> = { DRAFT: "borrador", RECORDING: "grabando", TRANSCRIBED: "transcrita", PROCESSING: "procesando", READY: "lista", FAILED: "con error" };
+const ESTADO_LEAD: Record<string, string> = { NUEVO: "nuevo", CONTACTADO: "contactado", COTIZANDO: "cotizando", NEGOCIACION: "negociación", GANADO: "ganado", PERDIDO: "perdido" };
+const ESTADO_COT: Record<string, string> = { DRAFT: "borrador", SENT: "enviada", ACCEPTED: "aceptada", REJECTED: "rechazada", PAID: "pagada", PARTIALLY_PAID: "pago parcial", CANCELLED: "anulada" };
+
+/** ?tab=resumen|actividad|tickets|proyectos|facturas|plataformas|cuenta — Resumen por defecto. */
 export default async function FichaCliente({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
   const [{ id }, { tab: tabInicial = "resumen" }] = await Promise.all([params, searchParams]);
   const u = await getEmpresaUser();
-  const [f, todos, plataformas, equipo] = await Promise.all([
+  const [f, todos, plataformas, equipo, contactos, fijadas, notas, historia, tareas, reuniones, leadOrigen] = await Promise.all([
     fichaCliente(u.id, id),
     prisma.client.findMany({ where: { userId: u.id, archivedAt: null, internal: false }, orderBy: { name: "asc" }, select: { id: true, name: true, company: true } }),
     // Si falla, la pestaña Plataformas lo dice; el resto de la ficha sigue.
     plataformasDeCliente(u.id, id).catch(() => null),
     // Responsable de la cuenta: solo se muestra si hay equipo (más de una persona).
     equipoDeLaEmpresa(u.id).catch(() => []),
+    // CRM: contactos, notas e historia unificada. Cada una falla sola sin tumbar la ficha.
+    prisma.contacto.findMany({ where: { userId: u.id, clientId: id }, orderBy: [{ principal: "desc" }, { createdAt: "asc" }], select: { id: true, nombre: true, cargo: true, email: true, telefono: true, rol: true, principal: true } }).catch(() => []),
+    prisma.interaccion.findMany({ where: { userId: u.id, clientId: id, fijada: true }, orderBy: { ocurrioAt: "desc" }, take: 10, select: interaccionSelect }).catch(() => []),
+    prisma.interaccion.findMany({ where: { userId: u.id, clientId: id, tipo: "nota" }, orderBy: [{ fijada: "desc" }, { ocurrioAt: "desc" }], take: 3, select: interaccionSelect }).catch(() => []),
+    historiaDelCliente(u.id, id).catch((e) => { console.error("[ficha] historia", e); return null; }),
+    prisma.task.findMany({ where: { userId: u.id, clientId: id, completed: false, parentId: null }, orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }], take: 8, select: { id: true, title: true, dueDate: true, responsable: { select: { fullName: true, email: true } } } }).catch(() => null),
+    prisma.meeting.findMany({ where: { userId: u.id, clientId: id }, orderBy: { meetingDate: "desc" }, take: 5, select: { id: true, title: true, meetingDate: true, status: true } }).catch(() => null),
+    prisma.lead.findFirst({ where: { userId: u.id, convertedClientId: id }, orderBy: { convertedAt: "desc" }, select: { id: true, name: true, company: true, source: true, status: true, createdAt: true, convertedAt: true } }).catch(() => null),
   ]);
   if (!f) notFound();
   // Empresa interna: su dinero son los gastos de sus productos, no cobros.
@@ -89,6 +108,8 @@ export default async function FichaCliente({ params, searchParams }: { params: P
         <span aria-hidden>/</span><span className="text-fg-mute truncate">{c.company || c.name}</span>
       </nav>
 
+      {c.archivedAt && <AvisoArchivado clientId={c.id} cuando={fechaHora(c.archivedAt, false)} />}
+
       <header className={card}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0 space-y-2">
@@ -104,6 +125,16 @@ export default async function FichaCliente({ params, searchParams }: { params: P
             </div>
             <h1 className="text-fg text-2xl font-semibold tracking-tight break-words">{c.company || c.name}</h1>
             <p className="text-fg-dim text-sm break-words">{[c.company ? c.name : null, c.email, c.phone, c.ruc ? `RUC ${c.ruc}` : null].filter(Boolean).join(" · ") || "Sin datos de contacto"}</p>
+            {!interna && (
+              <p className="text-fg-dim text-xs">{c.ultimoContactoAt ? `Último contacto: ${fechaHora(c.ultimoContactoAt, false)}` : "Sin conversaciones registradas"}</p>
+            )}
+            {(c.fuente || c.industria || c.etiquetas.length > 0) && (
+              <ul className="flex flex-wrap gap-2" aria-label="Fuente, industria y etiquetas">
+                {c.fuente && <li className="rounded-full bg-fill-2 px-3 py-1 text-xs font-semibold text-fg-mute">Vino por: {c.fuente}</li>}
+                {c.industria && <li className="rounded-full bg-fill-2 px-3 py-1 text-xs font-semibold text-fg-mute [overflow-wrap:anywhere]">{c.industria}</li>}
+                {c.etiquetas.map((t) => <li key={t} className="rounded-full bg-brand/10 px-3 py-1 text-xs font-semibold text-brand-fg [overflow-wrap:anywhere]">{t}</li>)}
+              </ul>
+            )}
             {equipo.length > 1 && <Responsable tipo="cliente" id={c.id} actual={c.responsableId} equipo={equipo} />}
           </div>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:justify-end">
@@ -115,6 +146,8 @@ export default async function FichaCliente({ params, searchParams }: { params: P
             )}
             <Link href={`/empresa/proyectos/nuevo?clientId=${c.id}`} className={btn.secondary}>+ Proyecto</Link>
             <Link href={`/empresa/clientes/${c.id}/editar`} className={btn.secondary}>Editar</Link>
+            <BotonRegistrar className={btn.secondary} />
+            {!c.archivedAt && <MenuMas clientId={c.id} nombre={c.company || c.name} archivado={false} className={btn.secondary} />}
           </div>
         </div>
         <dl className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -139,6 +172,7 @@ export default async function FichaCliente({ params, searchParams }: { params: P
         initial={tabInicial}
         tabs={[
           { key: "resumen", label: "Resumen", alert: f.porConfirmar.length > 0 },
+          { key: "actividad", label: "Actividad", count: tareas?.length ?? 0 },
           { key: "tickets", label: "Tickets", count: f.abiertos.length },
           { key: "proyectos", label: "Proyectos", count: f.proyectos.length },
           { key: "facturas", label: "Facturas y pagos", count: facturasAbiertas.length },
@@ -286,26 +320,104 @@ export default async function FichaCliente({ params, searchParams }: { params: P
                 )}
               </section>
 
-                        <section className={card}>
-                          <h2 className={h2}>Línea de tiempo</h2>
-                          {f.eventos.length ? (
-                            <ol className="mt-4 space-y-4">
-                              {f.eventos.map((e) => (
-                                <li key={e.id} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3">
-                                  <span className={`mt-1.5 h-2 w-2 rounded-full ${e.actorType === "cliente" ? "bg-sand" : e.actorType === "github" ? "bg-ok" : "bg-brand"}`} aria-hidden />
-                                  <div className="min-w-0"><p className="text-fg text-sm break-words">{e.title}{e.visibility === "interno" && <span className="ml-2 text-xs text-fg-faint">(interno)</span>}</p>{e.detail && <p className="text-fg-dim text-xs break-words">{e.detail}</p>}<p className="text-fg-faint text-xs">{tiempo(e.createdAt)}</p></div>
-                                </li>
-                              ))}
-                            </ol>
-                          ) : <p className="mt-3 text-sm text-fg-dim">Cada ticket, aprobación, factura y pago de este cliente queda aquí en orden.</p>}
-                        </section>
+              <section className={card} aria-labelledby="historia-titulo">
+                <h2 id="historia-titulo" className={h2}>Historia</h2>
+                <p className="mt-1 text-sm text-fg-dim">Registra cada llamada, WhatsApp o visita en dos toques. Abajo queda todo lo que pasó con este cliente, en orden.</p>
+                <div className="mt-4"><RegistrarInteraccion clientId={c.id} contactos={contactos.map((k) => ({ id: k.id, nombre: k.nombre, principal: k.principal }))} /></div>
+                <div className="mt-6 border-t border-line pt-6">
+                  <Historia clientId={c.id} inicial={historia} fijadas={fijadas.map(deInteraccion)} />
+                </div>
+              </section>
             </div>
             <aside className="space-y-6 min-w-0">
-              <section className={card}>
-                <div className="flex items-center justify-between gap-3"><h2 className={h2}>Notas internas</h2><Link href={`/empresa/clientes/${c.id}/editar`} className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">Editar</Link></div>
-                {c.notes ? <p className="mt-2 text-sm text-fg-mute whitespace-pre-line">{c.notes}</p> : <p className="mt-2 text-sm text-fg-dim">Sin notas. Lo que conviene recordar de este cliente va aquí; el cliente no lo ve.</p>}
+              <Contactos clientId={c.id} contactos={contactos} sugerido={{ nombre: c.name, email: c.email, telefono: c.phone, rol: "decide" }} />
+              <section className={card} aria-labelledby="notas-titulo">
+                <div className="flex items-center justify-between gap-3"><h2 id="notas-titulo" className={h2}>Notas</h2><BotonRegistrar tipo="nota" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline" /></div>
+                <p className="mt-1 text-sm text-fg-dim">Lo que conviene recordar de este cliente. Él no lo ve.</p>
+                {notas.length > 0 ? (
+                  <ul className="mt-3 space-y-3">
+                    {notas.map((n) => (
+                      <li key={n.id} className="rounded-xl bg-fill px-4 py-3">
+                        <p className="text-sm text-fg-mute whitespace-pre-line [overflow-wrap:anywhere]">{n.resumen}</p>
+                        <p className="mt-1 text-xs text-fg-faint">{n.fijada ? "Fijada · " : ""}{fechaHora(n.ocurrioAt, false)}{n.autor ? ` · ${n.autor.fullName || n.autor.email}` : ""}</p>
+                      </li>
+                    ))}
+                  </ul>
+                ) : !c.notes ? (
+                  <p className="mt-3 text-sm text-fg-dim">Sin notas. Toca «Registrar» y elige Nota: queda con su fecha y quién la escribió.</p>
+                ) : null}
+                {c.notes && (
+                  <div className="mt-4 border-t border-line pt-4">
+                    <p className="text-fg-dim text-xs font-semibold uppercase tracking-wider">Nota anterior</p>
+                    <p className="mt-2 text-sm text-fg-mute whitespace-pre-line [overflow-wrap:anywhere]">{c.notes}</p>
+                  </div>
+                )}
               </section>
             </aside>
+          </div>
+        ),
+        actividad: (
+          <div className="grid gap-6 lg:grid-cols-2 items-start">
+            <section className={card} aria-labelledby="tareas-titulo">
+              <div className="flex items-center justify-between gap-3"><h2 id="tareas-titulo" className={h2}>Próximas tareas</h2><Link href="/empresa/tareas" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">Ver tareas</Link></div>
+              {tareas === null ? (
+                <p className="mt-2 text-sm text-danger" role="alert">No se pudieron cargar las tareas. Recarga la página.</p>
+              ) : tareas.length ? (
+                <ul className="mt-3 divide-y divide-line">
+                  {tareas.map((t) => {
+                    const vencida = t.dueDate && t.dueDate.getTime() < Date.now() - 86_400_000;
+                    return (
+                      <li key={t.id} className="py-3 min-w-0">
+                        <p className="text-fg text-sm font-medium [overflow-wrap:anywhere]">{t.title}</p>
+                        <p className={`text-xs ${vencida ? "text-danger" : "text-fg-dim"}`}>{t.dueDate ? `${vencida ? "Venció" : "Para"} el ${fechaHora(t.dueDate, false)}` : "Sin fecha"}{t.responsable ? ` · ${t.responsable.fullName || t.responsable.email}` : ""}</p>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : <p className="mt-2 text-sm text-fg-dim">Sin tareas pendientes. Al registrar una conversación con próximo paso y fecha, la tarea aparece aquí.</p>}
+            </section>
+
+            <section className={card} aria-labelledby="reuniones-titulo">
+              <div className="flex items-center justify-between gap-3"><h2 id="reuniones-titulo" className={h2}>Reuniones recientes</h2><Link href="/empresa/reuniones/nueva" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">+ Reunión</Link></div>
+              {reuniones === null ? (
+                <p className="mt-2 text-sm text-danger" role="alert">No se pudieron cargar las reuniones. Recarga la página.</p>
+              ) : reuniones.length ? (
+                <ul className="mt-3 divide-y divide-line">
+                  {reuniones.map((r) => (
+                    <li key={r.id}><Link href={`/empresa/reuniones/${r.id}`} className="block py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
+                      <span className="block text-fg text-sm font-medium [overflow-wrap:anywhere]">{r.title}</span>
+                      <span className="block text-fg-dim text-xs">{fechaHora(r.meetingDate)} · {ESTADO_REUNION[r.status] ?? r.status.toLowerCase()}</span>
+                    </Link></li>
+                  ))}
+                </ul>
+              ) : <p className="mt-2 text-sm text-fg-dim">Sin reuniones con este cliente. Graba la próxima y su minuta queda ligada aquí.</p>}
+            </section>
+
+            <section className={card} aria-labelledby="cot-titulo">
+              <div className="flex items-center justify-between gap-3"><h2 id="cot-titulo" className={h2}>Cotizaciones</h2><Link href={`/empresa/cotizaciones/nueva?clientId=${c.id}`} className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">+ Cotización</Link></div>
+              {f.cotizaciones.length ? (
+                <ul className="mt-3 divide-y divide-line">
+                  {f.cotizaciones.map((q) => (
+                    <li key={q.id}><Link href={`/empresa/cotizaciones/${q.id}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
+                      <span className="min-w-0"><span className="block text-fg text-sm font-medium [overflow-wrap:anywhere]">{q.number ? `${q.number} · ` : ""}{q.title}</span><span className="block text-fg-dim text-xs">{fechaHora(q.issueDate, false)} · {ESTADO_COT[q.status] ?? q.status.toLowerCase()}</span></span>
+                      <span className="font-mono text-sm text-fg tabular-nums">{dinero(Number(q.total ?? 0))}</span>
+                    </Link></li>
+                  ))}
+                </ul>
+              ) : <p className="mt-2 text-sm text-fg-dim">Sin cotizaciones. Cuando le mandes una, su estado se sigue desde aquí.</p>}
+            </section>
+
+            <section className={card} aria-labelledby="lead-titulo">
+              <h2 id="lead-titulo" className={h2}>De dónde vino</h2>
+              {leadOrigen ? (
+                <Link href={`/empresa/leads/${leadOrigen.id}`} className="mt-3 block rounded-xl border border-line px-4 py-3 hover:border-line-mid">
+                  <span className="block text-fg text-sm font-medium [overflow-wrap:anywhere]">Lead: {leadOrigen.company || leadOrigen.name}</span>
+                  <span className="block text-fg-dim text-xs">Entró el {fechaHora(leadOrigen.createdAt, false)}{leadOrigen.convertedAt ? ` · cliente desde el ${fechaHora(leadOrigen.convertedAt, false)}` : ""} · {ESTADO_LEAD[leadOrigen.status] ?? String(leadOrigen.status).toLowerCase()}</span>
+                </Link>
+              ) : (
+                <p className="mt-2 text-sm text-fg-dim">{c.fuente ? `Vino por ${c.fuente.toLowerCase()}. ` : ""}No nació de un lead del sistema: se creó directo como cliente.</p>
+              )}
+            </section>
           </div>
         ),
         tickets: (

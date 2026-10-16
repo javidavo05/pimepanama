@@ -6,21 +6,25 @@ import { reglasDe } from "@/lib/portal/horas";
 import { PageHeader } from "@/components/empresa/page-header";
 import { ClienteForm } from "@/components/empresa/clientes/formularios";
 import { ZonaLinea } from "@/components/empresa/clientes/zona-linea";
+import { CamposCrm } from "@/components/empresa/crm-ficha/campos-crm";
+import { opcionesCrmCliente } from "@/lib/crm/opciones-cliente";
+import { puedeVer } from "@/lib/auth/permisos";
 
 export const metadata = { title: "Editar cliente — Pime Suite" };
 
 export default async function EditarCliente({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const u = await getEmpresaUser();
-  const c = await prisma.client.findFirst({ where: { id, userId: u.id } });
+  const [c, op] = await Promise.all([prisma.client.findFirst({ where: { id, userId: u.id } }), opcionesCrmCliente(u.id)]);
   if (!c) notFound();
   const r = reglasDe(u.config);
   return (
     <ZonaLinea linea={c.brandLine}>
     <div className="max-w-3xl mx-auto space-y-6">
-      <PageHeader eyebrow={<Link href={`/empresa/clientes/${c.id}`} className="text-sm text-fg-dim hover:text-fg-mute">← {c.company || c.name}</Link>} title="Editar cliente" />
+      <PageHeader eyebrow={<Link href={`/empresa/clientes/${c.id}`} className="text-sm text-fg-dim hover:text-fg-mute">← {c.company || c.name}</Link>} title="Editar cliente" description="Sus datos, su línea y de dónde vino. Lo de venta y las notas no lo ve el cliente." />
       <div className="bg-panel border border-line rounded-2xl p-4 sm:p-6">
-        <ClienteForm tarifas={{ normal: r.tarifaNormal, premium: r.tarifaPremium }} c={{ ...c, hourlyRate: c.hourlyRate == null ? null : String(c.hourlyRate) }} />
+        <ClienteForm tarifas={{ normal: r.tarifaNormal, premium: r.tarifaPremium }} c={{ ...c, hourlyRate: c.hourlyRate == null ? null : String(c.hourlyRate) }}
+          extra={<CamposCrm fuente={c.fuente} industria={c.industria} etiquetas={c.etiquetas} camposExtra={c.camposExtra && typeof c.camposExtra === "object" && !Array.isArray(c.camposExtra) ? (c.camposExtra as Record<string, unknown>) : null} {...op} puedeDefinir={puedeVer(u.miembro.area, "empresa")} />} />
       </div>
     </div>
     </ZonaLinea>
