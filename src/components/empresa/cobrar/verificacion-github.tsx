@@ -1,13 +1,12 @@
 /** Estado del proyecto según GitHub: actividad real del repositorio y avance de sus milestones. */
 import type { VerificacionGithub } from "@/lib/motor/verificar-github";
-import { BotonVerificar } from "./boton-verificar";
 
 const hace = (iso: string) => {
   const d = Math.floor((Date.now() - Date.parse(iso)) / 86_400_000);
   return d <= 0 ? "hoy" : d === 1 ? "ayer" : `hace ${d} días`;
 };
 
-export function VerificacionGithubCard({ projectId, repo, check, checkAt }: { projectId: string; repo: string | null; check: VerificacionGithub | null; checkAt: Date | null }) {
+export function VerificacionGithubCard({ repo, check, checkAt }: { projectId?: string; repo: string | null; check: VerificacionGithub | null; checkAt: Date | null }) {
   if (!repo) return null;
   const max = Math.max(1, ...(check?.semanas ?? [0]));
   const ritmo = !check ? null : check.commits7 > 0 ? { t: "Activo esta semana", c: "bg-ok/10 text-ok" } : check.commits30 > 0 ? { t: "Con actividad este mes", c: "bg-brand/10 text-brand-fg" } : { t: "Sin actividad en 30 días", c: "bg-warn/10 text-warn" };
@@ -16,12 +15,11 @@ export function VerificacionGithubCard({ projectId, repo, check, checkAt }: { pr
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-fg text-base font-semibold tracking-tight">Estado verificado con GitHub</h2>
-          <p className="text-fg-dim text-sm [overflow-wrap:anywhere]">{repo}{checkAt ? ` · verificado ${hace(checkAt.toISOString())}` : " · sin verificar todavía"}</p>
+          <p className="text-fg-dim text-sm [overflow-wrap:anywhere]">{repo}{checkAt ? ` · leído ${hace(checkAt.toISOString())}` : " · sin leer todavía"}</p>
         </div>
-        <BotonVerificar projectId={projectId} />
       </div>
       {!check ? (
-        <p className="text-fg-dim text-sm">Toca «Verificar ahora»: Pime lee los commits, milestones y despliegues del repositorio para saber cómo va de verdad.</p>
+        <p className="text-fg-dim text-sm">Pime lee los commits, milestones y despliegues del repositorio en la próxima revisión, o al tocar «Revisar ahora».</p>
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-2">
@@ -54,7 +52,7 @@ export function VerificacionGithubCard({ projectId, repo, check, checkAt }: { pr
               })}
             </ul>
           ) : (
-            <p className="text-fg-dim text-sm">El repositorio no tiene milestones. Crea uno por fase en GitHub y ligalo a la fase para que la barra del cliente avance sola.</p>
+            <p className="text-fg-dim text-sm">El repositorio no tiene milestones. Crea los marcadores desde «Fases y entregables»: Pime abre un milestone por fase y la barra del cliente avanza sola.</p>
           )}
         </>
       )}

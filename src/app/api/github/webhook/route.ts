@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { sincronizarProyecto } from "@/lib/portal/github-avance";
+import { revisarProyecto } from "@/lib/motor/sistemas";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -29,6 +30,7 @@ export async function POST(request: Request) {
   if (!repo?.name || !repo.owner?.login) return NextResponse.json({ ok: true, sinRepo: true });
   const proyectos = await prisma.project.findMany({ where: { repoOwner: { equals: repo.owner.login, mode: "insensitive" }, repoName: { equals: repo.name, mode: "insensitive" } }, select: { id: true } });
   const r = [];
-  for (const p of proyectos) r.push(await sincronizarProyecto(p.id).catch((e) => ({ error: String(e) })));
+  // Mueve las fases al instante y actualiza el resumen del sistema sin volver a leer todo GitHub.
+  for (const p of proyectos) r.push(await sincronizarProyecto(p.id).then(async (x) => { await revisarProyecto(p.id, { github: false, salud: false }); return x; }).catch((e) => ({ error: String(e) })));
   return NextResponse.json({ ok: true, proyectos: proyectos.length, r });
 }

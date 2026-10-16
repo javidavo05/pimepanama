@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { correrRecordatorios } from "@/lib/portal/recordatorios";
-import { sincronizarTodos } from "@/lib/portal/github-avance";
 import { facturacionMensual } from "@/lib/portal/factura-mensual";
 
 export const runtime = "nodejs";
@@ -18,10 +17,8 @@ async function run(req: NextRequest) {
   // Los primeros días del mes: borradores de la factura de horas del mes anterior (no se envían solos).
   const horas = await facturacionMensual().catch((e) => ({ error: String(e) }));
   const r = await correrRecordatorios();
-  // Respaldo diario del avance desde GitHub (el webhook lo hace al instante). Vercel Hobby permite
-  // pocas tareas programadas, así que va en la misma.
-  const github = await sincronizarTodos().catch((e) => ({ error: String(e) }));
-  return NextResponse.json({ ok: true, ...r, horas, github });
+  // El avance desde GitHub ya no va aquí: lo mueve la revisión única de cada 30 min (motor/sistemas.ts).
+  return NextResponse.json({ ok: true, ...r, horas });
 }
 
 export const GET = run;

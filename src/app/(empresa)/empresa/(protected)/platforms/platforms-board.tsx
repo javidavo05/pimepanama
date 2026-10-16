@@ -143,7 +143,7 @@ export function PlatformsBoard({
     <div>
       <PageHeader
         className="mb-6"
-        title="Platforms"
+        title="Accesos y cuentas"
         description="Dónde vive cada sistema de tus clientes: repo, hosting, base de datos y accesos."
         actions={
           <>

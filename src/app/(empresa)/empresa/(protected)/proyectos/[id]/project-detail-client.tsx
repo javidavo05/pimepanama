@@ -66,6 +66,7 @@ export function ProjectDetailClient({
   ordenesPanel,
   horasPanel,
   repoExtra,
+  sistemaCard,
   ticketsPanel,
 }: {
   project: Project;
@@ -94,6 +95,8 @@ export function ProjectDetailClient({
   horasPanel: React.ReactNode;
   /** Verificación con GitHub y plataformas (servidor). */
   repoExtra: React.ReactNode;
+  /** Resumen de la revisión única del sistema: va primero en la pestaña Sistema. */
+  sistemaCard?: React.ReactNode;
   ticketsPanel: React.ReactNode;
 }) {
   const router = useRouter();
@@ -149,7 +152,7 @@ export function ProjectDetailClient({
     { key: "fases", label: "Fases y entregables", count: project.deliverables.filter((d) => !d.completed).length, alert: alertas.fases },
     { key: "dinero", label: "Dinero", alert: alertas.dinero },
     { key: "facturas", label: "Facturas", count: facturasCount },
-    { key: "repo", label: "Repo y plataformas", alert: alertas.repo },
+    { key: "repo", label: "Sistema", alert: alertas.repo },
     { key: "tickets", label: "Tickets", count: counts.tickets },
     { key: "clientes", label: "Clientes", count: project.clients.length, alert: alertas.clientes },
   ];
@@ -502,6 +505,7 @@ export function ProjectDetailClient({
           ),
           repo: (
             <div className="space-y-6">
+              {sistemaCard}
               <RepoPanel projectId={project.id} inicial={repoInicial} />
               {repoExtra}
             </div>

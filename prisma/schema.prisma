@@ -583,6 +583,9 @@ model Project {
   githubAccountId String?
   githubCheck     Json?
   githubCheckAt   DateTime?
+  /// Resumen de la revisión única del sistema (salud, GitHub, marcadores, Pulso) — migración 0054.
+  revision        Json?
+  revisadoAt      DateTime?
   githubAccount   GithubAccount?  @relation(fields: [githubAccountId], references: [id])
   platforms       Platform[]
   expenses        Expense[]
@@ -1706,6 +1709,8 @@ model MonitoredSystem {
   alertedStatus   String?
   portalVisible   Boolean          @default(true)
   active          Boolean          @default(true)
+  /// "manual" (conectado a mano) | "auto" (lo creó el motor desde el enlace del proyecto) — migración 0054.
+  origen          String           @default("manual")
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   incidents       SystemIncident[]
@@ -1713,6 +1718,7 @@ model MonitoredSystem {
 
   @@index([clientId])
   @@index([userId, active])
+  @@index([projectId])
 }
 
 model SystemIncident {

@@ -2,7 +2,7 @@ import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { cargarPlatforms } from "@/lib/platforms/cargar";
 import { PlatformsBoard } from "./platforms-board";
 
-export const metadata = { title: "Platforms — Pime Suite" };
+export const metadata = { title: "Accesos y cuentas — Pime Suite" };
 export const dynamic = "force-dynamic";
 
 /**

@@ -20,7 +20,7 @@ export async function prepararMarcadores(projectId: string): Promise<ResultadoMa
     where: { id: projectId },
     select: { id: true, userId: true, repoOwner: true, repoName: true, githubAccountId: true, githubHookId: true,
       phases: { where: { OR: [{ changeOrderId: null }, { changeOrder: { status: "aprobada" } }] }, orderBy: { sortOrder: "asc" },
-        select: { id: true, name: true, description: true, githubMilestone: true, deliverables: { orderBy: { sortOrder: "asc" }, select: { name: true, description: true } } } } },
+        select: { id: true, name: true, description: true, status: true, progress: true, githubMilestone: true, deliverables: { orderBy: { sortOrder: "asc" }, select: { name: true, description: true } } } } },
   });
   if (!p?.repoOwner || !p.repoName) throw new Error("El proyecto no tiene repositorio de GitHub. Conéctalo en la pestaña Resumen.");
   const { owner, repo } = { owner: p.repoOwner, repo: p.repoName };
@@ -29,6 +29,13 @@ export async function prepararMarcadores(projectId: string): Promise<ResultadoMa
 
   for (const [i, f] of p.phases.entries()) {
     if (f.githubMilestone) continue;
+    // Una fase terminada no necesita marcador: abrirle tareas en GitHub la haría ver pendiente.
+    if (f.status === "hecha") continue;
+    // Con avance y sin entregables, su única tarea abierta dejaría la barra del cliente en 0 %.
+    if (!f.deliverables.length && Number(f.progress) > 0) {
+      r.avisos.push(`«${f.name}» va al ${Math.round(Number(f.progress))} % y no tiene entregables: agrégalos antes de crear su marcador, o su barra volvería a 0 %.`);
+      continue;
+    }
     const m = await crearMilestone(owner, repo, token, `Fase ${i + 1} · ${f.name}`, f.description);
     const tareas = f.deliverables.length ? f.deliverables : [{ name: `Entregar: ${f.name}`, description: f.description }];
     for (const t of tareas) {

@@ -19,10 +19,17 @@ import { hostOf, inputCls, labelCls, pedirJson } from "./ui";
 
 const PASOS = ["Cliente", "Repo", "Vercel", "Supabase", "Accesos"];
 const OTRO = "__otro__";
+const NUEVO = "__nuevo__";
 
 type Draft = {
   clientId: string;
   projectId: string;
+  /** Cliente o proyecto que se crean al guardar, para terminar todo sin salir del asistente. */
+  clienteNuevo: boolean;
+  clienteNuevoNombre: string;
+  clienteNuevoCorreo: string;
+  proyectoNuevo: boolean;
+  proyectoNuevoNombre: string;
   name: string;
   nameTouched: boolean;
   githubAccountId: string;
@@ -45,6 +52,11 @@ type Draft = {
 const VACIO: Draft = {
   clientId: "",
   projectId: "",
+  clienteNuevo: false,
+  clienteNuevoNombre: "",
+  clienteNuevoCorreo: "",
+  proyectoNuevo: false,
+  proyectoNuevoNombre: "",
   name: "",
   nameTouched: false,
   githubAccountId: "",
@@ -113,7 +125,7 @@ export function AsistentePlataforma({
 
   const cliente = clients.find((c) => c.id === d.clientId) ?? null;
   const proyecto = cliente?.projects.find((p) => p.id === d.projectId) ?? null;
-  const nombres = useMemo(() => [d.name, proyecto?.name ?? "", cliente?.name ?? ""].filter(Boolean), [d.name, proyecto?.name, cliente?.name]);
+  const nombres = useMemo(() => [d.name, proyecto?.name ?? "", cliente?.name ?? "", d.clienteNuevo ? d.clienteNuevoNombre : ""].filter(Boolean), [d.name, proyecto?.name, cliente?.name, d.clienteNuevo, d.clienteNuevoNombre]);
 
   // Al abrir: cliente de la URL (desde la ficha) y su proyecto: el de la URL o, si tiene uno solo, ese.
   useEffect(() => {
@@ -128,14 +140,31 @@ export function AsistentePlataforma({
   }, [abierto, clienteInicial, proyectoInicial, clients]);
 
   function elegirCliente(clientId: string) {
+    if (clientId === NUEVO) {
+      // Cliente nuevo: su sistema necesita proyecto para que Pime lo revise; se propone uno con el nombre de la plataforma.
+      setD((prev) => ({ ...prev, clientId: "", clienteNuevo: true, projectId: "", proyectoNuevo: true }));
+      return;
+    }
     const c = clients.find((x) => x.id === clientId);
     const p = c?.projects.length === 1 ? c.projects[0] : undefined;
-    setD((prev) => ({ ...prev, clientId, projectId: p?.id ?? "", name: prev.nameTouched ? prev.name : (p?.name ?? c?.name ?? "") }));
+    setD((prev) => ({
+      ...prev,
+      clientId,
+      clienteNuevo: false,
+      projectId: p?.id ?? "",
+      // Cliente sin proyectos: se propone crear uno; así el sistema queda ligado y Pime lo revisa.
+      proyectoNuevo: !!c && c.projects.length === 0,
+      name: prev.nameTouched ? prev.name : (p?.name ?? c?.name ?? ""),
+    }));
   }
 
   function elegirProyecto(projectId: string) {
+    if (projectId === NUEVO) {
+      setD((prev) => ({ ...prev, projectId: "", proyectoNuevo: true }));
+      return;
+    }
     const p = cliente?.projects.find((x) => x.id === projectId);
-    setD((prev) => ({ ...prev, projectId, name: prev.nameTouched ? prev.name : (p?.name ?? cliente?.name ?? prev.name) }));
+    setD((prev) => ({ ...prev, projectId, proyectoNuevo: false, name: prev.nameTouched ? prev.name : (p?.name ?? cliente?.name ?? prev.name) }));
   }
 
   /**
@@ -215,8 +244,10 @@ export function AsistentePlataforma({
     setError(null);
     const body = {
       name: d.name.trim(),
-      clientId: d.clientId || null,
-      projectId: d.projectId || null,
+      clientId: d.clienteNuevo ? null : d.clientId || null,
+      projectId: d.proyectoNuevo ? null : d.projectId || null,
+      ...(d.clienteNuevo ? { nuevoCliente: { name: d.clienteNuevoNombre.trim(), email: d.clienteNuevoCorreo.trim() || null } } : {}),
+      ...(d.proyectoNuevo ? { nuevoProyecto: { name: (d.proyectoNuevoNombre || d.name).trim() } } : {}),
       githubAccountId: d.githubRepo ? d.githubAccountId || null : null,
       githubRepo: d.githubRepo,
       githubEmail: d.githubRepo ? (githubAccounts.find((g) => g.id === d.githubAccountId)?.login ?? null) : null,
@@ -238,6 +269,8 @@ export function AsistentePlataforma({
     }
     setCreada(r.data);
     onCreado(r.data);
+    // Cliente o proyecto recién creados: que aparezcan en las listas del tablero.
+    if (d.clienteNuevo || d.proyectoNuevo) onRefresh();
   }
 
   const knownEmails = useMemo(() => {
@@ -247,7 +280,9 @@ export function AsistentePlataforma({
     return [...s].sort();
   }, [platforms, accounts]);
 
-  const nombreCliente = cliente?.name ?? null;
+  const nombreCliente = d.clienteNuevo ? d.clienteNuevoNombre.trim() || null : (cliente?.name ?? null);
+  const nombreProyecto = d.proyectoNuevo ? (d.proyectoNuevoNombre || d.name).trim() || null : (proyecto?.name ?? null);
+  const pasoUnoListo = !!d.name.trim() && (!d.clienteNuevo || !!d.clienteNuevoNombre.trim());
   const guardarLabel = guardando ? "Guardando…" : nombreCliente ? `Guardar plataforma de ${nombreCliente}` : "Guardar plataforma";
 
   function saltar() {
@@ -274,7 +309,7 @@ export function AsistentePlataforma({
         </button>
       )}
       {paso < 5 ? (
-        <button type="button" className={btnAsistente.principal} disabled={paso === 1 && !d.name.trim()} onClick={() => setPaso((p) => p + 1)}>
+        <button type="button" className={btnAsistente.principal} disabled={paso === 1 && !pasoUnoListo} onClick={() => setPaso((p) => p + 1)}>
           Siguiente: {PASOS[paso]}
         </button>
       ) : (
@@ -398,7 +433,8 @@ export function AsistentePlataforma({
   };
 
   const resumen: [string, string | null][] = [
-    ["Cliente", nombreCliente ? `${nombreCliente}${proyecto ? ` · ${proyecto.name}` : ""}` : "Sin cliente"],
+    ["Cliente", nombreCliente ? `${nombreCliente}${d.clienteNuevo ? " (nuevo)" : ""}` : "Sin cliente"],
+    ["Proyecto", nombreProyecto ? `${nombreProyecto}${d.proyectoNuevo ? " (nuevo)" : ""}` : null],
     ["Repo", d.githubRepo],
     ["Vercel", d.vercelEmail.trim() ? `${d.vercelProjectName ?? "sin proyecto elegido"} · ${d.vercelEmail.trim()}` : null],
     ["Supabase", d.supabaseEmail.trim() ? `${d.supabaseProjectName ?? "sin proyecto elegido"} · ${d.supabaseSlot ? `cupo ${d.supabaseSlot} · ` : ""}${d.supabaseEmail.trim()}` : null],
@@ -429,13 +465,14 @@ export function AsistentePlataforma({
           </div>
         ) : paso === 1 ? (
           <div className="space-y-4">
-            <p className="text-fg-dim text-sm">Cada plataforma es de un cliente y aparece en su ficha. Si es un sistema interno, déjala sin cliente.</p>
+            <p className="text-fg-dim text-sm">Cada plataforma es de un cliente y de un proyecto: así aparece en su ficha y Pime la revisa sola. Si el cliente o el proyecto no existen, créalos aquí.</p>
             <div>
               <label htmlFor="wz-cliente" className={labelCls}>
                 Cliente
               </label>
-              <select id="wz-cliente" value={d.clientId} onChange={(e) => elegirCliente(e.target.value)} className={inputCls}>
+              <select id="wz-cliente" value={d.clienteNuevo ? NUEVO : d.clientId} onChange={(e) => elegirCliente(e.target.value)} className={inputCls}>
                 <option value="">Sin cliente (sistema interno)</option>
+                <option value={NUEVO}>+ Cliente nuevo</option>
                 {clients
                   .filter((c) => !c.archived)
                   .map((c) => (
@@ -444,21 +481,50 @@ export function AsistentePlataforma({
                     </option>
                   ))}
               </select>
-              {clients.length === 0 && <p className="text-xs text-fg-dim mt-1">Todavía no tienes clientes. Puedes guardarla sin cliente y asignarla después.</p>}
+              {clients.length === 0 && !d.clienteNuevo && <p className="text-xs text-fg-dim mt-1">Todavía no tienes clientes. Elige «Cliente nuevo» para crearlo aquí mismo.</p>}
             </div>
-            {cliente && (
+            {d.clienteNuevo && (
+              <div className="grid gap-4 rounded-xl border border-line bg-fill p-4">
+                <div>
+                  <label htmlFor="wz-cliente-nombre" className={labelCls}>
+                    Nombre de la empresa o persona
+                  </label>
+                  <input id="wz-cliente-nombre" autoFocus value={d.clienteNuevoNombre} onChange={(e) => set({ clienteNuevoNombre: e.target.value })} placeholder="Ej. Hormiguita Feliz S.A." className={inputCls} maxLength={120} />
+                </div>
+                <div>
+                  <label htmlFor="wz-cliente-correo" className={labelCls}>
+                    Correo del cliente (opcional)
+                  </label>
+                  <input id="wz-cliente-correo" type="email" inputMode="email" value={d.clienteNuevoCorreo} onChange={(e) => set({ clienteNuevoCorreo: e.target.value })} placeholder="contacto@empresa.com" className={inputCls} maxLength={160} />
+                  <p className="text-xs text-fg-dim mt-1">El cliente se crea al guardar la plataforma. Los demás datos (RUC, teléfono) se completan después en su ficha.</p>
+                </div>
+              </div>
+            )}
+            {(cliente || d.clienteNuevo) && (
               <div>
                 <label htmlFor="wz-proyecto" className={labelCls}>
                   Proyecto
                 </label>
-                <select id="wz-proyecto" value={d.projectId} onChange={(e) => elegirProyecto(e.target.value)} className={inputCls} disabled={!cliente.projects.length}>
-                  <option value="">{cliente.projects.length ? "Sin proyecto" : "Este cliente no tiene proyectos"}</option>
-                  {cliente.projects.map((p) => (
+                <select id="wz-proyecto" value={d.proyectoNuevo ? NUEVO : d.projectId} onChange={(e) => elegirProyecto(e.target.value)} className={inputCls}>
+                  <option value="">Sin proyecto</option>
+                  <option value={NUEVO}>+ Proyecto nuevo</option>
+                  {(cliente?.projects ?? []).map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
                   ))}
                 </select>
+                {d.proyectoNuevo ? (
+                  <div className="mt-4">
+                    <label htmlFor="wz-proyecto-nombre" className={labelCls}>
+                      Nombre del proyecto
+                    </label>
+                    <input id="wz-proyecto-nombre" value={d.proyectoNuevoNombre} onChange={(e) => set({ proyectoNuevoNombre: e.target.value })} placeholder={d.name || "Ej. Portal de reservas"} className={inputCls} maxLength={160} />
+                    <p className="text-xs text-fg-dim mt-1">Si lo dejas vacío, se llama como la plataforma. Sus fases y facturas se agregan después en el proyecto.</p>
+                  </div>
+                ) : !d.projectId ? (
+                  <p className="text-xs text-fg-dim mt-1">Sin proyecto, Pime no puede revisar este sistema ni mostrarle el avance al cliente.</p>
+                ) : null}
               </div>
             )}
             <div>
@@ -501,6 +567,12 @@ export function AsistentePlataforma({
                       </option>
                     ))}
                   </select>
+                  <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 mt-1">
+                    <p className="text-xs text-fg-dim min-w-0">Solo salen las cuentas con token en Pime ({githubAccounts.length}).</p>
+                    <button type="button" className="inline-flex items-center min-h-11 sm:min-h-8 text-xs text-brand-fg hover:underline" onClick={() => setGhAbierto(true)}>
+                      + Agregar otra cuenta de GitHub
+                    </button>
+                  </div>
                 </div>
                 {buscando && !d.githubAccountId ? (
                   <p className="text-sm text-fg-dim" aria-busy="true">

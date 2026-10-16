@@ -159,6 +159,27 @@ export function PlatformConfidentialVault({
     else if (result.error) setError(result.error);
   }
 
+  /** Bóveda nueva cifrada con la huella: el permiso de 15 min que da la huella reemplaza a la contraseña madre. */
+  async function handleCreateBiometric() {
+    if (!String(content).trim()) {
+      setError("Escribe la información antes de guardar.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    const result = await unlockVaultWithPasskey();
+    setBusy(false);
+    if (!result.ok) {
+      if (result.error) setError(result.error);
+      return;
+    }
+    vaultTokenRef.current = result.vaultToken;
+    if (await save({ vaultToken: result.vaultToken })) {
+      setUsedPassword(false);
+      setMode("unlocked");
+    }
+  }
+
   async function handleCreate() {
     const ok = await save({ password });
     if (ok) {
@@ -263,6 +284,20 @@ export function PlatformConfidentialVault({
             placeholder="API keys, usuarios, contraseñas, notas del proyecto…"
             className={`${inputCls} py-2 resize-y`}
           />
+          {biometric === "ready" && (
+            <>
+              <button
+                type="button"
+                disabled={busy || !content.trim()}
+                onClick={() => void handleCreateBiometric()}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 min-h-11 bg-fill-2 hover:bg-fill-3 border border-line-mid text-fg text-sm font-medium rounded-lg disabled:opacity-50"
+              >
+                <FingerprintIcon />
+                {busy ? "Verificando…" : `Cifrar y guardar con ${bioLabel}`}
+              </button>
+              <p className="text-xs text-fg-faint text-center">o con la contraseña madre</p>
+            </>
+          )}
           <label htmlFor={`vault-pw-${platformId}`} className="sr-only">Contraseña madre</label>
           <input
             id={`vault-pw-${platformId}`}
@@ -277,7 +312,11 @@ export function PlatformConfidentialVault({
               type="button"
               disabled={busy || !password}
               onClick={() => void handleCreate()}
-              className="px-4 min-h-11 bg-fill-2 hover:bg-fill-3 border border-line-mid text-fg text-sm font-medium rounded-lg disabled:opacity-50"
+              className={
+                biometric === "ready"
+                  ? "px-4 min-h-11 border border-line-mid text-fg-soft hover:text-fg text-sm rounded-lg disabled:opacity-50"
+                  : "px-4 min-h-11 bg-fill-2 hover:bg-fill-3 border border-line-mid text-fg text-sm font-medium rounded-lg disabled:opacity-50"
+              }
             >
               {busy ? "Guardando…" : "Cifrar y guardar"}
             </button>

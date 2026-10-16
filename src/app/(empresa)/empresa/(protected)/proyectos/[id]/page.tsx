@@ -18,6 +18,8 @@ import { ZonaLinea } from "@/components/empresa/clientes/zona-linea";
 import { DineroProyecto } from "@/components/empresa/cobrar/dinero-proyecto";
 import { dineroDeProyecto } from "@/lib/motor/cobros";
 import { VerificacionGithubCard } from "@/components/empresa/cobrar/verificacion-github";
+import { EstadoSistemaCard } from "@/components/empresa/sistemas/estado-sistema-card";
+import type { Revision } from "@/lib/motor/revision";
 import { EnlazarReuniones } from "@/components/empresa/reuniones/enlazar-reunion";
 import type { VerificacionGithub } from "@/lib/motor/verificar-github";
 import { datosCompletitud } from "@/lib/proyectos/datos";
@@ -342,6 +344,7 @@ export default async function ProyectoDetailPage({
               </section>
             ) : <NoCargo titulo="Horas" />
           }
+          sistemaCard={<EstadoSistemaCard projectId={project.id} revision={(project.revision as unknown as Revision | null) ?? null} revisadoAt={project.revisadoAt} />}
           repoExtra={
             <>
               {repo && (
