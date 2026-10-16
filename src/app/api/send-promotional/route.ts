@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { getPromotionalEmail } from "@/lib/email-templates";
 import { sendBulkEmails } from "@/lib/email-service";
+import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 
+/** Envío masivo: solo el equipo con sesión. Antes cualquiera podía usarlo para mandar correos desde la cuenta de Pime. */
 export async function POST(request: Request) {
   try {
+    await requireEmpresaUser(request);
     const body = await request.json();
     const { recipients, subject, title, content, ctaText, ctaLink, locale } = body;
 
@@ -53,6 +56,7 @@ export async function POST(request: Request) {
       { status: 200 }
     );
   } catch (error) {
+    if (error instanceof Response) return error;
     console.error("Error sending promotional emails:", error);
     return NextResponse.json(
       { error: "Internal server error" },
