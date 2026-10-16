@@ -48,3 +48,9 @@ test("proyecto con fases y sin repo avisa que su avance no se mueve solo", () =>
   const r = resumirRevision({ ...base, liveUrl: "https://x.com", sistema: sistema("ok"), fases: [{ progress: 0, githubMilestone: null }] });
   assert.match(r.avisos[0].texto, /no repositorio/);
 });
+
+test("fase terminada o llevada a mano no cuenta como sin marcador", () => {
+  const r = resumirRevision({ ...base, repo: "a/b", liveUrl: "https://x.com", sistema: sistema("ok", true), github: {}, hook: true, fases: [{ progress: 0, githubMilestone: null, sinMarcador: true }, { progress: 100, githubMilestone: null, sinMarcador: true }, { progress: 10, githubMilestone: 4 }] });
+  assert.equal(r.estado, "ok");
+  assert.equal(r.avisos.length, 0);
+});

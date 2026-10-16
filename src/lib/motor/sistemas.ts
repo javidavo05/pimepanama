@@ -26,7 +26,7 @@ const PROYECTO_SELECT = {
   clients: { select: { clientId: true }, take: 1 },
   platforms: { select: { accessUrl: true, linkUrl: true }, orderBy: { sortOrder: "asc" } },
   systems: { where: { active: true }, orderBy: { createdAt: "asc" }, take: 1, select: { id: true, status: true, statusDetail: true, lastLatencyMs: true, lastEventAt: true, healthUrl: true } },
-  phases: { where: { OR: [{ changeOrderId: null }, { changeOrder: { status: "aprobada" } }] }, select: { progress: true, githubMilestone: true } },
+  phases: { where: { OR: [{ changeOrderId: null }, { changeOrder: { status: "aprobada" } }] }, select: { progress: true, githubMilestone: true, progressSource: true, status: true } },
 } satisfies Prisma.ProjectSelect;
 
 /** Enlace de la plataforma ligada, si el proyecto no tiene el suyo. */
@@ -104,7 +104,7 @@ export async function revisarProyecto(projectId: string, op: Opciones = {}): Pro
     enlaceSinRespuesta: sinRespuesta,
     github: check,
     hook: !!p.githubHookId,
-    fases: p.phases.map((f) => ({ progress: Number(f.progress), githubMilestone: f.githubMilestone })),
+    fases: p.phases.map((f) => ({ progress: Number(f.progress), githubMilestone: f.githubMilestone, sinMarcador: f.progressSource === "sin_marcador" || f.status === "hecha" })),
   });
   await prisma.project.update({ where: { id: p.id }, data: { revision: rev as unknown as object, revisadoAt: new Date() } });
   return rev;

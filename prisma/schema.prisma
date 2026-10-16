@@ -1464,7 +1464,7 @@ model ProjectPhase {
   /// "pendiente" | "en_curso" | "en_revision" | "hecha"
   status          String       @default("pendiente")
   progress        Decimal      @default(0) @db.Decimal(5, 2)
-  /// "manual" | "github"
+  /// "manual" | "github" | "sin_marcador" (fase que se lleva a mano a propósito: nunca recibe marcador en GitHub)
   progressSource  String       @default("manual")
   githubMilestone Int?
   /// Cuándo se avisó al cliente que la fase quedó lista (migración 0053); evita avisar dos veces.

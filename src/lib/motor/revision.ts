@@ -36,13 +36,15 @@ export type EntradaRevision = {
   enlaceSinRespuesta: string | null;
   github: { error?: string | null; ultimoCommit?: { fecha: string } | null; commits30?: number } | null;
   hook: boolean;
-  fases: { progress: number; githubMilestone: number | null }[];
+  /** `sinMarcador`: fase terminada o llevada a mano a propósito; no cuenta como «sin marcador». */
+  fases: { progress: number; githubMilestone: number | null; sinMarcador?: boolean }[];
 };
 
 export function resumirRevision(e: EntradaRevision, ahora = new Date()): Revision {
   const enlace = e.liveUrl ?? e.urlPlataforma;
   const modo: Modo = e.fases.length ? "fases" : "mantenimiento";
   const conMarcador = e.fases.filter((f) => f.githubMilestone != null).length;
+  const necesitanMarcador = e.fases.filter((f) => f.githubMilestone == null && !f.sinMarcador).length;
   const avance = e.fases.length ? Math.round(e.fases.reduce((a, f) => a + Number(f.progress), 0) / e.fases.length) : 0;
   const avisos: Aviso[] = [];
   const sugerencias: Aviso[] = [];
@@ -58,7 +60,7 @@ export function resumirRevision(e: EntradaRevision, ahora = new Date()): Revisio
 
   if (e.repo && e.github?.error) { problema = true; avisos.push({ texto: `GitHub: ${e.github.error}`, donde: "sistema" }); }
   if (modo === "fases") {
-    const sin = e.fases.length - conMarcador;
+    const sin = necesitanMarcador;
     if (!e.repo) avisos.push({ texto: "Tiene fases pero no repositorio: su avance no se mueve solo.", donde: "sistema" });
     else if (sin > 0) avisos.push({ texto: `${sin} ${sin === 1 ? "fase sin marcador" : "fases sin marcador"} en GitHub: su avance no se mueve solo.`, donde: "fases" });
     else if (!e.hook) sugerencias.push({ texto: "Sin webhook: el avance se mueve cada 30 min, no al instante.", donde: "fases" });

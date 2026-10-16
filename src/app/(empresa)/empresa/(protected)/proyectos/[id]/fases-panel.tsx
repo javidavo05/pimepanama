@@ -38,7 +38,7 @@ export function FasesPanel({ p }: { p: Fases }) {
       <div id="tipo-proyecto" tabIndex={-1} className="scroll-mt-4 outline-none">
         <TipoProyecto projectId={p.id} kind={p.kind} portalVisible={p.portalVisible} />
       </div>
-      <SincronizarGithub projectId={p.id} repo={p.repoOwner && p.repoName ? `${p.repoOwner}/${p.repoName}` : null} sinMarcador={vigentes.filter((f) => !f.githubMilestone).length} />
+      <SincronizarGithub projectId={p.id} repo={p.repoOwner && p.repoName ? `${p.repoOwner}/${p.repoName}` : null} sinMarcador={vigentes.filter((f) => !f.githubMilestone && f.progressSource !== "sin_marcador" && f.status !== "hecha").length} />
       {vigentes.length ? (
         <ol className="space-y-3">
           {vigentes.map((f, i) => (
