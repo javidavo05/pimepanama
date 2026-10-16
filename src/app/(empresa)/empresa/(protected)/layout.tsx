@@ -3,6 +3,7 @@ import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { SidebarNav } from "@/components/empresa/sidebar-nav";
 import { resolveCompanyLogoUrl } from "@/lib/company-logo";
 import { AsistenteChat } from "@/components/empresa/asistente-ia/asistente-chat";
+import { BuscadorGlobal } from "@/components/empresa/buscador-global";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,7 @@ export default async function EmpresaProtectedLayout({
           <div className="p-4 sm:p-6 md:p-8 pb-[calc(9rem+env(safe-area-inset-bottom))] pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:pl-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] sm:pb-[calc(9rem+env(safe-area-inset-bottom))] md:p-8 md:pb-24">{children}</div>
         </main>
       </SidebarNav>
+      <BuscadorGlobal area={user.miembro.area} boton={false} />
       <AsistenteChat />
     </div>
   );

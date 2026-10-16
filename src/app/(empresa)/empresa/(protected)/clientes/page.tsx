@@ -144,6 +144,7 @@ export default async function ClientesPage({ searchParams }: { searchParams: Pro
             <a href={`/api/empresa/clientes/exportar${query ? `?${query}` : ""}`} download className={btn.secondary} title="Descarga en CSV los clientes de este filtro">Exportar{filas.length ? ` ${filas.length}` : ""}</a>
             <Link href="/empresa/clientes/importar" className={btn.secondary}>Importar</Link>
             <Link href="/empresa/clientes/duplicados" className={btn.secondary}>Duplicados</Link>
+            <Link href="/empresa/clientes/archivados" className={btn.secondary}>Archivados</Link>
           </div>
         </div>
       </div>

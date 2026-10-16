@@ -66,10 +66,11 @@ export function AsistenteChat() {
     if (!abierto && d.open) d.close();
   }, [abierto]);
 
+  // ⌘K es del buscador global; el asistente se abre desde su botón o desde «Preguntar al asistente» del buscador.
   useEffect(() => {
-    const k = (e: KeyboardEvent) => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") { e.preventDefault(); setAbierto((a) => !a); } };
-    window.addEventListener("keydown", k);
-    return () => window.removeEventListener("keydown", k);
+    const f = (e: Event) => { const t = (e as CustomEvent<{ texto?: string }>).detail?.texto; setAbierto(true); if (t) setTexto(t); };
+    window.addEventListener("pime:asistente", f);
+    return () => window.removeEventListener("pime:asistente", f);
   }, []);
 
   useEffect(() => {
