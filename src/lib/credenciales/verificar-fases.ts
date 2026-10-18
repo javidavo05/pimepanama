@@ -53,7 +53,7 @@ export async function verificarFases(userId: string, projectId: string): Promise
   const p = await prisma.project.findFirst({
     where: { id: projectId, userId },
     select: {
-      id: true, repoOwner: true, repoName: true, githubAccountId: true, githubHookId: true,
+      id: true, repoOwner: true, repoName: true, githubAccountId: true, githubHookId: true, clientId: true, clients: { select: { clientId: true }, take: 1 },
       phases: {
         where: { OR: [{ changeOrderId: null }, { changeOrder: { status: "aprobada" } }] },
         orderBy: { sortOrder: "asc" },
@@ -66,15 +66,17 @@ export async function verificarFases(userId: string, projectId: string): Promise
   const checks: CheckFase[] = [];
   const v: VerificacionFases = { estado: "ok", repo, fases: p.phases.length, conMarcador: 0, sinMarcador: 0, checks };
 
+  // Un producto interno de Pime no tiene cliente que mire: lo que falta es aviso, no falla.
+  const interno = !p.clientId && !p.clients.length;
   if (!p.phases.length) {
-    checks.push({ estado: "fail", texto: "El proyecto no tiene fases en Pime. Créalas con el asistente Nuevo proyecto desde la cotización: sin fases el cliente no ve avance." });
+    checks.push({ estado: interno ? "warn" : "fail", texto: "El proyecto no tiene fases en Pime. Créalas con el asistente Nuevo proyecto desde la cotización: sin fases el cliente no ve avance." });
   }
   for (const f of p.phases) {
     const activa = f.status !== "hecha" && f.progressSource !== "sin_marcador";
     if (activa && !f.deliverables.length) checks.push({ estado: "warn", fase: f.name, texto: `«${f.name}» no tiene entregables: su marcador tendría una sola tarea y la barra saltaría de 0 a 100 %.` });
   }
   if (!repo) {
-    checks.push({ estado: "fail", texto: "El proyecto no tiene repositorio ligado: sin repo el avance no se mueve solo." });
+    checks.push({ estado: interno ? "warn" : "fail", texto: "El proyecto no tiene repositorio ligado: sin repo el avance no se mueve solo." });
     v.estado = resumen(checks);
     return v;
   }

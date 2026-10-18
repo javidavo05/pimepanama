@@ -4,7 +4,7 @@ import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { requireDeviceUser } from "@/lib/devices/tokens";
 import { puedeVer } from "@/lib/auth/permisos";
 import { prisma } from "@/lib/prisma";
-import { aplicarCredenciales, analizarCredenciales, ErrorCredenciales, type Destino } from "@/lib/credenciales/vincular";
+import { aplicarCredenciales, analizarCredenciales, ErrorCredenciales, planificarCredenciales, type Destino } from "@/lib/credenciales/vincular";
 import { verificarFases } from "@/lib/credenciales/verificar-fases";
 import { prepararMarcadores } from "@/lib/portal/github-marcadores";
 import { revisarProyecto } from "@/lib/motor/sistemas";
@@ -16,8 +16,10 @@ export const maxDuration = 120;
  * Pegar credenciales (2026-10-17). Lo llama la pantalla /empresa/platforms/credenciales con la sesión, y la skill
  * pime-project-preflight desde Claude Code con la llave del dispositivo (Bearer pmg_…, la de PIME Guard).
  *
- * accion: "analizar" (texto) · "aplicar" (texto + destino) · "verificar" (projectId) · "reparar" (projectId:
- * crea los marcadores que faltan y vuelve a verificar). Ningún token vuelve en la respuesta.
+ * accion: "analizar" (texto, no escribe) · "previa" (texto + destino: el plan con el cliente, el proyecto y las
+ * fases que verá el cliente, más el código de confirmación; no escribe) · "aplicar" (texto + destino + confirmacion)
+ * · "verificar" (projectId) · "reparar" (projectId: crea los marcadores que faltan y vuelve a verificar).
+ * Ningún token vuelve en la respuesta.
  */
 async function quien(req: Request): Promise<string> {
   if ((req.headers.get("authorization") ?? "").startsWith("Bearer ")) {
@@ -35,7 +37,7 @@ const MAX_TEXTO = 40_000;
 
 export const POST = withEmpresaRoute(async (req) => {
   const userId = await quien(req);
-  const body = (await req.json().catch(() => ({}))) as { accion?: string; texto?: unknown; destino?: Destino; projectId?: unknown };
+  const body = (await req.json().catch(() => ({}))) as { accion?: string; texto?: unknown; destino?: Destino; projectId?: unknown; confirmacion?: unknown };
   const texto = String(body.texto ?? "").slice(0, MAX_TEXTO);
   const projectId = String(body.projectId ?? "").trim();
 
@@ -43,8 +45,12 @@ export const POST = withEmpresaRoute(async (req) => {
     switch (body.accion) {
       case "analizar":
         return NextResponse.json(await analizarCredenciales(userId, texto));
+      case "previa":
+        if (!body.destino?.tipo) return NextResponse.json({ error: "Falta el destino: proyecto existente, nuevo o interno." }, { status: 400 });
+        return NextResponse.json(await planificarCredenciales(userId, texto, body.destino));
       case "aplicar": {
-        const r = await aplicarCredenciales(userId, texto, body.destino ?? {});
+        if (!body.destino?.tipo) return NextResponse.json({ error: "Falta el destino: proyecto existente, nuevo o interno." }, { status: 400 });
+        const r = await aplicarCredenciales(userId, texto, body.destino, typeof body.confirmacion === "string" ? body.confirmacion : null);
         // Primera revisión del sistema (salud, GitHub, avance) sin hacer esperar.
         after(() => revisarProyecto(r.projectId).then(() => undefined).catch((e) => console.error("[credenciales] revisar", e)));
         return NextResponse.json(r);
