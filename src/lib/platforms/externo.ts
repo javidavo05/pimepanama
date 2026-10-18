@@ -172,7 +172,8 @@ export async function vercelProjects(token: string, teamId: string | null): Prom
     for (const p of res.projects) {
       const prod = p.targets?.production ?? null;
       const last = p.latestDeployments?.[0];
-      const domains = [...(prod?.alias ?? []), ...(p.alias ?? []).map((a) => a.domain ?? "")].filter(Boolean);
+      // Un comodín (*.dominio.com) no es una dirección que se pueda abrir.
+      const domains = [...(prod?.alias ?? []), ...(p.alias ?? []).map((a) => a.domain ?? "")].filter((x) => x && !x.startsWith("*."));
       const custom = domains.find((d) => !d.endsWith(".vercel.app")) ?? domains[0] ?? null;
       out.push({
         id: p.id,
