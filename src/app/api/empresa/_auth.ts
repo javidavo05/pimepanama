@@ -70,7 +70,7 @@ function seccionDeApi(path: string): Seccion | null {
   const p = resto.split("/")[0] ?? "";
   const mapa: Record<string, Seccion> = {
     mail: "correos", company: "empresa", branding: "empresa", "payment-methods": "empresa",
-    platforms: "sistemas", pulso: "sistemas", github: "sistemas",
+    platforms: "sistemas", pulso: "sistemas", github: "sistemas", credenciales: "sistemas",
     ar: "cobros", pagos: "cobros", "payment-schedules": "cobros", expenses: "dinero",
     leads: "leads", bookings: "citas", "booking-settings": "citas", contracts: "contratos",
   };

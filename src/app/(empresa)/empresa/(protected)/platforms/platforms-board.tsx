@@ -144,7 +144,14 @@ export function PlatformsBoard({
       <PageHeader
         className="mb-6"
         title="Accesos y cuentas"
-        description="Dónde vive cada sistema de tus clientes: repo, hosting, base de datos y accesos."
+        description={
+          <>
+            Dónde vive cada sistema de tus clientes: repo, hosting, base de datos y accesos.{" "}
+            <Link href="/empresa/platforms/credenciales" className="inline-flex items-center min-h-11 lg:min-h-8 font-medium text-brand-fg hover:underline">
+              Pegar credenciales de un sistema →
+            </Link>
+          </>
+        }
         actions={
           <>
             <Link href="/empresa/sistemas" className={btn.secondary}>
