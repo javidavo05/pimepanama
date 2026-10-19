@@ -120,3 +120,8 @@ table.clean td.right, table.clean th.right { text-align: right; }
   .t-1 { font-size: clamp(30px, 8.4vw, 36px); }
   .t-2 { font-size: clamp(24px, 6.6vw, 28px); }
 }
+
+/* Aviso visible: los tableros son réplicas con datos inventados, nunca cifras reales de un cliente. */
+.shot { position: relative; }
+.shot-aviso { position: absolute; bottom: var(--s-2); left: var(--s-2); font-family: var(--font-body); font-size: var(--text-xs); font-weight: 700; letter-spacing: 0.04em; line-height: 24px; padding: 0 var(--s-3); border-radius: var(--r-pill); background: var(--paper); color: var(--ink); border: var(--border); box-shadow: 0 2px 8px rgb(0 0 0 / 0.25); pointer-events: none; white-space: nowrap; }
+.cd-shot .shot-aviso { bottom: var(--s-4); left: var(--s-4); font-size: var(--text-sm); line-height: 32px; padding: 0 var(--s-4); }

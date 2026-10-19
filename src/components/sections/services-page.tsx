@@ -55,7 +55,7 @@ export function ServicesPage({ lang }: { lang: Lang }) {
                       {lista.map((x) => (
                         <li key={x.slug}>
                           <CaseTrigger slug={x.slug} href={`/${lang}/portfolio/${x.slug}`} className="sv-case">
-                            <CaseShot slug={x.slug} label={x.nombre} />
+                            <CaseShot lang={lang} slug={x.slug} label={x.nombre} />
                             <span className="sv-case-t">{x.nombre}</span>
                             <span className="meta">{x.cliente} · {x.industria[lang]}</span>
                             <Pill variant="ghost">{x.tipo[lang]}</Pill>

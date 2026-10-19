@@ -66,7 +66,7 @@ export function PortfolioGrid({ casos, lang }: { casos: Caso[]; lang: Lang }) {
             {lista.map((c, i) => (
               <li key={c.slug} className="pg-item" style={{ "--i": i } as React.CSSProperties}>
                 <CaseTrigger slug={c.slug} href={`/${lang}/portfolio/${c.slug}`} className="pg-card">
-                  <CaseShot slug={c.slug} label={`${c.nombre} · ${t.tablero}`} />
+                  <CaseShot lang={lang} slug={c.slug} label={`${c.nombre} · ${t.tablero}`} />
                   <span className="pg-top"><span className="pg-t">{c.nombre}</span><Pill variant="ghost">{c.tipo[lang]}</Pill></span>
                   <span className="meta">{c.cliente} · {c.industria[lang]}</span>
                   <span className="pg-r">{c.resumen[lang]}</span>

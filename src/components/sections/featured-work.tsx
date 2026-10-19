@@ -24,7 +24,7 @@ function Card({ c, lang, i, n }: { c: Caso; lang: Lang; i: number; n: number }) 
     <TiltCard className="fw-card" style={{ "--i": i, "--n": n } as React.CSSProperties}>
       <CaseTrigger slug={c.slug} href={`/${lang}/portfolio/${c.slug}`} className="fw-link">
         <div className="fw-visual" style={{ viewTransitionName: `caso-${c.slug}` } as React.CSSProperties}>
-          <CaseShot slug={c.slug} label={`${c.nombre} · ${lang === "es" ? "tablero con datos de muestra" : "dashboard with sample data"}`} />
+          <CaseShot lang={lang} slug={c.slug} label={`${c.nombre} · ${lang === "es" ? "tablero con datos de muestra" : "dashboard with sample data"}`} />
         </div>
         <div className="fw-body">
           <div className="fw-top">
