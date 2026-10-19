@@ -220,7 +220,7 @@ export default async function FichaCliente({ params, searchParams }: { params: P
                       <ul className="mt-2 divide-y divide-line">
                         {f.proyectos.map((p) => (
                           <li key={p.id}>
-                            <Link href={`/empresa/proyectos/${p.id}`} className="grid grid-cols-[minmax(0,1fr)_8rem] items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
+                            <Link href={`/empresa/proyectos/${p.id}`} className="grid grid-cols-[minmax(0,1fr)_9rem] items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
                               <span className="min-w-0">
                                 <span className="block text-fg text-sm font-medium truncate">{p.name}</span>
                                 <span className="block text-fg-dim text-xs truncate">{p.status === "ACTIVE" ? "En curso" : p.status === "COMPLETED" ? "Terminado" : p.status === "PAUSED" ? "En pausa" : "Cancelado"} · {Math.round(p.avance)} %{p.actual ? ` · ${p.actual.name}` : ""}</span>
@@ -228,6 +228,7 @@ export default async function FichaCliente({ params, searchParams }: { params: P
                               <span className="text-right">
                                 <span className={`block font-mono text-sm tabular-nums ${ing.porProyecto.get(p.id) ? "text-fg" : "text-fg-faint"}`}>{dinero(ing.porProyecto.get(p.id) ?? 0)}</span>
                                 <span className="block text-fg-faint text-xs">cobrado</span>
+                                {(f.porCobrarPorProyecto.get(p.id) ?? 0) > 0.005 && <span className="block text-warn text-xs tabular-nums whitespace-nowrap">debe {dinero(f.porCobrarPorProyecto.get(p.id))}</span>}
                               </span>
                             </Link>
                           </li>
@@ -292,8 +293,8 @@ export default async function FichaCliente({ params, searchParams }: { params: P
 
               <section className={card}>
                 <h2 className={h2}>Lo urgente</h2>
-                {f.abiertos.length === 0 && facturasAbiertas.length === 0 ? (
-                  <p className="mt-3 text-sm text-fg-dim">Nada pendiente: sin tickets abiertos ni facturas por cobrar.</p>
+                {f.abiertos.length === 0 && facturasAbiertas.length === 0 && f.sinFactura.length === 0 ? (
+                  <p className="mt-3 text-sm text-fg-dim">Nada pendiente: sin tickets abiertos ni nada por cobrar.</p>
                 ) : (
                   <div className="mt-3 grid gap-6 lg:grid-cols-2">
                     <div className="min-w-0">
@@ -309,9 +310,15 @@ export default async function FichaCliente({ params, searchParams }: { params: P
                       ) : <p className="mt-2 text-sm text-fg-dim">Ninguno.</p>}
                     </div>
                     <div className="min-w-0">
-                      <p className="text-fg-dim text-xs font-semibold uppercase tracking-wider">Facturas por cobrar · {facturasAbiertas.length}</p>
-                      {facturasAbiertas.length ? (
+                      <p className="text-fg-dim text-xs font-semibold uppercase tracking-wider">Por cobrar · {facturasAbiertas.length + f.sinFactura.length}</p>
+                      {facturasAbiertas.length || f.sinFactura.length ? (
                         <ul className="mt-2 divide-y divide-line">
+                          {f.sinFactura.map((x) => (
+                            <li key={`sf-${x.projectId}`}><Link href={`/empresa/proyectos/${x.projectId}?tab=dinero`} className="flex items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
+                              <span className="min-w-0 flex-1"><span className="block text-fg text-sm font-medium truncate">{x.proyecto}</span><span className="block text-fg-dim text-xs">{x.plan > 0.005 && x.fases > 0.005 ? "Plan de pagos y fases sin factura" : x.plan > 0.005 ? "Plan de pagos · sin factura todavía" : "Fases en curso · sin factura todavía"}</span></span>
+                              <span className="font-mono text-sm text-fg shrink-0">{dinero(x.plan + x.fases)}</span>
+                            </Link></li>
+                          ))}
                           {facturasAbiertas.slice(0, 5).map((x) => (
                             <li key={x.id}><Link href={`/empresa/facturas/${x.id}`} className="flex items-center gap-3 py-3 min-h-12 hover:bg-fill -mx-2 px-2 rounded-lg">
                               <span className="min-w-0 flex-1"><span className="block text-fg text-sm font-medium truncate">{x.number ?? "Factura"} · {x.title}</span><span className="block text-fg-dim text-xs">{x.dueDate ? `vence ${fecha(x.dueDate)}` : fecha(x.issueDate)}</span></span>

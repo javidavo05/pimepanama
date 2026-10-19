@@ -32,7 +32,7 @@ export const PLAN_COBRABLE = Prisma.validator<Prisma.ProjectSelect>()({
 
 /** Proyectos no cancelados cuyo cliente principal es este, con lo de su plan de pagos (como fasesDelClientePorCobrar). */
 export const planesDelClientePorCobrar = (clientId: string) =>
-  prisma.project.findMany({ where: { clientId, status: { not: "CANCELLED" } }, select: PLAN_COBRABLE });
+  prisma.project.findMany({ where: { clientId, status: { not: "CANCELLED" } }, select: { ...PLAN_COBRABLE, id: true, name: true } });
 
 /** Proyectos del equipo (sin clientes internos) con su plan de pagos y los pagos sin factura del proyecto: Hoy y Cuentas por cobrar. */
 export const planesDelEquipoPorCobrar = (userId: string) =>
