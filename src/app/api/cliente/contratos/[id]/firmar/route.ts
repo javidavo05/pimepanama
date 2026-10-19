@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { personaDeApi } from "@/lib/portal/datos";
+import { irA } from "@/lib/portal/vista";
 import { esperaMiFirma } from "@/lib/portal/documentos";
 import { signingTokenSecret } from "@/lib/pimesign/config";
 import { generateSigningToken, hashSigningToken } from "@/lib/pimesign/tokens";
@@ -15,9 +15,9 @@ export const runtime = "nodejs";
  */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const volver = (aviso: string) => NextResponse.redirect(new URL(`/cliente/contratos?aviso=${aviso}`, request.url), 303);
+  const volver = (aviso: string) => irA(`/cliente/contratos?aviso=${aviso}`);
   const persona = await personaDeApi();
-  if (!persona) return NextResponse.redirect(new URL("/cliente/acceso", request.url), 303);
+  if (!persona) return irA("/cliente/acceso");
   if (persona.vista) return volver("vista-revision");
 
   const c = await prisma.contract.findFirst({ where: { id, clientId: persona.clientId }, select: { status: true, signingStatus: true, signingRequest: { select: { id: true, status: true, clientEmail: true, expiresAt: true } } } });
@@ -29,5 +29,5 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const raw = generateSigningToken();
   await prisma.contractSigningToken.create({ data: { requestId: req.id, role: "CLIENT", tokenHash: hashSigningToken(raw, signingTokenSecret()), expiresAt: req.expiresAt } });
   await logSigningEvent(req.id, "LINK_FROM_PORTAL", { actorEmail: persona.email, ipAddress: (request.headers.get("x-forwarded-for") ?? "").split(",")[0].trim() || undefined, userAgent: request.headers.get("user-agent")?.slice(0, 300) ?? undefined }).catch(() => {});
-  return NextResponse.redirect(new URL(`/firmar/${raw}`, request.url), 303);
+  return irA(`/firmar/${raw}`);
 }

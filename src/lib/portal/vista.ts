@@ -8,6 +8,7 @@
  * vista: las acciones y subidas del portal la rechazan con SOLO_LECTURA.
  */
 import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { resolverEquipo } from "@/lib/auth/equipo";
 import { MFA_COOKIE, sesionVerificada } from "@/lib/auth/mfa";
@@ -33,3 +34,9 @@ export async function vistaDelEquipo(claims: { sub: string; email?: string; aal?
 }
 
 export const revisionVigente = (at: Date | null | undefined, ahora = Date.now()) => !!at && ahora - at.getTime() < REVISION_VIGENTE_MS;
+
+/**
+ * Redirección relativa (303). En Vercel request.url trae el dominio interno del despliegue
+ * (pimepanama-wt62.vercel.app), no el que usa la persona: redirigir con él le hace perder la sesión y la cookie.
+ */
+export const irA = (ruta: string) => new NextResponse(null, { status: 303, headers: { Location: ruta } });
