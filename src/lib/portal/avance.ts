@@ -1,6 +1,8 @@
 /**
- * Avance de un proyecto a partir de sus fases. Cada fase pesa por su precio (lo que cuesta es lo que
- * representa del trabajo); si ninguna tiene precio, todas pesan igual. Una fase «hecha» cuenta 100 %.
+ * Avance de un proyecto a partir de sus fases. Lo normal en Pime es cobrar el proyecto (50/50 al
+ * empezar y al entregar), no cada fase: entonces todas las fases pesan igual. Solo cuando TODAS tienen
+ * precio pesa cada una por lo que cuesta; si alguna va «sin cobro», pesar por precio la dejaría en 0 y
+ * el proyecto marcaría 100 % con fases a medias. Una fase «hecha» cuenta 100 %.
  */
 import type { FaseEstado } from "./estados";
 
@@ -20,7 +22,7 @@ export function avanceDeProyecto(fases: FaseAvance[]): number {
   if (!fases.length) return 0;
   const pesos = fases.map((f) => Math.max(0, n(f.price)));
   const total = pesos.reduce((a, b) => a + b, 0);
-  const usarPrecio = total > 0;
+  const usarPrecio = pesos.every((p) => p > 0);
   let acumulado = 0;
   fases.forEach((f, i) => {
     const peso = usarPrecio ? pesos[i] / total : 1 / fases.length;

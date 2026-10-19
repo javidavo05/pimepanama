@@ -60,13 +60,22 @@ test("formato de horas", () => {
   assert.equal(formatoHoras(105), "1 h 45 min");
 });
 
-test("avance pesado por precio y fase actual", () => {
+test("avance: por precio solo si todas las fases tienen precio; si no, todas pesan igual", () => {
   const fases = [
     { id: "a", name: "Cobro", status: "hecha", progress: 0, price: "6800", sortOrder: 0 },
     { id: "b", name: "Facturación", status: "en_curso", progress: "50", price: 4200, sortOrder: 1 },
     { id: "c", name: "Conciliación", status: "pendiente", progress: 0, price: 0, sortOrder: 2 },
   ];
-  assert.equal(avanceDeProyecto(fases), Math.round(((6800 * 100 + 4200 * 50) / 11000) * 10) / 10);
+  // Una fase sin cobro: pesan igual (antes la de $0 no pesaba y el proyecto marcaba de más).
+  assert.equal(avanceDeProyecto(fases), 50);
+  assert.equal(avanceDeProyecto(fases.slice(0, 2)), Math.round(((6800 * 100 + 4200 * 50) / 11000) * 10) / 10);
+  // El caso de HOLO: la fase cobrada terminada y tres incluidas a medias no es 100 %.
+  assert.equal(avanceDeProyecto([
+    { id: "1", name: "1", status: "hecha", progress: 100, price: 4500 },
+    { id: "2", name: "2", status: "en_curso", progress: 71, price: 0 },
+    { id: "3", name: "3", status: "en_curso", progress: 60, price: 0 },
+    { id: "4", name: "4", status: "en_curso", progress: 50, price: 0 },
+  ]), 70.3);
   assert.equal(faseActual(fases)?.id, "b");
   assert.equal(avanceDeProyecto([{ id: "x", name: "x", status: "en_curso", progress: 40, price: 0 }, { id: "y", name: "y", status: "pendiente", progress: 0, price: 0 }]), 20);
   assert.equal(avanceDeProyecto([]), 0);
