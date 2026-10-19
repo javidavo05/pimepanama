@@ -22,10 +22,14 @@ test("factura sin pagos ni plan se emite entera; pagada completa también", () =
   assert.equal(emitidoDe(500, 500, [], hoy).emitido, 500);
 });
 
-test("el saldo del cliente solo cuenta lo emitido", () => {
+test("lo que falta emitir sigue debiéndose aunque no tenga fecha", () => {
   const facturas = [{ id: "a", status: "PARTIALLY_PAID", total: 4500, amountPaid: 2250 }];
   const vistas = facturasEmitidas(facturas, [], [], hoy);
   assert.equal(vistas[0].total, 2250);
   assert.equal(vistas[0].totalContrato, 4500);
-  assert.equal(saldoCliente(vistas, []).pendiente, 0);
+  const s = saldoCliente(vistas, []);
+  assert.equal(s.facturado, 2250);
+  assert.equal(s.porEmitir, 2250);
+  assert.equal(s.pagado, 2250);
+  assert.equal(s.pendiente, 2250);
 });

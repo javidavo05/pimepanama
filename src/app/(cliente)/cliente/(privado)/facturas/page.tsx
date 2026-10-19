@@ -19,17 +19,18 @@ export default async function FacturasCliente() {
 
   return (
     <>
-      <Encabezado eyebrow="Tu cuenta con Pime" titulo="Facturas y pagos" detalle="Lo que Pime te ha facturado hasta hoy, lo que pagaste y lo que falta, con cada factura y cada recibo en PDF. Lo que todavía no se emite no se cobra." />
+      <Encabezado eyebrow="Tu cuenta con Pime" titulo="Facturas y pagos" detalle="Lo que Pime te ha facturado hasta hoy, lo que pagaste y lo que falta, con cada factura y cada recibo en PDF. Lo que falta por emitir se cobra en las próximas cuotas o al entregar." />
       <BloqueOscuro i={1}>
         <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] md:items-end">
           <div className="min-w-0 space-y-2">
             <Eyebrow>Por pagar</Eyebrow>
             <Cifra texto={dinero(saldo.pendiente)} moneda className="text-[clamp(40px,5vw,64px)] font-extrabold tracking-[-0.03em] leading-none" demora={200} />
+            {saldo.porEmitir > 0 && <p className="p-ink-2 text-sm">Incluye <b className="p-ink-acc tabular-nums">{dinero(saldo.porEmitir)}</b> que todavía no se factura: se cobra en las próximas cuotas o al entregar.</p>}
             {saldo.sinFacturar > 0 && <p className="p-ink-2 text-sm">Incluye <b className="p-ink-acc tabular-nums">{dinero(saldo.sinFacturar)}</b> de fases en curso sin factura todavía.</p>}
           </div>
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <div className="p-ink-celda p-celda px-4 py-3" data-tono="ok"><dt className="p-ink-3">Pagado</dt><dd className="text-lg font-bold"><Cifra texto={dinero(saldo.pagado)} moneda demora={350} /></dd></div>
-            <div className="p-ink-celda p-celda px-4 py-3" data-tono="marca"><dt className="p-ink-3">Facturado</dt><dd className="text-lg font-bold"><Cifra texto={dinero(saldo.facturado)} moneda demora={420} /></dd></div>
+            <div className="p-ink-celda p-celda px-4 py-3" data-tono="marca"><dt className="p-ink-3">Total</dt><dd className="text-lg font-bold"><Cifra texto={dinero(saldo.facturado + saldo.porEmitir + saldo.sinFacturar)} moneda demora={420} /></dd></div>
           </dl>
         </div>
         <div className="mt-6"><Mezcla etiqueta="Tu saldo" partes={[

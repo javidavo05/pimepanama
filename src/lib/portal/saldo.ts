@@ -3,8 +3,10 @@
  * fases ya iniciadas que todavía no tienen factura, menos lo pagado (pagos confirmados). La factura es
  * opcional: una fase en curso se debe desde que inicia. Una fase con factura viva cuenta por su factura,
  * nunca dos veces. Los pagos «por confirmar» se muestran aparte y todavía no bajan la deuda.
+ * Lo que falta emitir de una factura (cuotas futuras o el resto contra entrega) también se debe aunque no tenga
+ * fecha de pago: va en `porEmitir` y suma a `pendiente` (pedido de Javier, 2026-10-19: «ellos deben la mitad»).
  */
-type Factura = { id: string; status: string; total: unknown; amountPaid?: unknown };
+type Factura = { id: string; status: string; total: unknown; amountPaid?: unknown; porEmitir?: number };
 type Pago = { documentId?: string | null; phaseId?: string | null; amount: unknown; status: string };
 /** Fase con su factura (si tiene). billingPoint «sin_cobro» no se cobra. */
 export type FaseCobrable = { id: string; status: string; price: unknown; billingPoint?: string | null; invoiceId?: string | null; invoice?: { status: string } | null };
@@ -32,7 +34,8 @@ export function saldoCliente(facturas: Factura[], pagos: Pago[], fases: FaseCobr
   const porConfirmar = r2(pagos.filter((p) => p.status === "por_confirmar").reduce((a, p) => a + n(p.amount), 0));
   // Los pagos sin factura de una fase ya están en «sueltos»: aquí va el precio bruto para no restarlos dos veces.
   const sinFacturar = r2(fasesCobrables(fases).reduce((a, f) => a + n(f.price), 0));
-  return { facturado, sinFacturar, pagado, porConfirmar, pendiente: r2(Math.max(0, facturado + sinFacturar - pagado)) };
+  const porEmitir = r2(vivas.reduce((a, f) => a + n(f.porEmitir), 0));
+  return { facturado, porEmitir, sinFacturar, pagado, porConfirmar, pendiente: r2(Math.max(0, facturado + porEmitir + sinFacturar - pagado)) };
 }
 
 /** Estados en los que una fase ya se debe: desde que inicia. */
