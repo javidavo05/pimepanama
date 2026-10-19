@@ -25,7 +25,10 @@ export default async function CuentaCliente() {
         <Tarjeta i={2}><TituloSeccion>Logo de tu empresa</TituloSeccion><LogoEmpresa logo={p.client.logoKey ? `/api/cliente/logo?v=${encodeURIComponent(p.client.logoKey.slice(-12))}` : null} empresa={p.client.company || p.client.name} /></Tarjeta>
         <Tarjeta i={2}><TituloSeccion>Contraseña</TituloSeccion><CambiarClave /></Tarjeta>
         <Tarjeta i={3}><TituloSeccion>Apariencia</TituloSeccion><p className="text-fg-dim text-sm mb-4">Claro, oscuro o el mismo de tu teléfono o computadora.</p><TemaPortal /></Tarjeta>
-        <Tarjeta i={4}><TituloSeccion>Doble verificación</TituloSeccion><DobleVerificacion /></Tarjeta>
+        <Tarjeta i={4}><TituloSeccion>Doble verificación</TituloSeccion>{p.vista
+          // En la vista de revisión la sesión es del equipo: activar o quitar la doble verificación tocaría la cuenta del equipo.
+          ? <p className="text-fg-dim text-sm">Aquí el cliente activa su doble verificación (código de una app en su teléfono). En la vista de revisión no se muestra.</p>
+          : <DobleVerificacion />}</Tarjeta>
         <Tarjeta i={5}>
           <TituloSeccion>Personas con acceso</TituloSeccion>
           <ul className="divide-y divide-line">

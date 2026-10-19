@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { prisma } from "@/lib/prisma";
+import { personaDeApi } from "@/lib/portal/datos";
+import { SOLO_LECTURA } from "@/lib/portal/vista";
 import { putR2Object } from "@/lib/r2";
 import { MAX_BYTES, TIPOS_PERMITIDOS, llaveNueva } from "@/lib/portal/adjuntos";
 
@@ -8,12 +8,9 @@ export const runtime = "nodejs";
 
 /** Sube un archivo de la cuenta del cliente a R2 y devuelve su llave. Un archivo por pedido. */
 export async function POST(request: Request) {
-  const supabase = await createSupabaseServerClient();
-  const { data } = await supabase.auth.getClaims();
-  const uid = data?.claims?.sub;
-  if (!uid) return NextResponse.json({ error: "Tu sesión venció. Vuelve a entrar." }, { status: 401 });
-  const persona = await prisma.clientUser.findUnique({ where: { supabaseUid: uid }, select: { clientId: true, status: true } });
-  if (!persona || persona.status !== "activo") return NextResponse.json({ error: "Sin acceso." }, { status: 403 });
+  const persona = await personaDeApi();
+  if (!persona) return NextResponse.json({ error: "Tu sesión venció. Vuelve a entrar." }, { status: 401 });
+  if (persona.vista) return NextResponse.json({ error: SOLO_LECTURA }, { status: 403 });
 
   const form = await request.formData().catch(() => null);
   const file = form?.get("archivo");

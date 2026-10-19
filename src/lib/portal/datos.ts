@@ -238,16 +238,28 @@ export async function pendientesDeDocumentos(clientId: string) {
 /**
  * La persona del cliente en una ruta de API (descargas y subidas), sin redirigir: devuelve null si no hay
  * sesión activa de cliente. Las páginas usan getPortalUser.
+ * En la vista de revisión del equipo devuelve la persona de ese cliente con `vista: true`: las descargas
+ * funcionan (para revisar los PDF que verá el cliente) y las subidas o firmas deben rechazarla.
  */
 export async function personaDeApi() {
   const { createSupabaseServerClient } = await import("@/lib/supabase/server");
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.auth.getClaims();
-  const uid = data?.claims?.sub;
+  const claims = data?.claims;
+  const uid = claims?.sub;
   if (!uid) return null;
-  const persona = await prisma.clientUser.findUnique({ where: { supabaseUid: uid }, select: { id: true, clientId: true, status: true, role: true, email: true, fullName: true, userId: true, client: { select: { archivedAt: true } } } });
-  if (!persona || persona.status !== "activo" || persona.client.archivedAt) return null;
-  return persona;
+  const sel = { id: true, clientId: true, status: true, role: true, email: true, fullName: true, userId: true, client: { select: { archivedAt: true, logoKey: true } } } as const;
+  const persona = await prisma.clientUser.findUnique({ where: { supabaseUid: uid }, select: sel });
+  if (persona) {
+    if (persona.status !== "activo" || persona.client.archivedAt) return null;
+    return { ...persona, vista: false };
+  }
+  const { vistaDelEquipo } = await import("./vista");
+  const v = await vistaDelEquipo(claims as Parameters<typeof vistaDelEquipo>[0]);
+  if (!v) return null;
+  const client = await prisma.client.findUnique({ where: { id: v.clientId }, select: { archivedAt: true, logoKey: true, userId: true, email: true, name: true } });
+  if (!client) return null;
+  return { id: `revision-${v.clientId}`, clientId: v.clientId, status: "activo", role: "principal", email: client.email ?? "", fullName: client.name, userId: client.userId, client: { archivedAt: client.archivedAt, logoKey: client.logoKey }, vista: true };
 }
 
 /** Encuestas de satisfacción que el cliente todavía no respondió, con su enlace firmado. */

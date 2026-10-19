@@ -10,6 +10,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getPortalUser } from "@/lib/portal/sesion";
+import { SOLO_LECTURA } from "@/lib/portal/vista";
 import { adjuntosValidos } from "@/lib/portal/adjuntos";
 import { avisarAlEquipo, avisarAlEquipoTicket } from "@/lib/portal/avisos";
 import { registrarEvento } from "@/lib/portal/eventos";
@@ -30,6 +31,7 @@ async function origen() {
 
 export async function crearTicketAction(_: Estado, form: FormData): Promise<Estado> {
   const p = await getPortalUser();
+  if (p.vista) return { error: SOLO_LECTURA };
   const titulo = texto(form.get("titulo"), 160);
   const detalle = texto(form.get("detalle"), 8000);
   const tipo = String(form.get("tipo") ?? "soporte");
@@ -65,6 +67,7 @@ export async function crearTicketAction(_: Estado, form: FormData): Promise<Esta
 
 export async function responderTicketAction(_: Estado, form: FormData): Promise<Estado> {
   const p = await getPortalUser();
+  if (p.vista) return { error: SOLO_LECTURA };
   const id = String(form.get("ticket") ?? "");
   const cuerpo = texto(form.get("mensaje"), 8000);
   const t = await prisma.ticket.findFirst({ where: { id, clientId: p.clientId }, select: { id: true, status: true } });
@@ -95,6 +98,7 @@ export async function responderTicketAction(_: Estado, form: FormData): Promise<
 /** Aprobar o rechazar el estimado de horas de un ticket (cuando pasa de 2 horas). */
 export async function decidirEstimadoAction(_: Estado, form: FormData): Promise<Estado> {
   const p = await getPortalUser();
+  if (p.vista) return { error: SOLO_LECTURA };
   const id = String(form.get("ticket") ?? "");
   const decision = String(form.get("decision") ?? "");
   const comentario = texto(form.get("comentario"), 1000) || null;
@@ -119,6 +123,7 @@ export async function decidirEstimadoAction(_: Estado, form: FormData): Promise<
 
 export async function decidirOrdenAction(_: Estado, form: FormData): Promise<Estado> {
   const p = await getPortalUser();
+  if (p.vista) return { error: SOLO_LECTURA };
   const id = String(form.get("orden") ?? "");
   const decision = String(form.get("decision") ?? "");
   const comentario = texto(form.get("comentario"), 2000) || null;
@@ -154,6 +159,7 @@ export async function decidirOrdenAction(_: Estado, form: FormData): Promise<Est
 /** El cliente reporta una transferencia con su comprobante; queda «por confirmar» hasta que Pime la vea. */
 export async function reportarPagoAction(_: Estado, form: FormData): Promise<Estado> {
   const p = await getPortalUser();
+  if (p.vista) return { error: SOLO_LECTURA };
   const facturaId = String(form.get("factura") ?? "") || null;
   const monto = Number(String(form.get("monto") ?? "").replace(/[^\d.]/g, ""));
   const fecha = String(form.get("fecha") ?? "");
@@ -182,7 +188,7 @@ export async function reportarPagoAction(_: Estado, form: FormData): Promise<Est
 // ─── Cuenta ───────────────────────────────────────────────────────────────────
 
 export async function cambiarClaveAction(_: Estado, form: FormData): Promise<Estado> {
-  await getPortalUser();
+  if ((await getPortalUser()).vista) return { error: SOLO_LECTURA };
   const clave = String(form.get("clave") ?? "");
   const debil = errorDeClave(clave);
   if (debil) return { error: debil };
@@ -195,6 +201,7 @@ export async function cambiarClaveAction(_: Estado, form: FormData): Promise<Est
 
 export async function invitarCompaneroAction(_: Estado, form: FormData): Promise<Estado> {
   const p = await getPortalUser();
+  if (p.vista) return { error: SOLO_LECTURA };
   if (p.role !== "principal") return { error: "Solo la persona principal de la cuenta puede invitar a otras." };
   const rol = form.get("rol") === "principal" ? "principal" : "miembro";
   const r = await invitarPersona({ empresaUserId: p.client.userId, clientId: p.clientId, email: String(form.get("email") ?? ""), fullName: texto(form.get("nombre"), 120), role: rol, invitadoPor: p.fullName || p.email, invitadoPorClientUserId: p.id });
@@ -205,6 +212,7 @@ export async function invitarCompaneroAction(_: Estado, form: FormData): Promise
 
 export async function quitarCompaneroAction(_: Estado, form: FormData): Promise<Estado> {
   const p = await getPortalUser();
+  if (p.vista) return { error: SOLO_LECTURA };
   if (p.role !== "principal") return { error: "Solo la persona principal de la cuenta puede quitar accesos." };
   const id = String(form.get("persona") ?? "");
   if (id === p.id) return { error: "No puedes quitarte el acceso a ti mismo." };
@@ -219,6 +227,7 @@ export async function quitarCompaneroAction(_: Estado, form: FormData): Promise<
 /** Varios dueños por empresa: una persona principal puede hacer principal a otra, o volverla miembro. */
 export async function cambiarRolAction(_: Estado, form: FormData): Promise<Estado> {
   const p = await getPortalUser();
+  if (p.vista) return { error: SOLO_LECTURA };
   if (p.role !== "principal") return { error: "Solo una persona principal puede cambiar permisos." };
   const rol = form.get("rol") === "principal" ? "principal" : "miembro";
   const otra = await prisma.clientUser.findFirst({ where: { id: String(form.get("persona") ?? ""), clientId: p.clientId, status: { not: "revocado" } }, select: { id: true, email: true, role: true } });
@@ -240,6 +249,7 @@ const TIPOS_LOGO = ["image/png", "image/jpeg", "image/webp"];
 /** Guarda como logo de la empresa una imagen ya subida a la carpeta del cliente. */
 export async function guardarLogoAction(_: Estado, form: FormData): Promise<Estado> {
   const p = await getPortalUser();
+  if (p.vista) return { error: SOLO_LECTURA };
   const { llaveDelCliente } = await import("@/lib/portal/adjuntos");
   const key = String(form.get("key") ?? "");
   if (!llaveDelCliente(p.clientId, key) || !TIPOS_LOGO.includes(String(form.get("tipo") ?? ""))) return { error: "Sube una imagen PNG, JPG o WebP." };
@@ -251,6 +261,7 @@ export async function guardarLogoAction(_: Estado, form: FormData): Promise<Esta
 
 export async function quitarLogoAction(): Promise<Estado> {
   const p = await getPortalUser();
+  if (p.vista) return { error: SOLO_LECTURA };
   await prisma.client.update({ where: { id: p.clientId }, data: { logoKey: null } });
   revalidatePath("/cliente", "layout");
   return { ok: true, mensaje: "Logo quitado." };
@@ -261,6 +272,7 @@ export async function quitarLogoAction(): Promise<Estado> {
 /** Descifra una clave de acceso del sistema del cliente. Queda registrado para el equipo. */
 export async function verClaveAction(_: Estado, form: FormData): Promise<Estado & { valor?: string }> {
   const p = await getPortalUser();
+  if (p.vista) return { error: SOLO_LECTURA };
   const a = await prisma.projectAccess.findFirst({ where: { id: String(form.get("acceso") ?? ""), project: { ...proyectosDelCliente(p.clientId), portalVisible: true } }, select: { id: true, label: true, secretEnc: true, projectId: true } });
   if (!a?.secretEnc) return { error: "Este acceso no tiene clave guardada." };
   try {

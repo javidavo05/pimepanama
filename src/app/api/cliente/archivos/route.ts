@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "node:crypto";
 import { generatePresignedUploadUrl } from "@/lib/r2";
 import { personaDeApi } from "@/lib/portal/datos";
+import { SOLO_LECTURA } from "@/lib/portal/vista";
 import { archivoValido, carpetaArchivos, nombreSeguro } from "@/lib/portal/documentos";
 
 export const runtime = "nodejs";
@@ -13,6 +14,7 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   const persona = await personaDeApi();
   if (!persona) return NextResponse.json({ error: "Tu sesión venció. Vuelve a entrar." }, { status: 401 });
+  if (persona.vista) return NextResponse.json({ error: SOLO_LECTURA }, { status: 403 });
   const body = (await request.json().catch(() => null)) as { nombre?: unknown; tipo?: unknown; tamano?: unknown } | null;
   const nombre = String(body?.nombre ?? "").slice(0, 200);
   const tamano = Number(body?.tamano ?? 0);

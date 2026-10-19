@@ -10,6 +10,7 @@ export const metadata = { title: "Contratos" };
 const AVISOS: Record<string, string> = {
   "firma-no-pendiente": "Ese contrato ya no espera tu firma. Si crees que es un error, escríbenos.",
   "firma-de-otra-persona": "Ese contrato se envió a firmar a otra persona de tu equipo: la firma la hace ella desde su cuenta o desde el correo que recibió.",
+  "vista-revision": "Estás en la vista de revisión: la firma la hace el cliente desde su cuenta.",
   "firma-vencida": "El plazo para firmar ese contrato venció. Escríbenos y te lo enviamos de nuevo.",
 };
 

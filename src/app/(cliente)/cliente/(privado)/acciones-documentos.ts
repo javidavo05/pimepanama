@@ -11,6 +11,7 @@ import { HeadObjectCommand } from "@aws-sdk/client-s3";
 import { prisma } from "@/lib/prisma";
 import { r2, R2_BUCKET, deleteR2Object } from "@/lib/r2";
 import { getPortalUser } from "@/lib/portal/sesion";
+import { SOLO_LECTURA } from "@/lib/portal/vista";
 import { registrarEvento } from "@/lib/portal/eventos";
 import { avisarAlEquipo } from "@/lib/portal/avisos";
 import { dinero, proyectosDelCliente } from "@/lib/portal/datos";
@@ -27,6 +28,7 @@ async function origen() {
 
 export async function aceptarPropuestaAction(_: EstadoDoc, form: FormData): Promise<EstadoDoc> {
   const p = await getPortalUser();
+  if (p.vista) return { error: SOLO_LECTURA };
   const id = String(form.get("propuesta") ?? "");
   if (form.get("confirmo") !== "1") return { error: "Marca la casilla para confirmar que aceptas la propuesta." };
   const doc = await prisma.document.findFirst({ where: { id, clientId: p.clientId, type: "COTIZACION" }, select: { id: true, number: true, title: true, status: true, total: true, validUntil: true, projectId: true } });
@@ -63,6 +65,7 @@ export async function aceptarPropuestaAction(_: EstadoDoc, form: FormData): Prom
  */
 export async function registrarArchivoAction(_: EstadoDoc, form: FormData): Promise<EstadoDoc> {
   const p = await getPortalUser();
+  if (p.vista) return { error: SOLO_LECTURA };
   const key = String(form.get("key") ?? "");
   const nombre = String(form.get("nombre") ?? "").trim().slice(0, 200);
   const tipo = String(form.get("tipo") ?? "").slice(0, 120) || null;

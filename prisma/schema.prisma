@@ -350,6 +350,10 @@ model Client {
   /// Tarifa por hora propia; si es null se usa la de la línea en CompanyConfig.
   hourlyRate         Decimal?        @db.Decimal(10, 2)
   portalEnabled      Boolean         @default(false)
+  /// Última revisión de la cuenta por el equipo en modo solo lectura (migración 0060): la invitación la exige.
+  portalReviewedAt   DateTime?
+  /// Quién la revisó (nombre o correo del miembro del equipo).
+  portalReviewedBy   String?
   /// La propia empresa (Pime Panamá) para sus productos internos (migración 0048): no suma a cobros ni
   /// ingresos, no tiene cuenta de cliente ni recibe correos.
   internal           Boolean         @default(false)

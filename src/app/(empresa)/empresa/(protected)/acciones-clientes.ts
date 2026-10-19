@@ -66,9 +66,7 @@ export async function guardarClienteAction(_: Estado, form: FormData): Promise<E
     await prisma.contacto.create({ data: { userId: u.id, clientId: c.id, nombre: datos.name, email: datos.email, telefono: datos.phone, rol: "decide", principal: true } })
       .catch((e) => console.error("[clientes] contacto principal", e));
     await registrarEvento({ userId: u.id, clientId: c.id, entityType: "cliente", entityId: c.id, kind: "cliente_creado", title: "Cliente creado", visibility: "interno", actorEmpresaUserId: u.id });
-    if (form.get("invitar") === "1" && datos.email) {
-      await invitarPersona({ empresaUserId: u.id, clientId: c.id, email: datos.email, fullName: datos.name, role: "principal", invitadoPor: u.fullName || "El equipo de Pime" });
-    }
+    // Sin invitación automática: primero se revisa su cuenta (vista de revisión) y luego se invita desde la ficha.
   }
   refrescar(clientId);
   redirect(`/empresa/clientes/${clientId}`);

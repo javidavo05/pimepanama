@@ -11,6 +11,7 @@ import { getPortalInvitationEmail, getPortalPasswordResetEmail } from "@/lib/ema
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { registrarEvento } from "./eventos";
 import { errorDeClave } from "@/lib/auth/reglas-clave";
+import { revisionVigente } from "./vista";
 
 const DIAS_INVITACION = 7;
 export const hashToken = (t: string) => createHash("sha256").update(t).digest("hex");
@@ -31,10 +32,17 @@ export async function invitarPersona(opts: {
 }): Promise<ResultadoInvitacion> {
   const email = opts.email.trim().toLowerCase();
   if (!correoValido(email)) return { ok: false, error: "Escribe un correo válido." };
-  const client = await prisma.client.findFirst({ where: { id: opts.clientId, userId: opts.empresaUserId }, select: { id: true, name: true, company: true, internal: true } });
+  const client = await prisma.client.findFirst({ where: { id: opts.clientId, userId: opts.empresaUserId }, select: { id: true, name: true, company: true, internal: true, portalReviewedAt: true } });
   if (!client) return { ok: false, error: "No encontré ese cliente." };
   // La empresa interna somos nosotros: no tiene cuenta de cliente ni recibe correos.
   if (client.internal) return { ok: false, error: "Es la empresa interna: no lleva cuenta de cliente." };
+  // Antes de mandarle credenciales, el equipo revisa la cuenta tal como la verá el cliente (vista de revisión).
+  // Las personas que invita el propio cliente desde su cuenta no pasan por aquí: la cuenta ya está en sus manos.
+  if (!opts.invitadoPorClientUserId && !revisionVigente(client.portalReviewedAt)) {
+    return { ok: false, error: client.portalReviewedAt
+      ? "La última revisión de su cuenta tiene más de 24 horas. Ábrela con «Revisar su cuenta» y confirma que todo está en orden antes de invitar."
+      : "Antes de mandarle sus credenciales, revisa su cuenta con «Revisar su cuenta» y confirma que todo está en orden." };
+  }
   const equipo = await prisma.empresaUser.findFirst({ where: { email: { equals: email, mode: "insensitive" } }, select: { id: true } });
   if (equipo) return { ok: false, error: "Ese correo es de una cuenta del equipo Pime. Usa otro correo para el cliente." };
 

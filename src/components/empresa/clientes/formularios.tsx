@@ -77,7 +77,7 @@ export function ClienteForm({ c, tarifas, extra }: { c?: ClienteDatos; tarifas: 
       {extra}
       <div><label htmlFor="notes" className={etiqueta}>Notas internas</label><textarea id="notes" name="notes" rows={3} defaultValue={c?.notes ?? ""} className={`${campo} py-2`} /></div>
       {!c?.id && (
-        <label className="flex items-center gap-3 text-sm text-fg-mute"><input type="checkbox" name="invitar" value="1" defaultChecked className="h-5 w-5 accent-[rgb(var(--c-brand))]" />Enviarle la invitación a su cuenta en Pime</label>
+        <p className="text-sm text-fg-dim">La invitación a su cuenta sale después, desde su ficha: primero revisas su cuenta tal como la verá y confirmas que todo está en orden.</p>
       )}
       <Mensajes estado={estado} />
       <div className="flex justify-end"><button type="submit" className={btn.primary} disabled={enviando}>{enviando ? "Guardando…" : dup ? "Crear de todas formas" : c?.id ? "Guardar cambios" : "Crear cliente"}</button></div>
@@ -87,7 +87,7 @@ export function ClienteForm({ c, tarifas, extra }: { c?: ClienteDatos; tarifas: 
 
 // ─── Cuenta del cliente ─────────────────────────────────────────────────────
 
-export function InvitarForm({ clientId, email, nombre, hayPrincipal }: { clientId: string; email?: string | null; nombre?: string | null; hayPrincipal: boolean }) {
+export function InvitarForm({ clientId, email, nombre, hayPrincipal, revisada }: { clientId: string; email?: string | null; nombre?: string | null; hayPrincipal: boolean; revisada: boolean }) {
   const [estado, accion, enviando] = useActionState(invitarAlPortalAction, null);
   const [copiado, setCopiado] = useState(false);
   return (
@@ -104,7 +104,8 @@ export function InvitarForm({ clientId, email, nombre, hayPrincipal }: { clientI
           {copiado ? "Enlace copiado" : "Copiar enlace de invitación"}
         </button>
       )}
-      <button type="submit" className={btn.primary} disabled={enviando}>{enviando ? "Enviando…" : hayPrincipal ? "Invitar a otra persona" : "Enviar invitación a su cuenta"}</button>
+      {!revisada && <p className="text-sm text-fg-dim">Se habilita cuando confirmes que su cuenta está en orden.</p>}
+      <button type="submit" className={revisada ? btn.primary : btn.secondary} disabled={enviando || !revisada}>{enviando ? "Enviando…" : hayPrincipal ? "Invitar a otra persona" : "Enviar invitación a su cuenta"}</button>
     </form>
   );
 }

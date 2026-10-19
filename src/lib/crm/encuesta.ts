@@ -52,6 +52,10 @@ export async function enviarEncuestas(opciones: { diasAtras?: number; ahora?: Da
       // Cliente principal (Project.clientId) o, si no hay, el primero de la relación ProjectClient.
       const cliente = [p.client, ...p.clients.map((x) => x.client)].find((c) => c && !c.internal && !c.archivedAt && c.email?.trim());
       if (!cliente?.email) continue;
+      // Los correos automáticos solo salen a clientes con su cuenta ya creada (alguien la activó): así nada llega
+      // antes de que el equipo revise la cuenta y le mande sus credenciales. Se vuelve a mirar en la corrida de mañana.
+      const conCuenta = await prisma.clientUser.count({ where: { clientId: cliente.id, status: "activo" } });
+      if (!conCuenta) continue;
       let encuestaId: string;
       try {
         const e = await prisma.encuesta.create({ data: { userId: p.userId, projectId: p.id, clientId: cliente.id }, select: { id: true } });

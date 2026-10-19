@@ -18,6 +18,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const volver = (aviso: string) => NextResponse.redirect(new URL(`/cliente/contratos?aviso=${aviso}`, request.url), 303);
   const persona = await personaDeApi();
   if (!persona) return NextResponse.redirect(new URL("/cliente/acceso", request.url), 303);
+  if (persona.vista) return volver("vista-revision");
 
   const c = await prisma.contract.findFirst({ where: { id, clientId: persona.clientId }, select: { status: true, signingStatus: true, signingRequest: { select: { id: true, status: true, clientEmail: true, expiresAt: true } } } });
   const req = c?.signingRequest;

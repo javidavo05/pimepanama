@@ -27,6 +27,8 @@ async function crear() {
     { userId: owner.id, clientId: c.id, projectId: p.id, entityType: "fase", kind: "fase_hecha", title: "Terminamos la fase Cobro", visibility: "cliente" },
     { userId: owner.id, clientId: c.id, projectId: p.id, entityType: "fase", kind: "avance", title: "Facturación al 55 %", detail: "Plantillas por cliente listas; falta la emisión electrónica.", visibility: "cliente", actorType: "github" },
   ] });
+  // La invitación exige una revisión reciente de la cuenta (vista de revisión).
+  await prisma.client.update({ where: { id: c.id }, data: { portalReviewedAt: new Date(), portalReviewedBy: "prueba" } });
   const inv = await invitarPersona({ empresaUserId: owner.id, clientId: c.id, email: "delivered@resend.dev", fullName: "Ana Pérez", role: "principal", invitadoPor: "Javier Vallejo" });
   if (!inv.ok) throw new Error(inv.error);
   console.log(JSON.stringify({ clientId: c.id, projectId: p.id, ordenId: o.id, facturaId: f.id, enlace: inv.enlace, enviado: inv.enviado }));

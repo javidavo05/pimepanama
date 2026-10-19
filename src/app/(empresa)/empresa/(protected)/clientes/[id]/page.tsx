@@ -15,6 +15,7 @@ import { ZonaLinea } from "@/components/empresa/clientes/zona-linea";
 import { EstadoSistemaPill } from "@/components/empresa/sistemas/estado";
 import { BotonCobrar } from "@/components/empresa/cobrar/asistente-cobrar";
 import { prisma } from "@/lib/prisma";
+import { revisionVigente } from "@/lib/portal/vista";
 import { plataformasDeCliente } from "@/lib/platforms/cliente";
 import { PlataformasCliente } from "@/components/empresa/clientes/plataformas-cliente";
 import { FichaTabs } from "@/components/empresa/clientes/ficha-tabs";
@@ -83,6 +84,7 @@ export default async function FichaCliente({ params, searchParams }: { params: P
   const porProducto = f.proyectos.map((p) => ({ id: p.id, nombre: p.name, t: totalesGastos((gastos ?? []).filter((g) => g.projectId === p.id).map(aGasto)) }));
   const clientesCobro = todos.map((x) => ({ id: x.id, nombre: x.company || x.name }));
   const c = f.cliente;
+  const revisada = revisionVigente(c.portalReviewedAt);
   const premium = c.brandLine === "premium";
   const principal = f.personas.find((p) => p.role === "principal");
   const cuenta = !f.personas.length ? ["Sin cuenta", "bg-fill-2 text-fg-dim"] : f.personas.some((p) => p.status === "activo") ? ["Cuenta activa", "bg-ok/10 text-ok"] : ["Invitación enviada", "bg-warn/10 text-warn"];
@@ -553,7 +555,21 @@ export default async function FichaCliente({ params, searchParams }: { params: P
               {interna ? (
                 <p className="mt-2 text-sm text-fg-dim">Es la empresa interna: no lleva cuenta de cliente ni recibe correos. Sus productos se manejan desde Proyectos y Tickets.</p>
               ) : (
-                <div className="mt-4"><InvitarForm clientId={c.id} email={c.email} nombre={c.name} hayPrincipal={!!principal} /></div>
+                <>
+                  {/* Vista de revisión: siempre disponible. La invitación (credenciales) exige una revisión de las últimas 24 h. */}
+                  <div className={`mt-4 rounded-xl border p-4 ${revisada ? "border-ok/30 bg-ok/5" : "border-warn/30 bg-warn/5"}`}>
+                    <p className={`text-sm font-semibold ${revisada ? "text-ok" : "text-warn"}`}>
+                      {revisada ? `Revisada ${tiempo(c.portalReviewedAt!)}${c.portalReviewedBy ? ` por ${c.portalReviewedBy}` : ""}` : c.portalReviewedAt ? "La revisión tiene más de 24 horas" : "Su cuenta todavía no se ha revisado"}
+                    </p>
+                    <p className="mt-1 text-sm text-fg-dim">
+                      {revisada
+                        ? "Ya puedes mandarle sus credenciales. Si cambias proyectos, facturas o documentos, vuelve a revisarla."
+                        : "Ábrela tal como la verá el cliente, en solo lectura, y confirma que todo está en orden. Ahí se habilita la invitación."}
+                    </p>
+                    <a href={`/api/empresa/vista-cliente?cliente=${c.id}`} className={`mt-4 w-full sm:w-auto ${revisada ? btn.secondary : btn.primary}`}>{revisada ? "Volver a revisar su cuenta" : "Revisar su cuenta como el cliente"}</a>
+                  </div>
+                  <div className="mt-4"><InvitarForm clientId={c.id} email={c.email} nombre={c.name} hayPrincipal={!!principal} revisada={revisada} /></div>
+                </>
               )}
             </section>
           </div>

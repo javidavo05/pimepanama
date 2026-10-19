@@ -28,7 +28,7 @@ const useIso = typeof window === "undefined" ? useEffect : useLayoutEffect;
  * que marca cuánto se leyó y un indicador que se desliza a la sección activa. En el teléfono las secciones bajan
  * a una barra fija al alcance del pulgar, con una pastilla que se desliza.
  */
-export function NavPortal({ empresa, persona, logo }: { linea: "normal" | "premium"; empresa: string; persona: string; logo?: string | null }) {
+export function NavPortal({ empresa, persona, logo, vista }: { linea: "normal" | "premium"; empresa: string; persona: string; logo?: string | null; vista?: boolean }) {
   const ruta = usePathname();
   const activoItem = (x: Item) => (x.href === "/cliente" ? ruta === "/cliente" : [x.href, ...(x.rutas ?? [])].some((r) => ruta.startsWith(r)));
   const activo = (href: string) => { const x = ITEMS.find((i) => i.href === href); return x ? activoItem(x) : false; };
@@ -85,9 +85,16 @@ export function NavPortal({ empresa, persona, logo }: { linea: "normal" | "premi
           <Link href="/cliente/cuenta" aria-current={activo("/cliente/cuenta") ? "page" : undefined} className={`sm:hidden ml-auto inline-flex items-center justify-center rounded-lg min-h-11 min-w-11 transition-colors ${activo("/cliente/cuenta") ? "text-brand-fg bg-fill" : "text-fg-dim hover:text-fg hover:bg-fill"}`} aria-label="Tu cuenta">
             <IconCuenta />
           </Link>
-          <button type="button" onClick={() => void cerrarSesion("/cliente/acceso")} className="sm:ml-2 inline-flex items-center gap-2 rounded-lg px-3 min-h-11 text-sm font-semibold text-fg-dim hover:text-fg hover:bg-fill transition-colors" title={`Salir (${persona})`}>
-            <IconSalir /><span className="sr-only sm:not-sr-only">Salir</span>
-          </button>
+          {vista ? (
+            // Vista de revisión del equipo: sale de la vista y vuelve a la ficha; la sesión del equipo sigue abierta.
+            <a href="/api/empresa/vista-cliente/salir" className="sm:ml-2 inline-flex items-center gap-2 rounded-lg px-3 min-h-11 text-sm font-semibold text-fg-dim hover:text-fg hover:bg-fill transition-colors" title="Salir de la vista de revisión">
+              <IconSalir /><span className="sr-only sm:not-sr-only">Salir de la vista</span>
+            </a>
+          ) : (
+            <button type="button" onClick={() => void cerrarSesion("/cliente/acceso")} className="sm:ml-2 inline-flex items-center gap-2 rounded-lg px-3 min-h-11 text-sm font-semibold text-fg-dim hover:text-fg hover:bg-fill transition-colors" title={`Salir (${persona})`}>
+              <IconSalir /><span className="sr-only sm:not-sr-only">Salir</span>
+            </button>
+          )}
         </div>
         <span className="p-nav-progreso" aria-hidden />
       </header>
