@@ -10,18 +10,20 @@
  *  4. se guarda el resumen en Project.revision (revision.ts). Todas las pantallas leen de ahí.
  */
 import { randomBytes } from "node:crypto";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { keyDesdeNombre } from "@/lib/pulso/reglas";
 import { direccionValida, revisarPulsos, sondear, sondearSistema } from "@/lib/pulso/sondeo";
 import { verificarConGithub, type VerificacionGithub } from "./verificar-github";
 import { sincronizarProyecto } from "@/lib/portal/github-avance";
 import { resumirRevision, type Revision } from "./revision";
+import { tokenParaRepo } from "@/lib/github/cuentas";
+import { buildRepoSnapshot } from "@/lib/github/snapshot";
 
 const ACTIVOS = ["ACTIVE", "PAUSED"] as const;
 
 const PROYECTO_SELECT = {
-  id: true, userId: true, name: true, clientId: true, liveUrl: true, repoOwner: true, repoName: true, githubHookId: true,
+  id: true, userId: true, name: true, clientId: true, liveUrl: true, repoOwner: true, repoName: true, repoBranch: true, githubHookId: true, githubAccountId: true,
   githubCheck: true, revision: true,
   clients: { select: { clientId: true }, take: 1 },
   platforms: { select: { accessUrl: true, linkUrl: true }, orderBy: { sortOrder: "asc" } },
@@ -90,6 +92,7 @@ export async function revisarProyecto(projectId: string, op: Opciones = {}): Pro
       if (p.phases.some((f) => f.githubMilestone != null)) {
         await sincronizarProyecto(p.id, { milestones: v.milestones.map((m) => ({ number: m.numero, open_issues: m.abiertas, closed_issues: m.cerradas })) }).catch((e) => console.error("[motor] fases", p?.id, e));
       }
+      await mapaSiFalta(p).catch((e) => console.error("[motor] mapa", p?.id, e));
     } catch (e) {
       check = { ...(check ?? {}), error: e instanceof Error ? e.message : String(e) };
       await prisma.project.update({ where: { id: p.id }, data: { githubCheck: check as unknown as object, githubCheckAt: new Date() } });
@@ -110,6 +113,19 @@ export async function revisarProyecto(projectId: string, op: Opciones = {}): Pro
   });
   await prisma.project.update({ where: { id: p.id }, data: { revision: rev as unknown as object, revisadoAt: new Date() } });
   return rev;
+}
+
+/**
+ * El mapa del repo («Código del proyecto») solo se armaba al conectar el repo. Si entonces ninguna cuenta podía
+ * leerlo, quedaba vacío aunque después se agregara el token: la revisión lo arma la primera vez que GitHub responde.
+ */
+async function mapaSiFalta(p: { id: string; userId: string; repoOwner: string | null; repoName: string | null; repoBranch: string | null; githubAccountId: string | null }) {
+  if (!p.repoOwner || !p.repoName) return;
+  const vacio = await prisma.project.count({ where: { id: p.id, repoSnapshot: { equals: Prisma.DbNull } } });
+  if (!vacio) return;
+  const t = await tokenParaRepo({ userId: p.userId, owner: p.repoOwner, repo: p.repoName, projectId: p.id, cuentaId: p.githubAccountId });
+  const snap = await buildRepoSnapshot(p.repoOwner, p.repoName, t.token, p.repoBranch);
+  await prisma.project.update({ where: { id: p.id }, data: { repoBranch: snap.branch, repoSnapshot: snap as unknown as object, repoSyncedAt: new Date() } });
 }
 
 async function enTandas<T>(xs: T[], n: number, fn: (x: T) => Promise<void>) {
