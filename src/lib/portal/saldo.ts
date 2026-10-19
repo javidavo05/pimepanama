@@ -5,7 +5,12 @@
  * nunca dos veces. Los pagos «por confirmar» se muestran aparte y todavía no bajan la deuda.
  * Lo que falta emitir de una factura (cuotas futuras o el resto contra entrega) también se debe aunque no tenga
  * fecha de pago: va en `porEmitir` y suma a `pendiente` (pedido de Javier, 2026-10-19: «ellos deben la mitad»).
+ * Un proyecto que se cobra por su plan de pagos (50 % al firmar y 50 % a la entrega, cuotas…) y no por fases también
+ * se debe antes de facturarlo: lo que el plan cobra en dinero y todavía no tiene factura va en `porPlan` (pedido de
+ * Javier, 2026-10-19: «si le envío el acceso al cliente aparece todo en 0 y no es así»).
  */
+import { buildInstallmentPlan, isFinancingPlan } from "@/lib/financing";
+
 type Factura = { id: string; status: string; total: unknown; amountPaid?: unknown; porEmitir?: number };
 type Pago = { documentId?: string | null; phaseId?: string | null; amount: unknown; status: string };
 /** Fase con su factura (si tiene). billingPoint «sin_cobro» no se cobra. */
@@ -24,7 +29,7 @@ export const FACTURA_CUENTA = (status: string) => status !== "CANCELLED" && stat
  * los pagos registrados antes del portal solo viven en amountPaid. Los pagos confirmados sin factura
  * (anticipos) se suman aparte.
  */
-export function saldoCliente(facturas: Factura[], pagos: Pago[], fases: FaseCobrable[] = []) {
+export function saldoCliente(facturas: Factura[], pagos: Pago[], fases: FaseCobrable[] = [], planes: PlanCobrable[] = []) {
   const vivas = facturas.filter((f) => FACTURA_CUENTA(f.status));
   const facturado = r2(vivas.reduce((a, f) => a + n(f.total), 0));
   const ids = new Set(facturas.map((f) => f.id));
@@ -35,7 +40,35 @@ export function saldoCliente(facturas: Factura[], pagos: Pago[], fases: FaseCobr
   // Los pagos sin factura de una fase ya están en «sueltos»: aquí va el precio bruto para no restarlos dos veces.
   const sinFacturar = r2(fasesCobrables(fases).reduce((a, f) => a + n(f.price), 0));
   const porEmitir = r2(vivas.reduce((a, f) => a + n(f.porEmitir), 0));
-  return { facturado, porEmitir, sinFacturar, pagado, porConfirmar, pendiente: r2(Math.max(0, facturado + porEmitir + sinFacturar - pagado)) };
+  // Igual que las fases: los pagos sin factura del proyecto ya están en «sueltos», aquí va el bruto del plan.
+  const porPlan = r2(planes.reduce((a, p) => a + planSinFacturar(p), 0));
+  return { facturado, porEmitir, sinFacturar, porPlan, pagado, porConfirmar, pendiente: r2(Math.max(0, facturado + porEmitir + sinFacturar + porPlan - pagado)) };
+}
+
+/**
+ * Proyecto con su plan de pagos, sus facturas y cuántas fases con precio se cobran (consulta con PLAN_COBRABLE de
+ * datos.ts).
+ */
+export type PlanCobrable = { financingPlan: unknown; documents: { status: string; total: unknown }[]; _count: { phases: number } };
+
+/**
+ * Lo que el plan de pagos cobra en dinero (total menos canje) y todavía no tiene factura. Solo cuenta si el proyecto
+ * no se cobra por fases: con una fase con precio, la deuda sale de las fases y el plan no se suma encima. Las
+ * facturas vivas del proyecto (por su total de contrato) ya cubren esa parte del plan.
+ */
+export function planSinFacturar(p: PlanCobrable): number {
+  if (!isFinancingPlan(p.financingPlan) || p._count.phases > 0) return 0;
+  const efectivo = buildInstallmentPlan(p.financingPlan).cash;
+  const facturado = p.documents.filter((d) => FACTURA_CUENTA(d.status)).reduce((a, d) => a + n(d.total), 0);
+  return r2(Math.max(0, efectivo - facturado));
+}
+
+/** Lo que falta del plan de un proyecto: lo que todavía no tiene factura menos los pagos confirmados sin factura del proyecto. */
+export function faltaDePlan(p: PlanCobrable, pagosSinFactura: Pago[]): number {
+  const bruto = planSinFacturar(p);
+  if (bruto <= 0.005) return 0;
+  const pagado = pagosSinFactura.filter((x) => !x.documentId && x.status === "confirmado").reduce((a, x) => a + n(x.amount), 0);
+  return r2(Math.max(0, bruto - pagado));
 }
 
 /** Estados en los que una fase ya se debe: desde que inicia. */

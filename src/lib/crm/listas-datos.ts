@@ -4,7 +4,7 @@
  */
 import { prisma } from "@/lib/prisma";
 import { saldoCliente, FASE_INICIADA } from "@/lib/portal/saldo";
-import { fasesVigentes, FASE_COBRABLE } from "@/lib/portal/datos";
+import { fasesVigentes, FASE_COBRABLE, PLAN_COBRABLE } from "@/lib/portal/datos";
 import { TICKET_ABIERTOS } from "@/lib/portal/estados";
 import { equipoDeLaEmpresa } from "@/lib/auth/equipo-lista";
 import { opcionesDe, pasaFiltros, type Filtros } from "./listas";
@@ -27,7 +27,7 @@ export async function cargarClientes(u: Quien, f: Filtros) {
         documents: { where: { type: "FACTURA" }, select: { id: true, status: true, total: true, amountPaid: true } },
         payments: { select: { documentId: true, phaseId: true, amount: true, status: true } },
         // Fases iniciadas sin factura: se deben igual (saldo.ts).
-        projects: { where: { status: { not: "CANCELLED" } }, select: { phases: { where: { AND: [fasesVigentes, { status: { in: [...FASE_INICIADA] } }] }, select: FASE_COBRABLE } } },
+        projects: { where: { status: { not: "CANCELLED" } }, select: { ...PLAN_COBRABLE, phases: { where: { AND: [fasesVigentes, { status: { in: [...FASE_INICIADA] } }] }, select: FASE_COBRABLE } } },
         tickets: { where: { status: { in: TICKET_ABIERTOS } }, select: { id: true } },
         portalUsers: { where: { status: { not: "revocado" } }, select: { status: true } },
         _count: { select: { projects: { where: { status: "ACTIVE" } }, projectLinks: { where: { project: { status: "ACTIVE" } } } } },
@@ -54,7 +54,7 @@ export async function cargarClientes(u: Quien, f: Filtros) {
       brandLine: c.brandLine, internal: c.internal, responsableId: c.responsableId,
       responsable: c.responsableId ? nombreDe.get(c.responsableId) ?? null : null,
       fuente: c.fuente, industria: c.industria, etiquetas: c.etiquetas,
-      saldo: saldoCliente(c.documents, c.payments, c.projects.flatMap((p) => p.phases)).pendiente,
+      saldo: saldoCliente(c.documents, c.payments, c.projects.flatMap((p) => p.phases), c.projects).pendiente,
       tickets: c.tickets.length,
       proyectos: Math.max(c._count.projects, c._count.projectLinks),
       cuenta: !c.portalUsers.length ? "Sin cuenta" : c.portalUsers.some((p) => p.status === "activo") ? "Cuenta activa" : "Invitado",

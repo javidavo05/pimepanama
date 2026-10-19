@@ -33,3 +33,23 @@ test("lo que falta emitir sigue debiéndose aunque no tenga fecha", () => {
   assert.equal(s.pagado, 2250);
   assert.equal(s.pendiente, 2250);
 });
+
+test("proyecto cobrado por su plan (50/50 con canje) se debe antes de facturarlo", async () => {
+  const { planSinFacturar, faltaDePlan } = await import("./saldo");
+  const plan = { mode: "MILESTONES", total: 3500, downPayment: 0, installments: 1, frequency: "MONTHLY", firstDueDate: "", barter: { amount: 1000, description: "canje" } };
+  const bj = { financingPlan: plan, documents: [], _count: { phases: 0 } };
+  assert.equal(planSinFacturar(bj), 2500);
+  assert.equal(saldoCliente([], [], [], [bj]).pendiente, 2500);
+  // Un pago sin factura del proyecto baja la deuda una sola vez.
+  const pago = { documentId: null, amount: 1250, status: "confirmado" };
+  assert.equal(saldoCliente([], [pago], [], [bj]).pendiente, 1250);
+  assert.equal(faltaDePlan(bj, [pago]), 1250);
+  // Ya facturado el primer 50 %: el plan solo suma lo que falta facturar.
+  const conFactura = { ...bj, documents: [{ status: "SENT", total: 1250 }] };
+  assert.equal(planSinFacturar(conFactura), 1250);
+  assert.equal(saldoCliente([{ id: "f", status: "SENT", total: 1250 }], [], [], [conFactura]).pendiente, 2500);
+  // Si el proyecto se cobra por fases con precio, el plan no se suma encima.
+  assert.equal(planSinFacturar({ ...bj, _count: { phases: 1 } }), 0);
+  // Sin plan, nada.
+  assert.equal(planSinFacturar({ financingPlan: null, documents: [], _count: { phases: 0 } }), 0);
+});

@@ -7,9 +7,9 @@
  */
 import { SIN_INTERNOS } from "@/lib/clientes/interno";
 import { prisma } from "@/lib/prisma";
-import { pagadoEfectivo, faltaDeFases, FASE_INICIADA } from "@/lib/portal/saldo";
+import { pagadoEfectivo, faltaDeFases, faltaDePlan, FASE_INICIADA } from "@/lib/portal/saldo";
 import { avanceDeProyecto } from "@/lib/portal/avance";
-import { fasesVigentes, FASE_COBRABLE } from "@/lib/portal/datos";
+import { fasesVigentes, FASE_COBRABLE, planesDelEquipoPorCobrar } from "@/lib/portal/datos";
 import { eventosDelEquipo } from "@/lib/calendario/datos";
 
 const DIA = 86_400_000;
@@ -31,7 +31,7 @@ export async function datosHoy(userId: string, ahora = new Date()) {
   const mes = new Date(Date.UTC(new Date(ahora.getTime() - 5 * 3600_000).getUTCFullYear(), new Date(ahora.getTime() - 5 * 3600_000).getUTCMonth(), 1, 5));
   const mesPasado = new Date(Date.UTC(mes.getUTCFullYear(), mes.getUTCMonth() - 1, 1, 5));
 
-  const [calendario, facturas, pagos, entradas, tareas, citas, reuniones, sistemas, tickets, borradores, porConfirmar, ordenes, proyectos, fasesIniciadas] = await Promise.all([
+  const [calendario, facturas, pagos, entradas, tareas, citas, reuniones, sistemas, tickets, borradores, porConfirmar, ordenes, proyectos, fasesIniciadas, planes] = await Promise.all([
     eventosDelEquipo(userId, hoy, manana),
     prisma.document.findMany({
       where: { userId, type: "FACTURA", status: { notIn: ["DRAFT", "CANCELLED", "PAID"] }, ...SIN_INTERNOS },
@@ -53,6 +53,8 @@ export async function datosHoy(userId: string, ahora = new Date()) {
       where: { AND: [fasesVigentes, { status: { in: [...FASE_INICIADA] } }, { project: { userId, status: { not: "CANCELLED" }, NOT: { client: { is: { internal: true } } } } }] },
       select: { ...FASE_COBRABLE, payments: { where: { status: "confirmado", documentId: null }, select: { documentId: true, phaseId: true, amount: true, status: true } } },
     }),
+    // Proyectos que se cobran por su plan de pagos y todavía no lo facturan.
+    planesDelEquipoPorCobrar(userId),
   ]);
 
   const nombre = (c: { name: string; company: string | null } | null | undefined, alterno?: string | null) => c?.company || c?.name || alterno || "Sin cliente";
@@ -86,6 +88,7 @@ export async function datosHoy(userId: string, ahora = new Date()) {
     }
   }
   for (const x of faltaDeFases(fasesIniciadas, fasesIniciadas.flatMap((f) => f.payments))) porCobrar += x.falta;
+  for (const p of planes) porCobrar += faltaDePlan(p, p.payments);
   vencidas.sort((a, b) => b.dias - a.dias || b.falta - a.falta);
 
   const entroMes = r2(entradas.filter((p) => p.paidAt >= mes).reduce((a, p) => a + Number(p.amount), 0));

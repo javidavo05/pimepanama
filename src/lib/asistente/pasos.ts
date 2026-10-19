@@ -13,7 +13,7 @@ import { borrarPago, borrarFactura } from "@/lib/motor/pagos";
 export type Modelo =
   | "client" | "project" | "projectPhase" | "payment" | "document" | "task" | "ticket" | "ticketMessage" | "expense"
   | "meeting" | "platform" | "activityEvent" | "booking" | "paymentSchedule" | "contract" | "projectClient"
-  | "deliverable";
+  | "deliverable" | "interaccion";
 
 export type Paso =
   | { t: "crear"; m: Modelo; id: string }

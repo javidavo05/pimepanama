@@ -11,8 +11,8 @@ import { siguienteNumero } from "@/lib/numeracion";
 import { buildInstallmentPlan, isFinancingPlan, type FinancingPlan } from "@/lib/financing";
 import { facturarHoras } from "@/lib/portal/empresa";
 import { registrarEvento } from "@/lib/portal/eventos";
-import { pagadoEfectivo, faltaDeFases } from "@/lib/portal/saldo";
-import { fasesVigentes, FASE_COBRABLE } from "@/lib/portal/datos";
+import { pagadoEfectivo, faltaDeFases, faltaDePlan } from "@/lib/portal/saldo";
+import { fasesVigentes, FASE_COBRABLE, PLAN_COBRABLE } from "@/lib/portal/datos";
 import { unirClienteAProyecto } from "./enlaces";
 
 export type Equipo = { id: string; configId?: string | null; config?: { invoicePrefix?: string | null; taxRatePercent?: unknown; paymentTermsDays?: number | null } | null };
@@ -22,11 +22,12 @@ const ESTADOS_FACTURADOS = { notIn: ["CANCELLED", "DRAFT"] as ("CANCELLED" | "DR
 
 /**
  * Dinero de un proyecto: presupuesto, facturado, cobrado y por cobrar, con sus facturas. Por cobrar suma lo
- * que falta de las facturas emitidas y de las fases ya iniciadas que no tienen factura (se deben igual).
+ * que falta de las facturas emitidas, de las fases ya iniciadas que no tienen factura y del plan de pagos que
+ * todavía no se factura (se deben igual).
  */
 export async function dineroDeProyecto(userId: string, projectId: string) {
   const [p, facturas, pagos, sueltos] = await Promise.all([
-    prisma.project.findFirst({ where: { id: projectId, userId }, select: { totalBudget: true, financingPlan: true, phases: { where: fasesVigentes, select: FASE_COBRABLE } } }),
+    prisma.project.findFirst({ where: { id: projectId, userId }, select: { ...PLAN_COBRABLE, totalBudget: true, phases: { where: fasesVigentes, select: FASE_COBRABLE } } }),
     prisma.document.findMany({ where: { userId, projectId, type: "FACTURA", status: { not: "CANCELLED" } }, orderBy: { issueDate: "desc" }, select: { id: true, number: true, title: true, status: true, total: true, amountPaid: true, issueDate: true, dueDate: true } }),
     prisma.payment.findMany({ where: { userId, document: { projectId } }, select: { documentId: true, amount: true, status: true } }),
     // Pagos del proyecto o de sus fases que no tienen factura.
@@ -47,11 +48,14 @@ export async function dineroDeProyecto(userId: string, projectId: string) {
   // Lo que falta de las fases iniciadas sin factura, menos los pagos del proyecto que no son de una fase.
   const deFases = faltaDeFases(p.phases, sueltos).reduce((a, x) => a + x.falta, 0);
   const delProyecto = sueltos.filter((x) => !x.phaseId).reduce((a, x) => a + Number(x.amount), 0);
+  // Proyecto que se cobra por su plan y no por fases: lo del plan sin factura, menos los pagos sin factura.
+  const dePlan = faltaDePlan(p, sueltos);
   return {
     presupuesto: r2(presupuesto),
     facturado,
     cobrado,
-    porCobrar: r2(emitidas.reduce((a, f) => a + f.falta, 0) + Math.max(0, deFases - delProyecto)),
+    porCobrar: r2(emitidas.reduce((a, f) => a + f.falta, 0) + Math.max(0, deFases - delProyecto) + dePlan),
+    planSinFacturar: dePlan,
     sinFacturar: r2(Math.max(0, presupuesto - facturado - filas.filter((f) => f.status === "DRAFT").reduce((a, f) => a + f.total, 0))),
     borradores: filas.filter((f) => f.status === "DRAFT").length,
     facturas: filas,

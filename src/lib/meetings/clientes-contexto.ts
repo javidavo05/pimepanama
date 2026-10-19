@@ -5,7 +5,7 @@
  */
 import { prisma } from "@/lib/prisma";
 import { avanceDeProyecto, faseActual } from "@/lib/portal/avance";
-import { fasesVigentes, FASE_COBRABLE } from "@/lib/portal/datos";
+import { fasesVigentes, FASE_COBRABLE, PLAN_COBRABLE } from "@/lib/portal/datos";
 import { saldoCliente } from "@/lib/portal/saldo";
 
 export type ProyectoDeCliente = { id: string; name: string; status: string; avance: number; fase: string | null };
@@ -25,7 +25,7 @@ export async function contextoClientes(userId: string, excluirReunion?: string) 
       where: { userId },
       orderBy: { updatedAt: "desc" },
       select: {
-        id: true, name: true, status: true, clientId: true,
+        ...PLAN_COBRABLE, id: true, name: true, status: true, clientId: true,
         clients: { select: { clientId: true }, take: 1 },
         phases: { where: fasesVigentes, orderBy: { sortOrder: "asc" }, select: { ...FASE_COBRABLE, name: true, progress: true, sortOrder: true } },
       },
@@ -60,8 +60,8 @@ export async function contextoClientes(userId: string, excluirReunion?: string) 
 
   const clientes = new Set([...facturas.map((f) => f.clientId!), ...pagos.map((p) => p.clientId!), ...clienteDe.values()].filter((x): x is string => !!x));
   for (const cid of clientes) {
-    const fasesSinFactura = proyectos.filter((p) => clienteDe.get(p.id) === cid && p.status !== "CANCELLED").flatMap((p) => p.phases);
-    const s = saldoCliente(facturas.filter((f) => f.clientId === cid), pagos.filter((p) => p.clientId === cid), fasesSinFactura);
+    const suyos = proyectos.filter((p) => clienteDe.get(p.id) === cid && p.status !== "CANCELLED");
+    const s = saldoCliente(facturas.filter((f) => f.clientId === cid), pagos.filter((p) => p.clientId === cid), suyos.flatMap((p) => p.phases), suyos);
     const r = de(cid);
     r.porCobrar = s.pendiente;
     r.pagado = s.pagado;

@@ -904,17 +904,19 @@ export const OPERACIONES: Record<string, Op> = {
     },
   },
   nota_crear: {
-    def: def("nota_crear", "Deja una nota interna en la línea de tiempo de un proyecto o de un cliente (no la ve el cliente).", P({ proyectoId: STR, clienteId: STR, texto: STR }), ["texto"]),
+    def: def("nota_crear", "Guarda una nota interna en la sección Notas de la ficha del cliente (no la ve el cliente). Es para recordar algo del cliente, no para reportar fallas del sistema.", P({ proyectoId: STR, clienteId: STR, texto: STR }), ["texto"]),
     async preparar(u, a) {
       if (!s(a, "texto")) return { error: "Falta el texto de la nota." };
       const pr = s(a, "proyectoId") ? await proyectoDe(u, s(a, "proyectoId")) : null;
       const c = s(a, "clienteId") ? await clienteDe(u, s(a, "clienteId")) : pr ? clienteDelProyecto(pr) : null;
       if (!c) return { error: "Necesito el proyecto (con cliente) o el cliente de la nota." };
-      return { resumen: `Nota interna${pr ? ` en ${pr.name}` : ` de ${nombreDe(c)}`}: ${s(a, "texto").slice(0, 120)}`, evalua: {}, payload: { proyectoId: pr?.id ?? null, clienteId: c.id, texto: s(a, "texto") } };
+      return { resumen: `Nota interna de ${nombreDe(c)}${pr ? ` (${pr.name})` : ""}: ${s(a, "texto").slice(0, 120)}`, evalua: {}, payload: { proyectoId: pr?.id ?? null, proyecto: pr?.name ?? null, clienteId: c.id, texto: s(a, "texto") } };
     },
     async ejecutar(u, p) {
-      const e = await prisma.activityEvent.create({ data: { userId: u.id, clientId: String(p.clienteId), projectId: (p.proyectoId as string) || null, entityType: "nota", kind: "nota_interna", title: String(p.texto).slice(0, 500), visibility: "interno", actorType: "pime", actorEmpresaUserId: u.id } });
-      return { pasos: [{ t: "crear", m: "activityEvent", id: e.id }], resultType: "nota", resultId: e.id, href: p.proyectoId ? `/empresa/proyectos/${p.proyectoId}` : `/empresa/clientes/${p.clienteId}` };
+      // En Notas de la ficha del cliente (Interaccion tipo «nota»), completa: antes iba a la línea de actividad, cortada a 500 letras y fuera de Notas.
+      const texto = String(p.texto).slice(0, 4000);
+      const i = await prisma.interaccion.create({ data: { userId: u.id, clientId: String(p.clienteId), tipo: "nota", resumen: p.proyecto ? `${p.proyecto}: ${texto}` : texto } });
+      return { pasos: [{ t: "crear", m: "interaccion", id: i.id }], resultType: "nota", resultId: i.id, href: `/empresa/clientes/${p.clienteId}#notas-titulo` };
     },
   },
   cita_crear: {

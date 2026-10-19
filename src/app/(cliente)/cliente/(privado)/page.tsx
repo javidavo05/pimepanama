@@ -120,11 +120,12 @@ export default async function InicioCliente() {
           ]} />
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <div className="p-ink-celda p-celda px-4 py-3" data-tono="ok"><dt className="p-ink-3 flex items-center justify-between gap-2">Pagado</dt><dd className="text-lg font-bold"><Cifra texto={dinero(d.saldo.pagado)} moneda demora={450} /></dd></div>
-            <div className="p-ink-celda p-celda px-4 py-3" data-tono="marca"><dt className="p-ink-3">Total</dt><dd className="text-lg font-bold"><Cifra texto={dinero(d.saldo.facturado + d.saldo.porEmitir + d.saldo.sinFacturar)} moneda demora={520} /></dd></div>
+            <div className="p-ink-celda p-celda px-4 py-3" data-tono="marca"><dt className="p-ink-3">Total</dt><dd className="text-lg font-bold"><Cifra texto={dinero(d.saldo.facturado + d.saldo.porEmitir + d.saldo.sinFacturar + d.saldo.porPlan)} moneda demora={520} /></dd></div>
           </dl>
           <div className="mt-auto space-y-2 text-sm p-ink-2">
             {d.saldo.porEmitir > 0 && <p>Incluye <b className="p-ink-acc tabular-nums">{dinero(d.saldo.porEmitir)}</b> que todavía no se factura: se cobra en las próximas cuotas o al entregar.</p>}
             {d.saldo.sinFacturar > 0 && <p>Incluye <b className="p-ink-acc tabular-nums">{dinero(d.saldo.sinFacturar)}</b> de fases en curso que todavía no tienen factura.</p>}
+            {d.saldo.porPlan > 0 && <p>Incluye <b className="p-ink-acc tabular-nums">{dinero(d.saldo.porPlan)}</b> del plan de pagos acordado: cada pago se factura cuando llega su momento.</p>}
             {d.saldo.porConfirmar > 0 && <p>Pagos reportados esperando confirmación: <b className="p-ink-acc tabular-nums">{dinero(d.saldo.porConfirmar)}</b></p>}
             {d.proximo ? (
               <p>{vencida ? "Venció" : "Próximo vencimiento"}: <b className="text-white">{d.proximo.number ?? "Factura"}</b> el {fechaCorta(d.proximo.dueDate)}</p>

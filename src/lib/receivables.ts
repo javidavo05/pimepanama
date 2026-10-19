@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { SIN_INTERNOS } from "@/lib/clientes/interno";
 import { INVOICE_PARTIAL_SCHEDULE_DESC, QUOTE_BALANCE_SCHEDULE_DESC } from "@/lib/quote-balance";
-import { faltaDeFases, FASE_INICIADA } from "@/lib/portal/saldo";
-import { fasesVigentes, FASE_COBRABLE } from "@/lib/portal/datos";
+import { faltaDeFases, faltaDePlan, FASE_INICIADA } from "@/lib/portal/saldo";
+import { fasesVigentes, FASE_COBRABLE, planesDelEquipoPorCobrar } from "@/lib/portal/datos";
 
 /**
  * Fuente de verdad única de Cuentas por Cobrar.
@@ -27,7 +27,7 @@ import { fasesVigentes, FASE_COBRABLE } from "@/lib/portal/datos";
 
 export const OPEN_INVOICE_STATUSES = ["DRAFT", "SENT", "ACCEPTED", "PARTIALLY_PAID"] as const;
 
-export type ReceivableKind = "invoice" | "quote" | "schedule" | "phase";
+export type ReceivableKind = "invoice" | "quote" | "schedule" | "phase" | "plan";
 
 export type ReceivableItem = {
   id: string;
@@ -235,7 +235,7 @@ export async function getReceivables(
   userId: string,
   now: Date = new Date()
 ): Promise<ReceivablesResult> {
-  const [allDocs, rawSchedules, phases] = await Promise.all([fetchDocs(userId), fetchSchedules(userId), fetchPhases(userId)]);
+  const [allDocs, rawSchedules, phases, planes] = await Promise.all([fetchDocs(userId), fetchSchedules(userId), fetchPhases(userId), planesDelEquipoPorCobrar(userId)]);
 
   const { schedules } = await reconcileInMemory(userId, allDocs, rawSchedules);
 
@@ -338,6 +338,31 @@ export async function getReceivables(
       currency: "USD",
       willCreateInvoice: true,
       href: `/empresa/proyectos/${fase.project.id}?tab=fases`,
+    });
+  }
+
+  // Proyectos que se cobran por su plan de pagos (50 % al firmar…) y todavía no lo facturan: se deben igual.
+  for (const p of planes) {
+    const falta = faltaDePlan(p, p.payments);
+    if (falta <= 0.005) continue;
+    items.push({
+      id: `plan-${p.id}`,
+      kind: "plan",
+      label: `Plan de pagos · ${p.name}`,
+      client: p.client ? clientLabel(p.client.name, p.client.company) : "",
+      amount: falta,
+      documentTotal: falta,
+      amountPaid: 0,
+      dueDate: null,
+      daysLeft: null,
+      status: "PENDING",
+      documentId: "",
+      documentType: "FACTURA",
+      scheduleId: null,
+      projectName: p.name,
+      currency: "USD",
+      willCreateInvoice: true,
+      href: `/empresa/proyectos/${p.id}?tab=dinero`,
     });
   }
 

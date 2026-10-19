@@ -10,7 +10,7 @@ import { datosHoy } from "@/lib/motor/hoy";
 import { dineroDeProyecto } from "@/lib/motor/cobros";
 import { saldoCliente, pagadoEfectivo, FACTURA_CUENTA } from "@/lib/portal/saldo";
 import { avanceDeProyecto } from "@/lib/portal/avance";
-import { fasesVigentes, FASE_COBRABLE, fasesDelClientePorCobrar } from "@/lib/portal/datos";
+import { fasesVigentes, FASE_COBRABLE, fasesDelClientePorCobrar, planesDelClientePorCobrar } from "@/lib/portal/datos";
 import { isFinancingPlan } from "@/lib/financing";
 import { requiereConfirmacion } from "./reglas";
 import { OPERACIONES, usd, type U, type Args } from "./operaciones";
@@ -63,15 +63,15 @@ async function leer(u: U, nombreHerr: string, a: Args): Promise<unknown> {
     case "resumen_cliente": {
       const c = await prisma.client.findFirst({ where: { id: s("clienteId"), userId }, select: { id: true, name: true, company: true, brandLine: true, documents: { where: { type: { in: ["FACTURA", "COTIZACION"] } }, orderBy: { issueDate: "asc" }, select: { id: true, type: true, number: true, title: true, status: true, total: true, taxAmount: true, amountPaid: true, dueDate: true, issueDate: true } }, payments: { orderBy: { paidAt: "asc" }, select: { id: true, documentId: true, phaseId: true, amount: true, status: true, paidAt: true, method: true, document: { select: { number: true } }, phase: { select: { name: true } } } }, contracts: { select: { id: true, title: true, status: true, projectId: true } }, projects: { where: { status: { not: "CANCELLED" } }, select: { id: true, name: true, status: true } }, projectLinks: { where: { project: { status: { not: "CANCELLED" } } }, select: { project: { select: { id: true, name: true, status: true } } } }, tickets: { where: { status: { notIn: ["resuelto", "cerrado"] } }, select: { id: true, number: true, title: true } } } });
       if (!c) return { error: "No encontré ese cliente." };
-      const fases = await prisma.projectPhase.findMany({ where: fasesDelClientePorCobrar(c.id), select: { ...FASE_COBRABLE, name: true } });
+      const [fases, planes] = await Promise.all([prisma.projectPhase.findMany({ where: fasesDelClientePorCobrar(c.id), select: { ...FASE_COBRABLE, name: true } }), planesDelClientePorCobrar(c.id)]);
       const facturas = c.documents.filter((d) => d.type === "FACTURA");
-      const saldo = saldoCliente(facturas, c.payments, fases);
+      const saldo = saldoCliente(facturas, c.payments, fases, planes);
       const hoy = new Date();
       const proyectos = new Map<string, { proyectoId: string; nombre: string; estado: string }>();
       for (const p of [...c.projects, ...c.projectLinks.map((l) => l.project)]) proyectos.set(p.id, { proyectoId: p.id, nombre: p.name, estado: p.status });
       return {
         cliente: nombre(c), linea: c.brandLine,
-        saldo: { porCobrar: usd(saldo.pendiente), facturado: usd(saldo.facturado), fasesIniciadasSinFactura: usd(saldo.sinFacturar), pagado: usd(saldo.pagado) },
+        saldo: { porCobrar: usd(saldo.pendiente), facturado: usd(saldo.facturado), fasesIniciadasSinFactura: usd(saldo.sinFacturar), planDePagosSinFactura: usd(saldo.porPlan), pagado: usd(saldo.pagado) },
         algunaFacturaConItbms: facturas.some((f) => Number(f.taxAmount ?? 0) > 0),
         proyectos: [...proyectos.values()],
         contratos: c.contracts.map((k) => ({ contratoId: k.id, titulo: k.title, estado: k.status, proyectoId: k.projectId })),
@@ -94,7 +94,7 @@ async function leer(u: U, nombreHerr: string, a: Args): Promise<unknown> {
       if (nombreHerr === "ver_fases") return { proyecto: p.name, cliente: nombre(p.client), fases };
       const dinero = await dineroDeProyecto(userId, p.id);
       const g = p.githubCheck as { commits7?: number; commits30?: number; ultimoCommit?: { mensaje: string; fecha: string } | null } | null;
-      return { proyecto: p.name, cliente: nombre(p.client), estado: p.status, avance: `${Math.round(avanceDeProyecto(p.phases))} %`, fases, plan: isFinancingPlan(p.financingPlan) ? p.financingPlan : null, dinero: dinero && { presupuesto: usd(dinero.presupuesto), facturado: usd(dinero.facturado), cobrado: usd(dinero.cobrado), porCobrar: usd(dinero.porCobrar) }, github: p.repoName ? (g ? { verificado: p.githubCheckAt, commits7: g.commits7, commits30: g.commits30, ultimoCambio: g.ultimoCommit } : "Ligado pero sin verificar todavía") : "Sin repositorio" };
+      return { proyecto: p.name, cliente: nombre(p.client), estado: p.status, avance: `${Math.round(avanceDeProyecto(p.phases))} %`, fases, plan: isFinancingPlan(p.financingPlan) ? p.financingPlan : null, dinero: dinero && { presupuesto: usd(dinero.presupuesto), facturado: usd(dinero.facturado), cobrado: usd(dinero.cobrado), porCobrar: usd(dinero.porCobrar), planDePagosSinFactura: usd(dinero.planSinFacturar) }, github: p.repoName ? (g ? { verificado: p.githubCheckAt, commits7: g.commits7, commits30: g.commits30, ultimoCambio: g.ultimoCommit } : "Ligado pero sin verificar todavía") : "Sin repositorio" };
     }
     case "ver_entregables": {
       const p = await prisma.project.findFirst({ where: { id: s("proyectoId"), userId }, select: { name: true, phases: { orderBy: { sortOrder: "asc" }, select: { id: true, name: true } }, deliverables: { orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }], select: { id: true, name: true, description: true, dueDate: true, completed: true, phaseId: true } } } });

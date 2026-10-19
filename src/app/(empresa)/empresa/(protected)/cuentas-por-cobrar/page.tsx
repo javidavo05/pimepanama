@@ -116,6 +116,9 @@ export default async function CuentasPorCobrarPage() {
                         {item.kind === "phase" && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded border border-warn/30 text-warn">fase sin factura</span>
                         )}
+                        {item.kind === "plan" && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded border border-warn/30 text-warn">plan sin factura</span>
+                        )}
                         {item.kind === "quote" && (
                           <span className="text-[10px] px-1.5 py-0.5 rounded border border-warn/30 text-warn">⚠ sin factura</span>
                         )}
@@ -162,8 +165,8 @@ export default async function CuentasPorCobrarPage() {
                       {DOC_STATUS_LABEL[item.status] ?? item.status}
                     </span>
 
-                    {item.kind === "phase" ? (
-                      <Link href={item.href} className="inline-flex items-center min-h-11 px-3 rounded-lg text-sm font-semibold text-brand-fg hover:bg-fill">Ver fase</Link>
+                    {item.kind === "phase" || item.kind === "plan" ? (
+                      <Link href={item.href} className="inline-flex items-center min-h-11 px-3 rounded-lg text-sm font-semibold text-brand-fg hover:bg-fill">{item.kind === "plan" ? "Ver plan" : "Ver fase"}</Link>
                     ) : (<>
                     <ArTaskActions
                       documentId={item.scheduleId ? null : item.documentId}
