@@ -3,6 +3,7 @@ import type { Lang } from "../../content/site";
 
 export const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://pimepanama.com";
 const LOCALE: Record<Lang, string> = { es: "es_PA", en: "en_US" };
+const PUBLICADO = "2026-10-10T00:00:00-05:00";
 
 /**
  * Metadatos de una página en un idioma: título exacto (sin la plantilla, para no repetir la marca), canónica
@@ -16,6 +17,10 @@ export function metaDePagina(lang: Lang, ruta: string, titulo: string, descripci
     alternates: { canonical: url(lang), languages: { "es-PA": url("es"), "en-US": url("en"), "x-default": url("en") } },
     openGraph: { type: "website", siteName: "Pime Panamá", locale: LOCALE[lang], alternateLocale: [LOCALE[lang === "es" ? "en" : "es"]], url: url(lang), title: titulo, description: descripcion },
     twitter: { card: "summary_large_image", title: titulo, description: descripcion },
+    // LinkedIn (Post Inspector) busca autor y fecha de publicación: sin ellos marcaba «No author / No publication date».
+    // La fecha es la del lanzamiento del sitio nuevo (corte de dominio, 2026-10-10).
+    authors: [{ name: "Pime Panamá", url: BASE }],
+    other: { publish_date: PUBLICADO, "article:published_time": PUBLICADO, "article:author": "Pime Panamá" },
     ...extra,
   };
 }
