@@ -22,6 +22,11 @@ import type { Prisma } from "@prisma/client";
 export type Estado = { error?: string; ok?: boolean; mensaje?: string; enlace?: string; aviso?: boolean } | null;
 const txt = (v: FormDataEntryValue | null, max = 500) => String(v ?? "").trim().slice(0, max);
 const num = (v: FormDataEntryValue | null) => Number(String(v ?? "").replace(/[^\d.-]/g, ""));
+/** Enlace de revisión de una fase: vacío = null; sin protocolo se le pone https://; undefined si no es una URL válida. */
+const enlaceRevision = (v: string): string | null | undefined => {
+  if (!v) return null;
+  try { const u = new URL(/^https?:\/\//i.test(v) ? v : `https://${v}`); return u.protocol === "https:" || u.protocol === "http:" ? u.toString() : undefined; } catch { return undefined; }
+};
 const falla = (e: unknown): Estado => ({ error: e instanceof Error ? e.message : "No se pudo completar." });
 
 function refrescar(clientId?: string | null, extra: string[] = []) {
@@ -268,7 +273,9 @@ export async function guardarFaseAction(_: Estado, form: FormData): Promise<Esta
     billingPoint: txt(form.get("billingPoint"), 20) || "al_entregar",
     estimatedDays: num(form.get("estimatedDays")) ? Math.round(num(form.get("estimatedDays"))) : null,
     githubMilestone: num(form.get("githubMilestone")) ? Math.round(num(form.get("githubMilestone"))) : null,
+    reviewUrl: enlaceRevision(txt(form.get("reviewUrl"), 500)),
   };
+  if (datos.reviewUrl === undefined) return { error: "El enlace de revisión debe empezar con https://" };
   if (!datos.name) return { error: "Escribe el nombre de la fase." };
   if (!esUno(FASE_COBRO, datos.billingPoint)) return { error: "Elige cuándo se cobra." };
   if (id) {

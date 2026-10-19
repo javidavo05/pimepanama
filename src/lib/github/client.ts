@@ -162,7 +162,7 @@ export function getMilestones(owner: string, repo: string, token: string | null)
   return api<MilestoneSummary[]>(`/repos/${owner}/${repo}/milestones?state=all&per_page=100`, token);
 }
 
-export interface ClosedIssue { number: number; title: string; closed_at: string; html_url: string; pull_request?: unknown }
+export interface ClosedIssue { number: number; title: string; closed_at: string; html_url: string; body?: string | null; pull_request?: unknown }
 
 /** Issues cerrados de un milestone (sin pull requests), los más recientes primero. */
 export async function getClosedIssues(owner: string, repo: string, milestone: number, token: string | null): Promise<ClosedIssue[]> {

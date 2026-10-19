@@ -8,6 +8,8 @@ import { IconCheck, IconFlecha, IconMas } from "@/components/portal/iconos";
 import { EstadoSistemas, hayProblema } from "@/components/portal/sistemas";
 import { sistemasDelCliente } from "@/lib/pulso/datos";
 import { PlanDePagos, partesConPlan } from "@/components/portal/plan-pagos";
+import { AccesoSistema } from "@/components/portal/acceso-sistema";
+import { VerCambio } from "@/components/portal/ver-cambio";
 
 export const metadata = { title: "Inicio" };
 
@@ -27,6 +29,7 @@ export default async function InicioCliente() {
   const problema = hayProblema(sistemas);
   const nombre = (persona.fullName || "").split(" ")[0];
   const principal = d.activos[0] ?? null;
+  const conAccesos = d.proyectos.filter((p) => (p.status === "ACTIVE" || p.status === "PAUSED" || p.status === "COMPLETED") && (p.liveUrl || p.accesos.length));
   const vencida = !!d.proximo?.dueDate && d.proximo.dueDate.getTime() < Date.now() && d.saldo.pendiente > 0.005;
   const estadoSaldo: [string, Tono] = vencida ? ["Hay una factura vencida", "peligro"] : d.saldo.pendiente > 0.005 ? ["Pendiente", "aviso"] : ["Al día", "ok"];
 
@@ -51,10 +54,27 @@ export default async function InicioCliente() {
         <Tarjeta className="p-aviso" i={1}>
           <TituloSeccion accion={<Etiqueta tono="aviso">{decisiones.length} {decisiones.length === 1 ? "pendiente" : "pendientes"}</Etiqueta>}>Espera tu decisión</TituloSeccion>
           <ul className="p-lista divide-y divide-line">
-            {decisiones.map((x, i) => <Fila key={`${x.tipo}-${x.id}`} i={i} tono="aviso" href={x.href} titulo={x.titulo} detalle={x.detalle} />)}
+            {decisiones.map((x, i) => "revisar" in x && x.revisar ? (
+              // Fase lista con enlace de revisión: se abre directo en el sistema, donde está el trabajo.
+              <li key={`${x.tipo}-${x.id}`} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between" style={{ "--i": i } as React.CSSProperties}>
+                <div className="min-w-0">
+                  <p className="text-fg font-semibold break-words">{x.titulo}</p>
+                  <p className="text-fg-dim text-sm break-words">{x.detalle}</p>
+                </div>
+                <div className="flex flex-wrap gap-2 shrink-0">
+                  <a href={x.revisar} target="_blank" rel="noopener" className={btnPrincipal}><Swap>Revisar en el sistema</Swap><IconFlecha width={16} height={16} /></a>
+                  <Link href={x.href} className={btnSecundario}>Ver la fase</Link>
+                </div>
+              </li>
+            ) : <Fila key={`${x.tipo}-${x.id}`} i={i} tono="aviso" href={x.href} titulo={x.titulo} detalle={x.detalle} />)}
           </ul>
         </Tarjeta>
       )}
+
+      {/* Accesos a los sistemas de cada proyecto: sitio, panel (CMS) y portal, con su usuario. */}
+      {conAccesos.map((p, i) => (
+        <AccesoSistema key={p.id} liveUrl={p.liveUrl} accesos={p.accesos} i={2 + i} titulo={conAccesos.length > 1 || d.activos.length > 1 ? `Accesos · ${p.name}` : "Tus sistemas y accesos"} />
+      ))}
 
       <div className="grid gap-6 lg:grid-cols-12 items-stretch">
         <Tarjeta className="lg:col-span-7" i={2}>
@@ -159,7 +179,7 @@ export default async function InicioCliente() {
                   <div className="min-w-0">
                     <p className="text-fg text-sm font-semibold break-words">{e.title}</p>
                     {e.detail && <p className="text-fg-dim text-sm break-words">{e.detail}</p>}
-                    <p className="text-fg-faint text-xs mt-1">{haceCuanto(e.createdAt)}</p>
+                    <div className="flex flex-wrap items-center gap-x-4"><p className="text-fg-faint text-xs">{haceCuanto(e.createdAt)}</p><VerCambio url={e.url} texto={e.kind === "fase_revision" ? "Revisar en el sistema" : "Ver el cambio"} /></div>
                   </div>
                 </li>
               ))}

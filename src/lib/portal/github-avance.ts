@@ -20,7 +20,7 @@ export async function sincronizarProyecto(projectId: string, pre?: { milestones?
   const p = await prisma.project.findUnique({
     where: { id: projectId },
     select: { id: true, name: true, userId: true, repoOwner: true, repoName: true, clientId: true, clients: { select: { clientId: true } }, githubAccountId: true,
-      phases: { where: { githubMilestone: { not: null } }, select: { id: true, name: true, status: true, progress: true, progressSource: true, githubMilestone: true, startedAt: true } } },
+      phases: { where: { githubMilestone: { not: null } }, select: { id: true, name: true, status: true, progress: true, progressSource: true, githubMilestone: true, startedAt: true, reviewUrl: true } } },
   });
   if (!p?.repoOwner || !p.repoName || !p.phases.length) return { fases: 0, issues: 0 };
   const { token } = await tokenParaRepo({ userId: p.userId, owner: p.repoOwner, repo: p.repoName, projectId: p.id, cuentaId: p.githubAccountId });
@@ -38,7 +38,7 @@ export async function sincronizarProyecto(projectId: string, pre?: { milestones?
     if (cambio) {
       await prisma.projectPhase.update({ where: { id: f.id }, data: { progress: f.status === "hecha" ? 100 : progreso, status: estado, progressSource: "github", startedAt: f.startedAt ?? (progreso > 0 ? new Date() : null) } });
       if (clientId && estado === "en_revision" && f.status !== "en_revision") {
-        await registrarEvento({ userId: p.userId, clientId, projectId: p.id, entityType: "fase", entityId: f.id, kind: "fase_revision", title: `La fase ${f.name} está lista para tu revisión`, visibility: "cliente", actorType: "github" });
+        await registrarEvento({ userId: p.userId, clientId, projectId: p.id, entityType: "fase", entityId: f.id, kind: "fase_revision", title: `La fase ${f.name} está lista para tu revisión`, url: f.reviewUrl, visibility: "cliente", actorType: "github" });
       }
       if (estado === "en_revision" && f.status !== "en_revision") await avisarFaseLista(f.id);
     }
@@ -49,9 +49,18 @@ export async function sincronizarProyecto(projectId: string, pre?: { milestones?
       const ref = `${p.repoOwner}/${p.repoName}#${i.number}`;
       const ya = await prisma.activityEvent.findFirst({ where: { entityType: "github_issue", entityId: ref }, select: { id: true } });
       if (ya) continue;
-      await registrarEvento({ userId: p.userId, clientId, projectId: p.id, entityType: "github_issue", entityId: ref, kind: "avance", title: `Listo en ${f.name}: ${i.title}`, detail: `${f.name} al ${Math.round(progreso)} %`, visibility: "cliente", actorType: "github" });
+      await registrarEvento({ userId: p.userId, clientId, projectId: p.id, entityType: "github_issue", entityId: ref, kind: "avance", title: `Listo en ${f.name}: ${i.title}`, detail: `${f.name} al ${Math.round(progreso)} %`, url: dondeVerlo(i.body) ?? f.reviewUrl, visibility: "cliente", actorType: "github" });
       issues++;
     }
   }
   return { fases: p.phases.length, issues };
+}
+
+/**
+ * Dónde quedó el cambio de una tarea: la línea «Dónde verlo: https://…» del issue (la escribe el equipo al crear
+ * o cerrar la tarea). Si no la tiene, el evento usa el enlace de revisión de su fase.
+ */
+export function dondeVerlo(body: string | null | undefined): string | null {
+  const m = (body ?? "").match(/d[oó]nde verlo:\s*<?(https?:\/\/[^\s>)]+)/i);
+  return m ? m[1] : null;
 }

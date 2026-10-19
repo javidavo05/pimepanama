@@ -1548,6 +1548,8 @@ model ProjectPhase {
   /// "manual" | "github" | "sin_marcador" (fase que se lleva a mano a propósito: nunca recibe marcador en GitHub)
   progressSource  String       @default("manual")
   githubMilestone Int?
+  /// Dónde revisa el cliente lo de esta fase en su sistema (migración 0061).
+  reviewUrl       String?
   /// Cuándo se avisó al cliente que la fase quedó lista (migración 0053); evita avisar dos veces.
   readyNotifiedAt DateTime?
   estimatedDays   Int?
@@ -1749,6 +1751,8 @@ model ActivityEvent {
   kind               String
   title              String
   detail             String?
+  /// Dónde quedó el cambio en el sistema del cliente (migración 0061).
+  url                String?
   /// "interno" | "cliente"
   visibility         String       @default("interno")
   /// "cliente" | "pime" | "sistema" | "github"

@@ -20,7 +20,7 @@ export async function prepararMarcadores(projectId: string): Promise<ResultadoMa
     where: { id: projectId },
     select: { id: true, userId: true, repoOwner: true, repoName: true, githubAccountId: true, githubHookId: true,
       phases: { where: { OR: [{ changeOrderId: null }, { changeOrder: { status: "aprobada" } }] }, orderBy: { sortOrder: "asc" },
-        select: { id: true, name: true, description: true, status: true, progress: true, progressSource: true, githubMilestone: true, deliverables: { orderBy: { sortOrder: "asc" }, select: { name: true, description: true, completed: true } } } } },
+        select: { id: true, name: true, description: true, status: true, progress: true, progressSource: true, githubMilestone: true, reviewUrl: true, deliverables: { orderBy: { sortOrder: "asc" }, select: { name: true, description: true, completed: true } } } } },
   });
   if (!p?.repoOwner || !p.repoName) throw new Error("El proyecto no tiene repositorio de GitHub. Conéctalo en la pestaña Resumen.");
   const { owner, repo } = { owner: p.repoOwner, repo: p.repoName };
@@ -39,7 +39,7 @@ export async function prepararMarcadores(projectId: string): Promise<ResultadoMa
     const m = await crearMilestone(owner, repo, token, `Fase ${i + 1} · ${f.name}`, f.description);
     const tareas = f.deliverables.length ? f.deliverables : [{ name: `Entregar: ${f.name}`, description: f.description, completed: false }];
     for (const t of tareas) {
-      const i = await crearIssue(owner, repo, token, { title: t.name, body: `${t.description ? `${t.description}\n\n` : ""}_Tarea de la fase «${f.name}». El título lo lee el cliente en su cuenta de Pime al cerrarla._`, milestone: m.number });
+      const i = await crearIssue(owner, repo, token, { title: t.name, body: `${t.description ? `${t.description}\n\n` : ""}_Tarea de la fase «${f.name}». El título lo lee el cliente en su cuenta de Pime al cerrarla._\n\nDónde verlo: ${f.reviewUrl ?? "(enlace a la pantalla del sistema donde el cliente revisa esta tarea)"}`, milestone: m.number });
       // Entregable ya hecho en Pime: su tarea nace cerrada, así el avance no retrocede al crear el marcador.
       if (t.completed) await cerrarIssue(owner, repo, token, i.number);
       r.tareas++;

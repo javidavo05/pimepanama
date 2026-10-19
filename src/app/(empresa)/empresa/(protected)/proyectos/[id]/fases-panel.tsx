@@ -42,7 +42,7 @@ export function FasesPanel({ p }: { p: Fases }) {
       {vigentes.length ? (
         <ol className="space-y-3">
           {vigentes.map((f, i) => (
-            <FaseFila key={f.id} projectId={p.id} indice={i} f={{ id: f.id, name: f.name, description: f.description, price: Number(f.price), billingPoint: f.billingPoint, status: f.status, progress: Number(f.progress), estimatedDays: f.estimatedDays, githubMilestone: f.githubMilestone, invoiceId: f.invoiceId, invoiceNumber: f.invoice?.number ?? null }} />
+            <FaseFila key={f.id} projectId={p.id} indice={i} f={{ id: f.id, name: f.name, description: f.description, price: Number(f.price), billingPoint: f.billingPoint, status: f.status, progress: Number(f.progress), estimatedDays: f.estimatedDays, githubMilestone: f.githubMilestone, reviewUrl: f.reviewUrl, invoiceId: f.invoiceId, invoiceNumber: f.invoice?.number ?? null }} />
           ))}
         </ol>
       ) : <p className="text-sm text-fg-dim">Sin fases. Agrega las fases con su precio y cuándo se cobran: es lo que el cliente ve y lo que se factura.</p>}

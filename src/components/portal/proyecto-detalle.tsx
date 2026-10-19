@@ -5,7 +5,38 @@ import { avanceDeFase } from "@/lib/portal/avance";
 import { EstadoSistemas } from "./sistemas";
 import { AccesoSistema } from "./acceso-sistema";
 import { sistemasDelCliente } from "@/lib/pulso/datos";
-import { Anillo, Barra, BloqueOscuro, Cifra, Encabezado, Etiqueta, Eyebrow, Fila, Tarjeta, TituloSeccion, Vacio, btnSecundario, enlace, fechaCorta, haceCuanto } from "./ui";
+import { Anillo, Barra, BloqueOscuro, Cifra, Encabezado, Etiqueta, Eyebrow, Fila, Tarjeta, TituloSeccion, Vacio, btnPrincipal, btnSecundario, enlace, fechaCorta, haceCuanto } from "./ui";
+import { IconFlecha } from "./iconos";
+import { VerCambio } from "./ver-cambio";
+
+/**
+ * El alcance del proyecto: tres líneas y «Ver el alcance completo». La propuesta entera como párrafo gris bajo el
+ * título era un muro de texto.
+ */
+function LineaDeTiempo({ eventos }: { eventos: { id: string; title: string; detail: string | null; createdAt: Date; url: string | null }[] }) {
+  return (
+    <ol className="p-tiempo">{eventos.map((e, i) => (
+      <li key={e.id} style={{ "--i": i } as React.CSSProperties}><span className="pt" aria-hidden />
+        <div className="min-w-0">
+          <p className="text-fg text-sm font-semibold break-words">{e.title}</p>
+          {e.detail && <p className="text-fg-dim text-sm break-words">{e.detail}</p>}
+          <div className="flex flex-wrap items-center gap-x-4"><p className="text-fg-faint text-xs">{haceCuanto(e.createdAt)}</p><VerCambio url={e.url} /></div>
+        </div>
+      </li>
+    ))}</ol>
+  );
+}
+
+function Alcance({ texto }: { texto: string }) {
+  return (
+    <details className="p-in group max-w-3xl" style={{ "--i": 1 } as React.CSSProperties}>
+      <summary className="list-none cursor-pointer [&::-webkit-details-marker]:hidden">
+        <span className="text-fg-mute text-base leading-relaxed line-clamp-3 group-open:line-clamp-none whitespace-pre-line">{texto}</span>
+        <span className="p-link mt-2 inline-flex items-center gap-1 min-h-11 text-sm font-semibold"><span className="group-open:hidden">Ver el alcance completo</span><span className="hidden group-open:inline">Ver menos</span></span>
+      </summary>
+    </details>
+  );
+}
 
 const ORDEN: Record<string, [string, "aviso" | "ok" | "neutro" | "peligro"]> = { enviada: ["Espera tu decisión", "aviso"], aprobada: ["Aprobada", "ok"], rechazada: ["No aprobada", "peligro"], cancelada: ["Cancelada", "neutro"] };
 
@@ -21,8 +52,11 @@ export async function ProyectoDetalle({ clientId, id, eyebrow }: { clientId: str
   const total = x.phases.reduce((a, f) => a + Number(f.price), 0);
   return (
     <>
-      <Encabezado eyebrow={eyebrow ?? (x.kind === "modificacion" ? "Modificación" : "Proyecto")} titulo={x.name} detalle={x.description ?? undefined}
+      <Encabezado eyebrow={eyebrow ?? (x.kind === "modificacion" ? "Modificación" : "Proyecto")} titulo={x.name}
         accion={<Link href={`/cliente/tickets/nuevo?proyecto=${x.id}&tipo=cambio`} className={btnSecundario}>Pedir un cambio</Link>} />
+      {x.description && <Alcance texto={x.description} />}
+
+      <AccesoSistema liveUrl={x.liveUrl} accesos={x.accesos} i={1} titulo="Tus sistemas y accesos" />
 
       <BloqueOscuro i={1}>
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
@@ -38,8 +72,6 @@ export async function ProyectoDetalle({ clientId, id, eyebrow }: { clientId: str
           </div>
         </div>
       </BloqueOscuro>
-
-      <AccesoSistema liveUrl={x.liveUrl} accesos={x.accesos} i={2} />
 
       <EstadoSistemas sistemas={delProyecto} titulo={delProyecto.length === 1 ? "Estado del sistema" : "Estado de los sistemas"} />
 
@@ -68,6 +100,11 @@ export async function ProyectoDetalle({ clientId, id, eyebrow }: { clientId: str
                     <div><dt className="text-fg-dim">Pago</dt><dd className="text-fg font-semibold">{FASE_COBRO_LABEL[f.billingPoint as FaseCobro] ?? f.billingPoint}</dd></div>
                     <div><dt className="text-fg-dim">{f.completedAt ? "Terminó" : f.startedAt ? "Empezó" : "Plazo"}</dt><dd className="text-fg font-semibold">{f.completedAt ? fechaCorta(f.completedAt) : f.startedAt ? fechaCorta(f.startedAt) : f.estimatedDays ? `~${f.estimatedDays} días` : "—"}</dd></div>
                   </dl>
+                  {f.reviewUrl && (
+                    <a href={f.reviewUrl} target="_blank" rel="noopener" className={`mt-4 ${f.status === "en_revision" ? btnPrincipal : btnSecundario}`}>
+                      {f.status === "en_revision" ? "Revisar esta fase en el sistema" : "Ver en el sistema"}<IconFlecha width={16} height={16} />
+                    </a>
+                  )}
                   {f.invoice && <p className="mt-3 text-xs text-fg-dim">Facturada en <Link className={enlace} href="/cliente/facturas">{f.invoice.number ?? "factura"}</Link></p>}
                 </li>
               );
@@ -88,10 +125,15 @@ export async function ProyectoDetalle({ clientId, id, eyebrow }: { clientId: str
       <Tarjeta>
         <TituloSeccion>Historial</TituloSeccion>
         {x.eventos.length ? (
-          <ol className="p-tiempo">{x.eventos.map((e, i) => (
-            <li key={e.id} style={{ "--i": i } as React.CSSProperties}><span className="pt" aria-hidden />
-              <div className="min-w-0"><p className="text-fg text-sm font-semibold break-words">{e.title}</p>{e.detail && <p className="text-fg-dim text-sm break-words">{e.detail}</p>}<p className="text-fg-faint text-xs mt-1">{haceCuanto(e.createdAt)}</p></div></li>
-          ))}</ol>
+          <>
+            <LineaDeTiempo eventos={x.eventos.slice(0, 8)} />
+            {x.eventos.length > 8 && (
+              <details className="group mt-2">
+                <summary className="p-link list-none cursor-pointer inline-flex items-center min-h-11 text-sm font-semibold [&::-webkit-details-marker]:hidden"><span className="group-open:hidden">Ver todo el historial ({x.eventos.length})</span><span className="hidden group-open:inline">Ver menos</span></summary>
+                <LineaDeTiempo eventos={x.eventos.slice(8)} />
+              </details>
+            )}
+          </>
         ) : <p className="text-fg-dim text-sm">Cada avance, aprobación y entrega de este proyecto aparece aquí.</p>}
       </Tarjeta>
     </>

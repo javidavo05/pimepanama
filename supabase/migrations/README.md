@@ -73,3 +73,4 @@ Todas las migraciones se corren manualmente en **Supabase → SQL Editor**.
 | 0058 | `0058_campana_preparando.sql` | Campana.estado acepta 'preparando' (lista de destinatarios en armado) | 2026-10-16 | ✅ Aplicado |
 | 0059 | `0059_device_token_alcance.sql` | DeviceToken.alcance ('dispositivo' \| 'prospectos'): la llave del agente de prospección solo carga prospectos | 2026-10-19 | ✅ Aplicado |
 | 0060 | `0060_revision_cuenta_cliente.sql` | Client.portalReviewedAt / portalReviewedBy — el equipo revisa la cuenta del cliente en modo solo lectura antes de invitarlo; la invitación exige una revisión de las últimas 24 h | 2026-10-19 | ✅ Aplicado |
+| 0061 | `0061_enlaces_de_revision.sql` | ProjectPhase.reviewUrl (dónde revisa el cliente cada fase) + ActivityEvent.url (dónde quedó cada cambio cerrado en GitHub) | 2026-10-19 | ✅ Aplicado |

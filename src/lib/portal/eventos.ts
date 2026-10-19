@@ -10,6 +10,8 @@ export type Evento = {
   kind: string;
   title: string;
   detail?: string | null;
+  /** Dónde quedó el cambio en el sistema del cliente (enlace «Ver el cambio»). */
+  url?: string | null;
   visibility?: "interno" | "cliente";
   actorType?: "cliente" | "pime" | "sistema" | "github";
   actorClientUserId?: string | null;

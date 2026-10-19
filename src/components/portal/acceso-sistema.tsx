@@ -38,13 +38,13 @@ function Clave({ id }: { id: string }) {
   );
 }
 
-export function AccesoSistema({ liveUrl, accesos, i }: { liveUrl: string | null; accesos: Acceso[]; i?: number }) {
+export function AccesoSistema({ liveUrl, accesos, i, titulo = "Tu sistema" }: { liveUrl: string | null; accesos: Acceso[]; i?: number; titulo?: string }) {
   if (!liveUrl && !accesos.length) return null;
   return (
     <BloqueOscuro i={i}>
       <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 space-y-2">
-          <Eyebrow>Tu sistema</Eyebrow>
+          <Eyebrow>{titulo}</Eyebrow>
           {liveUrl && <p className="text-2xl sm:text-3xl font-extrabold tracking-tight break-all">{liveUrl.replace(/^https?:\/\//, "").replace(/\/$/, "")}</p>}
         </div>
         {liveUrl && <a href={liveUrl} target="_blank" rel="noopener" className="p-btn p-btn-1 shrink-0"><Swap>Abrir mi sistema</Swap><IconFlecha width={18} height={18} /></a>}

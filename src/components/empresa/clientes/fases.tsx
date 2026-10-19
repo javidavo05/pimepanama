@@ -16,7 +16,7 @@ function Msg({ e }: { e: Estado }) {
   return e.mensaje ? <p className="text-xs text-ok" role="status">{e.mensaje} {e.enlace?.startsWith("/") && <Link href={e.enlace} className="underline font-semibold">Abrir</Link>}</p> : null;
 }
 
-export type FaseVista = { id: string; name: string; description: string | null; price: number; billingPoint: string; status: string; progress: number; estimatedDays: number | null; githubMilestone: number | null; invoiceId: string | null; invoiceNumber: string | null };
+export type FaseVista = { id: string; name: string; description: string | null; price: number; billingPoint: string; status: string; progress: number; estimatedDays: number | null; githubMilestone: number | null; reviewUrl?: string | null; invoiceId: string | null; invoiceNumber: string | null };
 
 export function FaseFila({ projectId, f, indice }: { projectId: string; f: FaseVista; indice: number }) {
   const [editar, setEditar] = useState(false);
@@ -62,6 +62,7 @@ export function FaseForm({ projectId, f }: { projectId: string; f?: FaseVista })
         <div><label className={etiqueta}>Se cobra</label><select name="billingPoint" defaultValue={f?.billingPoint ?? "al_entregar"} className={`${campo} field-select pr-8`}>{COBRO.map(([v, t]) => <option key={v} value={v}>{t}</option>)}</select></div>
         <div><label className={etiqueta}>Plazo (días)</label><input name="estimatedDays" inputMode="numeric" defaultValue={f?.estimatedDays ?? ""} className={campo} /></div>
         <div><label className={etiqueta}>Milestone de GitHub</label><input name="githubMilestone" inputMode="numeric" defaultValue={f?.githubMilestone ?? ""} className={campo} placeholder="Vacío: se crea solo si hay repo" /></div>
+        <div className="sm:col-span-2"><label className={etiqueta}>Dónde la revisa el cliente (enlace)</label><input name="reviewUrl" type="url" inputMode="url" defaultValue={f?.reviewUrl ?? ""} className={campo} placeholder="https://… la pantalla del sistema donde se ve esta fase" /></div>
       </div>
       <Msg e={e} />
       <button className={btn.primary} disabled={p}>{p ? "Guardando…" : f ? "Guardar fase" : "Agregar fase"}</button>
