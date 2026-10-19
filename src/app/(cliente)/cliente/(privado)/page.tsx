@@ -7,6 +7,7 @@ import { Anillo, Barra, BloqueOscuro, Cifra, Mezcla, type Tono, Encabezado, Etiq
 import { IconCheck, IconFlecha, IconMas } from "@/components/portal/iconos";
 import { EstadoSistemas, hayProblema } from "@/components/portal/sistemas";
 import { sistemasDelCliente } from "@/lib/pulso/datos";
+import { PlanDePagos, partesConPlan } from "@/components/portal/plan-pagos";
 
 export const metadata = { title: "Inicio" };
 
@@ -114,10 +115,8 @@ export default async function InicioCliente() {
             </div>
             <Cifra texto={dinero(d.saldo.pendiente)} moneda className="text-[clamp(36px,3.8vw,52px)] font-extrabold tracking-[-0.03em] leading-none" demora={300} />
           </div>
-          <Mezcla etiqueta="Tu saldo" partes={[
-            { label: "Pagado", valor: d.saldo.pagado, tono: "ok", texto: dinero(d.saldo.pagado) },
-            { label: "Por pagar", valor: d.saldo.pendiente, tono: vencida ? "peligro" : "aviso", texto: dinero(d.saldo.pendiente) },
-          ]} />
+          <Mezcla etiqueta="Tu saldo" partes={partesConPlan(d.planes, d.saldo.pagado, d.saldo.pendiente, vencida ? "peligro" : "aviso")} />
+          <PlanDePagos planes={d.planes} />
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <div className="p-ink-celda p-celda px-4 py-3" data-tono="ok"><dt className="p-ink-3 flex items-center justify-between gap-2">Pagado</dt><dd className="text-lg font-bold"><Cifra texto={dinero(d.saldo.pagado)} moneda demora={450} /></dd></div>
             <div className="p-ink-celda p-celda px-4 py-3" data-tono="marca"><dt className="p-ink-3">Total</dt><dd className="text-lg font-bold"><Cifra texto={dinero(d.saldo.facturado + d.saldo.porEmitir + d.saldo.sinFacturar + d.saldo.porPlan)} moneda demora={520} /></dd></div>
@@ -125,7 +124,7 @@ export default async function InicioCliente() {
           <div className="mt-auto space-y-2 text-sm p-ink-2">
             {d.saldo.porEmitir > 0 && <p>Incluye <b className="p-ink-acc tabular-nums">{dinero(d.saldo.porEmitir)}</b> que todavía no se factura: se cobra en las próximas cuotas o al entregar.</p>}
             {d.saldo.sinFacturar > 0 && <p>Incluye <b className="p-ink-acc tabular-nums">{dinero(d.saldo.sinFacturar)}</b> de fases en curso que todavía no tienen factura.</p>}
-            {d.saldo.porPlan > 0 && <p>Incluye <b className="p-ink-acc tabular-nums">{dinero(d.saldo.porPlan)}</b> del plan de pagos acordado: cada pago se factura cuando llega su momento.</p>}
+            {d.saldo.porPlan > 0 && !d.planes.length && <p>Incluye <b className="p-ink-acc tabular-nums">{dinero(d.saldo.porPlan)}</b> del plan de pagos acordado: cada pago se factura cuando llega su momento.</p>}
             {d.saldo.porConfirmar > 0 && <p>Pagos reportados esperando confirmación: <b className="p-ink-acc tabular-nums">{dinero(d.saldo.porConfirmar)}</b></p>}
             {d.proximo ? (
               <p>{vencida ? "Venció" : "Próximo vencimiento"}: <b className="text-white">{d.proximo.number ?? "Factura"}</b> el {fechaCorta(d.proximo.dueDate)}</p>

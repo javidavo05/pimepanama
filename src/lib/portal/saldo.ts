@@ -142,3 +142,67 @@ export function facturasEmitidas<F extends Factura>(facturas: F[], pagos: Pago[]
     return { ...f, totalContrato: n(f.total), total: e.emitido, porEmitir: e.porEmitir, proxima: e.proxima };
   });
 }
+
+/** Un pago del plan como lo ve el cliente: «50 % al firmar», cuánto, cuánto ya pagó y si ya le toca. */
+export type PagoDelPlan = { etiqueta: string; cuando: string; monto: number; pagado: number; falta: number; estado: "pagado" | "toca" | "despues" };
+export type PlanDelCliente = { proyecto: string; resumen: string; filas: PagoDelPlan[]; canje: { monto: number; descripcion: string } | null; efectivo: number; total: number };
+
+const fechaPlan = (iso: string) => {
+  const d = new Date(`${iso}T12:00:00Z`);
+  return Number.isNaN(d.getTime()) ? null : d;
+};
+
+/**
+ * El plan de pagos acordado de un proyecto, pago por pago (pedido de Javier, 2026-10-19: «si el cliente tiene un plan
+ * de pago de 50/50 debe salir así»). Lo pagado al proyecto se reparte en orden: primero el pago al firmar, luego el
+ * siguiente. Un pago «toca» cuando llegó su momento: al firmar (el proyecto ya arrancó), en su fecha, o a la entrega
+ * cuando el proyecto se entregó; si no, va «después». El canje se muestra aparte: no se paga en dinero.
+ */
+export function pagosDelPlan(plan: unknown, pagadoProyecto: number, opts: { proyecto: string; entregado: boolean; ahora?: Date }): PlanDelCliente | null {
+  if (!isFinancingPlan(plan)) return null;
+  const built = buildInstallmentPlan(plan);
+  const ahora = opts.ahora ?? new Date();
+  const base: Omit<PagoDelPlan, "pagado" | "falta" | "estado">[] = [];
+  const llego: boolean[] = [];
+
+  if (plan.mode === "MILESTONES") {
+    const hitos = plan.milestones ?? [];
+    const cierra = Math.abs(hitos.reduce((a, m) => a + (Number(m.percent) || 0), 0) - 100) < 0.01;
+    let acumulado = 0;
+    hitos.forEach((m, i) => {
+      const monto = i === hitos.length - 1 && cierra ? r2(built.cash - acumulado) : r2((built.cash * (Number(m.percent) || 0)) / 100);
+      acumulado = r2(acumulado + monto);
+      const f = m.dueDate ? fechaPlan(m.dueDate) : null;
+      const cuando = m.trigger === "SIGNING" ? "Al firmar" : m.trigger === "DELIVERY" ? "A la entrega" : f ? f.toLocaleDateString("es-PA", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "Al cerrar una fase";
+      base.push({ etiqueta: m.description?.trim() || `${n(m.percent)} % ${cuando.toLowerCase()}`, cuando, monto });
+      llego.push(m.trigger === "SIGNING" || (m.trigger === "DELIVERY" && opts.entregado) || (!!f && f.getTime() <= ahora.getTime()));
+    });
+  } else {
+    if (built.downPayment > 0.005) { base.push({ etiqueta: "Abono inicial", cuando: "Al firmar", monto: built.downPayment }); llego.push(true); }
+    for (const c of built.rows) {
+      const f = fechaPlan(c.dueDate);
+      base.push({ etiqueta: c.description, cuando: f ? f.toLocaleDateString("es-PA", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }) : "Por definir", monto: c.amount });
+      llego.push(!!f && f.getTime() <= ahora.getTime());
+    }
+  }
+  if (!base.length) return null;
+
+  let resto = Math.max(0, pagadoProyecto);
+  const filas: PagoDelPlan[] = base.map((x, i) => {
+    const pagado = r2(Math.min(x.monto, resto));
+    resto = r2(resto - pagado);
+    const falta = r2(x.monto - pagado);
+    return { ...x, pagado, falta, estado: falta <= 0.005 ? "pagado" : llego[i] ? "toca" : "despues" };
+  });
+  const resumen = plan.mode === "MILESTONES"
+    ? (plan.milestones ?? []).map((m) => `${n(m.percent)}`).join(" / ")
+    : `${built.downPayment > 0.005 ? "Abono + " : ""}${built.rows.length} ${built.rows.length === 1 ? "cuota" : "cuotas"}`;
+  return {
+    proyecto: opts.proyecto,
+    resumen,
+    filas,
+    canje: built.barter > 0.005 ? { monto: built.barter, descripcion: plan.barter?.description ?? "" } : null,
+    efectivo: built.cash,
+    total: r2(built.cash + built.barter),
+  };
+}

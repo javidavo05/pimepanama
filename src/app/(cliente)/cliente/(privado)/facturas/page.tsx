@@ -4,12 +4,13 @@ import { pagadoEfectivo } from "@/lib/portal/saldo";
 import { PAGO_METODO_LABEL, type PagoMetodo } from "@/lib/portal/estados";
 import { BloqueOscuro, Cifra, Mezcla, type Tono, Encabezado, Etiqueta, Eyebrow, Tarjeta, TituloSeccion, Vacio, fechaCorta } from "@/components/portal/ui";
 import { ReportarPago } from "./reportar-pago";
+import { PlanDePagos, partesConPlan } from "@/components/portal/plan-pagos";
 
 export const metadata = { title: "Facturas y pagos" };
 
 export default async function FacturasCliente() {
   const p = await getPortalUser();
-  const [{ facturas, pagos, saldo }, cuentas] = await Promise.all([facturasDelCliente(p.clientId), datosDeTransferencia(p.client.userId)]);
+  const [{ facturas, pagos, saldo, planes }, cuentas] = await Promise.all([facturasDelCliente(p.clientId), datosDeTransferencia(p.client.userId)]);
   const conSaldo = facturas
     .map((f) => { const pagado = pagadoEfectivo(f, pagos); return { ...f, pagado, falta: Math.max(0, Number(f.total ?? 0) - pagado) }; });
   const pendientes = conSaldo.filter((f) => f.falta > 0.005);
@@ -27,14 +28,15 @@ export default async function FacturasCliente() {
             <Cifra texto={dinero(saldo.pendiente)} moneda className="text-[clamp(40px,5vw,64px)] font-extrabold tracking-[-0.03em] leading-none" demora={200} />
             {saldo.porEmitir > 0 && <p className="p-ink-2 text-sm">Incluye <b className="p-ink-acc tabular-nums">{dinero(saldo.porEmitir)}</b> que todavía no se factura: se cobra en las próximas cuotas o al entregar.</p>}
             {saldo.sinFacturar > 0 && <p className="p-ink-2 text-sm">Incluye <b className="p-ink-acc tabular-nums">{dinero(saldo.sinFacturar)}</b> de fases en curso sin factura todavía.</p>}
-            {saldo.porPlan > 0 && <p className="p-ink-2 text-sm">Incluye <b className="p-ink-acc tabular-nums">{dinero(saldo.porPlan)}</b> del plan de pagos acordado: cada pago se factura cuando llega su momento.</p>}
+            {saldo.porPlan > 0 && !planes.length && <p className="p-ink-2 text-sm">Incluye <b className="p-ink-acc tabular-nums">{dinero(saldo.porPlan)}</b> del plan de pagos acordado: cada pago se factura cuando llega su momento.</p>}
           </div>
           <dl className="grid grid-cols-2 gap-3 text-sm">
             <div className="p-ink-celda p-celda px-4 py-3" data-tono="ok"><dt className="p-ink-3">Pagado</dt><dd className="text-lg font-bold"><Cifra texto={dinero(saldo.pagado)} moneda demora={350} /></dd></div>
             <div className="p-ink-celda p-celda px-4 py-3" data-tono="marca"><dt className="p-ink-3">Total</dt><dd className="text-lg font-bold"><Cifra texto={dinero(saldo.facturado + saldo.porEmitir + saldo.sinFacturar + saldo.porPlan)} moneda demora={420} /></dd></div>
           </dl>
         </div>
-        <div className="mt-6"><Mezcla etiqueta="Tu saldo" partes={[
+        {planes.length > 0 && <div className="mt-6"><PlanDePagos planes={planes} /></div>}
+        <div className="mt-6"><Mezcla etiqueta="Tu saldo" partes={planes.length && vencido <= 0.005 ? partesConPlan(planes, saldo.pagado, saldo.pendiente) : [
           { label: "Pagado", valor: saldo.pagado, tono: "ok", texto: dinero(saldo.pagado) },
           { label: "Vencido", valor: vencido, tono: "peligro", texto: dinero(vencido) },
           { label: "Por pagar", valor: Math.max(0, saldo.pendiente - vencido), tono: "aviso", texto: dinero(Math.max(0, saldo.pendiente - vencido)) },

@@ -6,7 +6,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { avanceDeProyecto, faseActual } from "./avance";
-import { saldoCliente, facturasEmitidas, FACTURA_CUENTA, FASE_INICIADA } from "./saldo";
+import { saldoCliente, facturasEmitidas, pagosDelPlan, FACTURA_CUENTA, FASE_INICIADA } from "./saldo";
 import { TICKET_ABIERTOS } from "./estados";
 
 /** Fases que cuentan: las del proyecto y las de órdenes de cambio ya aprobadas. */
@@ -26,13 +26,31 @@ export const fasesDelClientePorCobrar = (clientId: string) => ({
  */
 export const PLAN_COBRABLE = Prisma.validator<Prisma.ProjectSelect>()({
   financingPlan: true,
-  documents: { where: { type: "FACTURA" }, select: { status: true, total: true } },
+  documents: { where: { type: "FACTURA" }, select: { status: true, total: true, amountPaid: true } },
   _count: { select: { phases: { where: { AND: [fasesVigentes, { price: { gt: 0 } }, { billingPoint: { not: "sin_cobro" } }] } } } },
 });
 
 /** Proyectos no cancelados cuyo cliente principal es este, con lo de su plan de pagos (como fasesDelClientePorCobrar). */
 export const planesDelClientePorCobrar = (clientId: string) =>
-  prisma.project.findMany({ where: { clientId, status: { not: "CANCELLED" } }, select: { ...PLAN_COBRABLE, id: true, name: true } });
+  prisma.project.findMany({
+    where: { clientId, status: { not: "CANCELLED" } },
+    select: { ...PLAN_COBRABLE, id: true, name: true, status: true, payments: { where: { status: "confirmado", documentId: null }, select: { amount: true } } },
+  });
+
+/**
+ * Los planes de pago que el cliente ve pago por pago (50 % al firmar, 50 % a la entrega…): los de proyectos que se
+ * cobran por su plan y no por fases, como en saldoCliente. Lo pagado al proyecto son sus pagos sin factura más lo
+ * pagado de sus facturas.
+ */
+export function planesParaElCliente(planes: Awaited<ReturnType<typeof planesDelClientePorCobrar>>) {
+  return planes.flatMap((p) => {
+    if (p._count.phases > 0) return [];
+    const sueltos = p.payments.reduce((a, x) => a + Number(x.amount), 0);
+    const facturado = p.documents.filter((d) => FACTURA_CUENTA(d.status)).reduce((a, d) => a + (d.status === "PAID" ? Number(d.total) : Number(d.amountPaid ?? 0)), 0);
+    const plan = pagosDelPlan(p.financingPlan, sueltos + facturado, { proyecto: p.name, entregado: p.status === "COMPLETED" });
+    return plan ? [plan] : [];
+  });
+}
 
 /** Proyectos del equipo (sin clientes internos) con su plan de pagos y los pagos sin factura del proyecto: Hoy y Cuentas por cobrar. */
 export const planesDelEquipoPorCobrar = (userId: string) =>
@@ -85,7 +103,7 @@ export async function datosInicio(clientId: string) {
     ...tickets.filter((t) => t.status === "esperando_cliente" && t.estimateStatus !== "pendiente").map((t) => ({ tipo: "respuesta" as const, id: t.id, titulo: `Responder: ${t.title}`, detalle: t.number, href: `/cliente/tickets/${t.id}` })),
   ];
 
-  return { proyectos: proyectosConAvance, activos, saldo, proximo, decisiones, tickets, eventos };
+  return { proyectos: proyectosConAvance, activos, saldo, planes: planesParaElCliente(planes), proximo, decisiones, tickets, eventos };
 }
 
 export async function proyectoDelCliente(clientId: string, id: string) {
@@ -143,7 +161,7 @@ export async function facturasDelCliente(clientId: string) {
     planesDelClientePorCobrar(clientId),
   ]);
   const facturas = facturasEmitidas(facturasDoc, pagos, cuotas);
-  return { facturas, pagos, saldo: saldoCliente(facturas, pagos, fases, planes) };
+  return { facturas, pagos, saldo: saldoCliente(facturas, pagos, fases, planes), planes: planesParaElCliente(planes) };
 }
 
 export async function ordenDelCliente(clientId: string, id: string) {
