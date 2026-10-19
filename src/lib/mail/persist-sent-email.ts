@@ -1,5 +1,7 @@
 import type { CompanyConfig, MailAccount } from "@prisma/client";
+import { randomUUID } from "crypto";
 import { prisma } from "@/lib/prisma";
+import { putR2Object } from "@/lib/r2";
 import type { MailOutgoingAttachment } from "./outgoing-attachments";
 import { wrapBodyWithSignature } from "./signature";
 import { buildThreadKey } from "./thread";
@@ -65,14 +67,21 @@ export async function persistSentEmail(params: {
   });
 
   if (params.attachments?.length) {
-    await prisma.emailAttachment.createMany({
-      data: params.attachments.map((att) => ({
-        emailId: sentEmail.id,
-        filename: att.filename,
-        contentType: att.contentType,
-        size: att.content.length,
-      })),
-    });
+    // Se guarda una copia en R2 como con los correos recibidos: antes solo quedaba el nombre y al abrir el
+    // adjunto desde Enviados salía «File not stored». Si R2 falla, el correo ya salió: se registra sin copia.
+    const data = [];
+    for (const att of params.attachments) {
+      let r2Key: string | null = null;
+      try {
+        const key = `mail-attachments/${params.userId}/sent/${randomUUID()}-${att.filename}`;
+        await putR2Object(key, att.content, att.contentType);
+        r2Key = key;
+      } catch (err) {
+        console.error("[persistSentEmail] no se pudo guardar el adjunto en R2", att.filename, err);
+      }
+      data.push({ emailId: sentEmail.id, filename: att.filename, contentType: att.contentType, size: att.content.length, r2Key });
+    }
+    await prisma.emailAttachment.createMany({ data });
   }
 
   // Si el hilo está marcado, su Message-ID queda registrado: la respuesta a

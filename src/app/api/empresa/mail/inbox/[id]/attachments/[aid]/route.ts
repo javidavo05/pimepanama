@@ -21,7 +21,14 @@ export async function GET(
     const att = await prisma.emailAttachment.findFirst({ where: { id: aid, emailId: id } });
     if (!att) return NextResponse.json({ error: "Attachment not found" }, { status: 404 });
 
-    if (!att.r2Key) return NextResponse.json({ error: "File not stored" }, { status: 404 });
+    if (!att.r2Key) {
+      // Adjuntos de correos enviados antes de que se guardara copia (hasta 2026-10-19): solo existe el nombre.
+      const nombre = att.filename.replace(/[<>&"]/g, "");
+      return new NextResponse(
+        `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Adjunto no disponible</title><body style="font-family:system-ui,sans-serif;max-width:560px;margin:48px auto;padding:0 16px;color:#0B1D3A"><h1 style="font-size:20px">Este adjunto no tiene copia guardada</h1><p style="color:#4A5A78;line-height:1.6">«${nombre}» se envió antes de que Pime guardara copia de los adjuntos enviados. La persona que lo recibió sí lo tiene; desde aquí ya no se puede abrir.</p><p><a href="javascript:history.back()" style="color:#1F5BFF">Volver al correo</a></p></body>`,
+        { status: 404, headers: { "Content-Type": "text/html; charset=utf-8" } },
+      );
+    }
 
     assertR2Configured();
 
