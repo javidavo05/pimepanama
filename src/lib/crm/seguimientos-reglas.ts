@@ -162,6 +162,15 @@ export const tituloLeadSinRespuesta = (lead: string) => `Volver a escribir a ${l
 export const tituloContactar = (cliente: string) => `Contactar a ${cliente}`;
 export const tituloRenovacion = (contrato: string, cliente: string) => `Renovar contrato: ${contrato} · ${cliente}`;
 
+/**
+ * Día en que se encendieron las reglas automáticas (salida del CRM). La inactividad se cuenta desde aquí como
+ * mínimo: los clientes y leads viejos no tienen fecha de último contacto guardada, y sin este piso la primera
+ * corrida crearía una tarea por cada uno.
+ */
+export const ARRANQUE_REGLAS = "2026-10-16";
+/** Tareas nuevas por regla y por día (las de más tiempo quietas primero): el resto sale los días siguientes. */
+export const MAX_POR_REGLA = 3;
+
 const misma = (t: TareaExistente, n: { titulo: string; clientId: string | null; leadId: string | null }) =>
   t.titulo === n.titulo && (t.clientId ?? null) === n.clientId && (t.leadId ?? null) === n.leadId;
 
@@ -171,6 +180,8 @@ const misma = (t: TareaExistente, n: { titulo: string; clientId: string | null; 
  * - Lead sin respuesta y cliente sin contacto: nunca dos abiertas iguales. Completar la tarea cuenta como
  *   contacto (el que llama pasa esa fecha en ultimaActividad), así que no reaparece al día siguiente.
  * - Renovación: una sola vez por contrato y fecha de vencimiento.
+ * Lead sin respuesta y cliente sin contacto cuentan la inactividad desde ARRANQUE_REGLAS como mínimo y crean a lo
+ * sumo MAX_POR_REGLA tareas por día cada una, para que nunca llegue una avalancha de golpe.
  */
 export function planearSeguimientos(input: {
   duenoId: string;
@@ -180,8 +191,12 @@ export function planearSeguimientos(input: {
   clientes: ClienteDato[];
   contratos: ContratoDato[];
   tareas: TareaExistente[];
+  /** Piso de la inactividad (día AAAA-MM-DD). Por omisión, ARRANQUE_REGLAS. */
+  arranque?: string;
 }): TareaNueva[] {
   const { duenoId, hoy, reglas } = input;
+  const piso = input.arranque ?? ARRANQUE_REGLAS;
+  const quietoDesde = (d: Date) => { const dia = diaDeFecha(d); return diasEntre(dia < piso ? piso : dia, hoy); };
   const tareas = [...input.tareas];
   const nuevas: TareaNueva[] = [];
   const agregar = (n: TareaNueva) => {
@@ -189,6 +204,7 @@ export function planearSeguimientos(input: {
     tareas.push({ titulo: n.titulo, clientId: n.clientId, leadId: n.leadId, completed: false, dia: n.dia });
   };
 
+  const candidatosLead: { quieto: number; tarea: TareaNueva }[] = [];
   for (const l of input.leads) {
     if (LEAD_CERRADO.has(l.status)) continue;
     const responsableId = l.responsableId ?? duenoId;
@@ -206,25 +222,28 @@ export function planearSeguimientos(input: {
 
     // 2. Lead sin respuesta en N días
     if (reglas.leadSinRespuesta.activa && LEAD_ESPERANDO.has(l.status)) {
-      const quieto = diasEntre(diaDeFecha(l.ultimaActividad), hoy);
+      const quieto = quietoDesde(l.ultimaActividad);
       const n = { titulo: tituloLeadSinRespuesta(l.nombre), clientId: null, leadId: l.id };
       // Si ya tiene cualquier tarea abierta, el equipo ya lo está siguiendo.
       const abierta = tareas.some((t) => !t.completed && t.leadId === l.id);
       if (quieto >= reglas.leadSinRespuesta.dias && !abierta) {
-        agregar({ ...n, motivo: "lead_sin_respuesta", descripcion: `Lleva ${quieto} días sin movimiento. Escríbele o llámalo y anota cómo te fue.`, responsableId, dia: hoy, prioridad: "MEDIUM" });
+        candidatosLead.push({ quieto, tarea: { ...n, motivo: "lead_sin_respuesta", descripcion: `Lleva ${quieto} días sin movimiento. Escríbele o llámalo y anota cómo te fue.`, responsableId, dia: hoy, prioridad: "MEDIUM" } });
       }
     }
   }
+  candidatosLead.sort((a, b) => b.quieto - a.quieto).slice(0, MAX_POR_REGLA).forEach((c) => agregar(c.tarea));
 
   // 3. Cliente sin contacto en N días
   if (reglas.clienteSinContacto.activa) {
+    const candidatos: { quieto: number; tarea: TareaNueva }[] = [];
     for (const c of input.clientes) {
-      const quieto = diasEntre(diaDeFecha(c.ultimaActividad), hoy);
+      const quieto = quietoDesde(c.ultimaActividad);
       if (quieto < reglas.clienteSinContacto.dias) continue;
       const n = { titulo: tituloContactar(c.nombre), clientId: c.id, leadId: null };
       if (tareas.some((t) => !t.completed && misma(t, n))) continue;
-      agregar({ ...n, motivo: "cliente_sin_contacto", descripcion: `Lleva ${quieto} días sin contacto. Una llamada o un mensaje corto para saber cómo va.`, responsableId: c.responsableId ?? duenoId, dia: hoy, prioridad: "MEDIUM" });
+      candidatos.push({ quieto, tarea: { ...n, motivo: "cliente_sin_contacto", descripcion: `Lleva ${quieto} días sin contacto. Una llamada o un mensaje corto para saber cómo va.`, responsableId: c.responsableId ?? duenoId, dia: hoy, prioridad: "MEDIUM" } });
     }
+    candidatos.sort((a, b) => b.quieto - a.quieto).slice(0, MAX_POR_REGLA).forEach((c) => agregar(c.tarea));
   }
 
   // 4. Contrato que vence en N días

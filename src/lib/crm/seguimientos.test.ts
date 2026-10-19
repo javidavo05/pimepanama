@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  REGLAS_POR_DEFECTO, diaDeFecha, diaDeTarea, diaPanama, diasEntre, masReciente, planearSeguimientos, reglasAJson, reglasDe,
+  MAX_POR_REGLA, REGLAS_POR_DEFECTO, diaDeFecha, diaDeTarea, diaPanama, diasEntre, masReciente, planearSeguimientos, reglasAJson, reglasDe,
   tituloContactar, tituloLeadSinRespuesta, tituloRenovacion, tituloSeguimiento,
   type ClienteDato, type ContratoDato, type LeadDato, type TareaExistente,
 } from "./seguimientos-reglas";
@@ -15,7 +15,7 @@ const lead = (o: Partial<LeadDato> = {}): LeadDato => ({ id: "l1", nombre: "Ana 
 const cliente = (o: Partial<ClienteDato> = {}): ClienteDato => ({ id: "c1", nombre: "Ferretería Sol", responsableId: null, ultimaActividad: hace(0), ...o });
 const contrato = (o: Partial<ContratoDato> = {}): ContratoDato => ({ id: "k1", titulo: "Soporte anual", clientId: "c1", clienteNombre: "Ferretería Sol", responsableId: null, endsAt: dia("2026-11-10"), ...o });
 const plan = (o: Partial<Parameters<typeof planearSeguimientos>[0]> = {}) =>
-  planearSeguimientos({ duenoId: "dueno", hoy: HOY, reglas: REGLAS_POR_DEFECTO, leads: [], clientes: [], contratos: [], tareas: [], ...o });
+  planearSeguimientos({ duenoId: "dueno", hoy: HOY, reglas: REGLAS_POR_DEFECTO, leads: [], clientes: [], contratos: [], tareas: [], arranque: "2000-01-01", ...o });
 
 // ─── Reglas guardadas ─────────────────────────────────────────────────────────
 
@@ -148,4 +148,23 @@ test("aviso de tarea: hoy, atrasada y pronto, cada uno una vez", () => {
   assert.equal(avisoDeTarea(t("2026-10-18", { reminderSent: true }), HOY, nada), null);
   assert.equal(avisoDeTarea(t("2026-10-25"), HOY, nada), null);
   assert.equal(avisoDeTarea(t(HOY, { completed: true }), HOY, nada), null);
+});
+
+// ─── Sin avalancha la primera vez ─────────────────────────────────────────────
+
+test("la inactividad se cuenta desde el arranque de las reglas: los clientes viejos no disparan nada el primer día", () => {
+  const viejos = Array.from({ length: 20 }, (_, i) => cliente({ id: `c${i}`, nombre: `Cliente ${i}`, ultimaActividad: hace(400) }));
+  assert.equal(plan({ clientes: viejos, arranque: HOY }).length, 0);
+  // 45 días después del arranque sí, pero solo unas pocas por día
+  const despues = planearSeguimientos({ duenoId: "dueno", hoy: "2026-11-30", reglas: REGLAS_POR_DEFECTO, leads: [], clientes: viejos, contratos: [], tareas: [], arranque: HOY });
+  assert.equal(despues.length, MAX_POR_REGLA);
+});
+
+test("cada regla crea a lo sumo unas pocas tareas por día, las de más tiempo quietas primero", () => {
+  const clientes = Array.from({ length: 10 }, (_, i) => cliente({ id: `c${i}`, nombre: `Cliente ${i}`, ultimaActividad: hace(50 + i) }));
+  const leads = Array.from({ length: 10 }, (_, i) => lead({ id: `l${i}`, nombre: `Lead ${i}`, ultimaActividad: hace(5 + i) }));
+  const r = plan({ clientes, leads });
+  assert.equal(r.filter((t) => t.motivo === "cliente_sin_contacto").length, MAX_POR_REGLA);
+  assert.equal(r.filter((t) => t.motivo === "lead_sin_respuesta").length, MAX_POR_REGLA);
+  assert.deepEqual(r.filter((t) => t.clientId).map((t) => t.clientId), ["c9", "c8", "c7"]);
 });
