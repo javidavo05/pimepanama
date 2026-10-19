@@ -39,6 +39,9 @@ export default async function SiteLayout({ children, params }: { children: React
     <html lang={lang} suppressHydrationWarning>
       <head>
         <link rel="preload" href="/fonts/manrope-var.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
+        {/* LinkedIn lee la fecha solo con el atributo property (el name= de metadata.other no le basta). */}
+        <meta property="og:publish_date" content="2026-10-10T00:00:00-05:00" />
+        <meta property="article:published_time" content="2026-10-10T00:00:00-05:00" />
         <Script id="tema" strategy="beforeInteractive">{"try{var t=localStorage.getItem('tema');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t)}catch(e){}"}</Script>
       </head>
       <body>

@@ -20,7 +20,7 @@ export function metaDePagina(lang: Lang, ruta: string, titulo: string, descripci
     // LinkedIn (Post Inspector) busca autor y fecha de publicación: sin ellos marcaba «No author / No publication date».
     // La fecha es la del lanzamiento del sitio nuevo (corte de dominio, 2026-10-10).
     authors: [{ name: "Pime Panamá", url: BASE }],
-    other: { publish_date: PUBLICADO, "article:published_time": PUBLICADO, "article:author": "Pime Panamá" },
+    other: { publish_date: PUBLICADO, "article:author": "Pime Panamá" },
     ...extra,
   };
 }
