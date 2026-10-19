@@ -1,4 +1,5 @@
 /** Estado del proyecto según GitHub: actividad real del repositorio y avance de sus milestones. */
+import Link from "@/components/empresa/link";
 import type { VerificacionGithub } from "@/lib/motor/verificar-github";
 
 const hace = (iso: string) => {
@@ -6,7 +7,8 @@ const hace = (iso: string) => {
   return d <= 0 ? "hoy" : d === 1 ? "ayer" : `hace ${d} días`;
 };
 
-export function VerificacionGithubCard({ repo, check, checkAt }: { projectId?: string; repo: string | null; check: VerificacionGithub | null; checkAt: Date | null }) {
+/** `datos` es la última lectura completa; `error`, por qué falló la última revisión (puede haber ambos). */
+export function VerificacionGithubCard({ repo, datos: check, error, checkAt }: { projectId?: string; repo: string | null; datos: VerificacionGithub | null; error: string | null; checkAt: Date | null }) {
   if (!repo) return null;
   const max = Math.max(1, ...(check?.semanas ?? [0]));
   const ritmo = !check ? null : check.commits7 > 0 ? { t: "Activo esta semana", c: "bg-ok/10 text-ok" } : check.commits30 > 0 ? { t: "Con actividad este mes", c: "bg-brand/10 text-brand-fg" } : { t: "Sin actividad en 30 días", c: "bg-warn/10 text-warn" };
@@ -18,8 +20,15 @@ export function VerificacionGithubCard({ repo, check, checkAt }: { projectId?: s
           <p className="text-fg-dim text-sm [overflow-wrap:anywhere]">{repo}{checkAt ? ` · leído ${hace(checkAt.toISOString())}` : " · sin leer todavía"}</p>
         </div>
       </div>
+      {error && (
+        <div role="alert" className="rounded-xl bg-warn/10 px-4 py-3 text-sm">
+          <p className="text-fg font-medium">No se pudo leer el repositorio{check ? "; abajo, la última lectura buena" : ""}.</p>
+          <p className="mt-1 text-fg-mute [overflow-wrap:anywhere]">{error}</p>
+          <Link href="/empresa/platforms/credenciales" className="mt-2 inline-flex items-center min-h-11 sm:min-h-8 text-brand-fg hover:underline">Conectar la cuenta de GitHub que tiene el repo</Link>
+        </div>
+      )}
       {!check ? (
-        <p className="text-fg-dim text-sm">Pime lee los commits, milestones y despliegues del repositorio en la próxima revisión, o al tocar «Revisar ahora».</p>
+        error ? null : <p className="text-fg-dim text-sm">Pime lee los commits, milestones y despliegues del repositorio en la próxima revisión, o al tocar «Revisar ahora».</p>
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-2">

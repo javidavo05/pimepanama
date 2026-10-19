@@ -23,6 +23,18 @@ export type VerificacionGithub = {
   error?: string;
 };
 
+/**
+ * Lee Project.githubCheck sin fiarse de su forma: si la revisión falló antes de la primera lectura
+ * buena, lo guardado es solo `{ error }`. `datos` sale solo cuando la lectura está completa.
+ */
+export function leerVerificacion(json: unknown): { datos: VerificacionGithub | null; error: string | null } {
+  if (!json || typeof json !== "object") return { datos: null, error: null };
+  const v = json as Partial<VerificacionGithub>;
+  const error = typeof v.error === "string" && v.error ? v.error : null;
+  const completo = Array.isArray(v.semanas) && Array.isArray(v.milestones) && typeof v.commits7 === "number" && typeof v.commits30 === "number";
+  return { datos: completo ? (v as VerificacionGithub) : null, error };
+}
+
 async function gh<T>(path: string, token: string | null): Promise<{ data: T; headers: Headers } | null> {
   const r = await fetch(`https://api.github.com${path}`, { headers: { Accept: "application/vnd.github+json", "User-Agent": "pime-suite", "X-GitHub-Api-Version": "2022-11-28", ...(token ? { Authorization: `Bearer ${token}` } : {}) }, cache: "no-store", signal: AbortSignal.timeout(15_000) });
   if (!r.ok) {

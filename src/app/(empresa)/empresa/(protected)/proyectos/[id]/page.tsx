@@ -21,7 +21,7 @@ import { VerificacionGithubCard } from "@/components/empresa/cobrar/verificacion
 import { EstadoSistemaCard } from "@/components/empresa/sistemas/estado-sistema-card";
 import type { Revision } from "@/lib/motor/revision";
 import { EnlazarReuniones } from "@/components/empresa/reuniones/enlazar-reunion";
-import type { VerificacionGithub } from "@/lib/motor/verificar-github";
+import { leerVerificacion } from "@/lib/motor/verificar-github";
 import { datosCompletitud } from "@/lib/proyectos/datos";
 import { completitudProyecto } from "@/lib/proyectos/completitud";
 import { proyectosCandidatos } from "@/lib/proyectos/candidatos";
@@ -351,7 +351,7 @@ export default async function ProyectoDetailPage({
             <>
               {repo && (
                 <div id="verificar-github" tabIndex={-1} className="scroll-mt-4 outline-none">
-                  <VerificacionGithubCard projectId={project.id} repo={repo} check={(project.githubCheck as unknown as VerificacionGithub | null) ?? null} checkAt={project.githubCheckAt} />
+                  <VerificacionGithubCard projectId={project.id} repo={repo} {...leerVerificacion(project.githubCheck)} checkAt={project.githubCheckAt} />
                 </div>
               )}
               {plataformas ? (

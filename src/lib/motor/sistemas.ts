@@ -81,15 +81,17 @@ export async function revisarProyecto(projectId: string, op: Opciones = {}): Pro
   const { creado, sinRespuesta } = await asegurarSistema(p, enlace);
   if (!creado && salud && p.systems[0]?.healthUrl) await sondearSistema(p.systems[0].id);
 
-  let check = (p.githubCheck as VerificacionGithub | null) ?? null;
+  // Puede ser solo `{ error }` si nunca hubo una lectura buena: no se trata como lectura completa.
+  let check = (p.githubCheck as Partial<VerificacionGithub> | null) ?? null;
   if (github && p.repoOwner && p.repoName) {
     try {
-      check = await verificarConGithub(p.userId, p.id);
+      const v = await verificarConGithub(p.userId, p.id);
+      check = v;
       if (p.phases.some((f) => f.githubMilestone != null)) {
-        await sincronizarProyecto(p.id, { milestones: check.milestones.map((m) => ({ number: m.numero, open_issues: m.abiertas, closed_issues: m.cerradas })) }).catch((e) => console.error("[motor] fases", p?.id, e));
+        await sincronizarProyecto(p.id, { milestones: v.milestones.map((m) => ({ number: m.numero, open_issues: m.abiertas, closed_issues: m.cerradas })) }).catch((e) => console.error("[motor] fases", p?.id, e));
       }
     } catch (e) {
-      check = { ...(check ?? {}), error: e instanceof Error ? e.message : String(e) } as VerificacionGithub;
+      check = { ...(check ?? {}), error: e instanceof Error ? e.message : String(e) };
       await prisma.project.update({ where: { id: p.id }, data: { githubCheck: check as unknown as object, githubCheckAt: new Date() } });
     }
   }
