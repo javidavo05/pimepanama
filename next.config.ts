@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
   // Los recursos /_next que este sitio no tiene (los del CMS) también se reenvían, en último lugar.
   async rewrites() {
     const CMS = process.env.CMS_ORIGIN ?? "https://pimepanama-wt62.vercel.app";
-    const prefijos = ["empresa", "cliente", "admin", "firmar", "agendar", "resume", "api"];
+    const prefijos = ["empresa", "cliente", "admin", "firmar", "agendar", "resume", "baja", "api"];
     return {
       afterFiles: [
         ...prefijos.flatMap((p) => [

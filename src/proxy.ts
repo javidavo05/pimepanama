@@ -6,7 +6,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const CONOCIDOS = new Set([
   "es", "en", "avance", "api",
   // Reenviados al CMS por next.config.ts
-  "empresa", "cliente", "admin", "firmar", "agendar", "resume",
+  "empresa", "cliente", "admin", "firmar", "agendar", "resume", "baja",
   "icons", "design-system", "brand", "fonts", "logos", "cases",
 ]);
 
