@@ -1234,6 +1234,8 @@ model DeviceToken {
   user       EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
   name       String
   tokenHash  String      @unique
+  /// 'dispositivo' (PIME Guard) o 'prospectos' (agente de prospección: solo carga prospectos). Migración 0059.
+  alcance    String      @default("dispositivo")
   lastUsedAt DateTime?
   revokedAt  DateTime?
   createdAt  DateTime    @default(now())

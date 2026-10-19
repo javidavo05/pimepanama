@@ -16,10 +16,12 @@ function hashToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
-export async function createDeviceToken(userId: string, name: string) {
+export type AlcanceLlave = "dispositivo" | "prospectos";
+
+export async function createDeviceToken(userId: string, name: string, alcance: AlcanceLlave = "dispositivo") {
   const token = PREFIX + randomBytes(32).toString("base64url");
   const device = await prisma.deviceToken.create({
-    data: { userId, name: name.slice(0, 80), tokenHash: hashToken(token) },
+    data: { userId, name: name.slice(0, 80), tokenHash: hashToken(token), alcance },
     select: { id: true, name: true },
   });
   return { token, device };
@@ -32,8 +34,8 @@ function unauthorized(): Response {
   });
 }
 
-/** Como requireEmpresaUser, pero con la llave del dispositivo. Lanza un 401. */
-export async function requireDeviceUser(request: Request): Promise<EmpresaUser> {
+/** Busca la llave del Bearer y exige su alcance. Lanza un 401 si falta, está revocada o es de otro alcance. */
+async function requireLlave(request: Request, alcance: AlcanceLlave): Promise<EmpresaUser> {
   const header = request.headers.get("authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
   if (!token.startsWith(PREFIX)) throw unauthorized();
@@ -42,7 +44,7 @@ export async function requireDeviceUser(request: Request): Promise<EmpresaUser> 
     where: { tokenHash: hashToken(token) },
     include: { user: true },
   });
-  if (!device || device.revokedAt) throw unauthorized();
+  if (!device || device.revokedAt || device.alcance !== alcance) throw unauthorized();
 
   if (!device.lastUsedAt || Date.now() - device.lastUsedAt.getTime() > TOUCH_EVERY_MS) {
     await prisma.deviceToken
@@ -50,4 +52,14 @@ export async function requireDeviceUser(request: Request): Promise<EmpresaUser> 
       .catch(() => undefined);
   }
   return device.user;
+}
+
+/** Como requireEmpresaUser, pero con la llave del dispositivo. Lanza un 401. */
+export function requireDeviceUser(request: Request): Promise<EmpresaUser> {
+  return requireLlave(request, "dispositivo");
+}
+
+/** La llave del agente de prospección: solo abre /api/empresa/prospectos. */
+export function requireProspectorUser(request: Request): Promise<EmpresaUser> {
+  return requireLlave(request, "prospectos");
 }
