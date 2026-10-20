@@ -5,8 +5,12 @@
  * Qué cuenta como «entró»: lo mismo que ingresos.ts — cada pago confirmado en su fecha, y lo pagado de facturas
  * viejas sin filas de pago en la fecha de la factura. Esos cobros viejos van marcados `sinFecha` para que el
  * tablero los muestre aparte y se les pueda poner su fecha real (pedido de Javier, 2026-10-20).
+ *
+ * Qué cuenta como «se debe»: el saldo del cliente igual que en su ficha y su cuenta (saldo.ts → saldoCliente), no solo
+ * lo que falta de sus facturas. Un proyecto cobrado por plan de pagos (50/50) o fases iniciadas sin factura también se
+ * deben: BJ Capital salía al 100 % cobrado con USD 2,500 del plan sin facturar (Javier, 2026-10-20).
  */
-import { FACTURA_CUENTA, pagadoEfectivo } from "@/lib/portal/saldo";
+import { FACTURA_CUENTA, pagadoEfectivo, saldoCliente, type FaseCobrable, type PlanCobrable } from "@/lib/portal/saldo";
 
 const n = (v: unknown) => Number(v ?? 0) || 0;
 const r2 = (x: number) => Math.round(x * 100) / 100;
@@ -27,16 +31,20 @@ export type FilaEntrada = {
   facturaId: string | null; numero: string | null; metodo: string; referencia: string | null; sinFecha: boolean;
 };
 export type FilaGasto = { fecha: string; monto: number; categoria: string; titulo: string };
-export type DatosTablero = { facturas: FilaFactura[]; entradas: FilaEntrada[]; gastos: FilaGasto[]; hoy: string };
+/** Saldo de hoy de un cliente: `pendiente` es lo que debe en total; `sinFacturar` la parte que todavía no tiene factura. */
+export type SaldoCliente = { clienteId: string; cliente: string; pagado: number; pendiente: number; enFacturas: number; sinFacturar: number; vencido: number };
+export type DatosTablero = { facturas: FilaFactura[]; entradas: FilaEntrada[]; gastos: FilaGasto[]; saldos: SaldoCliente[]; hoy: string };
 
 type Cliente = { name: string; company: string | null } | null;
 type Factura = { id: string; number: string | null; title: string; status: string; total: unknown; amountPaid: unknown; issueDate: Date; dueDate: Date | null; clientId: string | null; client: Cliente };
 type Pago = { id: string; documentId: string | null; clientId: string | null; amount: unknown; status: string; paidAt: Date; method: string; reference: string | null; client: Cliente };
 type Gasto = { amount: unknown; paidAt: Date | null; category: string; title: string };
+type Fase = FaseCobrable & { project: { clientId: string | null } };
+type Plan = PlanCobrable & { clientId: string | null; client: Cliente };
 
 const nombre = (c: Cliente) => c?.company || c?.name || "Sin cliente";
 
-export function armarTablero(facturas: Factura[], pagos: Pago[], gastos: Gasto[], ahora = new Date()): DatosTablero {
+export function armarTablero(facturas: Factura[], pagos: Pago[], gastos: Gasto[], fases: Fase[] = [], planes: Plan[] = [], ahora = new Date()): DatosTablero {
   const confirmados = pagos.filter((p) => p.status === "confirmado");
   const porId = new Map(facturas.map((f) => [f.id, f]));
 
@@ -68,7 +76,24 @@ export function armarTablero(facturas: Factura[], pagos: Pago[], gastos: Gasto[]
 
   const filasGasto: FilaGasto[] = gastos.filter((g) => g.paidAt).map((g) => ({ fecha: g.paidAt!.toISOString(), monto: r2(n(g.amount)), categoria: g.category, titulo: g.title }));
 
-  return { facturas: filasFactura.sort((a, b) => b.fecha.localeCompare(a.fecha)), entradas, gastos: filasGasto, hoy: ahora.toISOString() };
+  // Saldo por cliente con la misma cuenta que su ficha: facturas + fases iniciadas sin factura + plan de pagos sin facturar − pagado.
+  const nombres = new Map<string, string>();
+  for (const f of facturas) if (f.clientId) nombres.set(f.clientId, nombre(f.client));
+  for (const p of pagos) if (p.clientId && !nombres.has(p.clientId)) nombres.set(p.clientId, nombre(p.client));
+  for (const p of planes) if (p.clientId && !nombres.has(p.clientId)) nombres.set(p.clientId, nombre(p.client));
+  const ids = new Set([...nombres.keys(), ...fases.map((f) => f.project.clientId).filter((x): x is string => !!x)]);
+  const saldos: SaldoCliente[] = [...ids].map((id) => {
+    const s = saldoCliente(facturas.filter((f) => f.clientId === id), confirmados.filter((p) => p.clientId === id), fases.filter((f) => f.project.clientId === id), planes.filter((p) => p.clientId === id));
+    const deFacturas = filasFactura.filter((f) => f.clienteId === id && f.cuenta);
+    const enFacturas = r2(Math.min(s.pendiente, deFacturas.reduce((a, f) => a + f.falta, 0)));
+    return {
+      clienteId: id, cliente: nombres.get(id) ?? "Cliente", pagado: s.pagado, pendiente: s.pendiente, enFacturas,
+      sinFacturar: r2(Math.max(0, s.pendiente - enFacturas)),
+      vencido: r2(Math.min(enFacturas, deFacturas.filter((f) => f.estado === "vencida").reduce((a, f) => a + f.falta, 0))),
+    };
+  }).filter((x) => x.pagado > 0.005 || x.pendiente > 0.005);
+
+  return { facturas: filasFactura.sort((a, b) => b.fecha.localeCompare(a.fecha)), entradas, gastos: filasGasto, saldos, hoy: ahora.toISOString() };
 }
 
 /** Meses «AAAA-MM» desde `desde` hasta `hasta`, ambos incluidos. */

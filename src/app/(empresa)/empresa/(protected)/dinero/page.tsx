@@ -6,6 +6,8 @@ import { dinero } from "@/lib/portal/datos";
 import { formatoHoras } from "@/lib/portal/horas";
 import { PAGO_METODO_LABEL, type PagoMetodo } from "@/lib/portal/estados";
 import { armarTablero } from "@/lib/dinero/tablero";
+import { FASE_COBRABLE, PLAN_COBRABLE, fasesVigentes } from "@/lib/portal/datos";
+import { FASE_INICIADA } from "@/lib/portal/saldo";
 import { PageHeader, btn } from "@/components/empresa/page-header";
 import { FacturarHorasForm, PagoPorConfirmar } from "@/components/empresa/clientes/formularios";
 import { TableroDinero } from "./tablero";
@@ -23,14 +25,18 @@ const CLIENTE = { select: { name: true, company: true } } as const;
  */
 export default async function Dinero() {
   const u = await getEmpresaUser();
-  const [facturas, pagos, porConfirmar, horas, gastos] = await Promise.all([
+  // Proyectos de clientes de verdad (no la empresa interna) que no se cancelaron: sus fases y planes también se deben.
+  const proyectoVivo = { userId: u.id, status: { not: "CANCELLED" as const }, clientId: { not: null }, client: { is: { internal: false } } };
+  const [facturas, pagos, porConfirmar, horas, gastos, fases, planes] = await Promise.all([
     prisma.document.findMany({ where: { userId: u.id, type: "FACTURA", ...SIN_INTERNOS }, select: { id: true, number: true, title: true, status: true, total: true, amountPaid: true, issueDate: true, dueDate: true, clientId: true, client: CLIENTE } }),
     prisma.payment.findMany({ where: { userId: u.id, status: "confirmado", ...SIN_INTERNOS }, select: { id: true, documentId: true, clientId: true, amount: true, status: true, paidAt: true, method: true, reference: true, client: CLIENTE } }),
     prisma.payment.findMany({ where: { userId: u.id, status: "por_confirmar" }, orderBy: { createdAt: "asc" }, select: { id: true, amount: true, paidAt: true, method: true, reference: true, clientId: true, client: CLIENTE, document: { select: { number: true } } } }),
     prisma.timeEntry.groupBy({ by: ["clientId"], where: { userId: u.id, invoiceId: null, billable: true, amount: { gt: 0 } }, _sum: { amount: true, billedMinutes: true } }),
     prisma.expense.findMany({ where: { userId: u.id, status: { not: "CANCELLED" } }, select: { amount: true, paidAt: true, category: true, title: true } }).catch(() => []),
+    prisma.projectPhase.findMany({ where: { AND: [fasesVigentes, { status: { in: [...FASE_INICIADA] } }, { project: proyectoVivo }] }, select: { ...FASE_COBRABLE, project: { select: { clientId: true } } } }),
+    prisma.project.findMany({ where: proyectoVivo, select: { ...PLAN_COBRABLE, clientId: true, client: CLIENTE } }),
   ]);
-  const datos = armarTablero(facturas, pagos, gastos);
+  const datos = armarTablero(facturas, pagos, gastos, fases, planes);
   const sinFecha = datos.entradas.filter((e) => e.sinFecha && e.facturaId).sort((a, b) => a.fecha.localeCompare(b.fecha));
   const clientesHoras = horas.length ? await prisma.client.findMany({ where: { id: { in: horas.map((h) => h.clientId) } }, select: { id: true, name: true, company: true } }) : [];
   const nombre = (id: string) => { const c = clientesHoras.find((x) => x.id === id); return c?.company || c?.name || "Cliente"; };
