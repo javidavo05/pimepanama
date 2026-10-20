@@ -12,7 +12,7 @@ import { ClientCombobox } from "@/components/empresa/client-combobox";
 import { ActionRow, btn } from "@/components/empresa/page-header";
 import { FinancingPlanner } from "@/components/empresa/financing-planner";
 import { AiEnhanceButton } from "@/components/empresa/document-builder/ai-enhance-button";
-import { validatePlan, type FinancingPlan } from "@/lib/financing";
+import { planPorDefecto, validatePlan, type FinancingPlan } from "@/lib/financing";
 import { guardarMantenimientoAction } from "@/lib/crm/mantenimiento-acciones";
 import {
   INPUT_CLASS,
@@ -30,13 +30,8 @@ const STATUS_OPTS: { value: ProjectStatus; label: string; color: string }[] = [
   { value: "CANCELLED", label: "Cancelado", color: "border-line-mid text-fg-dim" },
 ];
 
-const EMPTY_PLAN: FinancingPlan = {
-  total: 0,
-  downPayment: 0,
-  installments: 6,
-  frequency: "MONTHLY",
-  firstDueDate: "",
-};
+/** Sin plan todavía: arranca en el 50/50 de siempre. */
+const EMPTY_PLAN: FinancingPlan = planPorDefecto();
 
 export type EditSection = "form" | "financing";
 

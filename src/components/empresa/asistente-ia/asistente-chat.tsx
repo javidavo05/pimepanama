@@ -158,8 +158,8 @@ export function AsistenteChat() {
   return (
     <>
       <button type="button" onClick={() => setAbierto(true)} aria-label="Abrir el asistente"
-        className="fixed z-40 right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-6 md:right-6 inline-flex items-center gap-2 min-h-14 min-w-14 justify-center rounded-full bg-brand text-on-brand shadow-lg hover:bg-brand-hi md:px-6 [@media(max-height:560px)]:!min-h-11 [@media(max-height:560px)]:!min-w-11 [@media(max-height:560px)]:!px-0 [@media(max-height:560px)]:!bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:[@media(max-height:560px)]:!bottom-4">
-        {/* En pantallas bajas (teléfono o plegable en horizontal) queda solo el ícono, más chico y pegado a la barra de abajo: no tapa media pantalla. */}
+        className="fixed z-40 right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] md:bottom-6 md:right-6 inline-flex items-center gap-2 min-h-14 min-w-14 justify-center rounded-full bg-brand text-on-brand shadow-lg hover:bg-brand-hi md:px-6 [@media(min-height:401px)_and_(max-height:560px)]:!min-h-11 [@media(min-height:401px)_and_(max-height:560px)]:!min-w-11 [@media(max-height:560px)]:!px-0 [@media(min-height:401px)_and_(max-height:560px)]:!bottom-[calc(4.5rem+env(safe-area-inset-bottom))] md:[@media(max-height:560px)]:!bottom-4 [@media(max-height:400px)_and_(max-width:767px)]:!bottom-[calc(3.25rem+env(safe-area-inset-bottom))] [@media(max-height:400px)_and_(max-width:767px)]:!min-h-10 [@media(max-height:400px)_and_(max-width:767px)]:!min-w-10">
+        {/* En pantallas bajas (teléfono o plegable en horizontal) queda solo el ícono, más chico y pegado a la barra de abajo (en las más bajas, montado sobre su borde): no tapa media pantalla. */}
         <IconoAsistente className="h-6 w-6" /><span className="hidden md:inline text-sm font-semibold [@media(max-height:560px)]:!hidden">Asistente</span>
       </button>
 

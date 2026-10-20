@@ -9,7 +9,7 @@ import { ContractAnalyzer, type ContractAnalysis } from "@/components/empresa/co
 import { PhasesEditor, type PhaseDraft } from "@/components/empresa/phases-editor";
 import { alcanceDesdeDocumento, fasesDesdeDocumento, planDesdeDocumento } from "@/lib/proyectos/desde-documento";
 import { FinancingPlanner } from "@/components/empresa/financing-planner";
-import type { FinancingPlan } from "@/lib/financing";
+import { planPorDefecto, type FinancingPlan } from "@/lib/financing";
 import { AiEnhanceButton } from "@/components/empresa/document-builder/ai-enhance-button";
 import { LanguageToggle } from "@/components/empresa/document-builder/language-toggle";
 import { PageHeader, ActionRow, btn } from "@/components/empresa/page-header";
@@ -69,14 +69,10 @@ export function ProjectBuilder({ clients, creatorName: _creatorName, preselectCl
   const [phasesFromDocument, setPhasesFromDocument] = useState(false);
   // Una propuesta o cotización no es un contrato firmado: el contrato nace en borrador.
   const [contractIsSigned, setContractIsSigned] = useState(false);
-  const [financingEnabled, setFinancingEnabled] = useState(false);
-  const [financing, setFinancing] = useState<FinancingPlan>({
-    total: 0,
-    downPayment: 0,
-    installments: 6,
-    frequency: "MONTHLY",
-    firstDueDate: "",
-  });
+  // Prendido de entrada: casi todo proyecto se cobra 50/50. Sin valor total no se guarda plan.
+  const [financingEnabled, setFinancingEnabled] = useState(true);
+  // El plan arranca en 50 % al firmar y 50 % a la entrega: es como cobra Pime casi siempre.
+  const [financing, setFinancing] = useState<FinancingPlan>(() => planPorDefecto());
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
@@ -272,7 +268,7 @@ export function ProjectBuilder({ clients, creatorName: _creatorName, preselectCl
                 dueDate: d.dueDate || undefined,
               })),
           })),
-        financingPlan: financingEnabled
+        financingPlan: financingEnabled && (financing.total || budget || 0) > 0
           ? { ...financing, total: financing.total || budget || 0 }
           : null,
         contract: withContract

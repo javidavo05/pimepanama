@@ -11,13 +11,11 @@ import {
   type InstallmentFrequency,
   type MilestoneTrigger,
   type PaymentMilestone,
+  MITAD_Y_MITAD,
 } from "@/lib/financing";
 
 /** El 50/50 de las propuestas de Pime: la mitad al firmar y la mitad a la entrega. */
-const HALF_AND_HALF: PaymentMilestone[] = [
-  { description: "50 % al firmar", percent: 50, trigger: "SIGNING", dueDate: "" },
-  { description: "50 % a la entrega", percent: 50, trigger: "DELIVERY", dueDate: "" },
-];
+const HALF_AND_HALF: PaymentMilestone[] = MITAD_Y_MITAD;
 
 const fieldLabel = "block text-fg-faint text-[10px] uppercase tracking-widest font-medium mb-1.5";
 
@@ -91,7 +89,7 @@ export function FinancingPlanner({
         <div className="space-y-4 border-t border-line pt-4">
           <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Cómo se paga">
             {([
-              ["MILESTONES", "Por hitos (50/50…)"],
+              ["MILESTONES", "50 % al firmar · 50 % al entregar"],
               ["INSTALLMENTS", "Abono y cuotas"],
             ] as const).map(([mode, text]) => (
               <button
@@ -162,9 +160,9 @@ export function FinancingPlanner({
           {byMilestones ? (
             <div className="space-y-2">
               {milestones.map((m, i) => (
-                // Celular: porcentaje y descripción arriba; cuándo, fecha y quitar abajo.
-                // Desde tablet, todo en una fila.
-                <div key={i} className="border border-line rounded-lg p-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
+                // Porcentaje y descripción arriba; cuándo, fecha y quitar abajo (se acomodan solos al ancho).
+                // En pantalla ancha, todo en una fila.
+                <div key={i} className="border border-line rounded-lg p-2 grid gap-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,26rem)]">
                   <div className="grid grid-cols-[5rem_minmax(0,1fr)] gap-2">
                     <div className="relative">
                       <input
@@ -183,7 +181,7 @@ export function FinancingPlanner({
                       className="w-full min-w-0 bg-fill border border-line rounded-lg px-3 py-2 text-fg text-sm focus:outline-none focus:border-brand/40"
                     />
                   </div>
-                  <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] gap-2 items-center">
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 items-center">
                     <select
                       aria-label="Cuándo se cobra"
                       value={m.trigger}
@@ -194,17 +192,6 @@ export function FinancingPlanner({
                         <option key={t} value={t}>{MILESTONE_TRIGGER_LABEL[t]}</option>
                       ))}
                     </select>
-                    {m.trigger === "SIGNING" ? (
-                      <p className="text-fg-faint text-xs">Se cobra al facturar</p>
-                    ) : (
-                      <input
-                        type="date"
-                        aria-label="Fecha estimada"
-                        value={m.dueDate}
-                        onChange={(e) => setMilestone(i, { dueDate: e.target.value })}
-                        className="w-full min-w-0 bg-fill border border-line rounded-lg px-3 py-2 text-fg text-sm focus:outline-none focus:border-brand/40 [color-scheme:dark]"
-                      />
-                    )}
                     <button
                       type="button"
                       aria-label="Quitar hito"
@@ -213,6 +200,17 @@ export function FinancingPlanner({
                     >
                       ×
                     </button>
+                    {m.trigger === "SIGNING" ? (
+                      <p className="col-span-2 text-fg-faint text-xs">Se cobra al facturar</p>
+                    ) : (
+                      <input
+                        type="date"
+                        aria-label={m.trigger === "DATE" ? "Fecha" : "Fecha estimada (opcional)"}
+                        value={m.dueDate}
+                        onChange={(e) => setMilestone(i, { dueDate: e.target.value })}
+                        className="col-span-2 w-full min-w-0 bg-fill border border-line rounded-lg px-3 py-2 text-fg text-sm focus:outline-none focus:border-brand/40 [color-scheme:dark]"
+                      />
+                    )}
                   </div>
                 </div>
               ))}

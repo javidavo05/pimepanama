@@ -151,12 +151,21 @@ export async function crearCobro(u: Equipo, cobro: Cobro): Promise<{ id: string;
     if (!p || !isFinancingPlan(p.financingPlan)) throw new Error("Ese proyecto no tiene plan de cuotas.");
     const clientId = p.clientId ?? p.clients[0]?.clientId;
     if (!clientId) throw new Error("El proyecto no tiene cliente.");
-    const plan = buildInstallmentPlan(p.financingPlan as FinancingPlan);
+    const fp = p.financingPlan as FinancingPlan;
+    const plan = buildInstallmentPlan(fp);
+    // Un hito sin fecha («50 % a la entrega» antes de saber cuándo se entrega) vence en el plazo de pago de siempre.
+    const sinFecha = () => new Date(Date.now() + (u.config?.paymentTermsDays ?? 15) * 86_400_000);
+    const alFirmar = fp.mode === "MILESTONES" ? (fp.milestones ?? []).filter((m) => m.trigger === "SIGNING").map((m) => m.description.trim()).filter(Boolean).join(" + ") : "";
     const cuotas = [
-      ...(plan.downPayment > 0 ? [{ description: "Abono inicial", amount: plan.downPayment, dueDate: new Date() }] : []),
-      ...plan.rows.map((r) => ({ description: r.description, amount: r.amount, dueDate: new Date(`${r.dueDate}T12:00:00Z`) })),
+      ...(plan.downPayment > 0 ? [{ description: alFirmar || "Abono inicial", amount: plan.downPayment, dueDate: new Date() }] : []),
+      ...plan.rows.map((r) => ({ description: r.description, amount: r.amount, dueDate: r.dueDate ? new Date(`${r.dueDate}T12:00:00Z`) : sinFecha() })),
     ];
-    const d = await crearFactura(u, { clientId, projectId: p.id, titulo: p.name, lineas: [{ description: p.name, unitPrice: (p.financingPlan as FinancingPlan).total }], cuotas, sinImpuesto: true });
+    // Se factura lo que se paga en dinero: el canje (estadías, servicios) va como línea informativa en cero, no se cobra.
+    const lineas = [
+      { description: p.name, unitPrice: plan.cash },
+      ...(plan.barter > 0.005 ? [{ description: `Canje (no se cobra en dinero): ${fp.barter?.description || "en especie"} · valor USD ${plan.barter.toFixed(2)}`, unitPrice: 0 }] : []),
+    ];
+    const d = await crearFactura(u, { clientId, projectId: p.id, titulo: p.name, lineas, cuotas, sinImpuesto: true });
     await registrarEvento({ userId: u.id, clientId, projectId: p.id, entityType: "factura", entityId: d.id, kind: "factura_plan", title: `Factura ${d.number} del proyecto con ${cuotas.length} pagos`, visibility: "interno" });
     return { id: d.id, number: d.number };
   }

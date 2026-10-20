@@ -13,7 +13,7 @@ import { registrarPago, recalcularFactura, avanceDeFaseEvento } from "@/lib/port
 import { registrarEvento } from "@/lib/portal/eventos";
 import { unirClienteAProyecto } from "@/lib/motor/enlaces";
 import { facturarPagosSinFactura, nacioPorPago } from "@/lib/motor/pagos";
-import { isFinancingPlan, type FinancingPlan, type InstallmentFrequency } from "@/lib/financing";
+import { isFinancingPlan, MITAD_Y_MITAD, type FinancingPlan, type InstallmentFrequency } from "@/lib/financing";
 import { FASE_ESTADOS, FASE_COBRO, PAGO_METODOS, TICKET_ESTADOS, TICKET_PRIORIDADES, TICKET_TIPOS, TICKET_TIPOS_INTERNOS, PROYECTO_TIPOS, esUno } from "@/lib/portal/estados";
 import type { Evaluable } from "./reglas";
 import { antesDe, borrarFacturaConPasos, filaParaGuardar, type Paso } from "./pasos";
@@ -632,7 +632,7 @@ export const OPERACIONES: Record<string, Op> = {
 
   // Plan de pagos
   plan_definir: {
-    def: def("plan_definir", "Crea o cambia el plan de pagos de un proyecto (antes de facturarlo). Solo cambia lo que mandes; lo demás del plan (hitos, canje, cuotas) se conserva. Cuotas: total, abono, cuotas, frecuencia y primeraFecha (YYYY-MM-DD). Hitos (50 % al firmar / 50 % a la entrega): modo «hitos» y la lista de hitos con su porcentaje (suman 100). Canje: la parte del total que se paga en especie (estadías, servicios…), no en dinero; no se cobra ni cuenta como deuda en efectivo. canje=0 lo quita. Si el plan ya está facturado, cambia las cuotas con cuota_editar.", P({
+    def: def("plan_definir", "Crea o cambia el plan de pagos de un proyecto (antes de facturarlo). Sin plan previo y sin cuotas, crea el de siempre: 50 % al firmar y 50 % a la entrega. Solo cambia lo que mandes; lo demás del plan (hitos, canje, cuotas) se conserva. Cuotas: total, abono, cuotas, frecuencia y primeraFecha (YYYY-MM-DD). Hitos (50 % al firmar / 50 % a la entrega): modo «hitos» y la lista de hitos con su porcentaje (suman 100). Canje: la parte del total que se paga en especie (estadías, servicios…), no en dinero; no se cobra ni cuenta como deuda en efectivo. canje=0 lo quita. Si el plan ya está facturado, cambia las cuotas con cuota_editar.", P({
       proyectoId: STR, total: NUM, abono: NUM, cuotas: NUM, frecuencia: { type: "string", enum: ["mensual", "quincenal", "semanal"] }, primeraFecha: STR,
       modo: { type: "string", enum: ["cuotas", "hitos"] },
       hitos: { type: "array", items: { type: "object", properties: { porcentaje: NUM, cuando: { type: "string", enum: ["al_firmar", "a_la_entrega", "al_cerrar_fase", "en_fecha"] }, fecha: STR, descripcion: STR }, required: ["porcentaje", "cuando"], additionalProperties: false } },
@@ -650,7 +650,8 @@ export const OPERACIONES: Record<string, Op> = {
       const hitosNuevos = Array.isArray(a.hitos) ? (a.hitos as Args[]) : null;
       // El modo no cambia por accidente: un plan 50/50 no se vuelve cuotas solo porque llegó un número de cuotas
       // (así se perdieron los hitos y el canje de BJ Capital el 2026-10-20).
-      const modoAntes = antes?.mode === "MILESTONES" ? "hitos" : "cuotas";
+      // Sin plan previo, lo de siempre en Pime es 50 % al firmar y 50 % a la entrega; cuotas solo si las piden.
+      const modoAntes = antes ? (antes.mode === "MILESTONES" ? "hitos" : "cuotas") : tocaCuotas ? "cuotas" : "hitos";
       const modo = s(a, "modo") || (hitosNuevos ? "hitos" : modoAntes);
       if (modoAntes === "hitos" && modo === "hitos" && tocaCuotas) return { error: "Ese plan es por hitos (por ejemplo 50 % al firmar y 50 % a la entrega). Para pasarlo a cuotas manda modo «cuotas»; para cambiar los hitos manda la lista de hitos." };
       // Se parte del plan entero de antes y se cambia solo lo que llegó: nunca se pierden hitos ni canje.
@@ -664,6 +665,7 @@ export const OPERACIONES: Record<string, Op> = {
         mode: modo === "hitos" ? "MILESTONES" : "INSTALLMENTS",
       };
       if (modo === "hitos") {
+        if (!hitosNuevos && !plan.milestones?.length) plan.milestones = MITAD_Y_MITAD.map((m) => ({ ...m }));
         if (hitosNuevos) plan.milestones = hitosNuevos.map((h) => {
           const cuando = CUANDO[s(h, "cuando") as keyof typeof CUANDO] ?? "DATE";
           const pctH = num(h, "porcentaje") ?? 0;

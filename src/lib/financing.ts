@@ -203,6 +203,20 @@ function buildMilestonePlan(plan: FinancingPlan, cash: number, barter: number): 
   };
 }
 
+/** El 50/50 de Pime: la mitad al firmar y la mitad a la entrega. */
+export const MITAD_Y_MITAD: PaymentMilestone[] = [
+  { description: "50 % al firmar", percent: 50, trigger: "SIGNING", dueDate: "" },
+  { description: "50 % a la entrega", percent: 50, trigger: "DELIVERY", dueDate: "" },
+];
+
+/**
+ * Plan con el que arranca todo proyecto: 50 % al firmar y 50 % a la entrega, que es como cobra Pime casi siempre
+ * (Javier, 2026-10-20: «siempre se hacen los pagos así»). Las cuotas mensuales quedan como la otra opción.
+ */
+export function planPorDefecto(total = 0): FinancingPlan {
+  return { total, downPayment: 0, installments: 1, frequency: "MONTHLY", firstDueDate: "", mode: "MILESTONES", milestones: MITAD_Y_MITAD.map((m) => ({ ...m })) };
+}
+
 /** Valida un plan y devuelve el motivo si no sirve. */
 export function validatePlan(plan: FinancingPlan): string | null {
   if (plan.total <= 0) return "El monto total debe ser mayor a cero";
@@ -217,9 +231,10 @@ export function validatePlan(plan: FinancingPlan): string | null {
     if (Math.abs(sum - 100) >= 0.01) {
       return `Los hitos suman ${Math.round(sum * 100) / 100} %; tienen que sumar 100 %`;
     }
-    const undated = milestones.find((m) => m.trigger !== "SIGNING" && !m.dueDate);
+    // «A la entrega» y «al cerrar una fase» pueden ir sin fecha: se deben cuando pasa eso. Solo «en una fecha» la necesita.
+    const undated = milestones.find((m) => m.trigger === "DATE" && !m.dueDate);
     if (undated) {
-      return `Pon la fecha estimada de «${undated.description || "el hito"}»: es cuando aparece en Cuentas por Cobrar`;
+      return `Pon la fecha de «${undated.description || "el hito"}»`;
     }
     return null;
   }

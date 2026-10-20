@@ -91,7 +91,7 @@ export function ResumenCliente({ f, reuniones, projectId }: { f: Ficha; reunione
               <IrAPestana tab={t.tab} className="w-full h-full rounded-xl bg-fill hover:bg-fill-2 px-4 py-3 min-h-16 min-w-0 text-left transition-colors">
                 <span className="block text-fg-dim text-xs">{t.k}</span>
                 <span className={`block text-base font-semibold font-mono tabular-nums truncate ${t.tono}`}>{t.v}</span>
-                <span className="block text-fg-faint text-xs truncate">{t.nota}</span>
+                <span className="block text-fg-faint text-xs [overflow-wrap:anywhere]">{t.nota}</span>
               </IrAPestana>
             </li>
           ))}

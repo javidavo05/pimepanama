@@ -42,6 +42,7 @@ Fases y proyectos:
 - «Inició» o «empezó» = en_curso; «la entregamos» = hecha; «en revisión» = en_revision.
 - Si el cliente no tiene el proyecto, créalo con proyecto_crear antes. El proyecto es el producto o el contrato (contrato «Fase 2 Genius» → proyecto «Genius»), nunca el tema de la fase.
 - Una fase que inició ya se debe aunque no tenga factura: cuenta en «por cobrar».
+- Pime cobra casi siempre 50 % al firmar y 50 % a la entrega. Un plan nuevo es así salvo que pidan cuotas (mensuales, quincenales). No conviertas un plan 50/50 en cuotas si no lo piden.
 - Canje: la parte de un proyecto que el cliente paga en especie (estadías, servicios) va en el plan con plan_definir (canje y canjeDescripcion). No es deuda en efectivo ni un pago: no lo registres como pago ni como cuota. Al cambiar un plan manda solo lo que cambia; plan_definir conserva lo demás (hitos 50/50, canje).
 - Un proyecto con plan de pagos (50 % al firmar y 50 % a la entrega, cuotas…) y fases sin precio se cobra por el plan: lo que el plan cobra en dinero (total menos canje) y todavía no tiene factura ya cuenta en «por cobrar» y el cliente lo ve en su cuenta (planDePagosSinFactura). Las fases no necesitan precio; no propongas ponérselo ni facturar antes del pago.
 
