@@ -18,6 +18,7 @@ import { prisma } from "@/lib/prisma";
 import { revisionVigente } from "@/lib/portal/vista";
 import { plataformasDeCliente } from "@/lib/platforms/cliente";
 import { PlataformasCliente } from "@/components/empresa/clientes/plataformas-cliente";
+import { AccesosDelCliente } from "@/components/empresa/clientes/accesos";
 import { FichaTabs } from "@/components/empresa/clientes/ficha-tabs";
 import { totalesGastos } from "@/lib/gastos/totales";
 import { historiaDelCliente, deInteraccion } from "@/lib/crm/historia";
@@ -472,6 +473,8 @@ export default async function FichaCliente({ params, searchParams }: { params: P
                           </ul>
                         ) : <p className="mt-3 text-sm text-fg-dim">Sin proyectos. Crea uno con sus fases y precios: de ahí salen la propuesta, las facturas y el avance que ve el cliente.</p>}
                       </section>
+
+            <AccesosDelCliente clientId={c.id} proyectos={f.proyectos.map((p) => ({ id: p.id, name: p.name, liveUrl: p.liveUrl, accesos: p.accesos }))} className={card} h2={h2} />
 
             <section className={card}>
               <h2 className={h2}>Contratos</h2>

@@ -71,3 +71,38 @@ export async function verClaveEquipoAction(_: Estado, form: FormData): Promise<E
   if (!a?.secretEnc) return { error: "Este acceso no tiene clave guardada." };
   try { return { ok: true, valor: decryptPassword(a.secretEnc) }; } catch { return { error: "No se pudo descifrar la clave." }; }
 }
+
+/**
+ * Mensaje listo para mandarle al cliente con los accesos de sus proyectos (o de uno solo), claves incluidas.
+ * Se arma en el servidor para que las claves solo viajen cuando alguien del equipo toca «Copiar».
+ */
+export async function textoAccesosAction(clientId: string, projectId?: string): Promise<Estado> {
+  const u = await getEmpresaUser();
+  const c = await prisma.client.findFirst({ where: { id: clientId, userId: u.id }, select: { name: true } });
+  if (!c) return { error: "No encontré ese cliente." };
+  const proyectos = await prisma.project.findMany({
+    where: { userId: u.id, ...(projectId ? { id: projectId } : {}), OR: [{ clientId }, { clients: { some: { clientId } } }] },
+    orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
+    select: { name: true, liveUrl: true, accesses: { orderBy: { sortOrder: "asc" }, select: { label: true, url: true, username: true, notes: true, secretEnc: true } } },
+  });
+  const conAlgo = proyectos.filter((p) => p.liveUrl || p.accesses.length);
+  if (!conAlgo.length) return { error: "Todavía no hay accesos guardados." };
+  let bloques: string[];
+  try {
+    bloques = conAlgo.map((p) => [
+      `*${p.name}*`,
+      ...(p.liveUrl ? [`Sistema: ${p.liveUrl}`] : []),
+      ...p.accesses.map((a) => [
+        "", a.label,
+        ...(a.url ? [`Dirección: ${a.url}`] : []),
+        ...(a.username ? [`Usuario: ${a.username}`] : []),
+        ...(a.secretEnc ? [`Clave: ${decryptPassword(a.secretEnc)}`] : []),
+        ...(a.notes ? [`Nota: ${a.notes}`] : []),
+      ].join("\n")),
+    ].join("\n"));
+  } catch {
+    return { error: "No se pudo descifrar una de las claves." };
+  }
+  const nombre = c.name.trim().split(/\s+/)[0];
+  return { ok: true, valor: [`Hola${nombre ? ` ${nombre}` : ""}, estos son tus accesos:`, ...bloques].join("\n\n") };
+}

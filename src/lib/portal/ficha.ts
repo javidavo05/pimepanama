@@ -14,7 +14,7 @@ export async function fichaCliente(userId: string, clientId: string) {
     prisma.companyConfig.findFirst({ where: { users: { some: { id: userId } } } }),
     prisma.project.findMany({
       where: { userId, OR: [{ clientId }, { clients: { some: { clientId } } }] },
-      select: { id: true, name: true, kind: true, status: true, updatedAt: true, phases: { where: fasesVigentes, orderBy: { sortOrder: "asc" }, select: { id: true, name: true, status: true, progress: true, price: true, sortOrder: true } }, _count: { select: { changeOrders: { where: { status: "enviada" } } } } },
+      select: { id: true, name: true, kind: true, status: true, updatedAt: true, liveUrl: true, accesses: { orderBy: { sortOrder: "asc" }, select: { id: true, label: true, url: true, username: true, notes: true, secretEnc: true } }, phases: { where: fasesVigentes, orderBy: { sortOrder: "asc" }, select: { id: true, name: true, status: true, progress: true, price: true, sortOrder: true } }, _count: { select: { changeOrders: { where: { status: "enviada" } } } } },
       orderBy: [{ status: "asc" }, { updatedAt: "desc" }],
     }),
     prisma.ticket.findMany({ where: { userId, clientId }, orderBy: { updatedAt: "desc" }, take: 30, select: { id: true, number: true, title: true, status: true, kind: true, priority: true, updatedAt: true, lastClientActivityAt: true, lastPimeActivityAt: true } }),
@@ -56,7 +56,8 @@ export async function fichaCliente(userId: string, clientId: string) {
     sinFactura: [...sinFactura.values()],
     porCobrarPorProyecto,
     tarifa: tarifaDe(cliente, reglas),
-    proyectos: proyectos.map((p) => ({ ...p, avance: avanceDeProyecto(p.phases), actual: faseActual(p.phases) })),
+    // La clave cifrada no sale de aquí: solo si hay una guardada.
+    proyectos: proyectos.map(({ accesses, ...p }) => ({ ...p, accesos: accesses.map(({ secretEnc, ...a }) => ({ ...a, conClave: !!secretEnc })), avance: avanceDeProyecto(p.phases), actual: faseActual(p.phases) })),
     tickets,
     abiertos: tickets.filter((t) => (TICKET_ABIERTOS as string[]).includes(t.status)),
     facturas: facturasConSaldo,
