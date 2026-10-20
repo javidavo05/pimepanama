@@ -632,7 +632,12 @@ export const OPERACIONES: Record<string, Op> = {
 
   // Plan de pagos
   plan_definir: {
-    def: def("plan_definir", "Crea o cambia el plan de pagos de un proyecto (antes de facturarlo): total, abono inicial, número de cuotas, frecuencia (mensual, quincenal, semanal) y fecha de la primera cuota (YYYY-MM-DD). Si el plan ya está facturado, cambia las cuotas con cuota_editar.", P({ proyectoId: STR, total: NUM, abono: NUM, cuotas: NUM, frecuencia: { type: "string", enum: ["mensual", "quincenal", "semanal"] }, primeraFecha: STR }), ["proyectoId"]),
+    def: def("plan_definir", "Crea o cambia el plan de pagos de un proyecto (antes de facturarlo). Solo cambia lo que mandes; lo demás del plan (hitos, canje, cuotas) se conserva. Cuotas: total, abono, cuotas, frecuencia y primeraFecha (YYYY-MM-DD). Hitos (50 % al firmar / 50 % a la entrega): modo «hitos» y la lista de hitos con su porcentaje (suman 100). Canje: la parte del total que se paga en especie (estadías, servicios…), no en dinero; no se cobra ni cuenta como deuda en efectivo. canje=0 lo quita. Si el plan ya está facturado, cambia las cuotas con cuota_editar.", P({
+      proyectoId: STR, total: NUM, abono: NUM, cuotas: NUM, frecuencia: { type: "string", enum: ["mensual", "quincenal", "semanal"] }, primeraFecha: STR,
+      modo: { type: "string", enum: ["cuotas", "hitos"] },
+      hitos: { type: "array", items: { type: "object", properties: { porcentaje: NUM, cuando: { type: "string", enum: ["al_firmar", "a_la_entrega", "al_cerrar_fase", "en_fecha"] }, fecha: STR, descripcion: STR }, required: ["porcentaje", "cuando"], additionalProperties: false } },
+      canje: NUM, canjeDescripcion: STR,
+    }), ["proyectoId"]),
     async preparar(u, a) {
       const pr = await proyectoDe(u, s(a, "proyectoId"));
       if (!pr) return { error: "No encontré ese proyecto." };
@@ -640,15 +645,49 @@ export const OPERACIONES: Record<string, Op> = {
       if (facturado) return { error: `El plan ya está facturado (${facturado.number}). Cambia sus cuotas con cuota_editar o cuota_agregar (usa ver_cuotas).` };
       const antes = isFinancingPlan(pr.financingPlan) ? (pr.financingPlan as FinancingPlan) : null;
       const FREC: Record<string, InstallmentFrequency> = { mensual: "MONTHLY", quincenal: "BIWEEKLY", semanal: "WEEKLY" };
+      const CUANDO = { al_firmar: "SIGNING", a_la_entrega: "DELIVERY", al_cerrar_fase: "PHASE", en_fecha: "DATE" } as const;
+      const tocaCuotas = ["abono", "cuotas", "frecuencia", "primeraFecha"].some((k) => tiene(a, k));
+      const hitosNuevos = Array.isArray(a.hitos) ? (a.hitos as Args[]) : null;
+      // El modo no cambia por accidente: un plan 50/50 no se vuelve cuotas solo porque llegó un número de cuotas
+      // (así se perdieron los hitos y el canje de BJ Capital el 2026-10-20).
+      const modoAntes = antes?.mode === "MILESTONES" ? "hitos" : "cuotas";
+      const modo = s(a, "modo") || (hitosNuevos ? "hitos" : modoAntes);
+      if (modoAntes === "hitos" && modo === "hitos" && tocaCuotas) return { error: "Ese plan es por hitos (por ejemplo 50 % al firmar y 50 % a la entrega). Para pasarlo a cuotas manda modo «cuotas»; para cambiar los hitos manda la lista de hitos." };
+      // Se parte del plan entero de antes y se cambia solo lo que llegó: nunca se pierden hitos ni canje.
       const plan: FinancingPlan = {
+        ...(antes ?? { total: 0, downPayment: 0, installments: 0, frequency: "MONTHLY" as InstallmentFrequency, firstDueDate: "" }),
         total: num(a, "total") ?? antes?.total ?? 0,
         downPayment: num(a, "abono") ?? antes?.downPayment ?? 0,
-        installments: Math.round(num(a, "cuotas") ?? antes?.installments ?? 0),
+        installments: Math.round(num(a, "cuotas") ?? antes?.installments ?? (modo === "hitos" ? 1 : 0)),
         frequency: FREC[s(a, "frecuencia")] ?? antes?.frequency ?? "MONTHLY",
-        firstDueDate: s(a, "primeraFecha") || antes?.firstDueDate || hoyPanama(),
+        firstDueDate: s(a, "primeraFecha") || antes?.firstDueDate || (modo === "cuotas" ? hoyPanama() : ""),
+        mode: modo === "hitos" ? "MILESTONES" : "INSTALLMENTS",
       };
-      if (!(plan.total > 0) || plan.installments < 1 || plan.downPayment < 0 || plan.downPayment >= plan.total || !esFecha(plan.firstDueDate)) return { error: "El plan necesita total, número de cuotas (1 o más), abono menor que el total y fecha YYYY-MM-DD." };
-      return { resumen: `Plan de ${pr.name} · ${usd(plan.total)} · ${plan.downPayment ? `abono ${usd(plan.downPayment)} + ` : ""}${plan.installments} cuotas ${s(a, "frecuencia") || { MONTHLY: "mensual", BIWEEKLY: "quincenal", WEEKLY: "semanal" }[plan.frequency]}es desde ${fechaCorta(plan.firstDueDate)}`, evalua: { monto: plan.total - (antes?.total ?? 0) }, payload: { proyectoId: pr.id, plan } };
+      if (modo === "hitos") {
+        if (hitosNuevos) plan.milestones = hitosNuevos.map((h) => {
+          const cuando = CUANDO[s(h, "cuando") as keyof typeof CUANDO] ?? "DATE";
+          const pctH = num(h, "porcentaje") ?? 0;
+          return { percent: pctH, trigger: cuando, dueDate: s(h, "fecha"), description: s(h, "descripcion") || `${pctH} % ${{ SIGNING: "al firmar", DELIVERY: "a la entrega", PHASE: "al cerrar una fase", DATE: "en fecha" }[cuando]}` };
+        });
+        const sumaHitos = (plan.milestones ?? []).reduce((x, h) => x + (Number(h.percent) || 0), 0);
+        if (!plan.milestones?.length || Math.abs(sumaHitos - 100) > 0.01) return { error: `Los hitos tienen que sumar 100 % (suman ${r2(sumaHitos)} %).` };
+        if (plan.milestones.some((h) => h.trigger === "DATE" && !esFecha(h.dueDate))) return { error: "Un hito «en fecha» necesita su fecha YYYY-MM-DD." };
+      } else {
+        delete plan.milestones;
+        if (plan.installments < 1 || !esFecha(plan.firstDueDate)) return { error: "El plan por cuotas necesita número de cuotas (1 o más) y fecha de la primera cuota YYYY-MM-DD." };
+      }
+      if (tiene(a, "canje")) {
+        const monto = num(a, "canje") ?? 0;
+        plan.barter = monto > 0 ? { amount: monto, description: s(a, "canjeDescripcion") || antes?.barter?.description || "Canje" } : null;
+      } else if (s(a, "canjeDescripcion") && plan.barter) plan.barter = { ...plan.barter, description: s(a, "canjeDescripcion") };
+      const canje = plan.barter?.amount ?? 0, efectivo = r2(plan.total - canje);
+      if (!(plan.total > 0) || canje < 0 || canje >= plan.total || plan.downPayment < 0 || plan.downPayment >= efectivo) return { error: "El plan necesita un total mayor que cero, un canje menor que el total y un abono menor que lo que se paga en efectivo." };
+      // Si no cambia nada, se dice: el asistente no debe contar como hecho un cambio que no hubo.
+      if (antes && JSON.stringify(antes) === JSON.stringify(plan)) return { error: "El plan ya está exactamente así; no hay nada que cambiar. Si querías otra cosa (canje, hitos, cuotas), dila con esos datos." };
+      const forma = plan.mode === "MILESTONES"
+        ? (plan.milestones ?? []).map((h) => h.description).join(" / ")
+        : `${plan.downPayment ? `abono ${usd(plan.downPayment)} + ` : ""}${plan.installments} cuota(s) ${({ MONTHLY: "mensual", BIWEEKLY: "quincenal", WEEKLY: "semanal" } as const)[plan.frequency]}es desde ${fechaCorta(plan.firstDueDate)}`;
+      return { resumen: `Plan de ${pr.name} · ${usd(plan.total)} = ${usd(efectivo)} en efectivo${canje ? ` + ${usd(canje)} en canje` : ""} · ${forma}`, evalua: { monto: efectivo - (antes ? antes.total - (antes.barter?.amount ?? 0) : 0) }, payload: { proyectoId: pr.id, plan } };
     },
     async ejecutar(u, p) {
       const pr = await prisma.project.findFirstOrThrow({ where: { id: String(p.proyectoId), userId: u.id }, select: { id: true, financingPlan: true } });
