@@ -101,6 +101,11 @@ const COLUMNAS = "xl:grid-cols-[2.75rem_minmax(0,1fr)_11rem_12rem_10rem_8rem]";
 
 const pdfUrl = (id: string) => `/api/empresa/leads/respuestas/${id}/pdf?inline=1`;
 
+/** Clave de `ocupado` y `confirmar` para las acciones que abarcan todas las tandas. */
+const TODAS = "__todas__";
+/** enviarRespuestasAction toma hasta 50 por llamada. */
+const POR_LLAMADA = 50;
+
 export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]; buzones: Buzon[] }) {
   const [respuestas, setRespuestas] = useState(inicial);
   const [filtro, setFiltro] = useState<Filtro>(inicial.some((r) => enFiltro(r, "revisar")) ? "revisar" : "todas");
@@ -132,8 +137,17 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
       .sort((a, b) => b.desde.localeCompare(a.desde));
   }, [respuestas, filtro]);
 
-  // Una sola acción principal en la pantalla: el envío de la tanda más reciente que tiene algo listo.
-  const lotePrincipal = lotes.find(({ filas }) => filas.some((r) => !faltaParaEnviar(cambios[r.id] ? { ...r, ...cambios[r.id] } : r)))?.lote;
+  // Lo pendiente de todas las tandas, sin importar el filtro: lo que el par de botones de arriba resuelve de una vez.
+  const abiertasTodas = respuestas.filter((r) => r.estado === "borrador" || r.estado === "fallo");
+  const porPrepararTodas = abiertasTodas.filter((r) => conCambios(r).adjuntarPdf && !propuestaAlDia(conCambios(r)));
+  const porEnviarTodas = abiertasTodas.filter((r) => !faltaParaEnviar(conCambios(r)) && !quitadas.has(r.id));
+  const sinCorreoTodas = abiertasTodas.filter((r) => !conCambios(r).para?.trim()).length;
+  const tandasPorEnviar = new Set(porEnviarTodas.map((r) => r.lote)).size;
+
+  // Una sola acción principal en la pantalla: con varias tandas, enviar todo lo pendiente; si no, el envío de la
+  // tanda más reciente que tiene algo listo.
+  const lotePrincipal = tandasPorEnviar > 1 ? undefined
+    : lotes.find(({ filas }) => filas.some((r) => !faltaParaEnviar(cambios[r.id] ? { ...r, ...cambios[r.id] } : r)))?.lote;
 
   async function guardarSiHaceFalta(ids: string[]): Promise<string | null> {
     for (const id of ids) {
@@ -162,12 +176,12 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
     try {
       while (faltan.length) {
         setOcupado({ lote, texto: `Enviando ${Math.min(enviadas + fallos.length + 1, ids.length)} de ${ids.length}…`, hechas: enviadas + fallos.length, total: ids.length, desde: Date.now(), porItemMs: 6000, ids: faltan, tipo: "enviar" });
-        const r = await enviarRespuestasAction(faltan, buzon.id);
+        const r = await enviarRespuestasAction(faltan.slice(0, POR_LLAMADA), buzon.id);
         if (!r.ok) { fallos.push(r.error); break; }
         reemplazar(r.dato.respuestas);
         enviadas += r.dato.enviadas.length;
         fallos.push(...r.dato.fallos.map((f) => f.error));
-        faltan = r.dato.faltan;
+        faltan = [...r.dato.faltan, ...faltan.slice(POR_LLAMADA)];
       }
     } catch {
       fallos.push("Se cortó la conexión. Lo que ya salió quedó marcado como enviado; vuelve a intentar con el resto.");
@@ -247,6 +261,51 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
           </p>
         )}
       </div>
+
+      {abiertasTodas.length > 0 && (
+        <section className="rounded-2xl border border-line bg-panel" aria-labelledby="todas-las-tandas">
+          <div className="grid gap-4 p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+            <div className="min-w-0">
+              <h2 id="todas-las-tandas" className="text-fg text-base font-semibold tracking-tight">Todas las tandas</h2>
+              <p className="mt-1 text-sm text-fg-dim">
+                {porPrepararTodas.length === 1 ? "1 propuesta por preparar" : `${porPrepararTodas.length} propuestas por preparar`}
+                {" · "}{porEnviarTodas.length === 1 ? "1 correo listo" : `${porEnviarTodas.length} correos listos`}
+                {sinCorreoTodas > 0 && ` · ${sinCorreoTodas} sin correo: escríbelo en «Revisar» para poder enviarlo`}
+              </p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2 lg:flex">
+              <button type="button" disabled={!!ocupado || !porPrepararTodas.length} onClick={() => prepararPropuestas(TODAS, porPrepararTodas.map((r) => r.id))} className={btn.secondary}>
+                {!porPrepararTodas.length ? "Todo preparado" : "Preparar todo lo que falta"}
+              </button>
+              <button type="button" disabled={!!ocupado || !porEnviarTodas.length || !buzon} onClick={() => setConfirmar(TODAS)}
+                className={tandasPorEnviar > 1 ? btn.primary : btn.secondary}>
+                {!porEnviarTodas.length ? "Nada pendiente de enviar" : porEnviarTodas.length === 1 ? "Enviar 1 correo pendiente" : `Enviar los ${porEnviarTodas.length} pendientes`}
+              </button>
+            </div>
+          </div>
+          {(confirmar === TODAS || ocupado?.lote === TODAS) && (
+            <div className="border-t border-line bg-fill px-4 py-4 sm:px-6" role="status">
+              {ocupado?.lote === TODAS && ocupado.total ? (
+                <Progreso texto={ocupado.texto} hechas={ocupado.hechas ?? 0} total={ocupado.total} desde={ocupado.desde ?? Date.now()} porItemMs={ocupado.porItemMs ?? 15000} />
+              ) : ocupado?.lote === TODAS ? (
+                <p className="text-sm text-fg-mute">{ocupado.texto}</p>
+              ) : (
+                <div className="grid gap-4 sm:flex sm:items-center sm:justify-between">
+                  <p className="text-sm text-fg-mute">
+                    Van a salir {porEnviarTodas.length === 1 ? "1 correo" : `${porEnviarTodas.length} correos`} de {tandasPorEnviar === 1 ? "1 tanda" : `${tandasPorEnviar} tandas`} desde <strong className="text-fg">{buzon?.username}</strong>
+                    {porEnviarTodas.some((r) => conCambios(r).adjuntarPdf) ? ", con la propuesta en PDF donde está marcada" : ""}.
+                    {porPrepararTodas.some((r) => porEnviarTodas.includes(r)) ? " Los PDF que falten se arman al enviar, sin reescribir el correo: si quieres el correo que presenta la propuesta, prepara todo primero." : ""}
+                  </p>
+                  <div className="grid grid-flow-col auto-cols-fr gap-2 sm:flex">
+                    <button type="button" onClick={() => setConfirmar(null)} className={btn.secondary}>Cancelar</button>
+                    <button type="button" onClick={() => enviar(TODAS, porEnviarTodas.map((r) => r.id))} className={btn.primary}>Sí, enviar</button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      )}
 
       {aviso && (
         <div role={aviso.tipo === "error" ? "alert" : "status"}
