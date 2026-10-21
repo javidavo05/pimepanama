@@ -8,6 +8,7 @@ import { BotonGoogle } from "@/components/empresa/calendario/pime-en-google";
 import { LazyDashboardRevenueChart as DashboardRevenueChart } from "@/components/empresa/revenue-chart-lazy";
 import { buildMonthlyRevenue, buildYearlyRevenue } from "@/lib/revenue-helpers";
 import { PAID_INVOICE_REVENUE_SELECT, paidInvoiceWhere, effectiveInvoiceAmount } from "@/lib/invoice-revenue";
+import { datosDeLaEmpresa } from "@/lib/motor/empresa-hoy";
 
 export const metadata = { title: "Hoy — Pime Suite" };
 export const dynamic = "force-dynamic";
@@ -16,6 +17,18 @@ const usd = (n: number) => `USD ${n.toLocaleString("en-US", { minimumFractionDig
 const card = "bg-panel border border-line rounded-2xl p-4 sm:p-6 min-w-0";
 const h2 = "text-fg text-base font-semibold tracking-tight";
 const hora = (d: Date) => d.toLocaleTimeString("es-PA", { hour: "numeric", minute: "2-digit", timeZone: "America/Panama" });
+const enlace = "inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline";
+const fila = "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3 min-h-12";
+/** «hace 3 h», «ayer», «hace 4 días»: para lo que pasó, no para lo agendado. */
+function hace(d: Date, ahora: number): string {
+  const min = Math.max(0, Math.round((ahora - d.getTime()) / 60_000));
+  if (min < 60) return min <= 1 ? "recién" : `hace ${min} min`;
+  const h = Math.round(min / 60);
+  if (h < 24) return `hace ${h} h`;
+  const dias = Math.round(h / 24);
+  return dias === 1 ? "ayer" : dias < 30 ? `hace ${dias} días` : d.toLocaleDateString("es-PA", { day: "numeric", month: "short", timeZone: "America/Panama" });
+}
+const PRIORIDAD: Record<string, string> = { ALTA: "text-danger", MEDIA: "text-warn", BAJA: "text-fg-dim" };
 const TIPO: Record<ItemAgenda["tipo"], string> = { tarea: "Tarea", cita: "Cita", reunion: "Reunión", cuota: "Cobro", factura: "Cobro", evento: "Evento" };
 
 export default async function HoyPage({ searchParams }: { searchParams: Promise<{ sin_permiso?: string }> }) {
@@ -23,8 +36,12 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
   const { sin_permiso } = await searchParams;
   // El dinero de la empresa (cifras, cobrar e ingresos) lo ven el dueño y Finanzas.
   const veDinero = puedeVer(user.miembro.area, "dinero");
-  const [d, clientes, pagadas] = await Promise.all([
+  const veVentas = puedeVer(user.miembro.area, "leads");
+  const veCorreos = puedeVer(user.miembro.area, "correos");
+  const veProyectos = puedeVer(user.miembro.area, "proyectos");
+  const [d, e, clientes, pagadas] = await Promise.all([
     datosHoy(user.id),
+    datosDeLaEmpresa(user.id, { ventas: veVentas, correos: veCorreos }),
     prisma.client.findMany({ where: { userId: user.id, archivedAt: null, internal: false }, orderBy: { name: "asc" }, select: { id: true, name: true, company: true } }),
     prisma.document.findMany({ where: paidInvoiceWhere(user.id), select: PAID_INVOICE_REVENUE_SELECT, orderBy: { issueDate: "asc" } }),
   ]);
@@ -37,10 +54,12 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
     d.agenda.length ? `${d.agenda.length} ${d.agenda.length === 1 ? "cosa en la agenda" : "cosas en la agenda"}` : null,
     veDinero && d.totalVencidas ? `${d.totalVencidas} ${d.totalVencidas === 1 ? "cobro vencido" : "cobros vencidos"}` : null,
     d.sistemas.length ? `${d.sistemas.length} ${d.sistemas.length === 1 ? "sistema con problemas" : "sistemas con problemas"}` : null,
+    e.solicitudes.length ? `${e.solicitudes.length} ${e.solicitudes.length === 1 ? "solicitud por correo por aprobar" : "solicitudes por correo por aprobar"}` : null,
+    e.correos?.totalEsperan ? `${e.correos.totalEsperan} ${e.correos.totalEsperan === 1 ? "correo espera respuesta" : "correos esperan respuesta"}` : null,
   ].filter(Boolean).join(" · ") || "Nada urgente: todo al día.";
   // Sin acceso al dinero, los cobros vencidos no son una alerta para este miembro.
   const vencidas = veDinero ? d.vencidas : [];
-  const hayAlertas = vencidas.length > 0 || d.sistemas.length > 0 || d.tickets.sinResponder.length > 0;
+  const hayAlertas = vencidas.length > 0 || d.sistemas.length > 0 || d.tickets.sinResponder.length > 0 || e.solicitudes.length > 0;
   const cambioMes = d.dinero.entroMesPasado > 0 ? Math.round(((d.dinero.entroMes - d.dinero.entroMesPasado) / d.dinero.entroMesPasado) * 100) : null;
 
   return (
@@ -82,6 +101,12 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
         <section className={`${card} border-danger/30`} aria-label="Alertas">
           <h2 className={`${h2} text-danger`}>Atiende primero</h2>
           <ul className="mt-3 divide-y divide-line">
+            {e.solicitudes.map((x) => (
+              <li key={x.id}><Link href={`/empresa/correos/hub/${x.id}`} className={fila}>
+                <span className="min-w-0"><span className="block text-fg text-sm font-semibold [overflow-wrap:anywhere]">{x.quien} pide cotización</span><span className="block text-fg-dim text-xs [overflow-wrap:anywhere]">{x.necesidad} · {hace(x.fecha, ahora)}</span></span>
+                <span className="text-brand-fg text-sm font-semibold whitespace-nowrap">Revisar →</span>
+              </Link></li>
+            ))}
             {d.sistemas.map((s) => (
               <li key={s.id}><Link href={`/empresa/sistemas/${s.id}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3 min-h-12">
                 <span className="min-w-0"><span className="block text-fg text-sm font-semibold truncate">{s.nombre} {s.estado === "caido" ? "no responde" : "funciona con fallas"}</span><span className="block text-fg-dim text-xs truncate">{s.cliente}</span></span>
@@ -105,8 +130,9 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
         </section>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-5 items-start">
-        <section className={`${card} lg:col-span-3`} aria-label="Agenda de hoy">
+      {/* Dos columnas parejas: cada fila empareja dos bloques del mismo peso. */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className={card} aria-label="Agenda de hoy">
           <div className="flex items-baseline justify-between gap-3">
             <h2 className={h2}>Tu día</h2>
             <Link href="/empresa/tareas" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">Tareas</Link>
@@ -140,35 +166,74 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
           )}
         </section>
 
-        <div className="space-y-6 lg:col-span-2 min-w-0">
-          <section className={card} aria-label="Esperan tu decisión">
-            <h2 className={h2}>Esperan tu decisión</h2>
-            {d.decisiones.length === 0 ? (
-              <p className="mt-2 text-sm text-fg-dim">Nada pendiente: sin borradores ni pagos por confirmar.</p>
+        <section className={card} aria-label="Esperan tu decisión">
+          <h2 className={h2}>Esperan tu decisión</h2>
+          {d.decisiones.length === 0 ? (
+            <p className="mt-2 text-sm text-fg-dim">Nada pendiente: sin borradores ni pagos por confirmar.</p>
+          ) : (
+            <ul className="mt-3 divide-y divide-line">
+              {d.decisiones.slice(0, 6).map((x) => (
+                <li key={x.id}><Link href={x.href} className="block py-3 min-h-12">
+                  <span className="block text-fg text-sm font-semibold truncate">{x.titulo}</span>
+                  <span className="block text-fg-dim text-xs truncate">{x.detalle}</span>
+                </Link></li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {e.ventas && (
+          <section className={card} aria-label="Ventas">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className={h2}>Ventas</h2>
+              <Link href="/empresa/leads" className={enlace}>Leads</Link>
+            </div>
+            <p className="mt-1 text-sm text-fg-dim">
+              {e.ventas.abiertos === 1 ? "1 lead abierto" : `${e.ventas.abiertos} leads abiertos`} · {e.ventas.nuevos7 === 1 ? "1 nuevo" : `${e.ventas.nuevos7} nuevos`} esta semana
+              {e.ventas.oportunidades.n > 0 && <> · <b className="font-semibold text-fg tabular-nums">{usd(e.ventas.oportunidades.valor)}</b> en {e.ventas.oportunidades.n === 1 ? "1 oportunidad" : `${e.ventas.oportunidades.n} oportunidades`}</>}
+            </p>
+            <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {e.ventas.etapas.map((x) => (
+                <Link key={x.etapa} href="/empresa/leads" className="min-w-0 rounded-xl border border-line bg-fill px-2 py-2 sm:px-3">
+                  <dt className="truncate text-xs font-medium text-fg-dim">{x.label}</dt>
+                  <dd className="text-lg font-semibold tabular-nums text-fg">{x.n}</dd>
+                </Link>
+              ))}
+            </dl>
+            {e.ventas.sinContactar.length === 0 && e.ventas.seguimientos.length === 0 ? (
+              <p className="mt-4 text-sm text-fg-dim">Todos los leads nuevos ya tienen respuesta y no hay seguimientos atrasados.</p>
             ) : (
               <ul className="mt-3 divide-y divide-line">
-                {d.decisiones.slice(0, 6).map((x) => (
-                  <li key={x.id}><Link href={x.href} className="block py-3 min-h-12">
-                    <span className="block text-fg text-sm font-semibold truncate">{x.titulo}</span>
-                    <span className="block text-fg-dim text-xs truncate">{x.detalle}</span>
+                {e.ventas.seguimientos.map((l) => (
+                  <li key={`s-${l.id}`}><Link href={`/empresa/leads/${l.id}`} className={fila}>
+                    <span className="min-w-0"><span className="block text-fg text-sm font-semibold truncate">{l.company ? `${l.name} · ${l.company}` : l.name}</span><span className="block text-warn text-xs font-semibold">Seguimiento {l.dias === 0 ? "para hoy" : `atrasado ${l.dias} ${l.dias === 1 ? "día" : "días"}`}</span></span>
+                    <span className="text-brand-fg text-sm font-semibold whitespace-nowrap">Seguir →</span>
+                  </Link></li>
+                ))}
+                {e.ventas.sinContactar.map((l) => (
+                  <li key={`n-${l.id}`}><Link href={`/empresa/leads/${l.id}`} className={fila}>
+                    <span className="min-w-0"><span className="block text-fg text-sm font-semibold truncate">{l.company ? `${l.name} · ${l.company}` : l.name}</span><span className="block text-fg-dim text-xs">Sin contactar hace {l.dias} días · <span className={`font-semibold ${PRIORIDAD[l.priority]}`}>prioridad {l.priority.toLowerCase()}</span></span></span>
+                    <span className="text-brand-fg text-sm font-semibold whitespace-nowrap">Contactar →</span>
                   </Link></li>
                 ))}
               </ul>
             )}
           </section>
+        )}
 
+        {veProyectos && (
           <section className={card} aria-label="Proyectos en curso">
             <div className="flex items-baseline justify-between gap-3">
               <h2 className={h2}>Proyectos en curso</h2>
-              <Link href="/empresa/proyectos" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">Todos</Link>
+              <Link href="/empresa/proyectos" className={enlace}>{d.proyectos.length > 5 ? `Ver los ${d.proyectos.length}` : "Todos"}</Link>
             </div>
             {d.proyectos.length === 0 ? (
               <p className="mt-2 text-sm text-fg-dim">No hay proyectos en curso.</p>
             ) : (
               <ul className="mt-3 space-y-4">
-                {d.proyectos.map((p) => (
+                {d.proyectos.slice(0, 5).map((p) => (
                   <li key={p.id}><Link href={`/empresa/proyectos/${p.id}`} className="block space-y-2">
-                    <span className="flex items-baseline justify-between gap-3"><span className="min-w-0 truncate text-fg text-sm font-semibold">{p.nombre}</span><span className="text-fg text-sm tabular-nums">{Math.round(p.avance)} %</span></span>
+                    <span className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3"><span className="min-w-0 truncate text-fg text-sm font-semibold">{p.nombre}</span><span className="text-fg text-sm tabular-nums whitespace-nowrap">{Math.round(p.avance)} %</span></span>
                     <span className="block h-1.5 rounded-full bg-fill-3 overflow-hidden"><span className="block h-full bg-brand origin-left" style={{ transform: `scaleX(${p.avance / 100})` }} /></span>
                     <span className="block text-fg-dim text-xs truncate">{p.cliente}{p.diasSinActividad !== null && p.diasSinActividad > 14 ? <span className="text-warn font-semibold"> · {p.diasSinActividad} días sin actividad en GitHub</span> : ""}</span>
                   </Link></li>
@@ -176,7 +241,69 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
               </ul>
             )}
           </section>
-        </div>
+        )}
+        {e.correos && (
+          <section className={card} aria-label="Comunicación con clientes">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 className={h2}>Comunicación con clientes</h2>
+              <Link href="/empresa/correos/hub" className={enlace}>Correos</Link>
+            </div>
+            <p className="mt-1 text-sm text-fg-dim">
+              {e.correos.totalEsperan
+                ? <><b className="font-semibold text-warn">{e.correos.totalEsperan === 1 ? "1 conversación espera" : `${e.correos.totalEsperan} conversaciones esperan`}</b> tu respuesta.</>
+                : "Nadie espera respuesta tuya este mes."} Los correos con clientes y leads se guardan solos en su ficha.
+            </p>
+            {e.correos.esperan.length > 0 && (
+              <ul className="mt-3 divide-y divide-line">
+                {e.correos.esperan.map((m) => (
+                  <li key={`e-${m.id}`}><Link href={`/empresa/correos/hub/${m.id}`} className={fila}>
+                    <span className="min-w-0"><span className="block text-fg text-sm font-semibold truncate">{m.nombre}</span><span className="block text-fg-dim text-xs truncate">{m.subject?.trim() || "(sin asunto)"} · {hace(m.receivedAt, ahora)}</span></span>
+                    <span className="text-warn text-sm font-semibold whitespace-nowrap">Responder →</span>
+                  </Link></li>
+                ))}
+              </ul>
+            )}
+            {e.correos.recientes.length === 0 ? (
+              <p className="mt-4 rounded-xl bg-fill p-4 text-sm text-fg-dim">Cuando escribas o recibas correos de un cliente o lead, aparecen aquí y en su ficha. Si uno no se liga solo, ábrelo y elige de quién es.</p>
+            ) : (
+              <>
+                <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-fg-dim">Lo último</p>
+                <ul className="mt-1 divide-y divide-line">
+                  {e.correos.recientes.map((m) => (
+                    <li key={m.id}><Link href={`/empresa/correos/hub/${m.id}`} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3 py-3 min-h-12">
+                      <span className={`mt-1.5 h-2 w-2 rounded-full ${m.recibido ? "bg-ok" : "bg-brand"}`} aria-hidden />
+                      <span className="min-w-0">
+                        <span className="block text-fg text-sm font-semibold truncate">{m.recibido ? `${m.quien.nombre} escribió` : `Le escribiste a ${m.quien.nombre}`}</span>
+                        <span className="block text-fg-dim text-xs truncate">{m.asunto}</span>
+                        <span className="block text-fg-faint text-xs">{m.quien.tipo === "cliente" ? "Cliente" : "Lead"} · {hace(m.fecha, ahora)}</span>
+                      </span>
+                    </Link></li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </section>
+        )}
+
+        <section className={card} aria-label="Lo último en la empresa">
+          <h2 className={h2}>Lo último en las cuentas de clientes</h2>
+          {e.actividad.length === 0 ? (
+            <p className="mt-2 text-sm text-fg-dim">Aquí sale lo que pasa en las cuentas de tus clientes: pagos, aprobaciones, fases listas y tickets.</p>
+          ) : (
+            <ol className="mt-3 divide-y divide-line">
+              {e.actividad.map((a) => (
+                <li key={a.id}><Link href={`/empresa/clientes/${a.clienteId}`} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3 py-3 min-h-12">
+                  <span className={`mt-1.5 h-2 w-2 rounded-full ${a.delCliente ? "bg-ok" : "bg-fg-faint"}`} aria-hidden />
+                  <span className="min-w-0">
+                    <span className="block text-fg text-sm font-semibold [overflow-wrap:anywhere]">{a.titulo}</span>
+                    <span className="block text-fg-dim text-xs truncate">{a.cliente}{a.detalle ? ` · ${a.detalle}` : ""}</span>
+                    <span className="block text-fg-faint text-xs">{a.delCliente ? "Lo hizo el cliente" : "Pime"} · {hace(a.fecha, ahora)}</span>
+                  </span>
+                </Link></li>
+              ))}
+            </ol>
+          )}
+        </section>
       </div>
 
       {veDinero && (
