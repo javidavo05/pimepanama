@@ -29,10 +29,9 @@ function readStored(): ThemePreference {
   if (typeof window === "undefined") return "system";
   try {
     const raw = localStorage.getItem(THEME_STORAGE_KEY);
-    // Sin preferencia guardada, oscuro: es el tema del estilo Jarvis.
-    return raw === "light" || raw === "dark" || raw === "system" ? raw : "dark";
+    return raw === "light" || raw === "dark" || raw === "system" ? raw : "system";
   } catch {
-    return "dark";
+    return "system";
   }
 }
 

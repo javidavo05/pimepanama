@@ -9,7 +9,7 @@
 export const THEME_STORAGE_KEY = "pime-theme";
 
 const SCRIPT = `(function(){try{
-var p=localStorage.getItem("${THEME_STORAGE_KEY}")||"dark";
+var p=localStorage.getItem("${THEME_STORAGE_KEY}")||"system";
 var r=p==="system"?(window.matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"):p;
 document.documentElement.setAttribute("data-theme",r);
 }catch(e){document.documentElement.setAttribute("data-theme","dark");}})();`;

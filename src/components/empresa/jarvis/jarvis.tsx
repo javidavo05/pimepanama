@@ -229,6 +229,17 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
     if (!ctx0) return;
     const ctx: CanvasRenderingContext2D = ctx0;
     const quieto = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Colores del tema actual (claro u oscuro), leídos de las variables de .jv: se releen si cambia el tema.
+    const paleta = { c: "111 168 255", aviso: "255 181 71", apagado: "88 115 137", hot: "242 247 255" };
+    const leerPaleta = () => {
+      const s = getComputedStyle(raiz.current ?? st);
+      const v = (n: string, d: string) => s.getPropertyValue(n).trim() || d;
+      paleta.c = v("--jv-rgb", paleta.c); paleta.aviso = v("--jv-amber-rgb", paleta.aviso); paleta.apagado = v("--jv-faint-rgb", paleta.apagado);
+      paleta.hot = document.documentElement.dataset.theme === "light" ? "255 255 255" : "242 247 255";
+    };
+    leerPaleta();
+    const mo = new MutationObserver(() => { leerPaleta(); if (quieto) dibujar(0); });
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     let W = 0, H = 0, raf = 0, ultimo = 0, visible = true;
     const parts = Array.from({ length: 80 }, () => ({ r: 0.45 + Math.random() * 0.9, a: Math.random() * 6.283, s: (Math.random() * 0.3 + 0.05) * (Math.random() < 0.5 ? -1 : 1), z: Math.random() * 1.2 + 0.3 }));
     const N = conexiones.length;
@@ -260,10 +271,10 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
       if (quieto) dibujar(0);
     };
     function dibujar(ms: number) {
-      const v = vivo.current, t = ms / 1000, cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.2, C = "79,216,255";
+      const v = vivo.current, t = ms / 1000, cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.2, C = paleta.c, AM = paleta.aviso, OFF = paleta.apagado;
       const vel = v.estado === "pensando" || v.estado === "transcribiendo" ? 4 : v.estado === "escuchando" ? 1.6 : 1;
       ctx.clearRect(0, 0, W, H);
-      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 2.6); g.addColorStop(0, `rgba(${C},.16)`); g.addColorStop(1, `rgba(${C},0)`);
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 2.6); g.addColorStop(0, `rgb(${C} / .16)`); g.addColorStop(1, `rgb(${C} / 0)`);
       ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
       if (v.modo === "memoria" && memoria) {
         const wmax = memoria.links[0]?.[2] ?? 1;
@@ -272,8 +283,8 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
           const A = posArea(ia), B = posArea(ib), on = v.hover === `m:${a}` || v.hover === `m:${b}` || v.encendidos.includes(`m:${a}`) || v.encendidos.includes(`m:${b}`);
           const qx = (A.x + B.x) / 2 + (cx - (A.x + B.x) / 2) * 0.35, qy = (A.y + B.y) / 2 + (cy - (A.y + B.y) / 2) * 0.35;
           ctx.save(); ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.quadraticCurveTo(qx, qy, B.x, B.y);
-          ctx.lineWidth = 0.6 + (2 * w) / wmax; ctx.strokeStyle = `rgba(${C},${on ? 0.9 : 0.08 + (0.3 * w) / wmax})`;
-          if (on) { ctx.shadowColor = `rgba(${C},.9)`; ctx.shadowBlur = 10; }
+          ctx.lineWidth = 0.6 + (2 * w) / wmax; ctx.strokeStyle = `rgb(${C} / ${on ? 0.9 : 0.08 + (0.3 * w) / wmax})`;
+          if (on) { ctx.shadowColor = `rgb(${C} / .9)`; ctx.shadowBlur = 10; }
           ctx.stroke(); ctx.restore();
           if (!quieto && Math.random() < (0.024 * w) / wmax) v.pulsos.push({ a, b, t: 0, v: 0.008, grande: false });
         }
@@ -282,11 +293,11 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
           const k = curva(i), on = v.encendidos.includes(c.id) || v.hover === c.id, aviso = c.estado !== "ok";
           ctx.save(); ctx.beginPath(); ctx.moveTo(k.x0, k.y0); ctx.quadraticCurveTo(k.qx, k.qy, k.x1, k.y1);
           if (aviso) ctx.setLineDash([4, 6]);
-          const col = c.estado === "aviso" ? "255,181,71" : c.estado === "apagado" ? "88,115,137" : C;
-          ctx.lineWidth = on ? 1.6 : 1; ctx.strokeStyle = `rgba(${col},${on ? 0.95 : aviso ? 0.45 : 0.24})`;
-          if (on) { ctx.shadowColor = `rgba(${col},.9)`; ctx.shadowBlur = 12; }
+          const col = c.estado === "aviso" ? AM : c.estado === "apagado" ? OFF : C;
+          ctx.lineWidth = on ? 1.6 : 1; ctx.strokeStyle = `rgb(${col} / ${on ? 0.95 : aviso ? 0.45 : 0.24})`;
+          if (on) { ctx.shadowColor = `rgb(${col} / .9)`; ctx.shadowBlur = 12; }
           ctx.stroke(); ctx.restore();
-          ctx.beginPath(); ctx.arc(k.x0, k.y0, on ? 3 : 2, 0, 6.283); ctx.fillStyle = `rgba(${col},${on ? 1 : 0.6})`; ctx.fill();
+          ctx.beginPath(); ctx.arc(k.x0, k.y0, on ? 3 : 2, 0, 6.283); ctx.fillStyle = `rgb(${col} / ${on ? 1 : 0.6})`; ctx.fill();
           if (!aviso && !quieto && Math.random() < 0.004 * vel) v.pulsos.push({ a: c.id, t: 1, v: -0.006 - Math.random() * 0.004, grande: false });
         });
       }
@@ -303,36 +314,36 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
         }
         if (!pt) { v.pulsos.splice(p, 1); continue; }
         ctx.beginPath(); ctx.arc(pt[0], pt[1], q.grande ? 3.5 : 2, 0, 6.283);
-        ctx.fillStyle = q.grande ? "#e8fbff" : `rgba(${C},.9)`; ctx.shadowColor = `rgba(${C},1)`; ctx.shadowBlur = q.grande ? 16 : 8; ctx.fill(); ctx.shadowBlur = 0;
+        ctx.fillStyle = q.grande ? `rgb(${paleta.hot})` : `rgb(${C} / .9)`; ctx.shadowColor = `rgb(${C} / 1)`; ctx.shadowBlur = q.grande ? 16 : 8; ctx.fill(); ctx.shadowBlur = 0;
       }
-      marcas(cx, cy, R * 1.62, 180, 3, t * 0.03 * vel, `rgba(${C},.22)`, 15);
-      anillo(cx, cy, R * 1.45, 1, `rgba(${C},.12)`);
-      for (let k = 0; k < 3; k++) { const a0 = -t * 0.35 * vel + k * 2.094; anillo(cx, cy, R * 1.45, 2, `rgba(${C},.75)`, a0, a0 + 0.55); }
-      ctx.save(); ctx.setLineDash([2, 8]); anillo(cx, cy, R * 1.25, 1, `rgba(${C},.4)`); ctx.restore();
-      marcas(cx, cy, R * 1.12, 72, 6, -t * 0.12 * vel, `rgba(${C},.55)`, 6);
-      for (let s = 0; s < 4; s++) { const b0 = t * 0.6 * vel + s * 1.571; anillo(cx, cy, R * 0.92, 3, `rgba(${C},.85)`, b0, b0 + 1.05); }
-      anillo(cx, cy, R * 0.8, 1, `rgba(${C},.3)`);
+      marcas(cx, cy, R * 1.62, 180, 3, t * 0.03 * vel, `rgb(${C} / .22)`, 15);
+      anillo(cx, cy, R * 1.45, 1, `rgb(${C} / .12)`);
+      for (let k = 0; k < 3; k++) { const a0 = -t * 0.35 * vel + k * 2.094; anillo(cx, cy, R * 1.45, 2, `rgb(${C} / .75)`, a0, a0 + 0.55); }
+      ctx.save(); ctx.setLineDash([2, 8]); anillo(cx, cy, R * 1.25, 1, `rgb(${C} / .4)`); ctx.restore();
+      marcas(cx, cy, R * 1.12, 72, 6, -t * 0.12 * vel, `rgb(${C} / .55)`, 6);
+      for (let s = 0; s < 4; s++) { const b0 = t * 0.6 * vel + s * 1.571; anillo(cx, cy, R * 0.92, 3, `rgb(${C} / .85)`, b0, b0 + 1.05); }
+      anillo(cx, cy, R * 0.8, 1, `rgb(${C} / .3)`);
       if ((v.estado === "pensando" || v.estado === "transcribiendo") && !quieto) {
         const sw = t * 3; ctx.save(); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, R * 1.6, sw, sw + 0.6); ctx.closePath();
-        const gs = ctx.createRadialGradient(cx, cy, R * 0.4, cx, cy, R * 1.6); gs.addColorStop(0, `rgba(${C},0)`); gs.addColorStop(1, `rgba(${C},.18)`);
+        const gs = ctx.createRadialGradient(cx, cy, R * 0.4, cx, cy, R * 1.6); gs.addColorStop(0, `rgb(${C} / 0)`); gs.addColorStop(1, `rgb(${C} / .18)`);
         ctx.fillStyle = gs; ctx.fill(); ctx.restore();
       }
       if (v.estado === "escuchando" || v.estado === "hablando") {
-        const amp = v.estado === "hablando" ? 1 : 0.6; ctx.strokeStyle = `rgba(${C},.9)`; ctx.lineWidth = 2; ctx.beginPath();
+        const amp = v.estado === "hablando" ? 1 : 0.6; ctx.strokeStyle = `rgb(${C} / .9)`; ctx.lineWidth = 2; ctx.beginPath();
         for (let w = 0; w < 96; w++) {
           const aw = (w * 6.283) / 96, val = (Math.sin(t * 9 + w * 0.7) * 0.5 + Math.sin(t * 13 + w * 1.9) * 0.5) * amp, r0 = R * 0.62, r1 = r0 + Math.max(2, Math.abs(val) * R * 0.18);
           ctx.moveTo(cx + Math.cos(aw) * r0, cy + Math.sin(aw) * r0); ctx.lineTo(cx + Math.cos(aw) * r1, cy + Math.sin(aw) * r1);
         }
         ctx.stroke();
       }
-      for (const q of parts) { q.a += quieto ? 0 : q.s * 0.008 * vel; const rr = R * q.r; ctx.fillStyle = `rgba(${C},${0.25 + 0.35 * Math.sin(t + q.z * 4) ** 2})`; ctx.fillRect(cx + Math.cos(q.a) * rr, cy + Math.sin(q.a) * rr, q.z, q.z); }
+      for (const q of parts) { q.a += quieto ? 0 : q.s * 0.008 * vel; const rr = R * q.r; ctx.fillStyle = `rgb(${C} / ${0.25 + 0.35 * Math.sin(t + q.z * 4) ** 2})`; ctx.fillRect(cx + Math.cos(q.a) * rr, cy + Math.sin(q.a) * rr, q.z, q.z); }
       const latido = v.estado === "hablando" ? 0.12 : v.estado === "escuchando" ? 0.08 : 0.04;
       const pr = R * (0.42 + (quieto ? 0 : Math.sin(t * (v.estado === "espera" ? 2 : 8)) * latido));
       const gc = ctx.createRadialGradient(cx, cy, 0, cx, cy, pr * 1.6);
-      gc.addColorStop(0, "rgba(255,255,255,1)"); gc.addColorStop(0.18, "rgba(220,250,255,.95)"); gc.addColorStop(0.45, `rgba(${C},.75)`); gc.addColorStop(1, `rgba(${C},0)`);
+      gc.addColorStop(0, `rgb(${paleta.hot})`); gc.addColorStop(0.18, `rgb(${paleta.hot} / .9)`); gc.addColorStop(0.45, `rgb(${C} / .75)`); gc.addColorStop(1, `rgb(${C} / 0)`);
       ctx.fillStyle = gc; ctx.beginPath(); ctx.arc(cx, cy, pr * 1.6, 0, 6.283); ctx.fill();
-      anillo(cx, cy, R * 0.5, 1, "rgba(255,255,255,.35)");
-      ctx.save(); ctx.translate(cx, cy); ctx.rotate(t * 0.2 * vel); ctx.strokeStyle = "rgba(232,251,255,.45)"; ctx.lineWidth = 1; ctx.beginPath();
+      anillo(cx, cy, R * 0.5, 1, `rgb(${paleta.hot} / .35)`);
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(t * 0.2 * vel); ctx.strokeStyle = `rgb(${paleta.hot} / .45)`; ctx.lineWidth = 1; ctx.beginPath();
       for (let k = 0; k < 3; k++) { const av = k * 2.094 - 1.571; ctx.lineTo(Math.cos(av) * R * 0.36, Math.sin(av) * R * 0.36); }
       ctx.closePath(); ctx.stroke(); ctx.restore();
     }
@@ -344,7 +355,7 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
     const ro = new ResizeObserver(medir); ro.observe(st); medir();
     const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }); io.observe(st);
     if (!quieto) raf = requestAnimationFrame(bucle);
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); };
+    return () => { cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); mo.disconnect(); };
   }, [conexiones, memoria]);
 
   const N = conexiones.length;
@@ -360,7 +371,7 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
   const sugerencias = ["¿Qué tengo hoy?", "¿Quién me debe dinero?", "Abre los leads"];
 
   return (
-    <div ref={raiz} className={`jv theme-dark${completa ? " jv-full" : ""}`}>
+    <div ref={raiz} className={`jv${completa ? " jv-full" : ""}`}>
       <div className="jv-top">
         <div className="jv-brand">
           <div className="jv-glyph" aria-hidden><i /></div>
