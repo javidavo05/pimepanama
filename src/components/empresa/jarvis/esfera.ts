@@ -109,6 +109,15 @@ export function iniciarEsfera({ lienzo, escenario, vivo, conexiones, memoria }: 
     lx[i] = (x - 50) / 34; ly[i] = (y - 50) / 34;
     retraso[i] = Math.random() * 0.45; tam[i] = 1.2 + Math.random() * 1.8; fase[i] = Math.random() * 6.283;
   }
+  // Polvo del símbolo: muchos puntos chicos repartidos en las tres capas del logo (solo se ven mientras está formado).
+  const NL = Math.min(5200, Math.max(2600, Math.round((escenario.clientWidth || 600) * 6)));
+  const dx = new Float32Array(NL), dyy = new Float32Array(NL), dcapa = new Uint8Array(NL), dtam = new Float32Array(NL), dfase = new Float32Array(NL);
+  for (let i = 0; i < NL; i++) {
+    const q = Math.random(); let x: number, y: number;
+    if (q < 0.55) { dcapa[i] = 0; do { x = 20 + Math.random() * 60; y = 16 + Math.random() * 32; } while (!dentroRombo(x, y)); }
+    else if (q < 0.78) { dcapa[i] = 1; [x, y] = enChevron(54); } else { dcapa[i] = 2; [x, y] = enChevron(72); }
+    dx[i] = (x - 50) / 34; dyy[i] = (y - 50) / 34; dtam[i] = 0.8 + Math.random() * 1.4; dfase[i] = Math.random() * 6.283;
+  }
   // Pares cercanos: la red se calcula una vez (girar no cambia las distancias).
   const pares: number[] = [];
   const umbral = 0.24 * Math.sqrt(500 / NP);
@@ -246,21 +255,19 @@ export function iniciarEsfera({ lienzo, escenario, vivo, conexiones, memoria }: 
       });
     }
 
-    // El símbolo de Pime, sólido y con brillo, debajo de los puntos mientras está formado.
-    if (morf < 0.7) {
-      const fuerza = Math.min(1, (0.7 - morf) / 0.5), esc = RL / 34, ox = cx - 50 * esc, oy = cy - 50 * esc;
-      const vaiven = Math.cos(Math.sin(t * 0.6) * 0.35);
-      const P = (x: number, y: number, dy: number) => [cx + (x - 50) * esc * vaiven, oy + (y + dy * 34) * esc] as const;
+    // Polvo del símbolo: puntos extra, solo del logo, que lo hacen denso mientras está formado.
+    if (morf < 0.8) {
+      const fuerza = Math.min(1, (0.8 - morf) / 0.5), vaiven = Math.cos(Math.sin(t * 0.6) * 0.35);
       ctx.save();
-      ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.lineWidth = 8 * esc;
-      ctx.shadowBlur = 28; ctx.shadowColor = `rgb(${logo[0]} / ${0.6 * fuerza})`;
-      ctx.globalAlpha = (claro ? 0.55 : 0.45) * fuerza;
-      const capaRuta = (pts: [number, number][], dy: number, cerrar: boolean) => { ctx.beginPath(); pts.forEach(([x, y], k) => { const [a, b] = P(x, y, dy); if (k === 0) ctx.moveTo(a, b); else ctx.lineTo(a, b); }); if (cerrar) ctx.closePath(); };
-      capaRuta([[20, 72], [50, 84], [80, 72]], abre, false); ctx.strokeStyle = `rgb(${logo[2]})`; ctx.stroke();
-      capaRuta([[20, 54], [50, 66], [80, 54]], 0, false); ctx.strokeStyle = `rgb(${logo[1]})`; ctx.stroke();
-      capaRuta([[20, 36], [50, 16], [80, 36], [50, 48]], -abre, true); ctx.fillStyle = `rgb(${logo[0]})`; ctx.strokeStyle = `rgb(${logo[0]})`; ctx.fill(); ctx.stroke();
+      if (!claro) ctx.globalCompositeOperation = "lighter";
+      for (let i = 0; i < NL; i++) {
+        const dy = dcapa[i] === 0 ? -abre : dcapa[i] === 2 ? abre : 0;
+        const x = cx + dx[i] * vaiven * RL, y = cy + (dyy[i] + dy) * RL;
+        const a = (claro ? 0.55 + 0.35 * Math.sin(t * 2.5 + dfase[i]) : 0.4 + 0.45 * Math.sin(t * 2.5 + dfase[i])) * fuerza;
+        ctx.fillStyle = `rgb(${logo[dcapa[i]]} / ${a.toFixed(2)})`;
+        ctx.fillRect(x - dtam[i] / 2, y - dtam[i] / 2, dtam[i], dtam[i]);
+      }
       ctx.restore();
-      void ox;
     }
 
     // Puntos.
