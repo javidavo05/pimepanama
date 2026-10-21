@@ -9,16 +9,17 @@ import { LazyDashboardRevenueChart as DashboardRevenueChart } from "@/components
 import { buildMonthlyRevenue, buildYearlyRevenue } from "@/lib/revenue-helpers";
 import { PAID_INVOICE_REVENUE_SELECT, paidInvoiceWhere, effectiveInvoiceAmount } from "@/lib/invoice-revenue";
 import { datosDeLaEmpresa } from "@/lib/motor/empresa-hoy";
+import { conexionesDeJarvis } from "@/lib/jarvis/conexiones";
+import { Jarvis } from "@/components/empresa/jarvis/jarvis";
+import memoria from "@/lib/jarvis/memoria.json";
 
-export const metadata = { title: "Hoy — Pime Suite" };
+export const metadata = { title: "Jarvis — Pime Suite" };
 export const dynamic = "force-dynamic";
 
 const usd = (n: number) => `USD ${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const card = "bg-panel border border-line rounded-2xl p-4 sm:p-6 min-w-0";
-const h2 = "text-fg text-base font-semibold tracking-tight";
 const hora = (d: Date) => d.toLocaleTimeString("es-PA", { hour: "numeric", minute: "2-digit", timeZone: "America/Panama" });
-const enlace = "inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline";
-const fila = "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3 min-h-12";
+/** Hora decimal en Panamá (UTC-5, sin horario de verano), para la línea de tiempo del día. */
+const horaPanama = (d: Date) => { const p = new Date(d.getTime() - 5 * 3600_000); return p.getUTCHours() + p.getUTCMinutes() / 60; };
 /** «hace 3 h», «ayer», «hace 4 días»: para lo que pasó, no para lo agendado. */
 function hace(d: Date, ahora: number): string {
   const min = Math.max(0, Math.round((ahora - d.getTime()) / 60_000));
@@ -28,10 +29,16 @@ function hace(d: Date, ahora: number): string {
   const dias = Math.round(h / 24);
   return dias === 1 ? "ayer" : dias < 30 ? `hace ${dias} días` : d.toLocaleDateString("es-PA", { day: "numeric", month: "short", timeZone: "America/Panama" });
 }
-const PRIORIDAD: Record<string, string> = { ALTA: "text-danger", MEDIA: "text-warn", BAJA: "text-fg-dim" };
+const PRIORIDAD: Record<string, string> = { ALTA: "mal", MEDIA: "aviso", BAJA: "" };
 const TIPO: Record<ItemAgenda["tipo"], string> = { tarea: "Tarea", cita: "Cita", reunion: "Reunión", cuota: "Cobro", factura: "Cobro", evento: "Evento" };
+const H0 = 7, H1 = 20;
+const pos = (h: number) => `${((Math.min(H1, Math.max(H0, h)) - H0) / (H1 - H0)) * 100}%`;
 
-export default async function HoyPage({ searchParams }: { searchParams: Promise<{ sin_permiso?: string }> }) {
+function Fuente({ texto, estado = "ok" }: { texto: string; estado?: string }) {
+  return <span className="jv-src"><i data-e={estado} aria-hidden />{texto}</span>;
+}
+
+export default async function JarvisPage({ searchParams }: { searchParams: Promise<{ sin_permiso?: string }> }) {
   const user = await getEmpresaUser();
   const { sin_permiso } = await searchParams;
   // El dinero de la empresa (cifras, cobrar e ingresos) lo ven el dueño y Finanzas.
@@ -39,16 +46,20 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
   const veVentas = puedeVer(user.miembro.area, "leads");
   const veCorreos = puedeVer(user.miembro.area, "correos");
   const veProyectos = puedeVer(user.miembro.area, "proyectos");
+  const esDueno = !user.miembro.area || user.miembro.area === "dueno";
   const [d, e, clientes, pagadas] = await Promise.all([
     datosHoy(user.id),
     datosDeLaEmpresa(user.id, { ventas: veVentas, correos: veCorreos }),
     prisma.client.findMany({ where: { userId: user.id, archivedAt: null, internal: false }, orderBy: { name: "asc" }, select: { id: true, name: true, company: true } }),
     prisma.document.findMany({ where: paidInvoiceWhere(user.id), select: PAID_INVOICE_REVENUE_SELECT, orderBy: { issueDate: "asc" } }),
   ]);
+  const conexiones = await conexionesDeJarvis(user.id, d.calendario);
+  const estadoDe = (id: string) => conexiones.find((c) => c.id === id)?.estado ?? "ok";
   const filas = pagadas.map((x) => ({ issueDate: x.issueDate, ...effectiveInvoiceAmount(x) }));
   const nombre = (user.miembro.fullName || "").split(" ")[0];
   const fecha = new Date().toLocaleDateString("es-PA", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Panama" });
   const ahora = Date.now();
+  const ahoraH = horaPanama(new Date());
 
   const resumen = [
     d.agenda.length ? `${d.agenda.length} ${d.agenda.length === 1 ? "cosa en la agenda" : "cosas en la agenda"}` : null,
@@ -61,274 +72,238 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
   const vencidas = veDinero ? d.vencidas : [];
   const hayAlertas = vencidas.length > 0 || d.sistemas.length > 0 || d.tickets.sinResponder.length > 0 || e.solicitudes.length > 0;
   const cambioMes = d.dinero.entroMesPasado > 0 ? Math.round(((d.dinero.entroMes - d.dinero.entroMesPasado) / d.dinero.entroMesPasado) * 100) : null;
+  const conHora = d.agenda.filter((a) => a.hora);
 
-  return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      {sin_permiso && (
-        <p role="status" className="rounded-xl border border-warn/30 bg-warn/10 px-4 py-3 text-sm text-warn">
-          Esa sección no es de tu área del equipo. Si la necesitas, pídele acceso al dueño.
-        </p>
+  const izquierda = (
+    <div className="contents">
+      {veDinero && (
+        <section key="s1" className="jv-p" data-src="pime" aria-label="Dinero">
+          <div className="jv-ph"><h2>Dinero</h2><Fuente texto="Pime" /></div>
+          <div className="jv-money">
+            <Link href="/empresa/cuentas-por-cobrar" className="jv-mrow" data-e={d.dinero.vencido > 0 ? "mal" : ""}>
+              <span>Vencido<small>{d.totalVencidas ? d.totalVencidas === 1 ? "1 factura pasada de fecha" : `${d.totalVencidas} facturas pasadas de fecha` : "Nadie te debe pasado de fecha"}</small></span>
+              <b>{usd(d.dinero.vencido)}</b>
+            </Link>
+            <Link href="/empresa/cuentas-por-cobrar" className="jv-mrow" data-e="info">
+              <span>Por cobrar<small>{d.dinero.porVencer > 0 ? `${usd(d.dinero.porVencer)} vence en 3 días` : "Todavía no vence"}</small></span>
+              <b>{usd(d.dinero.porCobrar)}</b>
+            </Link>
+            <Link href="/empresa/dinero" className="jv-mrow" data-e="ok">
+              <span>Entró este mes<small>{cambioMes === null ? `Mes pasado: ${usd(d.dinero.entroMesPasado)}` : `${cambioMes >= 0 ? "+" : ""}${cambioMes} % contra el mes pasado`}</small></span>
+              <b>{usd(d.dinero.entroMes)}</b>
+            </Link>
+          </div>
+        </section>
       )}
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-fg-dim text-sm first-letter:uppercase">{fecha}</p>
-          <h1 className="text-fg text-2xl font-semibold tracking-tight">{nombre ? `Hola, ${nombre}` : "Hoy"}</h1>
-          <p className="text-fg-mute text-sm mt-1">{resumen}</p>
-        </div>
-        {veDinero && <BotonCobrar clientes={clientes.map((c) => ({ id: c.id, nombre: c.company || c.name }))} className="inline-flex items-center justify-center min-h-12 sm:min-h-11 px-6 rounded-xl bg-brand text-on-brand text-sm font-semibold hover:bg-brand-hi" />}
-      </header>
+      <section key="s2" className="jv-p" data-src="agenda pime" aria-label="Tu día">
+        <div className="jv-ph"><h2>Tu día</h2><Fuente texto={d.calendario.estado === "ok" ? "Agenda · Pime" : "Pime"} estado={estadoDe("agenda") === "aviso" ? "aviso" : "ok"} /></div>
+        {!user.calendarFeedToken && (
+          <div className="jv-ph">
+            <p className="jv-vacio">Ve tus citas, tareas y cobros de Pime en tu Google Calendar.</p>
+            <BotonGoogle className="jv-btn" />
+          </div>
+        )}
+        {d.calendario.estado === "error" && <p className="jv-nota" data-e="mal">No pude leer tu Google Calendar: {d.calendario.error} <Link href="/empresa/configuracion" className="jv-link">Revisar</Link></p>}
+        {d.tareasAtrasadas > 0 && <p className="jv-nota" data-e="aviso">{d.tareasAtrasadas} {d.tareasAtrasadas === 1 ? "tarea atrasada" : "tareas atrasadas"} de días anteriores</p>}
+        {conHora.length > 0 && (
+          <div className="jv-tl" aria-hidden>
+            {conHora.map((a) => { const h = horaPanama(a.hora!); return <span key={a.id} className="jv-blk" data-paso={h + 0.75 < ahoraH ? "1" : "0"} style={{ left: pos(h), width: `${(0.75 / (H1 - H0)) * 100}%` }} />; })}
+            {[8, 11, 14, 17].map((h) => <span key={h} className="jv-hr" style={{ left: pos(h) }}>{h}:00</span>)}
+            {ahoraH > H0 && ahoraH < H1 && <span className="jv-nowm" style={{ left: pos(ahoraH) }} />}
+          </div>
+        )}
+        {d.agenda.length === 0 ? (
+          <p className="jv-vacio">No tienes nada agendado para hoy. Las tareas que venzan hoy, tus citas, reuniones y cobros del día aparecen aquí.</p>
+        ) : (
+          <ol className="jv-ag">
+            {d.agenda.map((a) => {
+              const paso = a.hora ? a.hora.getTime() < ahora - 30 * 60_000 : false;
+              const cuerpo = <><span className="jv-h">{a.hora ? hora(a.hora) : "Hoy"}</span><span className="min-w-0"><span className="jv-it">{a.titulo}</span><span className="jv-is">{TIPO[a.tipo]}{a.detalle ? ` · ${a.detalle}` : ""}</span></span></>;
+              return <li key={a.id}>{a.href ? <Link href={a.href} data-paso={paso ? "1" : "0"}>{cuerpo}</Link> : <div data-paso={paso ? "1" : "0"}>{cuerpo}</div>}</li>;
+            })}
+          </ol>
+        )}
+        <Link href="/empresa/tareas" className="jv-link">Ver tareas</Link>
+      </section>
+    </div>
+  );
 
-      {/* Dinero con colores: rojo vencido, azul por cobrar, verde entró. */}
-      {veDinero && <section aria-label="Dinero" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Link href="/empresa/cuentas-por-cobrar" className={`rounded-2xl border p-4 sm:p-6 ${d.dinero.vencido > 0 ? "border-danger/40 bg-danger/5" : "border-line bg-panel"}`}>
-          <p className={`text-sm font-semibold ${d.dinero.vencido > 0 ? "text-danger" : "text-fg-dim"}`}>{d.dinero.vencido > 0 ? "● Vencido" : "Vencido"}</p>
-          <p className={`text-2xl font-bold tabular-nums tracking-tight ${d.dinero.vencido > 0 ? "text-danger" : "text-fg-dim"}`}>{usd(d.dinero.vencido)}</p>
-          <p className="text-fg-dim text-xs mt-1">{d.totalVencidas ? d.totalVencidas === 1 ? "1 factura pasada de fecha" : `${d.totalVencidas} facturas pasadas de fecha` : "Nadie te debe pasado de fecha"}</p>
-        </Link>
-        <Link href="/empresa/cuentas-por-cobrar" className="rounded-2xl border border-brand/30 bg-brand/5 p-4 sm:p-6">
-          <p className="text-brand-fg text-sm font-semibold">● Por cobrar</p>
-          <p className="text-brand-fg text-2xl font-bold tabular-nums tracking-tight">{usd(d.dinero.porCobrar)}</p>
-          <p className="text-fg-dim text-xs mt-1">{d.dinero.porVencer > 0 ? <span className="text-warn font-semibold">{usd(d.dinero.porVencer)} vence en 3 días</span> : "Todavía no vence"}</p>
-        </Link>
-        <Link href="/empresa/dinero" className="rounded-2xl border border-ok/30 bg-ok/5 p-4 sm:p-6">
-          <p className="text-ok text-sm font-semibold">● Entró este mes</p>
-          <p className="text-ok text-2xl font-bold tabular-nums tracking-tight">{usd(d.dinero.entroMes)}</p>
-          <p className="text-fg-dim text-xs mt-1">{cambioMes === null ? `Mes pasado: ${usd(d.dinero.entroMesPasado)}` : `${cambioMes >= 0 ? "+" : ""}${cambioMes} % contra el mes pasado`}</p>
-        </Link>
-      </section>}
-
-      {hayAlertas && (
-        <section className={`${card} border-danger/30`} aria-label="Alertas">
-          <h2 className={`${h2} text-danger`}>Atiende primero</h2>
-          <ul className="mt-3 divide-y divide-line">
+  const derecha = (
+    <div className="contents">
+      <section key="s3" className={`jv-p${hayAlertas ? " jv-alerta" : ""}`} data-src="pime sistemas correo portal" aria-label="Atiende primero">
+        <div className="jv-ph"><h2>Atiende primero</h2><Fuente texto="Pime · Sistemas · Correo" estado={hayAlertas ? "aviso" : "ok"} /></div>
+        {!hayAlertas ? (
+          <p className="jv-vacio">Nada urgente. Aquí aparecen los cobros vencidos, los sistemas caídos, los tickets sin respuesta y las cotizaciones que piden por correo.</p>
+        ) : (
+          <ul className="jv-list">
             {e.solicitudes.map((x) => (
-              <li key={x.id}><Link href={`/empresa/correos/hub/${x.id}`} className={fila}>
-                <span className="min-w-0"><span className="block text-fg text-sm font-semibold [overflow-wrap:anywhere]">{x.quien} pide cotización</span><span className="block text-fg-dim text-xs [overflow-wrap:anywhere]">{x.necesidad} · {hace(x.fecha, ahora)}</span></span>
-                <span className="text-brand-fg text-sm font-semibold whitespace-nowrap">Revisar →</span>
-              </Link></li>
+              <li key={x.id}><Link href={`/empresa/correos/hub/${x.id}`} className="jv-item"><span className="min-w-0"><span className="jv-it">{x.quien} pide cotización</span><span className="jv-is">{x.necesidad} · {hace(x.fecha, ahora)}</span></span><span className="jv-go">Revisar →</span></Link></li>
             ))}
             {d.sistemas.map((s) => (
-              <li key={s.id}><Link href={`/empresa/sistemas/${s.id}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3 min-h-12">
-                <span className="min-w-0"><span className="block text-fg text-sm font-semibold truncate">{s.nombre} {s.estado === "caido" ? "no responde" : "funciona con fallas"}</span><span className="block text-fg-dim text-xs truncate">{s.cliente}</span></span>
-                <span className="rounded-full bg-danger/10 px-3 py-1 text-xs font-semibold text-danger">{s.estado === "caido" ? "Caído" : "Con fallas"}</span>
-              </Link></li>
+              <li key={s.id}><Link href={`/empresa/sistemas/${s.id}`} className="jv-item"><span className="min-w-0"><span className="jv-it">{s.nombre} {s.estado === "caido" ? "no responde" : "funciona con fallas"}</span><span className="jv-is">{s.cliente}</span></span><span className="jv-chip" data-e="mal">{s.estado === "caido" ? "Caído" : "Con fallas"}</span></Link></li>
             ))}
             {vencidas.map((v) => (
-              <li key={v.id}><Link href={v.href} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3 min-h-12">
-                <span className="min-w-0"><span className="block text-fg text-sm font-semibold truncate">{v.cliente} te debe {usd(v.falta)}</span><span className="block text-fg-dim text-xs">{v.numero ?? "Factura"} · vencida hace {v.dias} {v.dias === 1 ? "día" : "días"}</span></span>
-                <span className="text-danger text-sm font-semibold whitespace-nowrap">Cobrar →</span>
-              </Link></li>
+              <li key={v.id}><Link href={v.href} className="jv-item"><span className="min-w-0"><span className="jv-it">{v.cliente} te debe {usd(v.falta)}</span><span className="jv-is">{v.numero ?? "Factura"} · vencida hace {v.dias} {v.dias === 1 ? "día" : "días"}</span></span><span className="jv-go" data-e="mal">Cobrar →</span></Link></li>
             ))}
             {d.tickets.sinResponder.map((t) => (
-              <li key={t.id}><Link href={`/empresa/tickets/${t.id}`} className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 py-3 min-h-12">
-                <span className="min-w-0"><span className="block text-fg text-sm font-semibold truncate">{t.cliente} espera respuesta</span><span className="block text-fg-dim text-xs truncate">{t.numero} · {t.titulo}</span></span>
-                <span className={`text-sm font-semibold whitespace-nowrap ${t.urgente ? "text-danger" : "text-warn"}`}>Responder →</span>
-              </Link></li>
+              <li key={t.id}><Link href={`/empresa/tickets/${t.id}`} className="jv-item"><span className="min-w-0"><span className="jv-it">{t.cliente} espera respuesta</span><span className="jv-is">{t.numero} · {t.titulo}</span></span><span className="jv-go" data-e={t.urgente ? "mal" : "aviso"}>Responder →</span></Link></li>
             ))}
           </ul>
-          {veDinero && d.totalVencidas > d.vencidas.length && <Link href="/empresa/cuentas-por-cobrar" className="mt-2 inline-flex items-center min-h-11 text-sm font-semibold text-danger hover:underline">Ver las {d.totalVencidas} vencidas</Link>}
+        )}
+        {veDinero && d.totalVencidas > d.vencidas.length && <Link href="/empresa/cuentas-por-cobrar" className="jv-link">Ver las {d.totalVencidas} vencidas</Link>}
+      </section>
+      <section key="s4" className="jv-p" data-src="pime portal" aria-label="Esperan tu decisión">
+        <div className="jv-ph"><h2>Esperan tu decisión</h2><Fuente texto="Pime · Portal" /></div>
+        {d.decisiones.length === 0 ? (
+          <p className="jv-vacio">Nada pendiente: sin borradores ni pagos por confirmar.</p>
+        ) : (
+          <ul className="jv-list">
+            {d.decisiones.slice(0, 6).map((x) => (
+              <li key={x.id}><Link href={x.href} className="jv-item"><span className="min-w-0"><span className="jv-it">{x.titulo}</span><span className="jv-is">{x.detalle}</span></span><span className="jv-go">Abrir →</span></Link></li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+
+  const abajo = (
+    <div className="contents">
+      {e.ventas && (
+        <section key="s5" className="jv-p" data-src="pime correo" aria-label="Ventas">
+          <div className="jv-ph"><h2>Ventas</h2><Link href="/empresa/leads" className="jv-link">Leads</Link></div>
+          <p className="jv-vacio">
+            {e.ventas.abiertos === 1 ? "1 lead abierto" : `${e.ventas.abiertos} leads abiertos`} · {e.ventas.nuevos7 === 1 ? "1 nuevo" : `${e.ventas.nuevos7} nuevos`} esta semana
+            {e.ventas.oportunidades.n > 0 && <> · <b className="jv-num" style={{ color: "var(--jv-fg)" }}>{usd(e.ventas.oportunidades.valor)}</b> en {e.ventas.oportunidades.n === 1 ? "1 oportunidad" : `${e.ventas.oportunidades.n} oportunidades`}</>}
+          </p>
+          <dl className="jv-stages">
+            {e.ventas.etapas.map((x) => (
+              <Link key={x.etapa} href="/empresa/leads" className="jv-stage-n"><dt><span>{x.label}</span></dt><dd style={{ margin: 0 }}><b>{x.n}</b></dd></Link>
+            ))}
+          </dl>
+          {e.ventas.sinContactar.length === 0 && e.ventas.seguimientos.length === 0 ? (
+            <p className="jv-vacio">Todos los leads nuevos ya tienen respuesta y no hay seguimientos atrasados.</p>
+          ) : (
+            <ul className="jv-list">
+              {e.ventas.seguimientos.map((l) => (
+                <li key={`s-${l.id}`}><Link href={`/empresa/leads/${l.id}`} className="jv-item"><span className="min-w-0"><span className="jv-it">{l.company ? `${l.name} · ${l.company}` : l.name}</span><span className="jv-is" style={{ color: "var(--jv-amber)" }}>Seguimiento {l.dias === 0 ? "para hoy" : `atrasado ${l.dias} ${l.dias === 1 ? "día" : "días"}`}</span></span><span className="jv-go">Seguir →</span></Link></li>
+              ))}
+              {e.ventas.sinContactar.map((l) => (
+                <li key={`n-${l.id}`}><Link href={`/empresa/leads/${l.id}`} className="jv-item"><span className="min-w-0"><span className="jv-it">{l.company ? `${l.name} · ${l.company}` : l.name}</span><span className="jv-is">Sin contactar hace {l.dias} días · prioridad {l.priority.toLowerCase()}</span></span><span className="jv-go" data-e={PRIORIDAD[l.priority]}>Contactar →</span></Link></li>
+              ))}
+            </ul>
+          )}
         </section>
       )}
 
-      {/* Dos columnas parejas: cada fila empareja dos bloques del mismo peso. */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className={card} aria-label="Agenda de hoy">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 className={h2}>Tu día</h2>
-            <Link href="/empresa/tareas" className="inline-flex items-center min-h-11 sm:min-h-8 text-sm text-brand-fg hover:underline">Tareas</Link>
-          </div>
-          {!user.calendarFeedToken && (
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-brand/5 px-4 py-3">
-              <p className="text-sm text-fg-mute">Ve tus citas, tareas y cobros de Pime en tu Google Calendar.</p>
-              <BotonGoogle className="inline-flex items-center min-h-11 px-4 rounded-lg bg-brand text-on-brand text-sm font-semibold" />
-            </div>
-          )}
-          {d.calendario.estado === "error" && <p className="mt-2 text-sm text-danger">No pude leer tu Google Calendar: {d.calendario.error} <Link href="/empresa/configuracion" className="underline font-semibold">Revisar</Link></p>}
-          {d.tareasAtrasadas > 0 && <p className="mt-2 text-sm text-warn font-semibold">{d.tareasAtrasadas} {d.tareasAtrasadas === 1 ? "tarea atrasada" : "tareas atrasadas"} de días anteriores</p>}
-          {d.agenda.length === 0 ? (
-            <div className="mt-4 rounded-xl bg-fill p-4 text-sm text-fg-dim">No tienes nada agendado para hoy. Las tareas que venzan hoy, tus citas, reuniones y cobros del día aparecen aquí. </div>
+      {veProyectos && (
+        <section key="s6" className="jv-p" data-src="pime github" aria-label="Proyectos en curso">
+          <div className="jv-ph"><h2>Proyectos en curso</h2><Link href="/empresa/proyectos" className="jv-link">{d.proyectos.length > 5 ? `Ver los ${d.proyectos.length}` : "Todos"}</Link></div>
+          {d.proyectos.length === 0 ? (
+            <p className="jv-vacio">No hay proyectos en curso. Se crean desde Proyectos o al aprobar una cotización.</p>
           ) : (
-            <ol className="mt-4 space-y-1">
-              {d.agenda.map((a) => {
-                const paso = a.hora ? a.hora.getTime() < ahora - 30 * 60_000 : false;
-                const Cuerpo = (
-                  <span className={`grid grid-cols-[4.5rem_minmax(0,1fr)] gap-3 rounded-xl px-3 py-3 min-h-12 ${paso ? "opacity-50" : "hover:bg-fill"}`}>
-                    <span className="text-fg-dim text-sm tabular-nums">{a.hora ? hora(a.hora) : "Hoy"}</span>
-                    <span className="min-w-0">
-                      <span className="block text-fg text-sm font-semibold [overflow-wrap:anywhere]">{a.titulo}</span>
-                      <span className="block text-fg-dim text-xs">{TIPO[a.tipo]}{a.detalle ? ` · ${a.detalle}` : ""}</span>
-                    </span>
+            <ul className="jv-list">
+              {d.proyectos.slice(0, 5).map((p) => (
+                <li key={p.id}><Link href={`/empresa/proyectos/${p.id}`} className="jv-item" style={{ gridTemplateColumns: "minmax(0,1fr)" }}>
+                  <span className="min-w-0">
+                    <span className="jv-ph"><span className="jv-it">{p.nombre}</span><span className="jv-num" style={{ fontSize: 14 }}>{Math.round(p.avance)} %</span></span>
+                    <span className="jv-bar" aria-hidden><i style={{ transform: `scaleX(${p.avance / 100})` }} /></span>
+                    <span className="jv-is">{p.cliente}{p.diasSinActividad !== null && p.diasSinActividad > 14 ? <span style={{ color: "var(--jv-amber)" }}> · {p.diasSinActividad} días sin actividad en GitHub</span> : ""}</span>
                   </span>
-                );
-                return <li key={a.id}>{a.href ? <Link href={a.href} className="block">{Cuerpo}</Link> : Cuerpo}</li>;
-              })}
-            </ol>
-          )}
-        </section>
-
-        <section className={card} aria-label="Esperan tu decisión">
-          <h2 className={h2}>Esperan tu decisión</h2>
-          {d.decisiones.length === 0 ? (
-            <p className="mt-2 text-sm text-fg-dim">Nada pendiente: sin borradores ni pagos por confirmar.</p>
-          ) : (
-            <ul className="mt-3 divide-y divide-line">
-              {d.decisiones.slice(0, 6).map((x) => (
-                <li key={x.id}><Link href={x.href} className="block py-3 min-h-12">
-                  <span className="block text-fg text-sm font-semibold truncate">{x.titulo}</span>
-                  <span className="block text-fg-dim text-xs truncate">{x.detalle}</span>
                 </Link></li>
               ))}
             </ul>
           )}
         </section>
+      )}
 
-        {e.ventas && (
-          <section className={card} aria-label="Ventas">
-            <div className="flex items-baseline justify-between gap-3">
-              <h2 className={h2}>Ventas</h2>
-              <Link href="/empresa/leads" className={enlace}>Leads</Link>
-            </div>
-            <p className="mt-1 text-sm text-fg-dim">
-              {e.ventas.abiertos === 1 ? "1 lead abierto" : `${e.ventas.abiertos} leads abiertos`} · {e.ventas.nuevos7 === 1 ? "1 nuevo" : `${e.ventas.nuevos7} nuevos`} esta semana
-              {e.ventas.oportunidades.n > 0 && <> · <b className="font-semibold text-fg tabular-nums">{usd(e.ventas.oportunidades.valor)}</b> en {e.ventas.oportunidades.n === 1 ? "1 oportunidad" : `${e.ventas.oportunidades.n} oportunidades`}</>}
-            </p>
-            <dl className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {e.ventas.etapas.map((x) => (
-                <Link key={x.etapa} href="/empresa/leads" className="min-w-0 rounded-xl border border-line bg-fill px-2 py-2 sm:px-3">
-                  <dt className="truncate text-xs font-medium text-fg-dim">{x.label}</dt>
-                  <dd className="text-lg font-semibold tabular-nums text-fg">{x.n}</dd>
-                </Link>
+      {e.correos && (
+        <section key="s7" className="jv-p" data-src="correo" aria-label="Comunicación con clientes">
+          <div className="jv-ph"><h2>Comunicación con clientes</h2><Link href="/empresa/correos/hub" className="jv-link">Correos</Link></div>
+          <p className="jv-vacio">
+            {e.correos.totalEsperan
+              ? <><b style={{ color: "var(--jv-amber)" }}>{e.correos.totalEsperan === 1 ? "1 conversación espera" : `${e.correos.totalEsperan} conversaciones esperan`}</b> tu respuesta.</>
+              : "Nadie espera respuesta tuya este mes."} La IA resume cada correo y lo guarda en la ficha del cliente o lead.
+          </p>
+          {e.correos.esperan.length > 0 && (
+            <ul className="jv-list">
+              {e.correos.esperan.map((m) => (
+                <li key={`e-${m.id}`}><Link href={`/empresa/correos/hub/${m.id}`} className="jv-item"><span className="min-w-0"><span className="jv-it">{m.nombre}</span><span className="jv-is">{(m.aiSummary && m.aiSummary !== "Sin resumen" ? m.aiSummary : m.subject?.trim()) || "(sin asunto)"} · {hace(m.receivedAt, ahora)}</span></span><span className="jv-go" data-e="aviso">Responder →</span></Link></li>
               ))}
-            </dl>
-            {e.ventas.sinContactar.length === 0 && e.ventas.seguimientos.length === 0 ? (
-              <p className="mt-4 text-sm text-fg-dim">Todos los leads nuevos ya tienen respuesta y no hay seguimientos atrasados.</p>
-            ) : (
-              <ul className="mt-3 divide-y divide-line">
-                {e.ventas.seguimientos.map((l) => (
-                  <li key={`s-${l.id}`}><Link href={`/empresa/leads/${l.id}`} className={fila}>
-                    <span className="min-w-0"><span className="block text-fg text-sm font-semibold truncate">{l.company ? `${l.name} · ${l.company}` : l.name}</span><span className="block text-warn text-xs font-semibold">Seguimiento {l.dias === 0 ? "para hoy" : `atrasado ${l.dias} ${l.dias === 1 ? "día" : "días"}`}</span></span>
-                    <span className="text-brand-fg text-sm font-semibold whitespace-nowrap">Seguir →</span>
-                  </Link></li>
-                ))}
-                {e.ventas.sinContactar.map((l) => (
-                  <li key={`n-${l.id}`}><Link href={`/empresa/leads/${l.id}`} className={fila}>
-                    <span className="min-w-0"><span className="block text-fg text-sm font-semibold truncate">{l.company ? `${l.name} · ${l.company}` : l.name}</span><span className="block text-fg-dim text-xs">Sin contactar hace {l.dias} días · <span className={`font-semibold ${PRIORIDAD[l.priority]}`}>prioridad {l.priority.toLowerCase()}</span></span></span>
-                    <span className="text-brand-fg text-sm font-semibold whitespace-nowrap">Contactar →</span>
+            </ul>
+          )}
+          {e.pedidos.length > 0 && (
+            <>
+              <h3 className="jv-k" style={{ margin: 0 }}>Piden cotización por correo</h3>
+              <ul className="jv-list">
+                {e.pedidos.map((x) => (
+                  <li key={`p-${x.id}`}><Link href={x.quien ? `/empresa/${x.quien.tipo === "cliente" ? "clientes" : "leads"}/${x.quien.id}` : `/empresa/correos/hub/${x.id}`} className="jv-item">
+                    <span className="min-w-0"><span className="jv-it">{x.nombre}</span><span className="jv-is">{x.necesidad}</span><span className="jv-is">{x.quien ? (x.quien.tipo === "cliente" ? "Cliente" : "Lead") : "Sin aprobar"}{x.valor ? ` · ≈ ${usd(x.valor)}` : ""} · {hace(x.fecha, ahora)}</span></span>
+                    <span className="jv-go">{x.quien ? "Ver ficha →" : "Revisar →"}</span>
                   </Link></li>
                 ))}
               </ul>
-            )}
-          </section>
-        )}
-
-        {veProyectos && (
-          <section className={card} aria-label="Proyectos en curso">
-            <div className="flex items-baseline justify-between gap-3">
-              <h2 className={h2}>Proyectos en curso</h2>
-              <Link href="/empresa/proyectos" className={enlace}>{d.proyectos.length > 5 ? `Ver los ${d.proyectos.length}` : "Todos"}</Link>
-            </div>
-            {d.proyectos.length === 0 ? (
-              <p className="mt-2 text-sm text-fg-dim">No hay proyectos en curso.</p>
-            ) : (
-              <ul className="mt-3 space-y-4">
-                {d.proyectos.slice(0, 5).map((p) => (
-                  <li key={p.id}><Link href={`/empresa/proyectos/${p.id}`} className="block space-y-2">
-                    <span className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3"><span className="min-w-0 truncate text-fg text-sm font-semibold">{p.nombre}</span><span className="text-fg text-sm tabular-nums whitespace-nowrap">{Math.round(p.avance)} %</span></span>
-                    <span className="block h-1.5 rounded-full bg-fill-3 overflow-hidden"><span className="block h-full bg-brand origin-left" style={{ transform: `scaleX(${p.avance / 100})` }} /></span>
-                    <span className="block text-fg-dim text-xs truncate">{p.cliente}{p.diasSinActividad !== null && p.diasSinActividad > 14 ? <span className="text-warn font-semibold"> · {p.diasSinActividad} días sin actividad en GitHub</span> : ""}</span>
-                  </Link></li>
-                ))}
-              </ul>
-            )}
-          </section>
-        )}
-        {e.correos && (
-          <section className={card} aria-label="Comunicación con clientes">
-            <div className="flex items-baseline justify-between gap-3">
-              <h2 className={h2}>Comunicación con clientes</h2>
-              <Link href="/empresa/correos/hub" className={enlace}>Correos</Link>
-            </div>
-            <p className="mt-1 text-sm text-fg-dim">
-              {e.correos.totalEsperan
-                ? <><b className="font-semibold text-warn">{e.correos.totalEsperan === 1 ? "1 conversación espera" : `${e.correos.totalEsperan} conversaciones esperan`}</b> tu respuesta.</>
-                : "Nadie espera respuesta tuya este mes."} La IA resume cada correo y lo guarda en la ficha del cliente o lead.
-            </p>
-            {e.correos.esperan.length > 0 && (
-              <ul className="mt-3 divide-y divide-line">
-                {e.correos.esperan.map((m) => (
-                  <li key={`e-${m.id}`}><Link href={`/empresa/correos/hub/${m.id}`} className={fila}>
-                    <span className="min-w-0"><span className="block text-fg text-sm font-semibold truncate">{m.nombre}</span><span className="block text-fg-dim text-xs line-clamp-2 [overflow-wrap:anywhere]">{(m.aiSummary && m.aiSummary !== "Sin resumen" ? m.aiSummary : m.subject?.trim()) || "(sin asunto)"} · {hace(m.receivedAt, ahora)}</span></span>
-                    <span className="text-warn text-sm font-semibold whitespace-nowrap">Responder →</span>
-                  </Link></li>
-                ))}
-              </ul>
-            )}
-            {e.pedidos.length > 0 && (
-              <>
-                <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-fg-dim">Piden cotización por correo</p>
-                <ul className="mt-1 divide-y divide-line">
-                  {e.pedidos.map((x) => (
-                    <li key={`p-${x.id}`}><Link href={x.quien ? `/empresa/${x.quien.tipo === "cliente" ? "clientes" : "leads"}/${x.quien.id}` : `/empresa/correos/hub/${x.id}`} className={fila}>
-                      <span className="min-w-0">
-                        <span className="block text-fg text-sm font-semibold truncate">{x.nombre}</span>
-                        <span className="block text-fg-dim text-xs line-clamp-2 [overflow-wrap:anywhere]">{x.necesidad}</span>
-                        <span className="block text-fg-faint text-xs">{x.quien ? (x.quien.tipo === "cliente" ? "Cliente" : "Lead") : "Sin aprobar"}{x.valor ? ` · ≈ ${usd(x.valor)}` : ""} · {hace(x.fecha, ahora)}</span>
-                      </span>
-                      <span className="text-brand-fg text-sm font-semibold whitespace-nowrap">{x.quien ? "Ver ficha →" : "Revisar →"}</span>
-                    </Link></li>
-                  ))}
-                </ul>
-              </>
-            )}
-            {e.correos.recientes.length === 0 ? (
-              <p className="mt-4 rounded-xl bg-fill p-4 text-sm text-fg-dim">Cuando escribas o recibas correos de un cliente o lead, aparecen aquí y en su ficha. Si uno no se liga solo, ábrelo y elige de quién es.</p>
-            ) : (
-              <>
-                <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-fg-dim">Lo último</p>
-                <ul className="mt-1 divide-y divide-line">
-                  {e.correos.recientes.map((m) => (
-                    <li key={m.id}><Link href={`/empresa/correos/hub/${m.id}`} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3 py-3 min-h-12">
-                      <span className={`mt-1.5 h-2 w-2 rounded-full ${m.recibido ? "bg-ok" : "bg-brand"}`} aria-hidden />
-                      <span className="min-w-0">
-                        <span className="block text-fg text-sm font-semibold truncate">{m.recibido ? `${m.quien.nombre} escribió` : `Le escribiste a ${m.quien.nombre}`}</span>
-                        {/* Lo que la IA sacó del correo; sin resumen, el asunto. */}
-                        <span className="block text-fg-dim text-xs line-clamp-2 [overflow-wrap:anywhere]">{m.resumen && m.resumen !== "Sin resumen" ? m.resumen : m.asunto}</span>
-                        <span className="block text-fg-faint text-xs">{m.quien.tipo === "cliente" ? "Cliente" : "Lead"} · {hace(m.fecha, ahora)}</span>
-                      </span>
-                    </Link></li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </section>
-        )}
-
-        <section className={card} aria-label="Lo último en la empresa">
-          <h2 className={h2}>Lo último en las cuentas de clientes</h2>
-          {e.actividad.length === 0 ? (
-            <p className="mt-2 text-sm text-fg-dim">Aquí sale lo que pasa en las cuentas de tus clientes: pagos, aprobaciones, fases listas y tickets.</p>
+            </>
+          )}
+          {e.correos.recientes.length === 0 ? (
+            <p className="jv-vacio">Cuando escribas o recibas correos de un cliente o lead, aparecen aquí y en su ficha. Si uno no se liga solo, ábrelo y elige de quién es.</p>
           ) : (
-            <ol className="mt-3 divide-y divide-line">
-              {e.actividad.map((a) => (
-                <li key={a.id}><Link href={`/empresa/clientes/${a.clienteId}`} className="grid grid-cols-[auto_minmax(0,1fr)] gap-3 py-3 min-h-12">
-                  <span className={`mt-1.5 h-2 w-2 rounded-full ${a.delCliente ? "bg-ok" : "bg-fg-faint"}`} aria-hidden />
-                  <span className="min-w-0">
-                    <span className="block text-fg text-sm font-semibold [overflow-wrap:anywhere]">{a.titulo}</span>
-                    <span className="block text-fg-dim text-xs truncate">{a.cliente}{a.detalle ? ` · ${a.detalle}` : ""}</span>
-                    <span className="block text-fg-faint text-xs">{a.delCliente ? "Lo hizo el cliente" : "Pime"} · {hace(a.fecha, ahora)}</span>
-                  </span>
-                </Link></li>
-              ))}
-            </ol>
+            <>
+              <h3 className="jv-k" style={{ margin: 0 }}>Lo último</h3>
+              <ul className="jv-list">
+                {e.correos.recientes.map((m) => (
+                  <li key={m.id}><Link href={`/empresa/correos/hub/${m.id}`} className="jv-item" style={{ gridTemplateColumns: "minmax(0,1fr)" }}>
+                    <span className="min-w-0"><span className="jv-it">{m.recibido ? `${m.quien.nombre} escribió` : `Le escribiste a ${m.quien.nombre}`}</span><span className="jv-is">{m.resumen && m.resumen !== "Sin resumen" ? m.resumen : m.asunto}</span><span className="jv-is">{m.quien.tipo === "cliente" ? "Cliente" : "Lead"} · {hace(m.fecha, ahora)}</span></span>
+                  </Link></li>
+                ))}
+              </ul>
+            </>
           )}
         </section>
-      </div>
+      )}
+
+      <section key="s8" className="jv-p" data-src="portal pime" aria-label="Lo último en las cuentas de clientes">
+        <div className="jv-ph"><h2>Lo último en las cuentas de clientes</h2><Fuente texto="Portal" estado={estadoDe("portal") === "ok" ? "ok" : "apagado"} /></div>
+        {e.actividad.length === 0 ? (
+          <p className="jv-vacio">Aquí sale lo que pasa en las cuentas de tus clientes: pagos, aprobaciones, fases listas y tickets.</p>
+        ) : (
+          <ol className="jv-list">
+            {e.actividad.map((a) => (
+              <li key={a.id}><Link href={`/empresa/clientes/${a.clienteId}`} className="jv-item" style={{ gridTemplateColumns: "minmax(0,1fr)" }}>
+                <span className="min-w-0"><span className="jv-it">{a.titulo}</span><span className="jv-is">{a.cliente}{a.detalle ? ` · ${a.detalle}` : ""}</span><span className="jv-is">{a.delCliente ? "Lo hizo el cliente" : "Pime"} · {hace(a.fecha, ahora)}</span></span>
+              </Link></li>
+            ))}
+          </ol>
+        )}
+      </section>
 
       {veDinero && (
-        <section className={card} aria-label="Ingresos">
+        <section key="s9" className="jv-p jv-wide" data-src="pime" aria-label="Ingresos">
+          <div className="jv-ph"><h2>Ingresos</h2><Fuente texto="Facturas pagadas" /></div>
           <DashboardRevenueChart monthlyData={buildMonthlyRevenue(filas)} yearlyData={buildYearlyRevenue(filas)} />
         </section>
       )}
+    </div>
+  );
+
+  return (
+    <div className="space-y-4">
+      {sin_permiso && (
+        <p role="status" className="rounded-xl border border-warn/30 bg-warn/10 px-4 py-3 text-sm text-warn">
+          Esa sección no es de tu área del equipo. Si la necesitas, pídele acceso al dueño.
+        </p>
+      )}
+      <Jarvis
+        nombre={nombre}
+        fecha={fecha}
+        resumen={resumen}
+        conexiones={conexiones}
+        memoria={esDueno ? memoria as unknown as Parameters<typeof Jarvis>[0]["memoria"] : null}
+        principal={veDinero ? <BotonCobrar clientes={clientes.map((c) => ({ id: c.id, nombre: c.company || c.name }))} className="jv-btn" /> : null}
+        izquierda={izquierda}
+        derecha={derecha}
+        abajo={abajo}
+      />
     </div>
   );
 }

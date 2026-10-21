@@ -1,0 +1,180 @@
+/* Jarvis: pantalla de inicio del panel. Un solo look oscuro a propósito (HUD), igual en tema claro y oscuro.
+   Escenario en canvas (núcleo, anillos y líneas con pulsos) con los nodos encima en HTML.
+   Tipografía: la del producto (Manrope), cifras con tabular-nums. Espaciado 4/8/12/16/24/32/48. */
+.jv {
+  --jv-bg: #040b16; --jv-panel: rgba(9, 20, 36, .72); --jv-line: rgba(94, 200, 255, .16); --jv-line-2: rgba(94, 200, 255, .32);
+  --jv-fg: #e6f6ff; --jv-dim: #8aa6bd; --jv-faint: #587389; --jv-cyan: #4fd8ff; --jv-ice: #c9f2ff; --jv-amber: #ffb547; --jv-ok: #47e6a6; --jv-bad: #ff7a7a;
+  container-type: inline-size; position: relative; isolation: isolate; color: var(--jv-fg); color-scheme: dark;
+  background: radial-gradient(90% 60% at 50% 22%, #0c2038 0%, #060f1d 55%, var(--jv-bg) 100%);
+  border: 1px solid var(--jv-line); border-radius: 16px; padding: 16px; display: grid; gap: 16px; min-width: 0; overflow: hidden;
+}
+.jv::before { content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .45;
+  background-image: linear-gradient(rgba(79,216,255,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(79,216,255,.05) 1px, transparent 1px);
+  background-size: 32px 32px; mask-image: radial-gradient(70% 45% at 50% 25%, #000 30%, transparent 80%); -webkit-mask-image: radial-gradient(70% 45% at 50% 25%, #000 30%, transparent 80%) }
+.jv.jv-full { position: fixed; inset: 0; z-index: 70; border-radius: 0; border: 0; overflow: auto; align-content: start;
+  padding-top: max(16px, env(safe-area-inset-top, 0px)); padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+.jv-num { font-variant-numeric: tabular-nums }
+.jv-k { font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--jv-dim) }
+.jv a { color: inherit; text-decoration: none }
+.jv :focus-visible { outline: 2px solid var(--jv-cyan); outline-offset: 2px }
+
+/* Barra superior */
+.jv-top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: space-between }
+.jv-brand { display: flex; align-items: center; gap: 12px; min-width: 0 }
+.jv-glyph { width: 40px; height: 40px; flex: none; border-radius: 50%; border: 1px solid var(--jv-cyan); display: grid; place-items: center; box-shadow: 0 0 16px rgba(79,216,255,.45), inset 0 0 8px rgba(79,216,255,.35) }
+.jv-glyph i { width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle, #fff, var(--jv-cyan) 60%, transparent 72%) }
+.jv-hola { display: grid; gap: 0; min-width: 0 }
+.jv-word { font-size: 12px; font-weight: 700; letter-spacing: .42em; color: var(--jv-cyan); text-shadow: 0 0 12px rgba(79,216,255,.6) }
+.jv-hola h1 { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.3; color: var(--jv-fg) }
+.jv-fecha { display: inline-block } .jv-fecha::first-letter { text-transform: uppercase }
+.jv-hola p { margin: 0; font-size: 14px; color: var(--jv-dim); overflow-wrap: anywhere }
+.jv-tele { display: flex; gap: 24px; flex-wrap: wrap; align-items: center }
+.jv-tele > div { display: grid; gap: 0 }
+.jv-tele b { font-weight: 600; font-size: 16px; color: var(--jv-fg); font-variant-numeric: tabular-nums }
+.jv-tools { display: flex; gap: 8px; flex-wrap: wrap; align-items: center }
+.jv-ib { min-height: 44px; min-width: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--jv-line-2); background: rgba(79,216,255,.06); color: var(--jv-ice); cursor: pointer; font: inherit; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px }
+.jv-ib:hover { border-color: var(--jv-cyan); background: rgba(79,216,255,.12) }
+.jv-ib[aria-pressed="true"] { background: rgba(79,216,255,.18); border-color: var(--jv-cyan) }
+.jv-ib svg { width: 16px; height: 16px; flex: none }
+.jv-seg { display: inline-flex; border: 1px solid var(--jv-line-2); border-radius: 8px; overflow: hidden }
+.jv-seg button { min-height: 44px; padding: 0 12px; border: 0; background: transparent; color: var(--jv-dim); font: inherit; font-size: 14px; cursor: pointer }
+.jv-seg button[aria-pressed="true"] { background: rgba(79,216,255,.16); color: var(--jv-ice) }
+@container (max-width: 599px) { .jv-fs { display: none } .jv-ib .jv-lbl { display: none } .jv-tele { gap: 16px } .jv-tools { width: 100% } .jv-tools > :first-child { flex: 1 } }
+
+/* Disposición */
+.jv-main { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); grid-template-areas: "stage" "l" "r" }
+@container (min-width: 1000px) { .jv-main { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr); grid-template-areas: "l stage r"; align-items: start } }
+.jv-l { grid-area: l } .jv-r { grid-area: r } .jv-st { grid-area: stage; display: grid; gap: 8px; min-width: 0 }
+.jv-col { display: grid; gap: 16px; align-content: start; min-width: 0 }
+.jv-more { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) }
+@container (min-width: 760px) { .jv-more { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start } }
+.jv-wide { grid-column: 1 / -1 }
+
+/* Paneles de vidrio con esquinas de mira */
+.jv-p { position: relative; min-width: 0; padding: 16px; border-radius: 4px; display: grid; gap: 12px; align-content: start;
+  background:
+    linear-gradient(var(--jv-cyan), var(--jv-cyan)) top left / 12px 1px no-repeat, linear-gradient(var(--jv-cyan), var(--jv-cyan)) top left / 1px 12px no-repeat,
+    linear-gradient(var(--jv-cyan), var(--jv-cyan)) top right / 12px 1px no-repeat, linear-gradient(var(--jv-cyan), var(--jv-cyan)) top right / 1px 12px no-repeat,
+    linear-gradient(var(--jv-cyan), var(--jv-cyan)) bottom left / 12px 1px no-repeat, linear-gradient(var(--jv-cyan), var(--jv-cyan)) bottom left / 1px 12px no-repeat,
+    linear-gradient(var(--jv-cyan), var(--jv-cyan)) bottom right / 12px 1px no-repeat, linear-gradient(var(--jv-cyan), var(--jv-cyan)) bottom right / 1px 12px no-repeat,
+    var(--jv-panel);
+  box-shadow: inset 0 0 0 1px var(--jv-line), inset 0 24px 48px -32px rgba(79,216,255,.22);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); transition: box-shadow .4s }
+.jv-p.jv-lit { box-shadow: inset 0 0 0 1px var(--jv-cyan), 0 0 32px -8px rgba(79,216,255,.55), inset 0 24px 48px -32px rgba(79,216,255,.4) }
+.jv-p.jv-alerta { --jv-cyan: var(--jv-bad); box-shadow: inset 0 0 0 1px rgba(255,122,122,.35), inset 0 24px 48px -32px rgba(255,122,122,.25) }
+.jv-ph { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; flex-wrap: wrap }
+.jv-ph h2 { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--jv-dim) }
+.jv-src { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--jv-faint); white-space: nowrap }
+.jv-src i { width: 6px; height: 6px; border-radius: 50%; background: var(--jv-ok); box-shadow: 0 0 6px var(--jv-ok) }
+.jv-src i[data-e="aviso"] { background: var(--jv-amber); box-shadow: 0 0 6px var(--jv-amber) }
+.jv-src i[data-e="apagado"] { background: var(--jv-faint); box-shadow: none }
+.jv-link { display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; font-weight: 600; color: var(--jv-cyan) !important }
+.jv-link:hover { text-decoration: underline }
+.jv-vacio { font-size: 14px; color: var(--jv-dim); margin: 0; overflow-wrap: anywhere }
+.jv-nota { font-size: 14px; margin: 0; overflow-wrap: anywhere }
+.jv-nota[data-e="aviso"] { color: var(--jv-amber) } .jv-nota[data-e="mal"] { color: var(--jv-bad) }
+
+/* Dinero */
+.jv-money { display: grid; gap: 8px }
+.jv-mrow { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: baseline; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--jv-line); min-height: 48px }
+.jv-mrow:last-child { border-bottom: 0 }
+.jv-mrow span { font-size: 14px; color: var(--jv-dim); min-width: 0; overflow-wrap: anywhere }
+.jv-mrow small { display: block; font-size: 12px; color: var(--jv-faint) }
+.jv-mrow b { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap }
+.jv-mrow[data-e="mal"] b { color: var(--jv-bad) } .jv-mrow[data-e="ok"] b { color: var(--jv-ok) } .jv-mrow[data-e="info"] b { color: var(--jv-ice) }
+
+/* Listas */
+.jv-list { list-style: none; margin: 0; padding: 0; display: grid }
+.jv-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; min-height: 48px; padding: 8px 0; border-bottom: 1px solid var(--jv-line) }
+.jv-list li:last-child .jv-item { border-bottom: 0 }
+.jv-item:hover .jv-it { color: var(--jv-ice) }
+.jv-it { display: block; font-size: 14px; font-weight: 600; overflow-wrap: anywhere }
+.jv-is { display: block; font-size: 12px; color: var(--jv-dim); overflow-wrap: anywhere }
+.jv-go { font-size: 12px; font-weight: 600; color: var(--jv-cyan); white-space: nowrap }
+.jv-go[data-e="mal"] { color: var(--jv-bad) } .jv-go[data-e="aviso"] { color: var(--jv-amber) }
+.jv-chip { font-size: 12px; line-height: 24px; padding: 0 8px; border-radius: 2px; border: 1px solid var(--jv-line-2); color: var(--jv-ice); white-space: nowrap }
+.jv-chip[data-e="mal"] { border-color: rgba(255,122,122,.5); color: var(--jv-bad) }
+
+/* Agenda */
+.jv-tl { position: relative; height: 40px; border-top: 1px solid var(--jv-line) }
+.jv-blk { position: absolute; top: 8px; height: 12px; border-radius: 2px; background: linear-gradient(90deg, rgba(79,216,255,.6), rgba(79,216,255,.25)); box-shadow: 0 0 12px rgba(79,216,255,.35); min-width: 4px }
+.jv-blk[data-paso="1"] { opacity: .35 }
+.jv-nowm { position: absolute; top: -4px; bottom: 12px; width: 1px; background: var(--jv-amber); box-shadow: 0 0 8px var(--jv-amber) }
+.jv-hr { position: absolute; bottom: 0; font-size: 12px; color: var(--jv-faint); transform: translateX(-50%); font-variant-numeric: tabular-nums }
+.jv-ag { list-style: none; margin: 0; padding: 0; display: grid }
+.jv-ag a, .jv-ag > li > div { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 8px; padding: 8px 0; min-height: 48px; border-bottom: 1px solid var(--jv-line) }
+.jv-ag li:last-child a, .jv-ag li:last-child > div { border-bottom: 0 }
+.jv-ag .jv-h { font-size: 14px; font-weight: 600; color: var(--jv-cyan); font-variant-numeric: tabular-nums }
+.jv-ag [data-paso="1"] { opacity: .45 }
+
+/* Ventas y proyectos */
+.jv-stages { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px }
+@container (max-width: 399px) { .jv-stages { grid-template-columns: repeat(2, minmax(0, 1fr)) } }
+.jv-stage-n { display: grid; gap: 0; padding: 8px; border-radius: 4px; border: 1px solid var(--jv-line); min-width: 0; min-height: 48px }
+.jv-stage-n span { font-size: 12px; color: var(--jv-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.jv-stage-n b { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums }
+.jv-bar { height: 4px; border-radius: 2px; background: rgba(79,216,255,.14); overflow: hidden; margin-top: 4px }
+.jv-bar i { display: block; height: 100%; background: var(--jv-cyan); box-shadow: 0 0 8px var(--jv-cyan); transform-origin: left center }
+
+/* Escenario */
+.jv-stage { position: relative; width: 100%; aspect-ratio: 1 / 1; max-width: 100%; justify-self: center }
+@container (min-width: 1000px) { .jv-stage { aspect-ratio: 1 / .96 } }
+.jv.jv-full .jv-stage { width: min(100%, calc(100dvh - 320px)); min-width: 280px }
+.jv-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block }
+.jv-core { position: absolute; left: 50%; top: 50%; width: 28%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; border: 0; background: transparent; cursor: pointer }
+.jv-node, .jv-mnode { position: absolute; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 4px; border: 0; background: transparent; color: var(--jv-fg); cursor: pointer; padding: 4px; min-width: 44px; min-height: 44px; font: inherit; text-align: center }
+.jv-hex { width: 40px; height: 40px; display: grid; place-items: center; color: var(--jv-cyan); position: relative; isolation: isolate;
+  clip-path: polygon(25% 4%, 75% 4%, 100% 50%, 75% 96%, 25% 96%, 0 50%); background: linear-gradient(180deg, rgba(79,216,255,.34), rgba(79,216,255,.08)); transition: background .3s, color .3s }
+.jv-hex::after { content: ""; position: absolute; inset: 1px; clip-path: inherit; background: #06111c; z-index: -1 }
+.jv-hex svg { width: 18px; height: 18px }
+.jv-node[data-tipo="motor"] .jv-hex { clip-path: circle(50%) }
+.jv-node[data-e="aviso"] .jv-hex { color: var(--jv-amber); background: linear-gradient(180deg, rgba(255,181,71,.45), rgba(255,181,71,.1)) }
+.jv-node[data-e="apagado"] .jv-hex { color: var(--jv-faint); background: linear-gradient(180deg, rgba(88,115,137,.4), rgba(88,115,137,.1)) }
+.jv-node.jv-on .jv-hex { background: var(--jv-cyan); color: #04121c }
+.jv-node.jv-on .jv-hex::after { background: #bff0ff }
+.jv-nl { font-size: 12px; font-weight: 600; white-space: nowrap; text-shadow: 0 1px 4px #000 }
+.jv-ns { font-size: 12px; color: var(--jv-faint); white-space: nowrap; text-shadow: 0 1px 4px #000; font-variant-numeric: tabular-nums }
+.jv-node[data-e="aviso"] .jv-ns { color: var(--jv-amber) }
+@container (max-width: 559px) { .jv-ns { display: none } .jv-hex { width: 32px; height: 32px } .jv-hex svg { width: 14px; height: 14px } }
+.jv-mdot { border-radius: 50%; background: radial-gradient(circle, #e8fbff, var(--jv-cyan) 55%, rgba(79,216,255,.1) 75%); box-shadow: 0 0 12px rgba(79,216,255,.6) }
+.jv-mnode.jv-on .jv-mdot { background: radial-gradient(circle, #fff, #fff 40%, var(--jv-cyan) 70%) }
+.jv-stage[data-modo="memoria"] .jv-node, .jv-stage[data-modo="conexiones"] .jv-mnode { display: none }
+
+/* Consola de voz */
+.jv-voice { display: grid; gap: 8px; justify-items: center; text-align: center }
+.jv-state { font-size: 12px; font-weight: 600; letter-spacing: .24em; text-transform: uppercase; color: var(--jv-cyan) }
+.jv-said { font-size: 18px; font-weight: 600; max-width: 40ch; min-height: 24px; overflow-wrap: anywhere; text-wrap: balance; margin: 0 }
+.jv-reply { font-size: 14px; color: var(--jv-dim); max-width: 52ch; overflow-wrap: anywhere; margin: 0; white-space: pre-line }
+.jv-reply[data-e="mal"] { color: var(--jv-bad) }
+.jv-levels { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center }
+.jv-levels span { font-size: 12px; line-height: 24px; padding: 0 8px; border: 1px solid var(--jv-line); border-radius: 2px; color: var(--jv-faint); transition: background .3s, color .3s }
+.jv-levels span.jv-on { color: #04121c; background: var(--jv-cyan); border-color: var(--jv-cyan); box-shadow: 0 0 16px rgba(79,216,255,.6) }
+.jv-ask { display: flex; gap: 8px; width: 100%; max-width: 520px }
+.jv-in { flex: 1; min-width: 0; min-height: 48px; padding: 0 16px; border-radius: 24px; border: 1px solid var(--jv-line-2); background: rgba(3,7,13,.7); color: var(--jv-fg); font: inherit; font-size: 16px }
+.jv-in::placeholder { color: var(--jv-faint) }
+.jv-in:focus { outline: none; border-color: var(--jv-cyan); box-shadow: 0 0 0 1px var(--jv-cyan) }
+.jv-mic { width: 48px; height: 48px; flex: none; border-radius: 50%; border: 1px solid var(--jv-cyan); background: radial-gradient(circle, rgba(79,216,255,.35), rgba(79,216,255,.08)); color: var(--jv-ice); cursor: pointer; display: grid; place-items: center; box-shadow: 0 0 24px -4px rgba(79,216,255,.7) }
+.jv-mic[aria-pressed="true"] { background: var(--jv-cyan); color: #04121c }
+.jv-mic:disabled { opacity: .5; cursor: default }
+.jv-mic svg { width: 20px; height: 20px }
+.jv-detail { font-size: 14px; color: var(--jv-dim); max-width: 56ch; overflow-wrap: anywhere; margin: 0 }
+.jv-detail b { color: var(--jv-ice); font-weight: 600 }
+.jv-acts { display: grid; gap: 8px; width: 100%; max-width: 520px; text-align: left; list-style: none; margin: 0; padding: 0 }
+.jv-act { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 8px 12px; border-radius: 4px; border: 1px solid var(--jv-line-2); background: rgba(79,216,255,.05) }
+.jv-act[data-e="error"] { border-color: rgba(255,122,122,.5) }
+.jv-act p { margin: 0; font-size: 14px; overflow-wrap: anywhere }
+.jv-act small { display: block; font-size: 12px; color: var(--jv-dim) }
+.jv-act-b { display: flex; gap: 8px; flex-wrap: wrap }
+.jv-btn { min-height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--jv-cyan); background: var(--jv-cyan); color: #04121c; font: inherit; font-size: 14px; font-weight: 600; cursor: pointer }
+.jv-btn.jv-sec { background: transparent; color: var(--jv-ice); border-color: var(--jv-line-2) }
+.jv-btn:disabled { opacity: .5; cursor: default }
+.jv-sug { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; width: 100%; max-width: 520px }
+@container (max-width: 559px) { .jv-sug { grid-template-columns: minmax(0, 1fr) } }
+.jv-sug button { min-height: 44px; padding: 8px 12px; line-height: 1.3; border-radius: 22px; border: 1px solid var(--jv-line); background: transparent; color: var(--jv-dim); font: inherit; font-size: 14px; cursor: pointer }
+.jv-sug button:hover { border-color: var(--jv-cyan); color: var(--jv-ice) }
+
+@media (prefers-reduced-motion: reduce) { .jv-p, .jv-hex, .jv-levels span { transition: none } }
+
+/* En la pantalla de inicio Jarvis ya es el asistente: el botón flotante sobra y tapaba un nodo. */
+.empresa-app:has(.jv) [aria-label="Abrir el asistente"] { display: none }

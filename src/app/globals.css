@@ -142,9 +142,9 @@
 :root,
 html[data-theme="dark"],
 .theme-dark {
-  --c-canvas: 6 14 30;
-  --c-panel: 11 24 46;
-  --c-panel-2: 8 19 38;
+  --c-canvas: 4 11 24;
+  --c-panel: 9 21 40;
+  --c-panel-2: 6 16 32;
   --c-panel-3: 19 34 62;
   --c-pop: 15 29 54;
 
@@ -156,8 +156,8 @@ html[data-theme="dark"],
   --c-fg-ghost: 120 133 156;
   --c-fg-trace: 84 98 122;
 
-  --c-line: 27 41 66;
-  --c-line-mid: 38 54 82;
+  --c-line: 26 44 74;
+  --c-line-mid: 38 58 92;
   --c-line-loud: 58 76 106;
 
   --c-fill: 16 29 52;
@@ -321,8 +321,65 @@ html[data-theme="light"] {
   .empresa-app ::placeholder {
     color: rgb(var(--c-fg-trace));
   }
+
+  /* ── Estilo Jarvis (tema oscuro) ─────────────────────────────────────────
+     El mismo lenguaje de la pantalla de inicio en todo el panel: lienzo con
+     brillo y retícula, tarjetas con esquinas de mira y luz interior, acciones
+     principales con resplandor. Va en la capa base a propósito: cualquier
+     utilidad explícita del marcado (bg-gradient, shadow-*) sigue ganando. */
+  html[data-theme="dark"] .empresa-app {
+    --hud: 111 168 255;
+    background-image:
+      radial-gradient(70% 40% at 60% 0%, rgb(var(--hud) / .10), transparent 70%),
+      linear-gradient(rgb(var(--hud) / .035) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--hud) / .035) 1px, transparent 1px);
+    background-size: auto, 32px 32px, 32px 32px;
+    background-attachment: fixed;
+  }
+  html[data-theme="dark"] .empresa-app :where(.bg-panel.rounded-2xl, .bg-panel.rounded-xl, .bg-panel-2.rounded-2xl) {
+    background-image:
+      linear-gradient(rgb(var(--hud) / .8), rgb(var(--hud) / .8)), linear-gradient(rgb(var(--hud) / .8), rgb(var(--hud) / .8)),
+      linear-gradient(rgb(var(--hud) / .8), rgb(var(--hud) / .8)), linear-gradient(rgb(var(--hud) / .8), rgb(var(--hud) / .8)),
+      linear-gradient(rgb(var(--hud) / .8), rgb(var(--hud) / .8)), linear-gradient(rgb(var(--hud) / .8), rgb(var(--hud) / .8)),
+      linear-gradient(rgb(var(--hud) / .8), rgb(var(--hud) / .8)), linear-gradient(rgb(var(--hud) / .8), rgb(var(--hud) / .8));
+    background-size: 12px 1px, 1px 12px, 12px 1px, 1px 12px, 12px 1px, 1px 12px, 12px 1px, 1px 12px;
+    background-position: top left, top left, top right, top right, bottom left, bottom left, bottom right, bottom right;
+    background-repeat: no-repeat;
+    box-shadow: inset 0 24px 48px -32px rgb(var(--hud) / .22), 0 0 0 1px rgb(var(--hud) / .04);
+  }
+  html[data-theme="dark"] .empresa-app :where(.bg-brand) {
+    box-shadow: 0 0 24px -6px rgb(var(--c-brand) / .75), inset 0 1px 0 rgb(255 255 255 / .25);
+  }
+  html[data-theme="dark"] .empresa-app :where(.bg-brand\/10.border) {
+    box-shadow: 0 0 16px -6px rgb(var(--c-brand) / .6), inset 0 0 12px -6px rgb(var(--c-brand) / .5);
+  }
+  html[data-theme="dark"] .empresa-app :where(aside.bg-panel-2) {
+    box-shadow: inset -1px 0 0 rgb(var(--hud) / .22), 16px 0 48px -32px rgb(var(--hud) / .35);
+  }
+  html[data-theme="dark"] .empresa-app main :where(h1) {
+    text-shadow: 0 0 24px rgb(var(--hud) / .3);
+  }
+  html[data-theme="dark"] .empresa-app :where(input, textarea, select):focus-visible {
+    box-shadow: 0 0 0 1px rgb(var(--c-brand)), 0 0 16px -4px rgb(var(--c-brand) / .6);
+  }
+  html[data-theme="dark"] .empresa-app :where(table thead th) {
+    letter-spacing: .08em;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html[data-theme="dark"] .empresa-app :where(a.bg-panel.rounded-2xl, a.bg-panel.rounded-xl):hover {
+      box-shadow: inset 0 0 0 1px rgb(var(--hud) / .45), 0 0 32px -12px rgb(var(--hud) / .6);
+    }
+  }
 }
 
+
+/* Estilo Jarvis: las tarjetas del panel oscuro pierden la esquina redonda grande para que se vean
+   sus esquinas de mira. Fuera de capa a propósito: tiene que ganarle a la utilidad rounded-2xl. */
+html[data-theme="dark"] .empresa-app .bg-panel.rounded-2xl,
+html[data-theme="dark"] .empresa-app .bg-panel.rounded-xl,
+html[data-theme="dark"] .empresa-app .bg-panel-2.rounded-2xl {
+  border-radius: 6px;
+}
 
 /* ══════════════════════════════════════════════════════════════════════════
    Cuenta del cliente (/cliente). Siempre clara: es un producto que el cliente
