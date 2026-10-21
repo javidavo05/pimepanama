@@ -217,3 +217,8 @@ html[data-theme="light"] .jv-node .jv-nl, html[data-theme="light"] .jv-mnode .jv
 html[data-theme="light"] .jv-node .jv-ns { color: #3c4a66 }
 html[data-theme="light"] .jv-hex { filter: drop-shadow(0 1px 3px rgba(11, 29, 58, .22)) }
 html[data-theme="light"] .jv-node .jv-hex::after { background: #ffffff }
+
+/* Título grande bajo la esfera, sobre el piso de retícula. */
+.jv-titulo { margin-top: 8px; display: grid; justify-items: center; gap: 4px; pointer-events: none; text-align: center; white-space: nowrap }
+.jv-titulo span { font-size: clamp(28px, 7cqw, 56px); font-weight: 700; letter-spacing: .28em; margin-right: -.28em; line-height: 1; color: var(--jv-fg); text-shadow: 0 0 24px rgb(var(--jv-rgb) / .45) }
+.jv-titulo small { font-size: 12px; letter-spacing: .14em; color: var(--jv-dim) }

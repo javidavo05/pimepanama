@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation";
 import { fetchLargo } from "@/lib/fetch-largo";
 import type { Conexion } from "@/lib/jarvis/conexiones";
-import { iniciarEsfera, colorDe, type Vivo } from "./esfera";
+import { iniciarEsfera, colorDe, posicionEnAnillo, type Vivo } from "./esfera";
 import "./jarvis.css";
 
 type EstadoAccion = "propuesta" | "hecha" | "cancelada" | "deshecha" | "error";
@@ -231,13 +231,9 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
   }, [conexiones, memoria]);
 
   const N = conexiones.length;
-  const posicion = (i: number) => { const a = -Math.PI / 2 + (i * Math.PI * 2) / N; return { left: `${50 + Math.cos(a) * 40}%`, top: `${50 + Math.sin(a) * 40}%` }; };
+  const posicion = (i: number) => { const p = posicionEnAnillo(i, N); return { left: `${p.x}%`, top: `${p.y}%` }; };
   const areas = memoria?.areas ?? [];
-  const posArea = (i: number) => {
-    const interior = i < 8, lista = interior ? 8 : Math.max(1, areas.length - 8), k = interior ? i : i - 8;
-    const a = (interior ? -Math.PI / 2 : -Math.PI / 2 + 0.24) + (k * Math.PI * 2) / lista, r = interior ? 27 : 43;
-    return { left: `${50 + Math.cos(a) * r}%`, top: `${50 + Math.sin(a) * r}%` };
-  };
+  const posArea = (i: number) => { const p = posicionEnAnillo(i, areas.length, 45); return { left: `${p.x}%`, top: `${p.y}%` }; };
   const maxN = areas[0]?.n ?? 1;
   const ocupado = estado === "pensando" || estado === "transcribiendo";
   const sugerencias = ["¿Qué tengo hoy?", "¿Quién me debe dinero?", "Abre los leads"];
@@ -311,6 +307,7 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
             })}
           </div>
 
+          <div className="jv-titulo" aria-hidden><span>JARVIS</span><small>Núcleo de Pime · {NOMBRES[estado].toLowerCase()}</small></div>
           <div className="jv-voice">
             <div className="jv-state" aria-live="polite">{NOMBRES[estado]}</div>
             {dicho && <p className="jv-said">{dicho}</p>}
