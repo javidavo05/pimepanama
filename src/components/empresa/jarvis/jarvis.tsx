@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation";
 import { fetchLargo } from "@/lib/fetch-largo";
 import { oidoLocal, transcribir } from "@/lib/voz/transcribir";
+import { hablar as hablarJarvis, detener as callarJarvis, prepararAudio, nivelDeVoz } from "@/lib/voz/hablar";
 import type { Conexion } from "@/lib/jarvis/conexiones";
 import { iniciarEsfera, colorDe, posicionEnAnillo, posicionArea, type Vivo } from "./esfera";
 import "./jarvis.css";
@@ -94,7 +95,7 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
   // ¿El oído es el Whisper local de esta Mac o el de la nube? Se ve en el nodo «Oído».
   const [oidoLocalActivo, setOidoLocalActivo] = useState<boolean | null>(null);
   useEffect(() => { void oidoLocal().then(setOidoLocalActivo); }, []);
-  const vivo = useRef<Vivo>({ estado: "espera", encendidos: [], hover: null, modo: "conexiones", finArrastre: 0, logo: false });
+  const vivo = useRef<Vivo>({ estado: "espera", encendidos: [], hover: null, modo: "conexiones", finArrastre: 0, logo: false, nivelVoz: nivelDeVoz });
   const [logo, setLogo] = useState(false);
   useEffect(() => { try { if (localStorage.getItem("jarvis-logo") === "1") setLogo(true); } catch { /* sin almacenamiento */ } }, []);
   useEffect(() => { vivo.current.logo = logo; }, [logo]);
@@ -127,18 +128,9 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
   }, []);
 
   const hablar = useCallback((t: string) => {
-    if (!vozActiva || typeof window === "undefined" || !("speechSynthesis" in window) || !t) { return; }
-    try {
-      window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance(t.replace(/USD\s?/g, "").slice(0, 600));
-      const voces = window.speechSynthesis.getVoices();
-      u.voice = voces.find((v) => v.lang === "es-MX") ?? voces.find((v) => v.lang === "es-US") ?? voces.find((v) => v.lang.startsWith("es")) ?? null;
-      u.lang = u.voice?.lang ?? "es-MX"; u.rate = 1.04;
-      setEstado("hablando");
-      u.onend = () => setEstado("espera");
-      u.onerror = () => setEstado("espera");
-      window.speechSynthesis.speak(u);
-    } catch { setEstado("espera"); }
+    if (!vozActiva || typeof window === "undefined" || !t) return;
+    setEstado("hablando");
+    void hablarJarvis(t, () => setEstado((e) => (e === "hablando" ? "espera" : e)));
   }, [vozActiva]);
 
   const procesar = useCallback(async (pedido: string) => {
@@ -185,10 +177,11 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
   }
 
   const microfono = useCallback(async () => {
+    prepararAudio();
     if (rec.current && rec.current.state === "recording") { rec.current.stop(); return; }
     if (estado === "pensando" || estado === "transcribiendo") return;
     setError(null);
-    try { window.speechSynthesis?.cancel(); } catch { /* sin voz */ }
+    callarJarvis();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const tipo = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4"].find((x) => typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(x)) ?? "";
@@ -276,7 +269,7 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
           <button type="button" className="jv-ib" aria-pressed={logo} onClick={() => { const v = !logo; setLogo(v); try { localStorage.setItem("jarvis-logo", v ? "1" : "0"); } catch { /* sin almacenamiento */ } }} aria-label={logo ? "Volver a la esfera" : "Mostrar el logo de Pime"}>
             <svg viewBox="0 0 100 100" aria-hidden><g fill="none" stroke="currentColor" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round"><path d="M20 72 50 84 80 72" /><path d="M20 54 50 66 80 54" /><path d="M20 36 50 16 80 36 50 48Z" fill="currentColor" /></g></svg><span className="jv-lbl">{logo ? "Esfera" : "Logo"}</span>
           </button>
-                    <button type="button" className="jv-ib" aria-pressed={vozActiva} onClick={() => { const v = !vozActiva; setVozActiva(v); try { localStorage.setItem("jarvis-voz", v ? "1" : "0"); if (!v) window.speechSynthesis?.cancel(); } catch { /* sin almacenamiento */ } }} aria-label={vozActiva ? "Apagar la voz de Jarvis" : "Encender la voz de Jarvis"}>
+                    <button type="button" className="jv-ib" aria-pressed={vozActiva} onClick={() => { const v = !vozActiva; setVozActiva(v); try { localStorage.setItem("jarvis-voz", v ? "1" : "0"); if (!v) callarJarvis(); } catch { /* sin almacenamiento */ } }} aria-label={vozActiva ? "Apagar la voz de Jarvis" : "Encender la voz de Jarvis"}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{vozActiva ? ICONOS.voz : <><path d="M4 10v4h4l5 4V6L8 10Z" /><path d="m17 9 4 6M21 9l-4 6" /></>}</svg><span className="jv-lbl">{vozActiva ? "Voz" : "Sin voz"}</span>
           </button>
           <button type="button" className="jv-ib jv-fs" aria-pressed={completa} onClick={() => setCompleta((c) => !c)}>
@@ -344,14 +337,14 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
               <span className={nivel === 2 ? "jv-on" : ""}>N2 · respuesta</span>
               <span className={nivel === 3 ? "jv-on" : ""}>N3 · hace cambios</span>
             </div>
-            <form className="jv-ask" onSubmit={(e) => { e.preventDefault(); void procesar(texto); }}>
+            <form className="jv-ask" onSubmit={(e) => { e.preventDefault(); prepararAudio(); void procesar(texto); }}>
               <label htmlFor="jarvis-pedido" className="sr-only">Pídele algo a Jarvis</label>
               <input id="jarvis-pedido" className="jv-in" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Pídele algo a Jarvis…" autoComplete="off" disabled={ocupado} enterKeyHint="send" />
               <button type="button" className="jv-mic" aria-pressed={estado === "escuchando"} disabled={ocupado} onClick={() => void microfono()} aria-label={estado === "escuchando" ? "Dejar de escuchar" : "Hablar"}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{ICONOS.oido}</svg>
               </button>
             </form>
-            {!dicho && <div className="jv-sug">{sugerencias.map((s) => <button key={s} type="button" onClick={() => void procesar(s)}>{s}</button>)}</div>}
+            {!dicho && <div className="jv-sug">{sugerencias.map((s) => <button key={s} type="button" onClick={() => { prepararAudio(); void procesar(s); }}>{s}</button>)}</div>}
             <p className="jv-detail" aria-live="polite">{detalle.t && <><b>{detalle.t}</b> · </>}{detalle.d}</p>
           </div>
         </div>

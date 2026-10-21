@@ -11,6 +11,8 @@ export type Vivo = {
   finArrastre: number;
   /** true: el núcleo muestra el símbolo de Pime en vez de la esfera. */
   logo: boolean;
+  /** Volumen de la voz de Jarvis (0 a 1) mientras habla; la esfera respira con él. */
+  nivelVoz?: () => number;
 };
 type Ancla = { id: string; x: number; y: number; z: number; color: string };
 
@@ -209,7 +211,7 @@ export function iniciarEsfera({ lienzo, escenario, vivo, conexiones, memoria }: 
     // Símbolo al cargar (3 s) y siempre que el modo Logo esté encendido.
     const objetivo = t < 3 || v.logo ? 0 : 1;
     morf += (objetivo - morf) * (quieto ? 1 : 0.05);
-    const amp = v.estado === "hablando" ? 0.1 : v.estado === "escuchando" ? 0.07 : v.estado === "pensando" || v.estado === "transcribiendo" ? 0.04 : 0.012;
+    const amp = v.estado === "hablando" ? 0.03 + 0.16 * (v.nivelVoz?.() ?? 0.5) : v.estado === "escuchando" ? 0.07 : v.estado === "pensando" || v.estado === "transcribiendo" ? 0.04 : 0.012;
     const lit = new Set(v.encendidos); if (v.hover) lit.add(v.hover);
     const hayLuz = lit.size > 0;
     const abre = (Math.sin(t * 1.3) * 0.5 + 0.5) * 0.1, RL = RS * 0.86;
