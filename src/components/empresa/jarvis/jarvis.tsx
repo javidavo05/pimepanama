@@ -20,6 +20,9 @@ type Mensaje = { rol: "usuario" | "asistente"; texto: string };
 type Estado = "espera" | "escuchando" | "transcribiendo" | "pensando" | "hablando";
 type Memoria = { nodos: number; aristas: number; areas: { id: string; n: number; top: string[] }[]; links: [string, string, number][] };
 
+/** Nombre visible de un área de código: con mayúscula y las siglas como siglas. */
+const SIGLAS: Record<string, string> = { crm: "CRM", pdf: "PDF", github: "GitHub" };
+const etiqueta = (s: string) => SIGLAS[s.toLowerCase()] ?? s.charAt(0).toUpperCase() + s.slice(1);
 const NOMBRES: Record<Estado, string> = { espera: "En espera", escuchando: "Escuchando", transcribiendo: "Pasando tu voz a texto", pensando: "Pensando", hablando: "Respondiendo" };
 
 const ICONOS: Record<string, ReactNode> = {
@@ -87,7 +90,10 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
   const [completa, setCompleta] = useState(false);
   const [vozActiva, setVozActiva] = useState(true);
   const [hora, setHora] = useState("");
-  const vivo = useRef<Vivo>({ estado: "espera", encendidos: [], hover: null, modo: "conexiones", finArrastre: 0 });
+  const vivo = useRef<Vivo>({ estado: "espera", encendidos: [], hover: null, modo: "conexiones", finArrastre: 0, logo: false });
+  const [logo, setLogo] = useState(false);
+  useEffect(() => { try { if (localStorage.getItem("jarvis-logo") === "1") setLogo(true); } catch { /* sin almacenamiento */ } }, []);
+  useEffect(() => { vivo.current.logo = logo; }, [logo]);
   const rec = useRef<MediaRecorder | null>(null);
   const trozos = useRef<Blob[]>([]);
 
@@ -233,7 +239,7 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
   const N = conexiones.length;
   const posicion = (i: number) => { const p = posicionEnAnillo(i, N); return { left: `${p.x}%`, top: `${p.y}%` }; };
   const areas = memoria?.areas ?? [];
-  const posArea = (i: number) => { const p = posicionEnAnillo(i, areas.length, 45); return { left: `${p.x}%`, top: `${p.y}%` }; };
+  const posArea = (i: number) => { const p = posicionEnAnillo(i, areas.length, i % 2 ? 37 : 45); return { left: `${p.x}%`, top: `${p.y}%` }; };
   const maxN = areas[0]?.n ?? 1;
   const ocupado = estado === "pensando" || estado === "transcribiendo";
   const sugerencias = ["¿Qué tengo hoy?", "¿Quién me debe dinero?", "Abre los leads"];
@@ -265,7 +271,10 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
               <button type="button" aria-pressed={modo === "memoria"} onClick={() => { setModo("memoria"); setDetalle({ t: "Memoria", d: `El código de Pime mapeado con Graphify: ${memoria.nodos.toLocaleString("es-PA")} piezas y ${memoria.aristas.toLocaleString("es-PA")} conexiones, agrupadas por área. Toca un área.` }); }}>Memoria</button>
             </div>
           )}
-          <button type="button" className="jv-ib" aria-pressed={vozActiva} onClick={() => { const v = !vozActiva; setVozActiva(v); try { localStorage.setItem("jarvis-voz", v ? "1" : "0"); if (!v) window.speechSynthesis?.cancel(); } catch { /* sin almacenamiento */ } }} aria-label={vozActiva ? "Apagar la voz de Jarvis" : "Encender la voz de Jarvis"}>
+          <button type="button" className="jv-ib" aria-pressed={logo} onClick={() => { const v = !logo; setLogo(v); try { localStorage.setItem("jarvis-logo", v ? "1" : "0"); } catch { /* sin almacenamiento */ } }} aria-label={logo ? "Volver a la esfera" : "Mostrar el logo de Pime"}>
+            <svg viewBox="0 0 100 100" aria-hidden><g fill="none" stroke="currentColor" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round"><path d="M20 72 50 84 80 72" /><path d="M20 54 50 66 80 54" /><path d="M20 36 50 16 80 36 50 48Z" fill="currentColor" /></g></svg><span className="jv-lbl">{logo ? "Esfera" : "Logo"}</span>
+          </button>
+                    <button type="button" className="jv-ib" aria-pressed={vozActiva} onClick={() => { const v = !vozActiva; setVozActiva(v); try { localStorage.setItem("jarvis-voz", v ? "1" : "0"); if (!v) window.speechSynthesis?.cancel(); } catch { /* sin almacenamiento */ } }} aria-label={vozActiva ? "Apagar la voz de Jarvis" : "Encender la voz de Jarvis"}>
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{vozActiva ? ICONOS.voz : <><path d="M4 10v4h4l5 4V6L8 10Z" /><path d="m17 9 4 6M21 9l-4 6" /></>}</svg><span className="jv-lbl">{vozActiva ? "Voz" : "Sin voz"}</span>
           </button>
           <button type="button" className="jv-ib jv-fs" aria-pressed={completa} onClick={() => setCompleta((c) => !c)}>
@@ -294,13 +303,13 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
             ))}
             {areas.map((a, i) => {
               const sz = Math.round(8 + 16 * Math.sqrt(a.n / maxN));
-              const cruces = (memoria?.links ?? []).filter((l) => l[0] === a.id || l[1] === a.id).slice(0, 3).map((l) => `${l[0] === a.id ? l[1] : l[0]} (${l[2]})`);
+              const cruces = (memoria?.links ?? []).filter((l) => l[0] === a.id || l[1] === a.id).slice(0, 3).map((l) => `${etiqueta(l[0] === a.id ? l[1] : l[0])} (${l[2]})`);
               return (
-                <button key={a.id} type="button" className={`jv-mnode${encendidos.includes(`m:${a.id}`) ? " jv-on" : ""}`} data-ancla={`m:${a.id}`} style={posArea(i)} aria-label={`${a.id}: ${a.n} piezas de código`}
+                <button key={a.id} type="button" className={`jv-mnode${encendidos.includes(`m:${a.id}`) ? " jv-on" : ""}`} data-ancla={`m:${a.id}`} data-chico={i >= 8 || i % 2 === 1 ? "1" : "0"} style={posArea(i)} aria-label={`${etiqueta(a.id)}: ${a.n} piezas de código`}
                   onMouseEnter={() => { vivo.current.hover = `m:${a.id}`; }} onMouseLeave={() => { vivo.current.hover = null; }}
-                  onClick={() => { setEncendidos([`m:${a.id}`]); setDetalle({ t: a.id, d: `${a.n.toLocaleString("es-PA")} piezas de código. Lo más conectado: ${a.top.join(", ")}.${cruces.length ? ` Se cruza con ${cruces.join(", ")}.` : ""}` }); }}>
+                  onClick={() => { setEncendidos([`m:${a.id}`]); setDetalle({ t: etiqueta(a.id), d: `${a.n.toLocaleString("es-PA")} piezas de código. Lo más conectado: ${a.top.join(", ")}.${cruces.length ? ` Se cruza con ${cruces.join(", ")}.` : ""}` }); }}>
                   <span className="jv-mdot" style={{ width: sz, height: sz }} />
-                  <span className="jv-nl">{a.id}</span>
+                  <span className="jv-nl">{etiqueta(a.id)}</span>
                   <span className="jv-ns">{a.n.toLocaleString("es-PA")}</span>
                 </button>
               );

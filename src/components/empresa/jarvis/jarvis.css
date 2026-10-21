@@ -222,3 +222,12 @@ html[data-theme="light"] .jv-node .jv-hex::after { background: #ffffff }
 .jv-titulo { margin-top: 8px; display: grid; justify-items: center; gap: 4px; pointer-events: none; text-align: center; white-space: nowrap }
 .jv-titulo span { font-size: clamp(28px, 7cqw, 56px); font-weight: 700; letter-spacing: .28em; margin-right: -.28em; line-height: 1; color: var(--jv-fg); text-shadow: 0 0 24px rgb(var(--jv-rgb) / .45) }
 .jv-titulo small { font-size: 12px; letter-spacing: .14em; color: var(--jv-dim) }
+
+/* En el teléfono: Cobrar, Logo y Voz en una fila; Conexiones/Memoria debajo a lo ancho. */
+@container (max-width: 599px) {
+  .jv-tools { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 8px }
+  .jv-tools > .jv-seg { grid-column: 1 / -1; order: 5; display: flex }
+  .jv-tools > .jv-seg button { flex: 1 }
+}
+/* En pantallas angostas, las áreas chicas de la Memoria muestran solo su punto: el nombre sale al tocarlas. */
+@container (max-width: 759px) { .jv-mnode[data-chico="1"] .jv-nl { display: none } }

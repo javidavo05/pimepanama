@@ -9,6 +9,8 @@ export type EstadoEsfera = "espera" | "escuchando" | "transcribiendo" | "pensand
 export type Vivo = {
   estado: EstadoEsfera; encendidos: string[]; hover: string | null; modo: "conexiones" | "memoria";
   finArrastre: number;
+  /** true: el núcleo muestra el símbolo de Pime en vez de la esfera. */
+  logo: boolean;
 };
 type Ancla = { id: string; x: number; y: number; z: number; color: string };
 
@@ -89,7 +91,7 @@ export function iniciarEsfera({ lienzo, escenario, vivo, conexiones, memoria }: 
     ];
 
   // ── Puntos de la red ──
-  const NP = Math.min(720, Math.max(380, Math.round((escenario.clientWidth || 600) * 0.95)));
+  const NP = Math.min(900, Math.max(560, Math.round((escenario.clientWidth || 600) * 1.2)));
   const sx = new Float32Array(NP), sy = new Float32Array(NP), sz = new Float32Array(NP);
   const lx = new Float32Array(NP), ly = new Float32Array(NP), capa = new Uint8Array(NP);
   const dueno = new Int16Array(NP), retraso = new Float32Array(NP), tam = new Float32Array(NP), fase = new Float32Array(NP);
@@ -183,12 +185,13 @@ export function iniciarEsfera({ lienzo, escenario, vivo, conexiones, memoria }: 
     g.addColorStop(0, `rgb(${BASE} / ${claro ? 0.1 : 0.18})`); g.addColorStop(1, `rgb(${BASE} / 0)`);
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
 
-    const objetivo = t < 2.2 ? 0 : 1;
+    // Símbolo al cargar (3 s) y siempre que el modo Logo esté encendido.
+    const objetivo = t < 3 || v.logo ? 0 : 1;
     morf += (objetivo - morf) * (quieto ? 1 : 0.05);
     const amp = v.estado === "hablando" ? 0.1 : v.estado === "escuchando" ? 0.07 : v.estado === "pensando" || v.estado === "transcribiendo" ? 0.04 : 0.012;
     const lit = new Set(v.encendidos); if (v.hover) lit.add(v.hover);
     const hayLuz = lit.size > 0;
-    const abre = (Math.sin(t * 1.3) * 0.5 + 0.5) * 0.09, RL = RS * 0.95;
+    const abre = (Math.sin(t * 1.3) * 0.5 + 0.5) * 0.1, RL = RS * 0.86;
     const logo = ["111 168 255", claro ? "31 91 255" : "76 125 255", claro ? "11 29 58" : "232 240 255"];
 
     // Posición de cada punto (símbolo → esfera) y el puntero que los aparta.
@@ -243,6 +246,23 @@ export function iniciarEsfera({ lienzo, escenario, vivo, conexiones, memoria }: 
       });
     }
 
+    // El símbolo de Pime, sólido y con brillo, debajo de los puntos mientras está formado.
+    if (morf < 0.7) {
+      const fuerza = Math.min(1, (0.7 - morf) / 0.5), esc = RL / 34, ox = cx - 50 * esc, oy = cy - 50 * esc;
+      const vaiven = Math.cos(Math.sin(t * 0.6) * 0.35);
+      const P = (x: number, y: number, dy: number) => [cx + (x - 50) * esc * vaiven, oy + (y + dy * 34) * esc] as const;
+      ctx.save();
+      ctx.lineCap = "round"; ctx.lineJoin = "round"; ctx.lineWidth = 8 * esc;
+      ctx.shadowBlur = 28; ctx.shadowColor = `rgb(${logo[0]} / ${0.6 * fuerza})`;
+      ctx.globalAlpha = (claro ? 0.55 : 0.45) * fuerza;
+      const capaRuta = (pts: [number, number][], dy: number, cerrar: boolean) => { ctx.beginPath(); pts.forEach(([x, y], k) => { const [a, b] = P(x, y, dy); if (k === 0) ctx.moveTo(a, b); else ctx.lineTo(a, b); }); if (cerrar) ctx.closePath(); };
+      capaRuta([[20, 72], [50, 84], [80, 72]], abre, false); ctx.strokeStyle = `rgb(${logo[2]})`; ctx.stroke();
+      capaRuta([[20, 54], [50, 66], [80, 54]], 0, false); ctx.strokeStyle = `rgb(${logo[1]})`; ctx.stroke();
+      capaRuta([[20, 36], [50, 16], [80, 36], [50, 48]], -abre, true); ctx.fillStyle = `rgb(${logo[0]})`; ctx.strokeStyle = `rgb(${logo[0]})`; ctx.fill(); ctx.stroke();
+      ctx.restore();
+      void ox;
+    }
+
     // Puntos.
     ctx.save();
     if (!claro) ctx.globalCompositeOperation = "lighter";
@@ -253,7 +273,7 @@ export function iniciarEsfera({ lienzo, escenario, vivo, conexiones, memoria }: 
       const fondo = (pz[i] + 1) / 2;
       let a = (0.55 + 0.45 * Math.sin(t * 2 + fase[i])) * (e > 0.5 ? 0.35 + 0.65 * fondo : 1);
       if (hayLuz && e > 0.5) a *= suyo ? 1.4 : 0.5;
-      const s = tam[i] * (e > 0.5 ? 0.6 + 0.6 * fondo : 1) * (suyo ? 1.5 : 1);
+      const s = tam[i] * (e > 0.5 ? 0.6 + 0.6 * fondo : 1.25) * (suyo ? 1.5 : 1);
       ctx.fillStyle = `rgb(${color} / ${Math.min(1, a).toFixed(2)})`;
       ctx.beginPath(); ctx.arc(px[i], py[i], s, 0, 6.283); ctx.fill();
     }
@@ -263,7 +283,7 @@ export function iniciarEsfera({ lienzo, escenario, vivo, conexiones, memoria }: 
     const caja = escenario.getBoundingClientRect();
     for (const el of nodos) {
       const id = el.dataset.ancla ?? ""; const k = idx.get(id); if (k === undefined) continue;
-      el.style.opacity = morf < 0.4 ? "0" : "1";
+      el.style.opacity = morf < 0.4 && t < 3 ? "0" : morf < 0.4 ? "0.55" : "1";
       if (morf < 0.6) continue;
       const A = anclas[k], p = proy(A.x, A.y, A.z, 1.0);
       const hx = el.querySelector<HTMLElement>(".jv-hex, .jv-mdot")?.getBoundingClientRect() ?? el.getBoundingClientRect();
