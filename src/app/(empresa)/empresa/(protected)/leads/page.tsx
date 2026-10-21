@@ -7,6 +7,7 @@ import { LeadsView } from "./leads-view";
 import { PageHeader, btn, seg } from "@/components/empresa/page-header";
 import { RespuestasView } from "./respuestas-view";
 import { respuestasDelPanel, buzonesParaEnviar } from "@/lib/leads/respuestas";
+import { estadoEnvio } from "@/lib/leads/envio-automatico";
 import { puedeVer } from "@/lib/auth/permisos";
 import { fechaCorta } from "@/lib/format-datetime";
 import type { SolicitudCotizacion } from "@/lib/mail/ai-analyze";
@@ -21,10 +22,11 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
   const vistaRespuestas = (await searchParams).vista === "respuestas";
 
   const veCorreos = puedeVer(user.miembro.area, "correos");
-  const [porRevisar, respuestas, buzones] = await Promise.all([
+  const [porRevisar, respuestas, buzones, envio] = await Promise.all([
     prisma.respuestaLead.count({ where: { userId: user.id, estado: { in: ["borrador", "fallo"] } } }).catch(() => 0),
     vistaRespuestas ? respuestasDelPanel(user.id).catch((e) => { console.error("[leads] respuestas", e); return null; }) : Promise.resolve(null),
     vistaRespuestas ? buzonesParaEnviar(user.id, user.miembro.email).catch(() => []) : Promise.resolve([]),
+    vistaRespuestas ? estadoEnvio(user.id).catch(() => null) : Promise.resolve(null),
   ]);
 
   const pestanas = (
@@ -55,7 +57,7 @@ export default async function LeadsPage({ searchParams }: { searchParams: Promis
         {encabezado}
         {pestanas}
         {respuestas ? (
-          <RespuestasView inicial={respuestas} buzones={buzones} />
+          <RespuestasView inicial={respuestas} buzones={buzones} envioInicial={envio} />
         ) : (
           <div className="rounded-xl border border-danger/25 bg-danger/[0.08] px-6 py-12 text-center" role="alert">
             <p className="text-sm font-medium text-danger">No se pudieron cargar las respuestas.</p>

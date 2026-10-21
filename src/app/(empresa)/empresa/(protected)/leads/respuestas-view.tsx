@@ -6,9 +6,12 @@ import { btn, seg } from "@/components/empresa/page-header";
 import { campo } from "@/components/empresa/clientes/formularios";
 import { chip, fechaHora } from "@/components/empresa/crm-ficha/comun";
 import { faltaParaEnviar, propuestaAlDia, type RespuestaVista } from "@/lib/leads/respuestas-comun";
+import type { EstadoEnvio } from "@/lib/leads/envio-automatico";
 import {
+  agendarRespuestasAction,
   descartarRespuestaAction,
   enviarRespuestasAction,
+  estadoEnvioAction,
   guardarRespuestaAction,
   marcarLinkedinAction,
   prepararPropuestaAction,
@@ -53,7 +56,24 @@ function Celda({ titulo, tono, texto, children }: { titulo: string; tono: Tono; 
   );
 }
 
+/** «2026-11-03» → «3 nov». */
+const diaCorto = (d: string) => new Date(`${d}T12:00:00`).toLocaleDateString("es-PA", { day: "numeric", month: "short" });
+
+/** Cuántas de `n` salen hoy con el cupo que queda; el resto va a la cola de los días siguientes. */
+function repartir(n: number, envio: EstadoEnvio | null): { hoy: number; agendar: number } {
+  const hoy = envio && !envio.pausado ? Math.min(n, envio.restantesHoy) : envio ? 0 : n;
+  return { hoy, agendar: n - hoy };
+}
+
+function textoEnviar({ hoy, agendar }: { hoy: number; agendar: number }, todas: boolean): string {
+  if (!hoy && !agendar) return "Nada para enviar";
+  if (!agendar) return hoy === 1 ? "Enviar 1 correo" : todas ? `Enviar los ${hoy} pendientes` : `Enviar ${hoy} correos`;
+  if (!hoy) return agendar === 1 ? "Agendar 1 correo" : `Agendar ${agendar} correos`;
+  return `Enviar ${hoy} hoy y agendar ${agendar}`;
+}
+
 function estadoCorreo(r: RespuestaVista): { tono: Tono; texto: string } {
+  if (r.estado === "borrador" && r.aprobadaAt) return { tono: "pendiente", texto: "Agendado" };
   if (r.estado === "enviada") return { tono: "ok", texto: r.enviadaAt ? `Enviado ${fechaHora(r.enviadaAt, false)}` : "Enviado" };
   if (r.estado === "descartada") return { tono: "neutro", texto: "Descartado" };
   if (r.estado === "fallo") return { tono: "falta", texto: "No salió" };
@@ -106,8 +126,10 @@ const TODAS = "__todas__";
 /** enviarRespuestasAction toma hasta 50 por llamada. */
 const POR_LLAMADA = 50;
 
-export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]; buzones: Buzon[] }) {
+export function RespuestasView({ inicial, buzones, envioInicial }: { inicial: RespuestaVista[]; buzones: Buzon[]; envioInicial: EstadoEnvio | null }) {
   const [respuestas, setRespuestas] = useState(inicial);
+  // Cupo diario y cola del envío automático (src/lib/leads/envio-automatico.ts). Los envíos en grupo lo respetan.
+  const [envio, setEnvio] = useState(envioInicial);
   const [filtro, setFiltro] = useState<Filtro>(inicial.some((r) => enFiltro(r, "revisar")) ? "revisar" : "todas");
   const [buzonId, setBuzonId] = useState(buzones[0]?.id ?? "");
   const [abierta, setAbierta] = useState<string | null>(null);
@@ -140,7 +162,9 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
   // Lo pendiente de todas las tandas, sin importar el filtro: lo que el par de botones de arriba resuelve de una vez.
   const abiertasTodas = respuestas.filter((r) => r.estado === "borrador" || r.estado === "fallo");
   const porPrepararTodas = abiertasTodas.filter((r) => conCambios(r).adjuntarPdf && !propuestaAlDia(conCambios(r)));
-  const porEnviarTodas = abiertasTodas.filter((r) => !faltaParaEnviar(conCambios(r)) && !quitadas.has(r.id));
+  // Las agendadas ya tienen su día: no entran a los envíos en grupo.
+  const porEnviarTodas = abiertasTodas.filter((r) => !faltaParaEnviar(conCambios(r)) && !quitadas.has(r.id) && !r.aprobadaAt);
+  const repartoTodas = repartir(porEnviarTodas.length, envio);
   const sinCorreoTodas = abiertasTodas.filter((r) => !conCambios(r).para?.trim()).length;
   const tandasPorEnviar = new Set(porEnviarTodas.map((r) => r.lote)).size;
 
@@ -161,15 +185,38 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
     return null;
   }
 
-  async function enviar(lote: string, ids: string[]) {
+  /**
+   * En grupo, salen hoy las que caben en el cupo del día y el resto queda agendado para los días siguientes. Una sola
+   * (desde «Revisar») sale siempre.
+   */
+  async function enviar(lote: string, todas: string[]) {
     if (!buzon) return setAviso({ tipo: "error", texto: "Conecta un buzón en Correos para poder enviar." });
     setConfirmar(null);
     setAviso(null);
     setOcupado({ lote, texto: "Guardando cambios…" });
-    const errGuardar = await guardarSiHaceFalta(ids);
+    const errGuardar = await guardarSiHaceFalta(todas);
     if (errGuardar) {
       setOcupado(null);
       return setAviso({ tipo: "error", texto: errGuardar });
+    }
+    const { hoy } = todas.length > 1 ? repartir(todas.length, envio) : { hoy: 1 };
+    const ids = todas.slice(0, hoy), resto = todas.slice(hoy);
+    let agendadas = 0;
+    if (resto.length) {
+      setOcupado({ lote, texto: `Agendando ${resto.length === 1 ? "1 correo" : `${resto.length} correos`}…` });
+      const a = await agendarRespuestasAction(resto).catch(() => null);
+      if (!a?.ok) {
+        setOcupado(null);
+        return setAviso({ tipo: "error", texto: a && !a.ok ? a.error : "Se cortó la conexión al agendar. No salió nada; vuelve a intentar." });
+      }
+      reemplazar(a.dato.respuestas);
+      setEnvio(a.dato.envio);
+      agendadas = resto.length;
+    }
+    const cola = agendadas ? ` ${agendadas === 1 ? "1 quedó agendado" : `${agendadas} quedaron agendados`} para los próximos días.` : "";
+    if (!ids.length) {
+      setOcupado(null);
+      return setAviso({ tipo: "ok", texto: `Listo:${cola} Hoy ya se usó el cupo de envío.` });
     }
     let faltan = ids, enviadas = 0;
     const fallos: string[] = [];
@@ -187,10 +234,11 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
       fallos.push("Se cortó la conexión. Lo que ya salió quedó marcado como enviado; vuelve a intentar con el resto.");
     }
     setOcupado(null);
+    estadoEnvioAction().then(setEnvio).catch(() => undefined);
     if (fallos.length) {
-      setAviso({ tipo: "error", texto: `Salieron ${enviadas} de ${ids.length}. ${fallos[0]}${fallos.length > 1 ? ` (y ${fallos.length - 1} más: mira las marcadas «No salió»)` : ""}` });
+      setAviso({ tipo: "error", texto: `Salieron ${enviadas} de ${ids.length}.${cola} ${fallos[0]}${fallos.length > 1 ? ` (y ${fallos.length - 1} más: mira las marcadas «No salió»)` : ""}` });
     } else {
-      setAviso({ tipo: "ok", texto: enviadas === 1 ? `Listo: salió 1 correo desde ${buzon.username}.` : `Listo: salieron ${enviadas} correos desde ${buzon.username}.` });
+      setAviso({ tipo: "ok", texto: `${enviadas === 1 ? `Listo: salió 1 correo desde ${buzon.username}.` : `Listo: salieron ${enviadas} correos desde ${buzon.username}.`}${cola}` });
     }
   }
 
@@ -272,6 +320,15 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
                 {" · "}{porEnviarTodas.length === 1 ? "1 correo listo" : `${porEnviarTodas.length} correos listos`}
                 {sinCorreoTodas > 0 && ` · ${sinCorreoTodas} sin correo: escríbelo en «Revisar» para poder enviarlo`}
               </p>
+              {envio && (
+                <p className={`mt-2 text-sm ${envio.pausado ? "text-warn" : "text-fg-dim"}`}>
+                  {envio.pausado
+                    ? `Envío automático en pausa: ${envio.pausado}`
+                    : `Envío automático: hoy ${envio.usados} de ${envio.delDia}`}
+                  {envio.enCola > 0 && ` · ${envio.enCola} agendados`}
+                  {envio.seVaciaEl && !envio.pausado && `, salen todos para el ${diaCorto(envio.seVaciaEl)}`}
+                </p>
+              )}
             </div>
             <div className="grid gap-2 sm:grid-cols-2 lg:flex">
               <button type="button" disabled={!!ocupado || !porPrepararTodas.length} onClick={() => prepararPropuestas(TODAS, porPrepararTodas.map((r) => r.id))} className={btn.secondary}>
@@ -279,7 +336,7 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
               </button>
               <button type="button" disabled={!!ocupado || !porEnviarTodas.length || !buzon} onClick={() => setConfirmar(TODAS)}
                 className={tandasPorEnviar > 1 ? btn.primary : btn.secondary}>
-                {!porEnviarTodas.length ? "Nada pendiente de enviar" : porEnviarTodas.length === 1 ? "Enviar 1 correo pendiente" : `Enviar los ${porEnviarTodas.length} pendientes`}
+                {!porEnviarTodas.length ? "Nada pendiente de enviar" : textoEnviar(repartoTodas, true)}
               </button>
             </div>
           </div>
@@ -292,8 +349,9 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
               ) : (
                 <div className="grid gap-4 sm:flex sm:items-center sm:justify-between">
                   <p className="text-sm text-fg-mute">
-                    Van a salir {porEnviarTodas.length === 1 ? "1 correo" : `${porEnviarTodas.length} correos`} de {tandasPorEnviar === 1 ? "1 tanda" : `${tandasPorEnviar} tandas`} desde <strong className="text-fg">{buzon?.username}</strong>
-                    {porEnviarTodas.some((r) => conCambios(r).adjuntarPdf) ? ", con la propuesta en PDF donde está marcada" : ""}.
+                    {repartoTodas.hoy > 0 && <>Hoy salen {repartoTodas.hoy === 1 ? "1 correo" : `${repartoTodas.hoy} correos`} de {tandasPorEnviar === 1 ? "1 tanda" : `${tandasPorEnviar} tandas`} desde <strong className="text-fg">{buzon?.username}</strong>
+                    {porEnviarTodas.some((r) => conCambios(r).adjuntarPdf) ? ", con la propuesta en PDF donde está marcada" : ""}.</>}
+                    {repartoTodas.agendar > 0 && ` ${repartoTodas.agendar === 1 ? "1 queda agendado" : `${repartoTodas.agendar} quedan agendados`} y salen solos con el cupo de los próximos días (hoy ${envio?.delDia ?? 0} al día, sube hasta 40), por orden de llegada.`}
                     {porPrepararTodas.some((r) => porEnviarTodas.includes(r)) ? " Los PDF que falten se arman al enviar, sin reescribir el correo: si quieres el correo que presenta la propuesta, prepara todo primero." : ""}
                   </p>
                   <div className="grid grid-flow-col auto-cols-fr gap-2 sm:flex">
@@ -325,7 +383,8 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
       ) : (
         lotes.map(({ lote, filas, desde }) => {
           const listas = filas.filter((r) => !faltaParaEnviar(conCambios(r)));
-          const elegidas = listas.filter((r) => !quitadas.has(r.id));
+          const elegidas = listas.filter((r) => !quitadas.has(r.id) && !r.aprobadaAt);
+          const repartoLote = repartir(elegidas.length, envio);
           // Todas las que siguen abiertas y no tienen propuesta, tengan o no correo.
           // Sin PDF o con un PDF que ya no coincide con el correo.
           const sinPropuesta = filas.filter((r) => !propuestaAlDia(conCambios(r)) && (r.estado === "borrador" || r.estado === "fallo"));
@@ -351,7 +410,7 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
                       </button>
                       <button type="button" disabled={!!ocupado || !elegidas.length || !buzon} onClick={() => setConfirmar(lote)}
                         className={lote === lotePrincipal ? btn.primary : btn.secondary}>
-                        {!elegidas.length ? "Nada para enviar" : elegidas.length === 1 ? "Enviar 1 correo" : `Enviar ${elegidas.length} correos`}
+                        {textoEnviar(repartoLote, false)}
                       </button>
                     </div>
                   )}
@@ -374,8 +433,9 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
                   ) : (
                     <div className="grid gap-4 sm:flex sm:items-center sm:justify-between">
                       <p className="text-sm text-fg-mute">
-                        Van a salir {elegidas.length === 1 ? "1 correo" : `${elegidas.length} correos`} desde <strong className="text-fg">{buzon?.username}</strong>
-                        {elegidas.some((r) => conCambios(r).adjuntarPdf) ? ", con la propuesta en PDF donde está marcada" : ""}. Cada uno queda en Enviados y en la ficha del lead.
+                        {repartoLote.hoy > 0 && <>Hoy salen {repartoLote.hoy === 1 ? "1 correo" : `${repartoLote.hoy} correos`} desde <strong className="text-fg">{buzon?.username}</strong>
+                        {elegidas.some((r) => conCambios(r).adjuntarPdf) ? ", con la propuesta en PDF donde está marcada" : ""}. Cada uno queda en Enviados y en la ficha del lead.</>}
+                        {repartoLote.agendar > 0 && ` ${repartoLote.agendar === 1 ? "1 queda agendado" : `${repartoLote.agendar} quedan agendados`} para los próximos días, con el cupo diario.`}
                       </p>
                       <div className="grid grid-flow-col auto-cols-fr gap-2 sm:flex">
                         <button type="button" onClick={() => setConfirmar(null)} className={btn.secondary}>Cancelar</button>
@@ -410,7 +470,7 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
                     <li key={r.id}>
                       <div className={`grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-4 px-4 py-4 sm:px-6 xl:items-center xl:gap-y-0 ${COLUMNAS}`}>
                         <div className="flex min-h-11 items-center">
-                          {falta ? (
+                          {falta || r.aprobadaAt ? (
                             <span className="block size-5" aria-hidden />
                           ) : (
                             // La caja mide 20 px; la etiqueta da los 44 px de toque.
@@ -519,6 +579,19 @@ function Detalle({ r, editable, ocupado, puedeEnviar, onCambio, onActualizada, o
       <div className="grid content-start gap-4 min-w-0">
         <h3 className="text-fg text-sm font-semibold">Correo</h3>
         {r.estado === "fallo" && r.error && <p className="text-sm text-danger" role="alert">La última vez no salió: {r.error}</p>}
+        {r.estado === "borrador" && r.error && <p className="text-sm text-warn" role="status">No salió solo. {r.error.replace(/^Revisión automática: /, "")}</p>}
+        {r.estado === "borrador" && r.aprobadaAt && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-warn/30 bg-warn/10 px-4 py-2 text-sm text-warn">
+            <span>Agendado el {fechaHora(r.aprobadaAt, false)}: sale solo con el cupo diario.</span>
+            <button type="button" disabled={bloqueado} className={botonTexto}
+              onClick={() => correr("cola", async () => {
+                const a = await agendarRespuestasAction([r.id], true);
+                return a.ok ? { ok: true as const, dato: a.dato.respuestas[0] } : a;
+              }, "Salió de la cola: ya no se envía solo.")}>
+              Sacar de la cola
+            </button>
+          </div>
+        )}
         <div>
           <label htmlFor={f("para")} className={etiqueta}>Para</label>
           <input id={f("para")} type="email" inputMode="email" autoComplete="off" disabled={!editable} value={valores.para}

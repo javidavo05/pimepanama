@@ -36,6 +36,8 @@ export type RespuestaVista = {
   enviadaAt: string | null;
   correoId: string | null;
   linkedinAt: string | null;
+  /** En la cola del envío automático desde esta fecha (migración 0065). */
+  aprobadaAt: string | null;
   tienePropuesta: boolean;
   /** huellaCorreo del correo del que salió la propuesta (null en las anteriores al 2026-10-22). */
   propuestaFuente: string | null;

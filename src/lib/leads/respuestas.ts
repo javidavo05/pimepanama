@@ -2,7 +2,8 @@
  * Respuestas a leads por tandas (migración 0063). El agente de prospección deja, por cada lead, un correo y un
  * mensaje de LinkedIn redactados; aquí se leen, se les arma la propuesta en PDF y se envían desde un buzón de Pime.
  *
- * Nada sale solo: cada envío lo dispara alguien del equipo desde /empresa/leads: la IA sugiere, no envía.
+ * Salen desde /empresa/leads o, las que el agente aprueba y pasan la revisión, solas con el cupo diario
+ * (src/lib/leads/envio-automatico.ts, pedido de Javier del 2026-10-21).
  */
 import type { MailAccount, RespuestaLead } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -34,6 +35,7 @@ export function aVista(r: ConLead): RespuestaVista {
     enviadaAt: r.enviadaAt?.toISOString() ?? null,
     correoId: r.correoId,
     linkedinAt: r.linkedinAt?.toISOString() ?? null,
+    aprobadaAt: r.aprobadaAt?.toISOString() ?? null,
     tienePropuesta: leerPropuesta(r.propuesta) != null,
     propuestaFuente: leerPropuesta(r.propuesta)?.fuente ?? null,
     createdAt: r.createdAt.toISOString(),

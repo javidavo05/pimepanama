@@ -11,6 +11,7 @@ import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { puedeVer } from "@/lib/auth/permisos";
 import { asegurarPropuesta, enviarRespuesta, unaRespuesta, type RespuestaVista } from "@/lib/leads/respuestas";
 import { PropuestaError } from "@/lib/leads/propuesta-prospecto";
+import { agendar, estadoEnvio, type EstadoEnvio } from "@/lib/leads/envio-automatico";
 
 const TIEMPO_POR_LLAMADA_MS = 150_000;
 const CORREO_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -82,6 +83,25 @@ export async function prepararPropuestaAction(id: string, rehacer: boolean): Pro
     return { ok: false, error: e instanceof PropuestaError || e instanceof Error ? e.message : "No se pudo redactar la propuesta." };
   }
   return devolver(u.id, id);
+}
+
+/**
+ * Pone respuestas en la cola del envío automático: salen solas con el cupo de los días siguientes, por orden de
+ * llegada, desde javier@pimepanama.com. `quitar` las saca de la cola.
+ */
+export async function agendarRespuestasAction(ids: string[], quitar = false): Promise<Resultado<{ respuestas: RespuestaVista[]; envio: EstadoEnvio }>> {
+  const u = await usuario();
+  const lista = [...new Set(ids)].slice(0, 300);
+  if (quitar) await prisma.respuestaLead.updateMany({ where: { id: { in: lista }, userId: u.id, estado: "borrador" }, data: { aprobadaAt: null } });
+  else await agendar(u.id, lista);
+  const respuestas = (await Promise.all(lista.map((id) => unaRespuesta(u.id, id)))).filter((r): r is RespuestaVista => r != null);
+  revalidatePath("/empresa/leads");
+  return { ok: true, dato: { respuestas, envio: await estadoEnvio(u.id) } };
+}
+
+export async function estadoEnvioAction(): Promise<EstadoEnvio> {
+  const u = await usuario();
+  return estadoEnvio(u.id);
 }
 
 export type ResultadoEnvio = {

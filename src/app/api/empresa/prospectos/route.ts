@@ -15,16 +15,16 @@ export const runtime = "nodejs";
  * «prospectos»: no lee correo, clientes ni nada más del panel.
  *
  * GET  → lo que el agente necesita para no repetir: empresas, dominios y correos que ya están en el CRM o dados de baja.
- * POST → carga hasta 25 prospectos como Lead (fuente LLAMADA_FRIA, etiqueta «agente»), con el puntaje, las fuentes y
+ * POST → carga hasta 50 prospectos como Lead (fuente LLAMADA_FRIA, etiqueta «agente»), con el puntaje, las fuentes y
  *        los mensajes ya redactados en la nota y como RespuestaLead de la tanda del día (se revisan y envían desde
- *        /empresa/leads, pestaña Respuestas). No envía nada a nadie: Javier revisa y envía.
+ *        /empresa/leads, pestaña Respuestas). Esta ruta no envía: el agente aprueba después en prospectos/enviar.
  *
  * Correos a EE. UU. (CAN-SPAM): el borrador sale con la dirección física de Pime y el enlace de baja firmado; quien
  * se da de baja (BajaCorreo) no vuelve a entrar.
  */
 
 const DIRECCION = process.env.PIME_DIRECCION_POSTAL || "Pime Panamá · Coco Palace, Avenida Las Amapolas, Ciudad de Panamá, Panamá";
-const MAX = 25;
+const MAX = 50;
 
 const recorte = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
 const normal = (s: string) => s.trim().toLowerCase();
@@ -74,7 +74,7 @@ export const POST = withEmpresaRoute(async (request) => {
   const userId = await dueno(request);
   const body = (await request.json().catch(() => null)) as { prospectos?: Entrada[] } | null;
   const lista = Array.isArray(body?.prospectos) ? body!.prospectos.slice(0, MAX) : [];
-  if (!lista.length) return NextResponse.json({ error: "Falta «prospectos» (lista de 1 a 25)" }, { status: 400 });
+  if (!lista.length) return NextResponse.json({ error: "Falta «prospectos» (lista de 1 a 50)" }, { status: 400 });
 
   const [leads, bajas] = await Promise.all([
     prisma.lead.findMany({ where: { userId }, select: { company: true, email: true, notes: true } }),
@@ -89,7 +89,8 @@ export const POST = withEmpresaRoute(async (request) => {
   const site = getSiteUrl();
   const lote = loteDeAhora();
 
-  const creados: { id: string; empresa: string; puntaje: number }[] = [];
+  // respuestaId: lo que el agente aprueba después en /api/empresa/prospectos/enviar.
+  const creados: { id: string; empresa: string; puntaje: number; respuestaId: string | null; conCorreo: boolean }[] = [];
   const duplicados: string[] = [], deBaja: string[] = [], invalidos: string[] = [];
 
   for (const p of lista) {
@@ -107,6 +108,8 @@ export const POST = withEmpresaRoute(async (request) => {
     const razones = recorte(p.razones, 800);
     const fuentes = Array.isArray(p.fuentes) ? p.fuentes.filter((f): f is string => typeof f === "string").slice(0, 6).map((f) => f.slice(0, 300)) : [];
     const linkedin = recorte(p.perfilLinkedin, 300);
+    // Dónde está publicado el correo: el envío automático lo vuelve a buscar ahí antes de enviar.
+    const correoFuente = recorte(p.correoFuente, 300);
     const mensajeLinkedin = recorte(p.mensajeLinkedin, 1200);
     const correo = (p.correo && typeof p.correo === "object" ? p.correo : {}) as Entrada;
     const asunto = recorte(correo.asunto, 160);
@@ -122,6 +125,7 @@ export const POST = withEmpresaRoute(async (request) => {
     const nota = [
       `[${ahora()}] Agente de prospección · puntaje ${puntaje}/100 · ${mercado === "US" ? "EE. UU." : "Panamá"} · ${segmento}`,
       sitio ? `Sitio: ${sitio}` : "",
+      email && correoFuente ? `Correo visto en: ${correoFuente}` : "",
       linkedin ? `LinkedIn: ${linkedin}` : "",
       razones ? `Por qué encaja: ${razones}` : "",
       fuentes.length ? `Fuentes:\n${fuentes.map((f) => `- ${f}`).join("\n")}` : "",
@@ -147,15 +151,17 @@ export const POST = withEmpresaRoute(async (request) => {
       },
       select: { id: true },
     });
+    let respuestaId: string | null = null;
     if (cuerpo || mensajeLinkedin) {
-      await prisma.respuestaLead.create({
+      ({ id: respuestaId } = await prisma.respuestaLead.create({
         data: {
           userId, leadId: lead.id, lote, origen: "agente", idioma: mercado === "US" ? "en" : "es",
           para: email || null, asunto, cuerpo, mensajeLinkedin: mensajeLinkedin || null, linkedinUrl: linkedin || null,
         },
-      });
+        select: { id: true },
+      }));
     }
-    creados.push({ id: lead.id, empresa, puntaje });
+    creados.push({ id: lead.id, empresa, puntaje, respuestaId, conCorreo: !!(email && cuerpo) });
     empresas.add(normal(empresa));
     if (email) correos.add(email);
     if (dom) dominios.add(dom);
@@ -166,7 +172,7 @@ export const POST = withEmpresaRoute(async (request) => {
     await notifyUser({
       userId,
       title: `${creados.length} prospecto${creados.length === 1 ? "" : "s"} nuevo${creados.length === 1 ? "" : "s"} del agente`,
-      body: `${altos} con puntaje alto. Los correos y las propuestas esperan tu revisión en Respuestas.`,
+      body: `${altos} con puntaje alto. El agente los revisa y agenda los que están bien; el resto espera en Respuestas.`,
       link: "/empresa/leads?vista=respuestas",
       tag: "agente-prospeccion",
     });

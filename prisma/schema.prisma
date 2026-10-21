@@ -2163,9 +2163,12 @@ model RespuestaLead {
   /// Contenido de la propuesta en PDF (src/lib/leads/propuesta-prospecto.ts) (migración 0064).
   propuesta       Json?
   propuestaAt     DateTime?
+  /// El agente la aprobó para el envío automático: entra a la cola (migración 0065).
+  aprobadaAt      DateTime?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
   @@index([userId, lote])
+  @@index([userId, aprobadaAt])
   @@index([leadId])
 }
