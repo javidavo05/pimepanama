@@ -201,7 +201,7 @@ export function RespuestasView({ inicial, buzones, envioInicial }: { inicial: Re
     }
     const { hoy } = todas.length > 1 ? repartir(todas.length, envio) : { hoy: 1 };
     const ids = todas.slice(0, hoy), resto = todas.slice(hoy);
-    let agendadas = 0;
+    let agendadas = 0, sinPreparar = 0;
     if (resto.length) {
       setOcupado({ lote, texto: `Agendando ${resto.length === 1 ? "1 correo" : `${resto.length} correos`}…` });
       const a = await agendarRespuestasAction(resto).catch(() => null);
@@ -211,9 +211,11 @@ export function RespuestasView({ inicial, buzones, envioInicial }: { inicial: Re
       }
       reemplazar(a.dato.respuestas);
       setEnvio(a.dato.envio);
-      agendadas = resto.length;
+      agendadas = resto.length - a.dato.sinPreparar;
+      sinPreparar = a.dato.sinPreparar;
     }
-    const cola = agendadas ? ` ${agendadas === 1 ? "1 quedó agendado" : `${agendadas} quedaron agendados`} para los próximos días.` : "";
+    const cola = (agendadas ? ` ${agendadas === 1 ? "1 quedó agendado" : `${agendadas} quedaron agendados`} para los próximos días; antes de salir los revisa la IA verificadora.` : "")
+      + (sinPreparar ? ` ${sinPreparar === 1 ? "1 no se agendó" : `${sinPreparar} no se agendaron`}: primero prepara su propuesta y revísala («Preparar todo lo que falta»).` : "");
     if (!ids.length) {
       setOcupado(null);
       return setAviso({ tipo: "ok", texto: `Listo:${cola} Hoy ya se usó el cupo de envío.` });
@@ -351,7 +353,7 @@ export function RespuestasView({ inicial, buzones, envioInicial }: { inicial: Re
                   <p className="text-sm text-fg-mute">
                     {repartoTodas.hoy > 0 && <>Hoy salen {repartoTodas.hoy === 1 ? "1 correo" : `${repartoTodas.hoy} correos`} de {tandasPorEnviar === 1 ? "1 tanda" : `${tandasPorEnviar} tandas`} desde <strong className="text-fg">{buzon?.username}</strong>
                     {porEnviarTodas.some((r) => conCambios(r).adjuntarPdf) ? ", con la propuesta en PDF donde está marcada" : ""}.</>}
-                    {repartoTodas.agendar > 0 && ` ${repartoTodas.agendar === 1 ? "1 queda agendado" : `${repartoTodas.agendar} quedan agendados`} y salen solos con el cupo de los próximos días (hoy ${envio?.delDia ?? 0} al día, sube hasta 40), por orden de llegada.`}
+                    {repartoTodas.agendar > 0 && ` ${repartoTodas.agendar === 1 ? "1 queda agendado" : `${repartoTodas.agendar} quedan agendados`} y salen solos con el cupo de los próximos días (hoy ${envio?.delDia ?? 0} al día, sube hasta 40), por orden de llegada, después de que los revise la IA verificadora. Al agendar los apruebas tal como están: revisa antes el correo y el PDF.`}
                     {porPrepararTodas.some((r) => porEnviarTodas.includes(r)) ? " Los PDF que falten se arman al enviar, sin reescribir el correo: si quieres el correo que presenta la propuesta, prepara todo primero." : ""}
                   </p>
                   <div className="grid grid-flow-col auto-cols-fr gap-2 sm:flex">

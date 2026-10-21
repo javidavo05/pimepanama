@@ -65,8 +65,16 @@ export function leerPropuesta(valor: unknown): PropuestaProspecto | null {
   return r.success ? r.data : null;
 }
 
+/** Los casos que el agente de prospección puede citar (su prompt, 2026-10-19; permisos confirmados por Javier). */
+const CASOS_AGENTE = `- Svitzer (marítimo): IA que lee los reportes de laboratorio del aceite de su flota de remolcadores y alerta por motor.
+- UAPA Suite (Unión Adventista Panameña): gestión institucional, actas, propiedades, auditoría y app móvil.
+- AcademyX (academias deportivas): matrícula, cobros recurrentes con Yappy y control de morosidad.
+- Misaza (moda): tienda en línea con Yappy y PayPal; migración con 13.000 redirecciones sin perder Google.
+- B&B Real Estate (inmobiliaria): sitio en varios idiomas sincronizado con su inventario en Wasi.
+- John Henry (sastrería de lujo, Bogotá y Panamá): CRM de medidas, órdenes de taller y comisiones.`;
+
 /** Casos que se pueden nombrar. Grupo GRF nunca se nombra (decisión de Javier, 2026-10-19). */
-function casosNombrables(): string {
+export function casosNombrables(): string {
   return projects
     .filter((p) => p.client && !/grf/i.test(`${p.client} ${p.name}`) && ["produccion", "interno", "beta"].includes(p.status))
     .map((p) => `- ${p.client} (${p.industry}): ${p.tagline}`)
@@ -242,6 +250,7 @@ async function pedirJson<T>(
   operacion: string,
   maxTokens: number,
   validar: (v: unknown) => { success: true; data: T } | { success: false; error: { issues: unknown } },
+  esfuerzo: "low" | "medium" = "low",
 ): Promise<T> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new PropuestaError("Falta OPENAI_API_KEY en el servidor.");
@@ -252,7 +261,7 @@ async function pedirJson<T>(
     const resp = await openai.chat.completions.create({
       model: MODELO,
       messages: [{ role: "system", content: system }, { role: "user", content: user }],
-      reasoning_effort: "low",
+      reasoning_effort: esfuerzo,
       // Incluye el razonamiento del modelo, que también cuenta como salida.
       max_completion_tokens: maxTokens + 6000,
       response_format: { type: "json_object" },
@@ -277,4 +286,72 @@ async function pedirJson<T>(
     error = "La IA dejó la propuesta incompleta. Vuelve a intentarlo.";
   }
   throw new PropuestaError(error);
+}
+
+// ─── 3. Verificación independiente del correo final y la propuesta ──────────
+
+/** Todo el texto de una propuesta, en el orden del PDF y por sección, para leerlo de corrido. */
+export function textoDePropuesta(pr: PropuestaProspecto): string {
+  const c = pr.construiriamos;
+  const seccion = (titulo: string, lineas: string[]) => [`[${titulo}]`, ...lineas.filter(Boolean)].join("\n");
+  return [
+    seccion("Portada", [pr.eyebrow, pr.titulo, pr.subtitulo]),
+    seccion("Lo que vimos del prospecto", [pr.vimos.titulo, ...pr.vimos.tarjetas.map((t) => `${t.titulo}: ${t.texto}`), pr.vimos.duele, pr.vimos.bien]),
+    seccion("Preguntas para la reunión", pr.vimos.preguntas),
+    seccion("Oferta de Pime: qué construiríamos", [c.titulo, ...c.fases.map((f) => `${f.nombre} (${f.plazo}): ${f.texto} ${f.incluye.join("; ")}`)]),
+    seccion("Caso de Pime", [c.caso ? `${c.caso.nombre}: ${c.caso.texto}` : "(ninguno)"]),
+    seccion("Oferta de Pime: cómo trabajamos", c.comoTrabajamos),
+    seccion("Oferta de Pime: ejemplo de falla crítica en el sistema que se construiría (para la tabla de soporte)", [c.ejemploCritico]),
+    seccion("Próximos pasos", pr.pasos.map((x) => `${x.titulo}: ${x.texto}`)),
+  ].join("\n\n");
+}
+
+export type Verificacion = { aprobado: boolean; problemas: string[] };
+
+/**
+ * Segunda verificación de lo que sale solo (la primera es la del agente): otra llamada, sin ver cómo se redactó,
+ * contrasta cada afirmación del correo final y de la propuesta con las fuentes. Ante la duda, no aprueba.
+ */
+export async function verificarCorreo(p: {
+  empresa: string;
+  idioma: "es" | "en";
+  notas: string;
+  paginas: { url: string; texto: string }[];
+  asunto: string;
+  cuerpo: string;
+  propuesta: PropuestaProspecto | null;
+  supabaseUid: string;
+}): Promise<Verificacion> {
+  const system = `Eres un verificador independiente de Pime. Antes de que un correo en frío salga solo a un prospecto, revisas su versión final y la propuesta en PDF que lo acompaña. No redactas ni corriges: decides si puede salir.
+
+Repruébalo (aprobado: false) si pasa cualquiera de estas cosas, y anota cada una en «problemas» con la frase exacta:
+1. Una afirmación categórica sobre el prospecto (qué hace, dónde está, sus servicios, nombres, cifras, eventos, cómo opera, qué le duele) que NO esté respaldada por las FUENTES. Lo dicho como suposición o generalidad («por lo que vemos en su sitio», «imaginamos que», «suele pasar que», «en empresas como la suya») está bien.
+2. Un cliente o caso de Pime que no esté en estas listas (Grupo GRF nunca se nombra):
+${CASOS_AGENTE}
+${casosNombrables()}
+3. Cifras de Pime distintas de «50+ proyectos» y «$250K+», montos de dinero, descuentos, garantías de resultados o urgencia falsa.
+4. El correo y la propuesta no dicen lo mismo (otro caso, otras piezas, otra empresa) o hablan de otra empresa que no es ${p.empresa}.
+5. No está en ${p.idioma === "en" ? "inglés de EE. UU." : "español"}, o trae marcadores de plantilla ([Nombre], {{…}}), o le falta sentido.
+
+NO son problemas los mensajes de siempre de Pime: el código es del cliente, sin comisiones, trato directo con el fundador, precio cerrado o alcance cerrado por fase (sin decir el monto), soporte y garantía, misma zona horaria que la costa este, facturación en USD. Tampoco lo que Pime propone construir para ellos (fases, piezas, plazos estimados, qué incluye cada fase, cómo trabaja Pime, ejemplos de fallas, próximos pasos, preguntas para la reunión). Eso es la oferta de Pime, no un hecho sobre el prospecto. Tampoco lo es lo que el caso de Pime dice de ese cliente, si coincide con su descripción en la lista.
+
+Si dudas sobre un hecho del prospecto, no apruebes. «problemas» va vacío si apruebas. Responde ÚNICAMENTE con JSON: { "aprobado": true|false, "problemas": ["…"] }`;
+  const user = `Prospecto: ${p.empresa}
+
+FUENTES
+Notas del investigador:
+${p.notas.slice(0, 6000)}
+
+${p.paginas.map((x) => `Página ${x.url}:\n${x.texto.slice(0, 8000)}`).join("\n\n") || "(no se pudo abrir ninguna página)"}
+
+CORREO FINAL
+Asunto: ${p.asunto}
+${p.cuerpo.replace(/\n+—\n[\s\S]*$/, "").slice(0, 3000)}
+
+PROPUESTA EN PDF
+${p.propuesta ? textoDePropuesta(p.propuesta) : "(sin propuesta)"}`;
+  // Las secciones marcadas «Oferta de Pime» describen el sistema que se construiría, no al prospecto.
+  const forma = z.object({ aprobado: z.boolean(), problemas: z.array(z.string().trim().min(1).max(400)).max(12).default([]) });
+  const r = await pedirJson(system, user, p.supabaseUid, "lead-verificar-correo", 1200, (v) => forma.safeParse(v), "medium");
+  return { aprobado: r.aprobado && r.problemas.length === 0, problemas: r.problemas };
 }

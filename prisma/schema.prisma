@@ -2165,6 +2165,11 @@ model RespuestaLead {
   propuestaAt     DateTime?
   /// El agente la aprobó para el envío automático: entra a la cola (migración 0065).
   aprobadaAt      DateTime?
+  /// Huella del correo final aprobado (huellaCorreo); si cambia, no sale solo (migración 0066).
+  aprobadaHuella  String?
+  /// IA verificadora: {aprobado, problemas[]} sobre el correo final y la propuesta (migración 0066).
+  verificacion    Json?
+  verificadaAt    DateTime?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 

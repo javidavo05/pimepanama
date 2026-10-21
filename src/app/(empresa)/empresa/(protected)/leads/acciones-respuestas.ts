@@ -38,7 +38,8 @@ export async function guardarRespuestaAction(
   if (para && !CORREO_RE.test(para)) return { ok: false, error: "Ese correo no tiene un formato válido." };
   const r = await prisma.respuestaLead.updateMany({
     where: { id, userId: u.id, estado: { in: ["borrador", "fallo"] } },
-    data: { para: para || null, asunto: cambios.asunto.trim().slice(0, 200), cuerpo: cambios.cuerpo.slice(0, 20_000), adjuntarPdf: cambios.adjuntarPdf },
+    // Lo aprobado era otra versión: sale de la cola hasta que alguien la vuelva a aprobar.
+    data: { para: para || null, asunto: cambios.asunto.trim().slice(0, 200), cuerpo: cambios.cuerpo.slice(0, 20_000), adjuntarPdf: cambios.adjuntarPdf, aprobadaAt: null, aprobadaHuella: null },
   });
   if (!r.count) return { ok: false, error: "Esta respuesta ya se envió o está descartada: no se puede cambiar." };
   // Si el lead no tenía correo, el que se escribió aquí pasa a su ficha.
@@ -89,14 +90,15 @@ export async function prepararPropuestaAction(id: string, rehacer: boolean): Pro
  * Pone respuestas en la cola del envío automático: salen solas con el cupo de los días siguientes, por orden de
  * llegada, desde javier@pimepanama.com. `quitar` las saca de la cola.
  */
-export async function agendarRespuestasAction(ids: string[], quitar = false): Promise<Resultado<{ respuestas: RespuestaVista[]; envio: EstadoEnvio }>> {
+export async function agendarRespuestasAction(ids: string[], quitar = false): Promise<Resultado<{ respuestas: RespuestaVista[]; envio: EstadoEnvio; sinPreparar: number }>> {
   const u = await usuario();
   const lista = [...new Set(ids)].slice(0, 300);
-  if (quitar) await prisma.respuestaLead.updateMany({ where: { id: { in: lista }, userId: u.id, estado: "borrador" }, data: { aprobadaAt: null } });
-  else await agendar(u.id, lista);
+  let sinPreparar = 0;
+  if (quitar) await prisma.respuestaLead.updateMany({ where: { id: { in: lista }, userId: u.id, estado: "borrador" }, data: { aprobadaAt: null, aprobadaHuella: null } });
+  else ({ sinPreparar } = await agendar(u.id, lista));
   const respuestas = (await Promise.all(lista.map((id) => unaRespuesta(u.id, id)))).filter((r): r is RespuestaVista => r != null);
   revalidatePath("/empresa/leads");
-  return { ok: true, dato: { respuestas, envio: await estadoEnvio(u.id) } };
+  return { ok: true, dato: { respuestas, envio: await estadoEnvio(u.id), sinPreparar } };
 }
 
 export async function estadoEnvioAction(): Promise<EstadoEnvio> {
