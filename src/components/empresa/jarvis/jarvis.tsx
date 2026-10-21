@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { fetchLargo } from "@/lib/fetch-largo";
+import { oidoLocal, transcribir } from "@/lib/voz/transcribir";
 import type { Conexion } from "@/lib/jarvis/conexiones";
 import { iniciarEsfera, colorDe, posicionEnAnillo, posicionArea, type Vivo } from "./esfera";
 import "./jarvis.css";
@@ -90,6 +91,9 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
   const [completa, setCompleta] = useState(false);
   const [vozActiva, setVozActiva] = useState(true);
   const [hora, setHora] = useState("");
+  // ¿El oído es el Whisper local de esta Mac o el de la nube? Se ve en el nodo «Oído».
+  const [oidoLocalActivo, setOidoLocalActivo] = useState<boolean | null>(null);
+  useEffect(() => { void oidoLocal().then(setOidoLocalActivo); }, []);
   const vivo = useRef<Vivo>({ estado: "espera", encendidos: [], hover: null, modo: "conexiones", finArrastre: 0, logo: false });
   const [logo, setLogo] = useState(false);
   useEffect(() => { try { if (localStorage.getItem("jarvis-logo") === "1") setLogo(true); } catch { /* sin almacenamiento */ } }, []);
@@ -198,14 +202,10 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
         if (blob.size < 1500) { setEstado("espera"); setEncendidos([]); return; }
         setEstado("transcribiendo");
         try {
-          const fd = new FormData();
-          fd.append("audio", blob, `voz.${(r.mimeType || "").includes("mp4") ? "m4a" : "webm"}`);
-          fd.append("language", "es");
-          const res = await fetchLargo("/api/empresa/ai/transcribe", { method: "POST", body: fd });
-          const j = await res.json().catch(() => ({}));
-          if (!res.ok || !j.transcript?.trim()) throw new Error("No te entendí. Intenta otra vez, más cerca del micrófono.");
+          const v = await transcribir(blob);
+          setOidoLocalActivo(v.local);
           setEstado("espera");
-          await procesar(j.transcript);
+          await procesar(v.texto);
         } catch (e) {
           setError(e instanceof Error ? e.message : "No se pudo pasar tu voz a texto.");
           setEstado("espera"); setEncendidos([]);
@@ -292,7 +292,9 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
           <div className="jv-stage" ref={escenario} data-modo={modo}>
             <canvas ref={lienzo} aria-hidden />
             <button type="button" className="jv-core" onClick={() => { if (Date.now() - vivo.current.finArrastre > 300) void microfono(); }} aria-label={estado === "escuchando" ? "Dejar de escuchar" : "Hablarle a Jarvis"} />
-            {conexiones.map((c, i) => (
+            {conexiones.map((c0, i) => {
+              const c = c0.id === "oido" && oidoLocalActivo !== null ? { ...c0, estado: "ok" as const, resumen: oidoLocalActivo ? "Whisper local" : "Whisper nube", detalle: oidoLocalActivo ? "Whisper corre en esta Mac (github.com/openai/whisper): tu voz se pasa a texto aquí mismo, gratis y sin salir de la máquina." : "Whisper en la nube de OpenAI pasa tu voz a texto. En la Mac de Javier corre local, gratis y privado, cuando el oído local está prendido." } : c0;
+              return (
               <button key={c.id} type="button" className={`jv-node${encendidos.includes(c.id) ? " jv-on" : ""}`} data-ancla={c.id} data-tipo={c.tipo} data-e={c.estado} style={{ ...posicion(i), ["--nc" as string]: `rgb(${colorDe(c.id, false)})`, ["--nc-claro" as string]: `rgb(${colorDe(c.id, true)})` }}
                 aria-label={`${c.nombre}: ${c.resumen}`}
                 onMouseEnter={() => { vivo.current.hover = c.id; }} onMouseLeave={() => { vivo.current.hover = null; }}
@@ -302,7 +304,7 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
                 <span className="jv-nl">{c.nombre}</span>
                 <span className="jv-ns">{c.resumen}</span>
               </button>
-            ))}
+            ); })}
             {areas.map((a, i) => {
               const sz = Math.round(8 + 16 * Math.sqrt(a.n / maxN));
               const cruces = (memoria?.links ?? []).filter((l) => l[0] === a.id || l[1] === a.id).slice(0, 3).map((l) => `${etiqueta(l[0] === a.id ? l[1] : l[0])} (${l[2]})`);

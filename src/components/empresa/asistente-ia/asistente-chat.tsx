@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState, useLayoutEffect } from "react
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { fetchLargo } from "@/lib/fetch-largo";
+import { transcribir } from "@/lib/voz/transcribir";
 
 type Estado = "propuesta" | "hecha" | "cancelada" | "deshecha" | "error";
 type Accion = { id: string; kind: string; summary: string; estado: Estado; motivo?: string | null; href?: string | null; error?: string; ocupado?: boolean; antes?: Estado };
@@ -133,13 +134,8 @@ export function AsistenteChat() {
         if (blob.size < 1500) return;
         setTranscribiendo(true);
         try {
-          const fd = new FormData();
-          fd.append("audio", blob, `voz.${(r.mimeType || "").includes("mp4") ? "m4a" : "webm"}`);
-          fd.append("language", "es");
-          const res = await fetchLargo("/api/empresa/ai/transcribe", { method: "POST", body: fd });
-          const j = await res.json().catch(() => ({}));
-          if (!res.ok || !j.transcript?.trim()) throw new Error("No te entendí. Intenta otra vez, más cerca del micrófono.");
-          await enviar(j.transcript);
+          const v = await transcribir(blob);
+          await enviar(v.texto);
         } catch (e) {
           setError(e instanceof Error ? e.message : "No se pudo transcribir.");
         } finally {
