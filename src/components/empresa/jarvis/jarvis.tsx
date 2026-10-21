@@ -11,7 +11,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation";
 import { fetchLargo } from "@/lib/fetch-largo";
 import type { Conexion } from "@/lib/jarvis/conexiones";
-import { iniciarEsfera, colorDe, posicionEnAnillo, type Vivo } from "./esfera";
+import { iniciarEsfera, colorDe, posicionEnAnillo, posicionArea, type Vivo } from "./esfera";
 import "./jarvis.css";
 
 type EstadoAccion = "propuesta" | "hecha" | "cancelada" | "deshecha" | "error";
@@ -239,7 +239,9 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
   const N = conexiones.length;
   const posicion = (i: number) => { const p = posicionEnAnillo(i, N); return { left: `${p.x}%`, top: `${p.y}%` }; };
   const areas = memoria?.areas ?? [];
-  const posArea = (i: number) => { const p = posicionEnAnillo(i, areas.length, i % 2 ? 37 : 45); return { left: `${p.x}%`, top: `${p.y}%` }; };
+  const posArea = (i: number) => { const p = posicionArea(i, areas.length); return { left: `${p.x}%`, top: `${p.y}%` }; };
+  /** De qué lado del anillo cae cada área: su nombre va hacia adentro para no salirse ni chocar con el de al lado. */
+  const ladoArea = (i: number) => posicionArea(i, areas.length).lado;
   const maxN = areas[0]?.n ?? 1;
   const ocupado = estado === "pensando" || estado === "transcribiendo";
   const sugerencias = ["¿Qué tengo hoy?", "¿Quién me debe dinero?", "Abre los leads"];
@@ -305,10 +307,10 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
               const sz = Math.round(8 + 16 * Math.sqrt(a.n / maxN));
               const cruces = (memoria?.links ?? []).filter((l) => l[0] === a.id || l[1] === a.id).slice(0, 3).map((l) => `${etiqueta(l[0] === a.id ? l[1] : l[0])} (${l[2]})`);
               return (
-                <button key={a.id} type="button" className={`jv-mnode${encendidos.includes(`m:${a.id}`) ? " jv-on" : ""}`} data-ancla={`m:${a.id}`} data-chico={i >= 8 || i % 2 === 1 ? "1" : "0"} style={posArea(i)} aria-label={`${etiqueta(a.id)}: ${a.n} piezas de código`}
+                <button key={a.id} type="button" className={`jv-mnode${encendidos.includes(`m:${a.id}`) ? " jv-on" : ""}`} data-ancla={`m:${a.id}`} data-lado={ladoArea(i)} style={posArea(i)} aria-label={`${etiqueta(a.id)}: ${a.n} piezas de código`}
                   onMouseEnter={() => { vivo.current.hover = `m:${a.id}`; }} onMouseLeave={() => { vivo.current.hover = null; }}
                   onClick={() => { setEncendidos([`m:${a.id}`]); setDetalle({ t: etiqueta(a.id), d: `${a.n.toLocaleString("es-PA")} piezas de código. Lo más conectado: ${a.top.join(", ")}.${cruces.length ? ` Se cruza con ${cruces.join(", ")}.` : ""}` }); }}>
-                  <span className="jv-mdot" style={{ width: sz, height: sz }} />
+                  <span className="jv-mdot" style={{ width: sz, height: sz, margin: `0 ${(24 - sz) / 2}px` }} />
                   <span className="jv-nl">{etiqueta(a.id)}</span>
                   <span className="jv-ns">{a.n.toLocaleString("es-PA")}</span>
                 </button>

@@ -229,5 +229,12 @@ html[data-theme="light"] .jv-node .jv-hex::after { background: #ffffff }
   .jv-tools > .jv-seg { grid-column: 1 / -1; order: 5; display: flex }
   .jv-tools > .jv-seg button { flex: 1 }
 }
-/* En pantallas angostas, las áreas chicas de la Memoria muestran solo su punto: el nombre sale al tocarlas. */
-@container (max-width: 759px) { .jv-mnode[data-chico="1"] .jv-nl { display: none } }
+/* Memoria: el punto queda en su lugar del anillo y el nombre va al lado, hacia adentro, en una sola línea.
+   Así los 21 nombres caben sin taparse, también en el teléfono. */
+.jv-mnode { grid-auto-flow: column; align-items: center; justify-items: start; gap: 4px; padding: 4px 0; transform: translate(-12px, -50%) }
+.jv-mnode[data-lado="der"] { transform: translate(calc(-100% + 12px), -50%) }
+.jv-mnode[data-lado="der"] .jv-mdot { order: 3 }
+.jv-mnode .jv-nl { margin-top: 0 !important }
+.jv-mnode .jv-ns { display: none }
+.jv-mnode { min-width: 24px }
+@container (max-width: 559px) { .jv-mnode .jv-nl { padding: 0 4px; line-height: 16px } }

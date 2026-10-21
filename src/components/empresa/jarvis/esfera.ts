@@ -55,6 +55,18 @@ export const posicionEnAnillo = (i: number, n: number, radio = 44) => {
   return { x: 50 + Math.cos(a) * radio, y: 50 + Math.sin(a) * radio, a };
 };
 
+/** Áreas de la Memoria: en dos columnas curvas (derecha e izquierda), nunca arriba ni abajo,
+ *  para que sus nombres vayan de lado sin chocar. */
+export const posicionArea = (i: number, n: number, radio = 45) => {
+  const mitad = Math.ceil(n / 2), der = i < mitad, k = der ? i : i - mitad, cuantos = der ? mitad : n - mitad;
+  // La columna izquierda va medio paso corrida: así un nombre nunca queda a la misma altura que el de enfrente.
+  const u = cuantos > 1 ? (der ? k / (cuantos - 1) : Math.min(1, (k + 0.5) / (cuantos - 0.5))) : 0.5, abertura = (68 * Math.PI) / 180;
+  const a = der ? -abertura + u * 2 * abertura : Math.PI + abertura - u * 2 * abertura;
+  // Arriba y abajo no se cierran hacia el centro: los nombres de los extremos tienen espacio.
+  const dx = Math.max(Math.abs(Math.cos(a)), 0.7) * radio * (der ? 1 : -1);
+  return { x: 50 + dx, y: 50 + Math.sin(a) * radio * 1.02, a, lado: der ? "der" : "izq" };
+};
+
 type Opciones = {
   lienzo: HTMLCanvasElement; escenario: HTMLElement;
   vivo: { current: Vivo };
@@ -79,7 +91,7 @@ export function iniciarEsfera({ lienzo, escenario, vivo, conexiones, memoria }: 
     const claro = esClaro();
     const lista = modo === "memoria" && memoria ? memoria.areas.map((a) => `m:${a.id}`) : conexiones.map((c) => c.id);
     return lista.map((id, i) => {
-      const { a } = posicionEnAnillo(i, lista.length);
+      const { a } = modo === "memoria" && memoria ? posicionArea(i, lista.length) : posicionEnAnillo(i, lista.length);
       const z = Math.sin(i * 2.399) * 0.55, r = Math.sqrt(1 - z * z);
       return { id, x: Math.cos(a) * r, y: Math.sin(a) * r, z, color: id.startsWith("m:") ? tono((i / lista.length) * 360, claro) : colorDe(id, claro) };
     });
