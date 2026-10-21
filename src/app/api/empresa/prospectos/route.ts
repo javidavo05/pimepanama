@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { notifyUser } from "@/lib/notifications/notify";
 import { getSiteUrl } from "@/lib/site-url";
 import { tokenBaja } from "@/lib/crm/correo-baja";
-import { loteDeAhora } from "@/lib/leads/respuestas-comun";
+import { direccionPostal, loteDeAhora } from "@/lib/leads/respuestas-comun";
 
 export const runtime = "nodejs";
 
@@ -23,7 +23,6 @@ export const runtime = "nodejs";
  * se da de baja (BajaCorreo) no vuelve a entrar.
  */
 
-const DIRECCION = process.env.PIME_DIRECCION_POSTAL || "Pime Panamá · Coco Palace, Avenida Las Amapolas, Ciudad de Panamá, Panamá";
 const MAX = 50;
 
 const recorte = (v: unknown, n: number) => (typeof v === "string" ? v.trim().slice(0, n) : "");
@@ -118,8 +117,8 @@ export const POST = withEmpresaRoute(async (request) => {
       // CAN-SPAM (y buena práctica en Panamá): dirección física real y una forma clara de darse de baja.
       const baja = `${site}/baja/${tokenBaja(userId, email)}?lang=${mercado === "US" ? "en" : "es"}`;
       cuerpo += mercado === "US"
-        ? `\n\n—\n${DIRECCION}\nIf you'd rather not hear from us, unsubscribe here: ${baja}`
-        : `\n\n—\n${DIRECCION}\nSi prefiere no recibir más correos, dese de baja aquí: ${baja}`;
+        ? `\n\n—\n${direccionPostal("en")}\nIf you'd rather not hear from us, unsubscribe here: ${baja}`
+        : `\n\n—\n${direccionPostal("es")}\nSi prefiere no recibir más correos, dese de baja aquí: ${baja}`;
     }
 
     const nota = [

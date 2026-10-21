@@ -11,6 +11,13 @@ export function loteDeAhora(d = new Date()): string {
   return `agente-${d.getUTCFullYear()}${p(d.getUTCMonth() + 1)}${p(d.getUTCDate())}${p(d.getUTCHours())}`;
 }
 
+/** Dirección física de Pime para el pie de los correos en frío (CAN-SPAM). Confirmada por Javier el 2026-10-21. */
+export function direccionPostal(idioma: "es" | "en"): string {
+  return idioma === "en"
+    ? "Pime Panamá · Coco Palace 8B, Avenida Las Amapolas, Panama City, Panama"
+    : "Pime Panamá · Coco Palace 8B, Avenida Las Amapolas, Ciudad de Panamá, Panamá";
+}
+
 export function archivoPropuesta(empresa: string, idioma: string): string {
   const base = empresa
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")

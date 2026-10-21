@@ -13,7 +13,7 @@ import { renderPropuestaProspectoPdf } from "@/lib/pdf/render";
 import { leerPropuesta, redactarCorreo, redactarPropuesta, type PropuestaProspecto } from "./propuesta-prospecto";
 import { tokenBaja } from "@/lib/crm/correo-baja";
 import { getSiteUrl } from "@/lib/site-url";
-import { archivoPropuesta, faltaParaEnviar, huellaCorreo, type EstadoRespuesta, type RespuestaVista } from "./respuestas-comun";
+import { archivoPropuesta, direccionPostal, faltaParaEnviar, huellaCorreo, type EstadoRespuesta, type RespuestaVista } from "./respuestas-comun";
 
 export { loteDeAhora, type RespuestaVista } from "./respuestas-comun";
 
@@ -74,7 +74,6 @@ export async function buzonesParaEnviar(userId: string, emailMiembro: string | n
   return [...cuentas].sort((a, b) => Number(b.username.toLowerCase() === mio) - Number(a.username.toLowerCase() === mio));
 }
 
-const DIRECCION = process.env.PIME_DIRECCION_POSTAL || "Pime Panamá · Coco Palace, Avenida Las Amapolas, Ciudad de Panamá, Panamá";
 
 /**
  * El pie de un correo en frío (CAN-SPAM): dirección física y enlace de baja. Si el borrador ya lo traía, se reusa
@@ -86,8 +85,8 @@ function pieLegal(cuerpo: string, userId: string, para: string | null, idioma: "
   if (!para) return "";
   const baja = `${getSiteUrl()}/baja/${tokenBaja(userId, para.toLowerCase())}?lang=${idioma}`;
   return idioma === "en"
-    ? `\n\n—\n${DIRECCION}\nIf you'd rather not hear from us, unsubscribe here: ${baja}`
-    : `\n\n—\n${DIRECCION}\nSi prefiere no recibir más correos, dese de baja aquí: ${baja}`;
+    ? `\n\n—\n${direccionPostal("en")}\nIf you'd rather not hear from us, unsubscribe here: ${baja}`
+    : `\n\n—\n${direccionPostal("es")}\nSi prefiere no recibir más correos, dese de baja aquí: ${baja}`;
 }
 
 /**
@@ -176,8 +175,9 @@ export async function enviarRespuesta(p: {
       : [];
     const config = p.configId ? await prisma.companyConfig.findFirst({ where: { id: p.configId } }) : null;
     const asunto = r.asunto.trim();
-    // Un correo en frío nunca sale sin dirección física ni enlace de baja, aunque se haya borrado al editar.
-    const cuerpo = r.cuerpo.includes("/baja/") ? r.cuerpo : r.cuerpo.replace(/\n+—\n[\s\S]*$/, "") + pieLegal("", p.userId, para, r.idioma === "en" ? "en" : "es");
+    // El pie legal se arma siempre al enviar: dirección física al día y enlace de baja con su idioma, aunque el
+    // borrador traiga uno viejo o se haya borrado al editar.
+    const cuerpo = r.cuerpo.replace(/\n+—\n[\s\S]*$/, "") + pieLegal("", p.userId, para, r.idioma === "en" ? "en" : "es");
 
     const res = await sendMailFromAccount({ account: p.cuenta, config, to: para, subject: asunto, body: cuerpo, attachments: adjuntos });
     // El correo ya salió: si guardarlo en Enviados falla, la respuesta igual queda enviada.
