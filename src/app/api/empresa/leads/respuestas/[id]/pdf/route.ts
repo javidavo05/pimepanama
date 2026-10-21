@@ -5,7 +5,7 @@ import { PropuestaError } from "@/lib/leads/propuesta-prospecto";
 
 export const runtime = "nodejs";
 // La primera vez la IA redacta la propuesta: puede tardar unos segundos.
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 /** La propuesta en PDF de una respuesta a un lead. `?inline=1` la abre en el navegador. */
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {

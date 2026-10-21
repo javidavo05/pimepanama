@@ -4,17 +4,22 @@ import { prisma } from "@/lib/prisma";
 import { calcGptCost } from "@/lib/ai-pricing";
 import { brandSystemPrompt } from "@/lib/ai/pime-brand-voice";
 import { projects } from "@/lib/portfolio/catalog";
+import { huellaCorreo } from "./respuestas-comun";
 
 /**
  * Propuesta corta que acompaña el primer correo a un prospecto: cinco páginas (portada, lo que vimos, qué
  * construiríamos, lo que viene después y próximos pasos). Es la misma forma de las propuestas que se mandaron a
- * mano a PFS y a APE el 2026-10-19, ahora con react-pdf y redactada por la IA desde lo que el agente investigó.
+ * mano a PFS y a APE el 2026-10-19, ahora con react-pdf.
+ *
+ * Va en dos pasos y en este orden: primero el correo (redactarCorreo), después la propuesta A PARTIR DEL CORREO
+ * (redactarPropuesta). El PDF desarrolla lo que el correo le dice al cliente: los mismos hechos, el mismo caso y las
+ * mismas piezas, con más detalle. Cuando las dos salían de una sola llamada, el PDF quedaba genérico y no coincidía.
  *
  * Sin precios: el prospecto todavía no habló con nadie. Cada fase dice «precio cerrado» y se cotiza después de la
  * reunión. La página de costos de terceros, garantía y soporte es fija (templates/propuesta-prospecto-pdf.tsx).
  */
 
-// Los máximos son un tope de seguridad (el doble de lo que cabe cómodo), no un límite de redacción.
+// Los máximos son un tope de seguridad, no un límite de redacción.
 const texto = (max: number) => z.string().trim().min(1).max(max);
 
 export const propuestaProspectoSchema = z.object({
@@ -24,22 +29,32 @@ export const propuestaProspectoSchema = z.object({
   subtitulo: texto(520),
   vimos: z.object({
     titulo: texto(180),
-    tarjetas: z.array(z.object({ titulo: texto(100), texto: texto(520) })).min(2).max(3),
-    duele: texto(840),
-    bien: texto(840),
+    tarjetas: z.array(z.object({ titulo: texto(100), texto: texto(700) })).min(2).max(3),
+    duele: texto(900),
+    bien: texto(900),
+    /** Lo que se quiere confirmar con ellos en la reunión. Vacío en las propuestas anteriores al 2026-10-22. */
+    preguntas: z.array(texto(260)).max(4).default([]),
   }),
   construiriamos: z.object({
     titulo: texto(180),
-    fases: z.array(z.object({ nombre: texto(100), plazo: texto(80), texto: texto(560) })).min(1).max(3),
+    fases: z.array(z.object({
+      nombre: texto(100),
+      plazo: texto(80),
+      texto: texto(700),
+      /** Lo que se entrega en la fase, concreto para esta empresa. */
+      incluye: z.array(texto(160)).max(4).default([]),
+    })).min(1).max(3),
     /** Un caso real del catálogo o de las notas del agente. Null si ninguno se parece. */
-    caso: z.object({ nombre: texto(120), texto: texto(640) }).nullable(),
+    caso: z.object({ nombre: texto(120), texto: texto(700) }).nullable(),
     comoTrabajamos: z.array(texto(180)).min(3).max(5),
     /** Ejemplo de falla crítica en el sistema propuesto, para la tabla de soporte. */
     ejemploCritico: texto(180),
   }),
   /** Si la IA deja menos de dos, el PDF usa los pasos de siempre (templates/propuesta-prospecto-pdf.tsx). */
   pasos: z.array(z.object({ titulo: texto(120), texto: texto(400) })).max(4).default([]),
-  /** El correo que presenta la propuesta adjunta. Opcional: las primeras propuestas (21-oct-2026) no lo traían. */
+  /** Huella del asunto y el texto del correo del que salió (huellaCorreo). Si el correo cambia, la propuesta está desactualizada. */
+  fuente: z.string().optional(),
+  /** Solo en las primeras propuestas, que traían el correo en la misma llamada. Ya no se usa. */
   correo: z.object({ asunto: texto(200), cuerpo: texto(3000) }).optional(),
 });
 
@@ -50,54 +65,6 @@ export function leerPropuesta(valor: unknown): PropuestaProspecto | null {
   return r.success ? r.data : null;
 }
 
-const FORMA_ES = `{
-  "eyebrow": "Propuesta · <tipo de sistema en 3-5 palabras>",
-  "titulo": "lo que haría el sistema para ESTA empresa, nombrándola (máx. 12 palabras)",
-  "subtitulo": "1-2 oraciones: es una idea a partir de lo que se vio desde afuera, para validar en una conversación de 20 minutos",
-  "vimos": {
-    "titulo": "el hallazgo principal en una frase corta",
-    "tarjetas": [{ "titulo": "hecho observado (3-5 palabras)", "texto": "1-2 oraciones con el hecho y de dónde sale" }],
-    "duele": "dónde suele doler en empresas así, sin afirmar que a ellos les pasa",
-    "bien": "lo que ya tienen bien y que no se reemplaza"
-  },
-  "construiriamos": {
-    "titulo": "del <inicio del proceso> al <final>, en una frase",
-    "fases": [{ "nombre": "nombre corto", "plazo": "Estimado: N–M semanas", "texto": "1-2 oraciones con el entregable verificable" }],
-    "caso": { "nombre": "cliente del caso", "texto": "qué construimos y por qué aplica aquí" },
-    "comoTrabajamos": ["El código es de ustedes, sin comisiones", "Trato directo con el fundador de Pime", "..."],
-    "ejemploCritico": "falla crítica típica del sistema propuesto, p. ej. «El cotizador no abre o no permite enviar cotizaciones»"
-  },
-  "pasos": [{ "titulo": "Conversación de 20 minutos", "texto": "1 oración" }],
-  "correo": { "asunto": "una idea concreta para ESTA empresa (máx. 10 palabras)", "cuerpo": "el correo completo, ver reglas" }
-}`;
-
-// En inglés la forma va en inglés: con los ejemplos en español, el modelo mezclaba los dos idiomas.
-const FORMA_EN = `{
-  "eyebrow": "Proposal · <type of system in 3-5 words>",
-  "titulo": "what the system would do for THIS company, naming it (max. 12 words)",
-  "subtitulo": "1-2 sentences: an idea based on what we saw from the outside, to validate in a 20-minute conversation",
-  "vimos": {
-    "titulo": "the main finding in one short sentence",
-    "tarjetas": [{ "titulo": "observed fact (3-5 words)", "texto": "1-2 sentences with the fact and where it comes from" }],
-    "duele": "where it usually hurts for companies like this, without claiming it happens to them",
-    "bien": "what they already do well and won't be replaced"
-  },
-  "construiriamos": {
-    "titulo": "from <start of the process> to <end>, in one sentence",
-    "fases": [{ "nombre": "short name", "plazo": "Estimate: N–M weeks", "texto": "1-2 sentences with the verifiable deliverable" }],
-    "caso": { "nombre": "case client", "texto": "what we built and why it applies here" },
-    "comoTrabajamos": ["The code is yours, no commissions", "You work directly with Pime's founder", "..."],
-    "ejemploCritico": "typical critical failure of the proposed system, e.g. «The portal is down or clients can't submit requests»"
-  },
-  "pasos": [{ "titulo": "20-minute conversation", "texto": "1 sentence" }],
-  "correo": { "asunto": "a concrete idea for THIS company (max. 10 words)", "cuerpo": "the full email, see rules" }
-}`;
-
-const CANTIDADES = {
-  es: 'Cantidades exactas: "vimos.tarjetas" 3 elementos; "construiriamos.fases" 2 o 3; "comoTrabajamos" 4; "pasos" 3 (conversación de 20 minutos, propuesta con precio cerrado en tres días hábiles, primera entrega en dos semanas). "correo" siempre.',
-  en: 'Exact counts: "vimos.tarjetas" 3 items; "construiriamos.fases" 2 or 3; "comoTrabajamos" 4; "pasos" 3 (20-minute conversation, fixed-price proposal within three business days, first delivery in two weeks). "correo" always. Every value in English; only the JSON keys stay as they are.',
-};
-
 /** Casos que se pueden nombrar. Grupo GRF nunca se nombra (decisión de Javier, 2026-10-19). */
 function casosNombrables(): string {
   return projects
@@ -106,103 +73,208 @@ function casosNombrables(): string {
     .join("\n");
 }
 
-const REGLAS_CORREO = {
-  es: `"correo" es el primer correo que acompaña la propuesta, con la forma de los que ya se enviaron:
-    1) saludo («Hola, equipo de <empresa>:»);
-    2) un párrafo con lo que vimos de ellos (hechos de las notas) y por qué pesa;
-    3) un párrafo: soy Javier Vallejo, fundador de Pime, empresa panameña de software a medida; el caso relacionado en una frase; «Les adjunto una propuesta corta: <las fases en una frase>»; cada pieza se aprueba por separado y el código es de ellos;
-    4) cierre: «¿Les parece una conversación de 20 minutos esta semana o la próxima? Si no es de su interés, lo entiendo.».
-  Máximo 140 palabras. Sin despedida ni firma (la firma del buzón va sola), sin dirección postal ni enlace de baja (se agregan solos), sin precios. Párrafos separados por una línea en blanco.`,
-  en: `"correo" is the first email that goes with the proposal, shaped like the ones already sent:
-    1) greeting («Hi <company> team,»);
-    2) one paragraph with what we saw about them (facts from the notes) and why it matters;
-    3) one paragraph: I'm Javier Vallejo, founder of Pime, a custom software studio in Panama (same time zone as the U.S. East Coast, billing in USD); the related case in one sentence; «I've attached a short proposal: <the phases in one sentence>»; each piece is approved separately and the code belongs to them;
-    4) close: «Would a 20-minute call this week or next work for you? If it's not a fit, no worries.».
-  At most 140 words, all in English. No sign-off or signature (the mailbox signature is added), no postal address or unsubscribe link (added automatically), no prices. Paragraphs separated by a blank line.`,
+const IDIOMA = {
+  es: "español neutro panameño, tratando al lector de «ustedes»",
+  en: "inglés de EE. UU., tratando al lector de «you». Todo valor en inglés; solo las llaves del JSON quedan como están",
 };
 
 export class PropuestaError extends Error {}
 
-export async function redactarPropuesta(p: {
+// ─── 1. El correo ────────────────────────────────────────────────────────────
+
+const REGLAS_CORREO = {
+  es: `Forma (la de los correos que ya se enviaron):
+1) «Hola, equipo de <empresa>:»
+2) Un párrafo con 2 o 3 hechos concretos de ellos sacados de las notas (canales, servicios, cifras, sedes, novedades) y por qué pesan.
+3) Un párrafo: «Soy Javier Vallejo, fundador de Pime, empresa panameña de software a medida.»; el caso relacionado en una frase con lo que se construyó; «Les adjunto una propuesta corta: <las 2 o 3 piezas, nombradas>.»; cada pieza se aprueba por separado y el código es de ustedes.
+4) «¿Les parece una conversación de 20 minutos esta semana o la próxima? Si no es de su interés, lo entiendo.»`,
+  en: `Shape (the one of the emails already sent):
+1) «Hi <company> team,»
+2) One paragraph with 2 or 3 concrete facts about them from the notes (channels, services, figures, locations, news) and why they matter.
+3) One paragraph: «I'm Javier Vallejo, founder of Pime, a custom software studio in Panama (same time zone as the U.S. East Coast, billing in USD).»; the related case in one sentence with what was built; «I've attached a short proposal: <the 2 or 3 pieces, named>.»; each piece is approved separately and the code belongs to them.
+4) «Would a 20-minute call this week or next work for you? If it's not a fit, no worries.»`,
+};
+
+export async function redactarCorreo(p: {
   empresa: string;
   idioma: "es" | "en";
   notas: string;
   asunto: string;
   cuerpo: string;
   supabaseUid: string;
-}): Promise<{ propuesta: PropuestaProspecto; costUSD: number }> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new PropuestaError("Falta OPENAI_API_KEY en el servidor.");
-
+}): Promise<{ asunto: string; cuerpo: string }> {
   const system = brandSystemPrompt(
-    `Redactas la propuesta corta en PDF que acompaña el primer correo de Pime a un prospecto que todavía no conoce a Pime. El agente de prospección ya investigó la empresa desde afuera (sitio, redes): sus notas son tu única fuente sobre ella.
+    `Escribes el primer correo de Pime a un prospecto que no conoce a Pime. Va con una propuesta corta en PDF adjunta. El agente de prospección investigó la empresa desde afuera: sus notas son tu única fuente sobre ella.
 
-Reglas no negociables:
-- Todo lo que digas de la empresa sale de las notas. Si algo no está en las notas, no lo afirmes. Lo que no se sabe de su operación interna se plantea como hipótesis («suele pasar»), nunca como diagnóstico.
-- Sin precios ni montos de Pime: cada fase se cotiza con precio cerrado después de la reunión.
-- Las fases son independientes: la primera es el punto de partida; las demás son opcionales y se aprueban por separado. Plazos siempre en rangos de semanas.
-- El caso relacionado solo puede ser uno de esta lista o uno que las notas del agente mencionen. Si ninguno aplica, "caso": null. Nunca inventes clientes.
-${casosNombrables()}
-- Escribe en ${p.idioma === "en" ? "inglés (EE. UU.), tratando al lector de «you»" : "español neutro panameño, tratando al lector de «ustedes»"}.
+Reglas:
+- Solo hechos de las notas. Nada inventado. Lo que no se sabe de su operación interna no se afirma.
 - ${REGLAS_CORREO[p.idioma]}
-- Breve: cada texto entra en una tarjeta de una página carta. Nada de relleno.
-- ${CANTIDADES[p.idioma]}
+- Las piezas que nombres en «Les adjunto…» son las fases que tendrá la propuesta: 2 o 3, con nombre corto y claro (p. ej. «un cotizador con reservas de espacio, un portal para sus clientes y lectura de documentos con IA»).
+- El caso solo puede ser uno de esta lista o uno que mencionen las notas. Nunca inventes clientes.
+${casosNombrables()}
+- Máximo 150 palabras. Sin despedida ni firma (la firma del buzón va sola), sin dirección postal ni enlace de baja (se agregan solos), sin precios. Párrafos separados por una línea en blanco.
+- Escribe en ${IDIOMA[p.idioma]}.
 
-Responde ÚNICAMENTE con un JSON con exactamente esta forma:
-${p.idioma === "en" ? FORMA_EN : FORMA_ES}`,
+Responde ÚNICAMENTE con JSON: { "asunto": "una idea concreta para ESTA empresa, máx. 10 palabras", "cuerpo": "el correo" }`,
     p.idioma,
   );
-
   const user = `Empresa: ${p.empresa}
 
 Notas del agente de prospección:
 ${p.notas.slice(0, 6000)}
 
-Borrador de correo que dejó el agente (úsalo de base para "correo"; ya no ofrezcas «enviar un resumen»: la propuesta va adjunta):
+Borrador del agente (úsalo de base; ya no ofrezcas «enviar un resumen»: la propuesta va adjunta):
 Asunto: ${p.asunto}
 ${p.cuerpo.slice(0, 3000)}`;
 
-  const openai = new OpenAI({ apiKey });
-  let costUSD = 0;
-  // Un segundo intento si la forma no cuadra: el modelo a veces recorta una lista.
-  for (let intento = 1; ; intento++) {
-    const r = await pedir(openai, system, user, p.supabaseUid);
-    costUSD += r.costUSD;
-    if (r.propuesta) return { propuesta: r.propuesta, costUSD };
-    if (intento >= 2) throw new PropuestaError(r.error);
-  }
+  const forma = z.object({ asunto: texto(200), cuerpo: texto(3000) });
+  return pedirJson(system, user, p.supabaseUid, "lead-correo-prospecto", 900, (v) => forma.safeParse(v));
 }
 
-async function pedir(openai: OpenAI, system: string, user: string, supabaseUid: string): Promise<{ propuesta: PropuestaProspecto | null; error: string; costUSD: number }> {
-  const inicio = Date.now();
-  const resp = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: user },
+// ─── 2. La propuesta, desde el correo ────────────────────────────────────────
+
+/** Nivel de detalle esperado: la propuesta que se mandó a PFS Shipping el 2026-10-19 (página 2 y 3). */
+const EJEMPLO_PFS = `{
+  "vimos": {
+    "titulo": "Una naviera que crece y cotiza a mano",
+    "tarjetas": [
+      { "titulo": "Cotización por dos canales", "texto": "Formulario web con respuesta en 24 horas y WhatsApp directo. Cada pedido se responde y se sigue a mano." },
+      { "titulo": "Más rutas, más volumen", "texto": "Salidas semanales desde Colón a más de 200 puertos, y desde mayo la ruta Colón–Kingston pasó a quincenal." },
+      { "titulo": "Ocho servicios distintos", "texto": "FCL, LCL, reefer, carga peligrosa, break bulk, cross-docking, seguro y salidas regulares: cada uno con su propia cotización." }
     ],
-    temperature: 0.5,
-    max_tokens: 2200,
-    response_format: { type: "json_object" },
-  });
-
-  const entrada = resp.usage?.prompt_tokens ?? 0;
-  const salida = resp.usage?.completion_tokens ?? 0;
-  await prisma.aiUsageLog
-    .create({ data: { supabaseUid, operation: "lead-propuesta-prospecto", model: "gpt-4o", inputTokens: entrada, outputTokens: salida, durationMs: Date.now() - inicio } })
-    .catch(() => null);
-
-  const costUSD = calcGptCost(entrada, salida);
-  let json: unknown;
-  try {
-    json = JSON.parse(resp.choices[0]?.message?.content ?? "{}");
-  } catch {
-    return { propuesta: null, error: "La IA devolvió algo que no se pudo leer. Vuelve a intentarlo.", costUSD };
+    "duele": "Cuando el volumen sube, la cotización, la reserva de espacio y los documentos viven entre el formulario, el correo, WhatsApp y hojas de cálculo. Responder en 24 horas depende de que alguien lo arme a mano.",
+    "bien": "Su sitio ya ofrece rastreo de carga en tiempo real. La idea no es reemplazarlo, sino conectar lo que pasa antes: la cotización, la reserva y los documentos del embarque."
+  },
+  "construiriamos": {
+    "titulo": "Del pedido de cotización al zarpe, sin retipear",
+    "fases": [
+      { "nombre": "Cotizador y reservas", "plazo": "Estimado: 6–8 semanas", "texto": "El cliente pide su cotización por servicio y ruta; el equipo la arma con tarifas guardadas y la envía en minutos. Al aprobarla, queda la reserva de espacio." },
+      { "nombre": "Portal del cliente", "plazo": "Estimado: 4–6 semanas", "texto": "Cada cliente ve sus cotizaciones, reservas y documentos, y se conecta con el rastreo que ya tienen." },
+      { "nombre": "Documentos con IA", "plazo": "Estimado: 4–6 semanas", "texto": "Lectura automática de facturas, listas de empaque y BL para llenar los datos del embarque sin digitarlos." }
+    ],
+    "caso": { "nombre": "Svitzer", "texto": "Construimos una IA que lee los reportes de laboratorio del aceite de su flota de remolcadores y alerta cuando un motor sale de límite. El mismo principio aplica a los documentos de un embarque." }
   }
-  const r = propuestaProspectoSchema.safeParse(json);
-  if (!r.success) {
-    console.error("[propuesta-prospecto] forma inválida", r.error.issues);
-    return { propuesta: null, error: "La IA dejó la propuesta incompleta. Vuelve a intentarlo.", costUSD };
+}`;
+
+const FORMA = `{
+  "eyebrow": "Propuesta · <tipo de sistema en 3-5 palabras>",
+  "titulo": "lo que haría el sistema para ESTA empresa, nombrándola (máx. 12 palabras)",
+  "subtitulo": "1-2 oraciones: una idea a partir de lo que vimos desde afuera, para validar en 20 minutos",
+  "vimos": {
+    "titulo": "el hallazgo principal, en una frase con su rubro (como «Una naviera que crece y cotiza a mano»)",
+    "tarjetas": [{ "titulo": "hecho (3-5 palabras)", "texto": "2-3 oraciones con el hecho, sus detalles y nombres propios" }],
+    "duele": "2-3 oraciones: dónde suele doler con ESOS canales y ESOS servicios, como hipótesis",
+    "bien": "2-3 oraciones: lo que ya tienen bien, nombrado, y cómo la propuesta se conecta con eso sin reemplazarlo",
+    "preguntas": ["pregunta concreta para validar en la reunión", "...", "..."]
+  },
+  "construiriamos": {
+    "titulo": "del <inicio de SU proceso> al <final>, en una frase",
+    "fases": [{ "nombre": "la pieza tal como la nombra el correo", "plazo": "Estimado: N–M semanas", "texto": "2-3 oraciones: qué hace, para quién y qué cambia en su día a día", "incluye": ["entregable concreto", "entregable concreto", "entregable concreto"] }],
+    "caso": { "nombre": "el cliente del caso que cita el correo", "texto": "2-3 oraciones: qué construimos y por qué aplica a ellos" },
+    "comoTrabajamos": ["El código es de ustedes, sin comisiones", "Trato directo con el fundador de Pime", "Entregas cada dos semanas, probadas con su equipo", "Cuentas y datos a nombre de <empresa>"],
+    "ejemploCritico": "falla crítica de ESTE sistema, p. ej. «El cotizador no abre o no permite enviar cotizaciones»"
+  },
+  "pasos": [
+    { "titulo": "Conversación de 20 minutos", "texto": "1 oración con lo que se valida, propio de ellos" },
+    { "titulo": "Propuesta con precio cerrado", "texto": "1 oración" },
+    { "titulo": "Primera entrega en dos semanas", "texto": "1 oración: qué ven funcionando, con sus datos reales" }
+  ]
+}`;
+
+export async function redactarPropuesta(p: {
+  empresa: string;
+  idioma: "es" | "en";
+  notas: string;
+  /** El correo tal como va a salir: la propuesta lo desarrolla. */
+  asunto: string;
+  cuerpo: string;
+  supabaseUid: string;
+}): Promise<{ propuesta: PropuestaProspecto }> {
+  const system = brandSystemPrompt(
+    `Redactas la propuesta corta en PDF que va adjunta a un correo ya escrito para un prospecto. El PDF desarrolla ESE correo: quien lo abra después de leer el correo tiene que encontrar lo mismo, con más detalle.
+
+Reglas no negociables:
+- Coherencia con el correo: cada hecho que menciona el correo es una tarjeta de «vimos» (con sus detalles de las notas); las fases son exactamente las piezas que el correo dice que van adjuntas, con los mismos nombres y en el mismo orden; el caso es el mismo que cita el correo (null si no cita ninguno).
+- Específico: nombres propios, canales, servicios, sedes, cifras y fechas que estén en las notas. Prohibido lo que serviría para cualquier empresa («mejorar la eficiencia», «optimizar la gestión», «experiencia del cliente»). Si una frase se puede pegar en la propuesta de otra empresa, reescríbela.
+- Habla como Pime: «vimos en su sitio…», «en su página…». Nunca menciones las notas, el agente ni la prospección.
+- Solo hechos de las notas o del correo. Lo que no se sabe de su operación interna va como hipótesis («suele pasar…»), nunca como diagnóstico.
+- Sin precios ni montos de Pime. La primera fase es el punto de partida; las demás se aprueban por separado. Plazos en rangos de semanas.
+- Cantidades: 3 tarjetas, 3 preguntas, 2 o 3 fases con 3 «incluye» cada una, 4 «comoTrabajamos», 3 pasos.
+- Largo (cabe en una página carta): cada tarjeta y «duele»/«bien», hasta 45 palabras; cada fase, hasta 40 palabras; cada «incluye», hasta 8 palabras; el caso, hasta 40 palabras; cada pregunta, una línea.
+- Casos que se pueden nombrar (solo si el correo lo cita):
+${casosNombrables()}
+- Escribe en ${IDIOMA[p.idioma]}.
+
+Este es el nivel de detalle que se espera (propuesta real enviada a PFS Shipping; no copies su contenido):
+${EJEMPLO_PFS}
+
+Responde ÚNICAMENTE con un JSON con exactamente esta forma:
+${FORMA}`,
+    p.idioma,
+  );
+
+  const user = `Empresa: ${p.empresa}
+
+CORREO QUE ACOMPAÑA AL PDF (la propuesta lo desarrolla):
+Asunto: ${p.asunto}
+${p.cuerpo.replace(/\n+—\n[\s\S]*$/, "").slice(0, 3000)}
+
+Notas del agente de prospección (de aquí salen los detalles):
+${p.notas.slice(0, 6000)}`;
+
+  const propuesta = await pedirJson(system, user, p.supabaseUid, "lead-propuesta-prospecto", 3000, (v) => propuestaProspectoSchema.safeParse(v));
+  return { propuesta: { ...propuesta, correo: undefined, fuente: huellaCorreo(p.asunto, p.cuerpo) } };
+}
+
+// ─── Llamada al modelo ───────────────────────────────────────────────────────
+
+/**
+ * gpt-5.5 y no gpt-4o (el del resto de la suite): con gpt-4o las propuestas salían genéricas y no seguían el correo
+ * (2026-10-21). Son pocas por día, así que la diferencia de costo no pesa.
+ */
+const MODELO = "gpt-5.5";
+
+/** Un segundo intento si la forma no cuadra: el modelo a veces recorta una lista. */
+async function pedirJson<T>(
+  system: string,
+  user: string,
+  supabaseUid: string,
+  operacion: string,
+  maxTokens: number,
+  validar: (v: unknown) => { success: true; data: T } | { success: false; error: { issues: unknown } },
+): Promise<T> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new PropuestaError("Falta OPENAI_API_KEY en el servidor.");
+  const openai = new OpenAI({ apiKey });
+  let error = "";
+  for (let intento = 1; intento <= 2; intento++) {
+    const inicio = Date.now();
+    const resp = await openai.chat.completions.create({
+      model: MODELO,
+      messages: [{ role: "system", content: system }, { role: "user", content: user }],
+      reasoning_effort: "low",
+      // Incluye el razonamiento del modelo, que también cuenta como salida.
+      max_completion_tokens: maxTokens + 6000,
+      response_format: { type: "json_object" },
+    });
+    const entrada = resp.usage?.prompt_tokens ?? 0;
+    const salida = resp.usage?.completion_tokens ?? 0;
+    await prisma.aiUsageLog
+      .create({ data: { supabaseUid, operation: operacion, model: MODELO, inputTokens: entrada, outputTokens: salida, durationMs: Date.now() - inicio } })
+      .catch(() => null);
+    console.info(`[${operacion}] US$${calcGptCost(entrada, salida).toFixed(4)}`);
+
+    let json: unknown;
+    try {
+      json = JSON.parse(resp.choices[0]?.message?.content ?? "{}");
+    } catch {
+      error = "La IA devolvió algo que no se pudo leer. Vuelve a intentarlo.";
+      continue;
+    }
+    const r = validar(json);
+    if (r.success) return r.data;
+    console.error(`[${operacion}] forma inválida`, r.error.issues);
+    error = "La IA dejó la propuesta incompleta. Vuelve a intentarlo.";
   }
-  return { propuesta: r.data, error: "", costUSD };
+  throw new PropuestaError(error);
 }

@@ -8,6 +8,7 @@ import { ProposalPageHeader, SectionIntro } from "../components/section-header";
 import { DocumentFooter } from "../components/document-footer";
 import { CheckList } from "../components/check-list";
 import { Pill } from "../components/pill";
+import { ChevronCapas } from "../components/gradient";
 import type { PropuestaProspecto } from "@/lib/leads/propuesta-prospecto";
 
 /**
@@ -18,6 +19,9 @@ import type { PropuestaProspecto } from "@/lib/leads/propuesta-prospecto";
 
 type Idioma = "es" | "en";
 
+/** Las piezas salen del correo («…: automatización de pagos y …») y llegan en minúscula. */
+const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1);
+
 const T = {
   es: {
     vimosSeccion: "Lo que vimos",
@@ -25,10 +29,10 @@ const T = {
     vimosSub: "Todo lo de esta página sale de su presencia pública. No conocemos su operación interna: por eso es una propuesta para validar, no un diagnóstico.",
     duele: "Dónde suele doler",
     bien: "Lo que ya tienen bien",
+    preguntas: "Lo que queremos validar con ustedes",
     propSeccion: "Propuesta",
     propEyebrow: "02 · Qué construiríamos",
-    propSub: "Piezas independientes. Se aprueban y se cotizan por separado, después de conversar.",
-    nota: "Ninguna fase es obligatoria para avanzar. Las opcionales se aprueban cuando ustedes decidan y los cronogramas pueden traslaparse. El precio de cada fase es cerrado y se define después de la reunión.",
+    propSub: "Piezas independientes: ninguna es obligatoria, cada una se aprueba por separado y su precio cerrado se define después de la reunión. Los cronogramas pueden traslaparse.",
     fase: "Fase",
     opcional: "Opcional",
     precio: "Precio cerrado",
@@ -86,10 +90,10 @@ const T = {
     vimosSub: "Everything on this page comes from your public presence. We don't know your internal operation, so this is a proposal to validate, not a diagnosis.",
     duele: "Where it usually hurts",
     bien: "What you already do well",
+    preguntas: "What we'd like to confirm with you",
     propSeccion: "Proposal",
     propEyebrow: "02 · What we would build",
-    propSub: "Independent pieces. Each one is approved and quoted separately, after we talk.",
-    nota: "No phase is required to move forward. Optional phases are approved when you decide, and timelines can overlap. Each phase has a fixed price, set after our meeting.",
+    propSub: "Independent pieces: none is required, each one is approved separately and its fixed price is set after our meeting. Timelines can overlap.",
     fase: "Phase",
     opcional: "Optional",
     precio: "Fixed price",
@@ -157,14 +161,17 @@ const estilos = porTema((th) => ({
   colTitle: { fontFamily: FONTS.heading, fontWeight: 700, fontSize: 10, color: th.ink, marginBottom: 6 },
   colBody: { fontFamily: FONTS.body, fontSize: 8.8, color: th.slate, lineHeight: 1.6 },
   nota: { backgroundColor: th.panel, borderWidth: 1, borderColor: th.line, borderRadius: RADIUS.card, padding: 12, marginBottom: 14 },
-  notaText: { fontFamily: FONTS.body, fontSize: 8.2, color: th.slate, lineHeight: 1.6 },
   fase: { flex: 1, borderRadius: RADIUS.block, padding: 11 },
   faseFirst: { borderWidth: 1.4, borderColor: th.ink },
   faseOpt: { borderWidth: 1, borderColor: th.line },
   faseName: { fontFamily: FONTS.heading, fontWeight: 800, fontSize: 10.5, color: th.ink, marginTop: 8 },
   fasePrecio: { fontFamily: FONTS.heading, fontWeight: 800, fontSize: 13, color: th.accentText, marginTop: 4 },
   fasePlazo: { fontFamily: FONTS.body, fontWeight: 600, fontSize: 7.4, color: th.slateLight, marginTop: 3, marginBottom: 7 },
-  faseBody: { fontFamily: FONTS.body, fontSize: 8.2, color: th.slate, lineHeight: 1.55, marginBottom: 10 },
+  faseBody: { fontFamily: FONTS.body, fontSize: 8.2, color: th.slate, lineHeight: 1.55, marginBottom: 8 },
+  incluye: { flexDirection: "row", alignItems: "flex-start", gap: 5, marginBottom: 4 },
+  incluyeText: { flex: 1, fontFamily: FONTS.body, fontWeight: 500, fontSize: 7.8, color: th.inkSoft, lineHeight: 1.45 },
+  pregunta: { flexDirection: "row", gap: 10, marginTop: 6 },
+  preguntaNum: { fontFamily: FONTS.heading, fontWeight: 800, fontSize: 9, color: th.accentText, width: 16 },
   casoCard: { flex: 1, backgroundColor: th.dark, borderRadius: RADIUS.block, padding: 16 },
   casoLabel: { fontFamily: FONTS.body, fontSize: 7.8, color: th.onDarkSoft },
   casoName: { fontFamily: FONTS.heading, fontWeight: 800, fontSize: 12, color: th.white, marginTop: 4, marginBottom: 6 },
@@ -201,7 +208,7 @@ export function PropuestaProspectoPdf({ empresa, idioma, propuesta: c, fecha = n
     <Document title={`${idioma === "en" ? "Proposal" : "Propuesta"} — ${empresa}`} author="Pime Panamá" creator="Pime Communications Suite">
       <CoverPage t={t}
         eyebrow={c.eyebrow}
-        title={c.titulo}
+        title={cap(c.titulo)}
         subtitle={c.subtitulo}
         preparedFor={empresa}
         date={fmtDate(fecha, idioma)}
@@ -212,12 +219,12 @@ export function PropuestaProspectoPdf({ empresa, idioma, propuesta: c, fecha = n
       <Page size="LETTER" style={s.page}>
         <ProposalPageHeader t={t} section={L.vimosSeccion} />
         <View style={s.body}>
-          <SectionIntro t={t} eyebrow={L.vimosEyebrow} title={c.vimos.titulo} subtitle={L.vimosSub} />
+          <SectionIntro t={t} eyebrow={L.vimosEyebrow} title={cap(c.vimos.titulo)} subtitle={L.vimosSub} />
           <View style={s.grid3}>
             {c.vimos.tarjetas.map((k, i) => (
               <View key={i} style={s.card} wrap={false}>
                 <View style={s.inicial}><Text style={s.inicialText}>{k.titulo.trim().charAt(0).toUpperCase()}</Text></View>
-                <Text style={s.cardTitle}>{k.titulo}</Text>
+                <Text style={s.cardTitle}>{cap(k.titulo)}</Text>
                 <Text style={s.cardBody}>{k.texto}</Text>
               </View>
             ))}
@@ -232,6 +239,17 @@ export function PropuestaProspectoPdf({ empresa, idioma, propuesta: c, fecha = n
               <Text style={s.colBody}>{c.vimos.bien}</Text>
             </View>
           </View>
+          {c.vimos.preguntas.length > 0 ? (
+            <View style={s.nota} wrap={false}>
+              <Text style={s.colTitle}>{L.preguntas}</Text>
+              {c.vimos.preguntas.map((q, i) => (
+                <View key={i} style={s.pregunta}>
+                  <Text style={s.preguntaNum}>{String(i + 1).padStart(2, "0")}</Text>
+                  <Text style={[s.colBody, { flex: 1 }]}>{q}</Text>
+                </View>
+              ))}
+            </View>
+          ) : null}
         </View>
         <Pie t={t} idioma={idioma} />
       </Page>
@@ -239,8 +257,7 @@ export function PropuestaProspectoPdf({ empresa, idioma, propuesta: c, fecha = n
       <Page size="LETTER" style={s.page}>
         <ProposalPageHeader t={t} section={L.propSeccion} />
         <View style={s.body}>
-          <SectionIntro t={t} eyebrow={L.propEyebrow} title={c.construiriamos.titulo} subtitle={L.propSub} />
-          <View style={s.nota}><Text style={s.notaText}>{L.nota}</Text></View>
+          <SectionIntro t={t} eyebrow={L.propEyebrow} title={cap(c.construiriamos.titulo)} subtitle={L.propSub} />
           <View style={s.grid3}>
             {fases.map((f, i) => (
               <View key={i} style={[s.fase, i === 0 ? s.faseFirst : s.faseOpt]} wrap={false}>
@@ -249,11 +266,17 @@ export function PropuestaProspectoPdf({ empresa, idioma, propuesta: c, fecha = n
                     {`${L.fase} ${i + 1}${i === 0 ? "" : ` · ${L.opcional}`}`.toUpperCase()}
                   </Pill>
                 </View>
-                <Text style={s.faseName}>{f.nombre}</Text>
+                <Text style={s.faseName}>{cap(f.nombre)}</Text>
                 <Text style={s.fasePrecio}>{L.precio}</Text>
                 <Text style={s.fasePlazo}>{f.plazo}</Text>
                 <Text style={s.faseBody}>{f.texto}</Text>
-                <View style={{ flexDirection: "row", marginTop: "auto" }}>
+                {f.incluye.map((x, j) => (
+                  <View key={j} style={s.incluye}>
+                    <ChevronCapas color={t.accent} size={7} />
+                    <Text style={s.incluyeText}>{cap(x)}</Text>
+                  </View>
+                ))}
+                <View style={{ flexDirection: "row", marginTop: "auto", paddingTop: 6 }}>
                   <Pill t={t} variant="outline">{i === 0 ? L.partida : L.separado}</Pill>
                 </View>
               </View>
@@ -330,7 +353,7 @@ export function PropuestaProspectoPdf({ empresa, idioma, propuesta: c, fecha = n
       </Page>
 
       <ClosingPage t={t} sectionTag={L.cierre} title={L.cierreTitulo}
-        steps={(c.pasos.length >= 2 ? c.pasos : L.pasos).map((p) => ({ title: p.titulo, description: p.texto }))}
+        steps={(c.pasos.length >= 2 ? c.pasos : L.pasos).map((p) => ({ title: cap(p.titulo), description: p.texto }))}
         etiquetas={L.cierreEtiquetas}
       />
     </Document>

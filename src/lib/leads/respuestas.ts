@@ -9,10 +9,10 @@ import { prisma } from "@/lib/prisma";
 import { sendMailFromAccount, assertResendConfigured } from "@/lib/mail/mail-send";
 import { persistSentEmail } from "@/lib/mail/persist-sent-email";
 import { renderPropuestaProspectoPdf } from "@/lib/pdf/render";
-import { leerPropuesta, redactarPropuesta, type PropuestaProspecto } from "./propuesta-prospecto";
+import { leerPropuesta, redactarCorreo, redactarPropuesta, type PropuestaProspecto } from "./propuesta-prospecto";
 import { tokenBaja } from "@/lib/crm/correo-baja";
 import { getSiteUrl } from "@/lib/site-url";
-import { archivoPropuesta, faltaParaEnviar, type EstadoRespuesta, type RespuestaVista } from "./respuestas-comun";
+import { archivoPropuesta, faltaParaEnviar, huellaCorreo, type EstadoRespuesta, type RespuestaVista } from "./respuestas-comun";
 
 export { loteDeAhora, type RespuestaVista } from "./respuestas-comun";
 
@@ -35,6 +35,7 @@ export function aVista(r: ConLead): RespuestaVista {
     correoId: r.correoId,
     linkedinAt: r.linkedinAt?.toISOString() ?? null,
     tienePropuesta: leerPropuesta(r.propuesta) != null,
+    propuestaFuente: leerPropuesta(r.propuesta)?.fuente ?? null,
     createdAt: r.createdAt.toISOString(),
     lead: {
       id: r.lead.id, name: r.lead.name, company: r.lead.company, status: r.lead.status, priority: r.lead.priority,
@@ -88,32 +89,37 @@ function pieLegal(cuerpo: string, userId: string, para: string | null, idioma: "
 }
 
 /**
- * La propuesta de la respuesta; la redacta la IA y la guarda si todavía no existe (o si se pide de nuevo). Mientras
- * la respuesta no se haya enviado, el correo se reescribe para que presente la propuesta adjunta (el borrador del
- * agente ofrecía «mandar un resumen»), conservando el pie legal.
+ * Arma la propuesta de una respuesta, en dos pasos y en este orden:
+ *  1. El correo. Solo la primera vez (si no hay propuesta) y mientras no se haya enviado: el borrador del agente
+ *     ofrecía «mandar un resumen» y se reescribe para presentar la propuesta adjunta, con el pie legal intacto.
+ *  2. La propuesta, a partir del correo tal como quedó. Así el PDF dice lo mismo que el correo.
+ * `soloPdf` rehace solo el paso 2 desde el correo actual (después de editarlo a mano).
  */
-export async function asegurarPropuesta(p: { userId: string; supabaseUid: string; id: string; rehacer?: boolean }): Promise<{ propuesta: PropuestaProspecto; empresa: string; idioma: "es" | "en" }> {
+export async function asegurarPropuesta(p: { userId: string; supabaseUid: string; id: string; soloPdf?: boolean }): Promise<{ propuesta: PropuestaProspecto; empresa: string; idioma: "es" | "en" }> {
   const r = await prisma.respuestaLead.findFirst({ where: { id: p.id, userId: p.userId }, include: { lead: { select: { name: true, company: true, notes: true } } } });
   if (!r) throw new Error("No encontré esa respuesta.");
   const empresa = r.lead.company || r.lead.name;
   const idioma = r.idioma === "en" ? "en" : "es";
-  const guardada = p.rehacer ? null : leerPropuesta(r.propuesta);
-  if (guardada) return { propuesta: guardada, empresa, idioma };
+  const guardada = leerPropuesta(r.propuesta);
+  const abierta = r.estado === "borrador" || r.estado === "fallo";
+  if (guardada && !p.soloPdf) return { propuesta: guardada, empresa, idioma };
 
-  // La base es el borrador original del agente (queda en la nota del lead), no el correo ya reescrito: al rehacer,
-  // el modelo copiaba lo que ya había escrito, errores incluidos.
-  const original = r.lead.notes?.match(/Correo \(borrador, no enviado\):\nAsunto: ([^\n]*)\n\n([\s\S]*?)(?:\n+—\n|$)/);
-  const { propuesta } = await redactarPropuesta({
-    empresa, idioma, notas: r.lead.notes ?? "", supabaseUid: p.supabaseUid,
-    asunto: original?.[1] ?? r.asunto, cuerpo: original?.[2] ?? r.cuerpo,
-  });
-  const reescribir = propuesta.correo && r.adjuntarPdf && (r.estado === "borrador" || r.estado === "fallo");
+  let asunto = r.asunto, cuerpo = r.cuerpo;
+  if (!guardada && abierta && r.adjuntarPdf) {
+    // La base es el borrador original del agente (queda en la nota del lead), no un correo ya reescrito.
+    const original = r.lead.notes?.match(/Correo \(borrador, no enviado\):\nAsunto: ([^\n]*)\n\n([\s\S]*?)(?:\n+—\n|$)/);
+    const correo = await redactarCorreo({
+      empresa, idioma, notas: r.lead.notes ?? "", supabaseUid: p.supabaseUid,
+      asunto: original?.[1] ?? r.asunto, cuerpo: original?.[2] ?? r.cuerpo,
+    });
+    asunto = correo.asunto;
+    cuerpo = correo.cuerpo.trim() + pieLegal(r.cuerpo, p.userId, r.para, idioma);
+  }
+
+  const { propuesta } = await redactarPropuesta({ empresa, idioma, notas: r.lead.notes ?? "", supabaseUid: p.supabaseUid, asunto, cuerpo });
   await prisma.respuestaLead.update({
     where: { id: r.id },
-    data: {
-      propuesta, propuestaAt: new Date(),
-      ...(reescribir ? { asunto: propuesta.correo!.asunto, cuerpo: propuesta.correo!.cuerpo.trim() + pieLegal(r.cuerpo, p.userId, r.para, idioma) } : {}),
-    },
+    data: { propuesta, propuestaAt: new Date(), ...(asunto !== r.asunto || cuerpo !== r.cuerpo ? { asunto, cuerpo } : {}) },
   });
   return { propuesta, empresa, idioma };
 }
@@ -159,6 +165,10 @@ export async function enviarRespuesta(p: {
 
   try {
     assertResendConfigured();
+    // El PDF tiene que decir lo mismo que el correo que sale: si el correo cambió después de armarlo, se rehace.
+    if (r.adjuntarPdf && leerPropuesta(r.propuesta)?.fuente !== huellaCorreo(r.asunto, r.cuerpo)) {
+      await asegurarPropuesta({ userId: p.userId, supabaseUid: p.supabaseUid, id: r.id, soloPdf: true });
+    }
     const adjuntos = r.adjuntarPdf
       ? [await pdfDePropuesta({ userId: p.userId, supabaseUid: p.supabaseUid, id: r.id }).then(({ pdf, nombre }) => ({ filename: nombre, contentType: "application/pdf", content: pdf }))]
       : [];

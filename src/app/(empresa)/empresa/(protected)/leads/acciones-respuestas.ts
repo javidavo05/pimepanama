@@ -12,7 +12,7 @@ import { puedeVer } from "@/lib/auth/permisos";
 import { asegurarPropuesta, enviarRespuesta, unaRespuesta, type RespuestaVista } from "@/lib/leads/respuestas";
 import { PropuestaError } from "@/lib/leads/propuesta-prospecto";
 
-const TIEMPO_POR_LLAMADA_MS = 40_000;
+const TIEMPO_POR_LLAMADA_MS = 150_000;
 const CORREO_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 type Resultado<T> = { ok: true; dato: T } | { ok: false; error: string };
@@ -70,11 +70,14 @@ export async function marcarLinkedinAction(id: string, hecho: boolean): Promise<
   return devolver(u.id, id);
 }
 
-/** Redacta la propuesta en PDF (o la vuelve a redactar) para revisarla antes de enviar. */
+/**
+ * Redacta la propuesta en PDF para revisarla antes de enviar. La primera vez también reescribe el correo;
+ * `rehacer` la vuelve a armar desde el correo tal como está ahora (después de editarlo).
+ */
 export async function prepararPropuestaAction(id: string, rehacer: boolean): Promise<Resultado<RespuestaVista>> {
   const u = await usuario();
   try {
-    await asegurarPropuesta({ userId: u.id, supabaseUid: u.supabaseUid, id, rehacer });
+    await asegurarPropuesta({ userId: u.id, supabaseUid: u.supabaseUid, id, soloPdf: rehacer });
   } catch (e) {
     return { ok: false, error: e instanceof PropuestaError || e instanceof Error ? e.message : "No se pudo redactar la propuesta." };
   }

@@ -37,6 +37,8 @@ export type RespuestaVista = {
   correoId: string | null;
   linkedinAt: string | null;
   tienePropuesta: boolean;
+  /** huellaCorreo del correo del que salió la propuesta (null en las anteriores al 2026-10-22). */
+  propuestaFuente: string | null;
   createdAt: string;
   lead: { id: string; name: string; company: string | null; status: string; priority: string; sitio: string | null };
 };
@@ -53,3 +55,16 @@ export function faltaParaEnviar(r: Pick<RespuestaVista, "para" | "asunto" | "cue
   return null;
 }
 
+
+/** Huella del correo (sin el pie legal) con el que se redactó una propuesta. Igual en servidor y navegador. */
+export function huellaCorreo(asunto: string, cuerpo: string): string {
+  const s = `${asunto.trim()}\n${cuerpo.replace(/\n+—\n[\s\S]*$/, "").trim()}`;
+  let h = 5381;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+  return (h >>> 0).toString(36);
+}
+
+/** La propuesta salió de este mismo correo. Si el correo cambió después, hay que rehacerla. */
+export function propuestaAlDia(r: Pick<RespuestaVista, "tienePropuesta" | "propuestaFuente" | "asunto" | "cuerpo">): boolean {
+  return r.tienePropuesta && r.propuestaFuente === huellaCorreo(r.asunto, r.cuerpo);
+}

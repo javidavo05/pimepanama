@@ -5,7 +5,7 @@ import Link from "@/components/empresa/link";
 import { btn, seg } from "@/components/empresa/page-header";
 import { campo } from "@/components/empresa/clientes/formularios";
 import { chip, fechaHora } from "@/components/empresa/crm-ficha/comun";
-import { faltaParaEnviar, type RespuestaVista } from "@/lib/leads/respuestas-comun";
+import { faltaParaEnviar, propuestaAlDia, type RespuestaVista } from "@/lib/leads/respuestas-comun";
 import {
   descartarRespuestaAction,
   enviarRespuestasAction,
@@ -180,13 +180,20 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
     }
   }
 
+  /** Primera vez: correo y PDF. Si ya había PDF, lo rehace desde el correo tal como está (con lo editado). */
   async function prepararPropuestas(lote: string, ids: string[]) {
     setAviso(null);
+    setOcupado({ lote, texto: "Guardando cambios…" });
+    const errGuardar = await guardarSiHaceFalta(ids);
+    if (errGuardar) {
+      setOcupado(null);
+      return setAviso({ tipo: "error", texto: errGuardar });
+    }
     let hechas = 0;
     for (const id of ids) {
       const quien = respuestas.find((r) => r.id === id);
-      setOcupado({ lote, texto: `Redactando la propuesta de ${quien?.lead.company || quien?.lead.name || "…"}`, hechas, total: ids.length, desde: Date.now(), porItemMs: 18000, ids: [id], tipo: "preparar" });
-      const r = await prepararPropuestaAction(id, false).catch(() => ({ ok: false as const, error: "Se cortó la conexión." }));
+      setOcupado({ lote, texto: `Redactando la propuesta de ${quien?.lead.company || quien?.lead.name || "…"}`, hechas, total: ids.length, desde: Date.now(), porItemMs: quien?.tienePropuesta ? 25000 : 45000, ids: [id], tipo: "preparar" });
+      const r = await prepararPropuestaAction(id, !!quien?.tienePropuesta).catch(() => ({ ok: false as const, error: "Se cortó la conexión." }));
       if (!r.ok) {
         setOcupado(null);
         return setAviso({ tipo: "error", texto: `Quedaron ${hechas} de ${ids.length} propuestas. ${r.error}` });
@@ -261,12 +268,13 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
           const listas = filas.filter((r) => !faltaParaEnviar(conCambios(r)));
           const elegidas = listas.filter((r) => !quitadas.has(r.id));
           // Todas las que siguen abiertas y no tienen propuesta, tengan o no correo.
-          const sinPropuesta = filas.filter((r) => !r.tienePropuesta && (r.estado === "borrador" || r.estado === "fallo"));
+          // Sin PDF o con un PDF que ya no coincide con el correo.
+          const sinPropuesta = filas.filter((r) => !propuestaAlDia(conCambios(r)) && (r.estado === "borrador" || r.estado === "fallo"));
           const abiertas = filas.filter((r) => r.estado === "borrador" || r.estado === "fallo");
           const ocupadoAqui = ocupado?.lote === lote;
           const resumen: [Tono, string][] = [
             [listas.length ? "ok" : "neutro", `${listas.length} por enviar`],
-            [sinPropuesta.length ? "falta" : "ok", sinPropuesta.length ? `${sinPropuesta.length} sin PDF` : "PDF listos"],
+            [sinPropuesta.length ? "falta" : "ok", sinPropuesta.length ? `${sinPropuesta.length} PDF por preparar` : "PDF listos"],
             [filas.some((r) => !r.para) ? "pendiente" : "ok", `${filas.filter((r) => !r.para).length} sin correo`],
           ];
           return (
@@ -334,8 +342,10 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
                   const correo = estadoCorreo(r);
                   const li = estadoLinkedin(r);
                   const abierta_ = r.estado === "borrador" || r.estado === "fallo";
-                  const pdf: { tono: Tono; texto: string } = r.tienePropuesta ? { tono: "ok", texto: "Lista" }
-                    : preparando ? { tono: "pendiente", texto: "Preparando…" }
+                  const alDia = propuestaAlDia(r);
+                  const pdf: { tono: Tono; texto: string } = preparando ? { tono: "pendiente", texto: "Preparando…" }
+                    : alDia ? { tono: "ok", texto: "Lista" }
+                    : r.tienePropuesta ? { tono: abierta_ ? "pendiente" : "ok", texto: abierta_ ? "No coincide" : "Enviada" }
                     : { tono: "falta", texto: "No existe" };
                   return (
                     <li key={r.id}>
@@ -367,13 +377,13 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
                         <div className="col-span-2 grid grid-cols-2 gap-2 xl:contents">
                           <Celda titulo="Correo" {...correo} />
                           <Celda titulo="PDF" {...pdf}>
-                            {!r.tienePropuesta && abierta_ && !preparando && (
+                            {!alDia && abierta_ && !preparando && (
                               <button type="button" disabled={!!ocupado} onClick={() => prepararPropuestas(lote, [r.id])}
                                 className="-my-1 inline-flex min-h-9 min-w-11 shrink-0 items-center justify-center rounded-md bg-panel px-2 text-xs font-semibold text-fg hover:bg-fill disabled:opacity-50">
-                                Preparar
+                                {r.tienePropuesta ? "Rehacer" : "Preparar"}
                               </button>
                             )}
-                            {r.tienePropuesta && (
+                            {alDia && (
                               <a href={pdfUrl(r.id)} target="_blank" rel="noreferrer" className="-my-1 inline-flex min-h-9 min-w-11 shrink-0 items-center justify-center rounded-md bg-panel px-2 text-xs font-semibold text-fg hover:bg-fill">Ver</a>
                             )}
                           </Celda>
@@ -478,9 +488,8 @@ function Detalle({ r, editable, ocupado, puedeEnviar, onCambio, onActualizada, o
               <>
                 <a href={pdfUrl(r.id)} target="_blank" rel="noreferrer" className={botonTexto}>Ver PDF</a>
                 {editable && (
-                  <button type="button" disabled={bloqueado} className={botonTexto}
-                    onClick={() => correr("rehacer", () => prepararPropuestaAction(r.id, true), "Propuesta y correo redactados de nuevo. Revisa el texto y ábrela con «Ver PDF».")}>
-                    {trabajando === "rehacer" ? "Redactando… unos 15 segundos" : "Redactar de nuevo"}
+                  <button type="button" disabled={bloqueado} className={botonTexto} onClick={onPreparar}>
+                    Rehacer el PDF desde este correo
                   </button>
                 )}
               </>
@@ -490,7 +499,10 @@ function Detalle({ r, editable, ocupado, puedeEnviar, onCambio, onActualizada, o
               </button>
             )}
           </div>
-          <p className="text-xs text-fg-faint">La IA la arma con lo que el agente vio de la empresa, sin precios, y reescribe el correo para que la presente. Revisa los dos antes de enviar.</p>
+          {editable && r.tienePropuesta && !propuestaAlDia(r) && (
+            <p className="text-sm text-warn" role="status">Cambiaste el correo y el PDF ya no coincide. Rehazlo para revisarlo; si no, se rehace solo al enviar.</p>
+          )}
+          <p className="text-xs text-fg-faint">La primera vez la IA reescribe el correo para presentar la propuesta y arma el PDF a partir de ese correo: los mismos hechos, el mismo caso y las mismas piezas, con más detalle. Sin precios.</p>
         </div>
 
         {editable && (

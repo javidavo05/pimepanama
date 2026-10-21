@@ -14,7 +14,7 @@ import type { SolicitudCotizacion } from "@/lib/mail/ai-analyze";
 export const metadata = { title: "Leads — Pime Suite" };
 export const dynamic = "force-dynamic";
 // Enviar una tanda y redactar propuestas corre en las acciones de esta página.
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 export default async function LeadsPage({ searchParams }: { searchParams: Promise<{ vista?: string }> }) {
   const user = await getEmpresaUser();
