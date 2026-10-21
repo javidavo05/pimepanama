@@ -1,4 +1,4 @@
-/** Textos de /baja en español e inglés: los correos en frío a EE. UU. llegan con ?lang=en. */
+/** Textos de /baja en español e inglés. Cada enlace lleva su idioma: ?lang=es o ?lang=en. */
 export type Idioma = "es" | "en";
 
 export const TEXTOS = {
@@ -32,7 +32,7 @@ export const TEXTOS = {
   },
 };
 
-/** ?lang=en manda; si no viene (correos viejos), el idioma del navegador. */
+/** ?lang manda; solo los correos enviados antes del 2026-10-21 llegan sin él, y ahí decide el navegador. */
 export function idiomaDe(lang: string | undefined, acceptLanguage: string | null): Idioma {
   if (lang === "en" || lang === "es") return lang;
   return /^en\b/i.test(acceptLanguage?.trim() ?? "") ? "en" : "es";

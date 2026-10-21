@@ -73,7 +73,7 @@ export async function enviarLote(p: { campanaId: string; userId: string; miNombr
           preheader: rellenarTexto(campana.asunto, datos).trim(),
           logoUrl: logo,
           siteUrl: site,
-          bajaUrl: `${site}/baja/${tokenBaja(p.userId, e.email)}`,
+          bajaUrl: `${site}/baja/${tokenBaja(p.userId, e.email)}?lang=es`,
           pixelUrl: `${site}/api/c/abrir/${e.id}.gif`,
         }),
         motivo: `campaña ${campana.id}`,
