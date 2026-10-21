@@ -28,6 +28,8 @@ export interface ChartColors {
   primary: string;
   /** Serie secundaria. */
   secondary: string;
+  /** Lo facturado, como en Dinero. */
+  info: string;
 }
 
 // theme-ok: red de seguridad si las variables no se pueden leer (SSR, pruebas);
@@ -40,6 +42,7 @@ const FALLBACK: ChartColors = {
   legend: "rgb(74 85 103)",
   primary: "rgb(15 118 178)",
   secondary: "rgb(19 118 56)",
+  info: "rgb(37 99 235)",
 };
 
 function readVar(name: string, alpha?: number): string | null {
@@ -56,8 +59,9 @@ function resolve(): ChartColors {
   const legend = readVar("--c-fg-dim");
   const primary = readVar("--c-brand");
   const secondary = readVar("--c-ok");
-  if (!grid || !tick || !tickMuted || !cursor || !legend || !primary || !secondary) return FALLBACK;
-  return { grid, tick, tickMuted, cursor, legend, primary, secondary };
+  const info = readVar("--c-info");
+  if (!grid || !tick || !tickMuted || !cursor || !legend || !primary || !secondary || !info) return FALLBACK;
+  return { grid, tick, tickMuted, cursor, legend, primary, secondary, info };
 }
 
 export function useChartColors(): ChartColors {
