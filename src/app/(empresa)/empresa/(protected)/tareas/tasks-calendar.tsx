@@ -37,7 +37,12 @@ type PopoverState =
   | { kind: "create"; date: Date; hour: number | null }
   | { kind: "edit"; task: SerializedTask };
 
+/** Evento de tu Google Calendar: se ve en la agenda, pero se cambia en Google. */
+type EventoGoogle = { id: string; titulo: string; inicio: Date; fin: Date | null; todoElDia: boolean; lugar: string | null; enlace: string | null };
+
 interface TasksCalendarProps {
+  /** Sube cuando cambia la conexión con Google, para volver a leer los eventos. */
+  versionGoogle?: number;
   mode: "month" | "week" | "day";
   tasks: SerializedTask[];
   projects: ProjectOption[];
@@ -46,7 +51,7 @@ interface TasksCalendarProps {
   onCreate: (payload: Record<string, unknown>) => Promise<SerializedTask | null>;
 }
 
-export function TasksCalendar({ mode, tasks, projects, onPatch, onDelete, onCreate }: TasksCalendarProps) {
+export function TasksCalendar({ mode, tasks, projects, onPatch, onDelete, onCreate, versionGoogle = 0 }: TasksCalendarProps) {
   const [cursor, setCursor] = useState(() => startOfDay(new Date()));
   const [popover, setPopover] = useState<PopoverState | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -83,6 +88,40 @@ export function TasksCalendar({ mode, tasks, projects, onPatch, onDelete, onCrea
     if (mode === "week") return Array.from({ length: 7 }, (_, i) => addDays(mondayOf(cursor), i));
     return [];
   }, [mode, cursor]);
+
+  // Eventos de Google del rango que se ve. Si no está conectado, la agenda solo muestra tareas.
+  const [google, setGoogle] = useState<{ estado: "cargando" | "sin" | "ok" | "error"; eventos: EventoGoogle[]; error?: string }>({ estado: "cargando", eventos: [] });
+  const rango = mode === "month" ? (monthDays.length ? [monthDays[0], addDays(monthDays[monthDays.length - 1], 1)] : null) : weekDays.length ? [weekDays[0], addDays(weekDays[weekDays.length - 1], 1)] : null;
+  const desdeISO = rango?.[0].toISOString(), hastaISO = rango?.[1].toISOString();
+  useEffect(() => {
+    if (!desdeISO || !hastaISO) return;
+    let vivo = true;
+    fetch(`/api/empresa/calendario/eventos?desde=${encodeURIComponent(desdeISO)}&hasta=${encodeURIComponent(hastaISO)}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => { if (vivo) setGoogle({ estado: j.estado ?? "error", error: j.error ?? undefined, eventos: (j.eventos ?? []).map((e: { inicio: string; fin: string | null } & Omit<EventoGoogle, "inicio" | "fin">) => ({ ...e, inicio: new Date(e.inicio), fin: e.fin ? new Date(e.fin) : null })) }); })
+      .catch(() => { if (vivo) setGoogle({ estado: "error", eventos: [], error: "No se pudo leer tu Google Calendar." }); });
+    return () => { vivo = false; };
+  }, [desdeISO, hastaISO, versionGoogle]);
+
+  function eventosDelDia(day: Date): EventoGoogle[] {
+    const ini = startOfDay(day).getTime(), fin = ini + 86_400_000;
+    return google.eventos
+      .filter((e) => (e.todoElDia ? e.inicio.getTime() < fin && (e.fin ? e.fin.getTime() : e.inicio.getTime() + 86_400_000) > ini : sameDay(e.inicio, day)))
+      .sort((a, b) => (a.todoElDia !== b.todoElDia ? (a.todoElDia ? -1 : 1) : a.inicio.getTime() - b.inicio.getTime()));
+  }
+
+  function EventoChip({ ev, block }: { ev: EventoGoogle; block?: boolean }) {
+    const hora = !ev.todoElDia ? `${fmtTime(ev.inicio)}${ev.fin ? `–${fmtTime(ev.fin)}` : ""}` : null;
+    const clase = `w-full text-left flex ${block ? "flex-col h-full gap-1 py-1" : "items-center gap-1 py-1"} px-2 rounded border border-dashed border-iris/40 bg-iris/[0.08] text-iris-fg overflow-hidden text-[10px]`;
+    const cuerpo = <>
+      <span className="flex items-center gap-1 shrink-0"><span className="w-1.5 h-1.5 rounded-full shrink-0 bg-iris" aria-hidden />{hora && <span className="font-mono shrink-0">{hora}</span>}</span>
+      <span className="truncate leading-tight">{ev.titulo}</span>
+    </>;
+    const titulo = `${ev.titulo}${ev.lugar ? ` · ${ev.lugar}` : ""} · Google Calendar (se cambia en Google)`;
+    return ev.enlace
+      ? <a href={ev.enlace} target="_blank" rel="noreferrer" title={titulo} onClick={(e) => e.stopPropagation()} className={`${clase} hover:border-iris/70`}>{cuerpo}</a>
+      : <div title={titulo} onClick={(e) => e.stopPropagation()} className={clase}>{cuerpo}</div>;
+  }
 
   const headerLabel =
     mode === "month"
@@ -422,7 +461,13 @@ export function TasksCalendar({ mode, tasks, projects, onPatch, onDelete, onCrea
             ›
           </button>
         </div>
-        <p className="text-fg-mute text-sm font-medium capitalize">{headerLabel}</p>
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <span className="inline-flex items-center gap-1 text-xs text-fg-dim" aria-live="polite">
+            <span className={`w-2 h-2 rounded-full ${google.estado === "ok" ? "bg-iris" : google.estado === "error" ? "bg-danger" : "bg-fill-3"}`} aria-hidden />
+            {google.estado === "ok" ? `Google Calendar · ${google.eventos.length} ${google.eventos.length === 1 ? "evento" : "eventos"}` : google.estado === "error" ? "Google Calendar no se pudo leer" : google.estado === "sin" ? "Google Calendar sin conectar" : "Leyendo Google Calendar…"}
+          </span>
+          <p className="text-fg-mute text-sm font-medium capitalize">{headerLabel}</p>
+        </div>
       </div>
 
       {mode === "month" && (
@@ -437,10 +482,12 @@ export function TasksCalendar({ mode, tasks, projects, onPatch, onDelete, onCrea
           <div className="grid grid-cols-7">
             {monthDays.map((day, i) => {
               const dayTasks = tasksOnDay(day);
+              const dayEvents = eventosDelDia(day);
               const isCurrentMonth = day.getMonth() === cursor.getMonth();
               const isToday = sameDay(day, new Date());
               const visible = dayTasks.slice(0, 3);
-              const overflow = dayTasks.length - visible.length;
+              const visibleEvents = dayEvents.slice(0, Math.max(0, 3 - visible.length));
+              const overflow = dayTasks.length + dayEvents.length - visible.length - visibleEvents.length;
               return (
                 <div
                   key={i}
@@ -458,6 +505,7 @@ export function TasksCalendar({ mode, tasks, projects, onPatch, onDelete, onCrea
                     {visible.map((t) => (
                       <TaskChip key={t.id} task={t} compact />
                     ))}
+                    {visibleEvents.map((ev) => <EventoChip key={ev.id} ev={ev} />)}
                     {overflow > 0 && <p className="text-[10px] text-fg-faint px-2">+{overflow} más</p>}
                   </div>
                 </div>
@@ -494,6 +542,7 @@ export function TasksCalendar({ mode, tasks, projects, onPatch, onDelete, onCrea
                   .map((t) => (
                     <TaskChip key={t.id} task={t} compact />
                   ))}
+                {eventosDelDia(day).filter((ev) => ev.todoElDia).map((ev) => <EventoChip key={ev.id} ev={ev} />)}
               </div>
             ))}
           </div>
@@ -519,6 +568,17 @@ export function TasksCalendar({ mode, tasks, projects, onPatch, onDelete, onCrea
                       className="border-b border-line hover:bg-fill cursor-pointer"
                     />
                   ))}
+                  {eventosDelDia(day)
+                    .filter((ev) => !ev.todoElDia)
+                    .map((ev) => {
+                      const top = ev.inicio.getHours() * ROW_HEIGHT + (ev.inicio.getMinutes() / 60) * ROW_HEIGHT;
+                      const min = ev.fin ? Math.max((ev.fin.getTime() - ev.inicio.getTime()) / 60000, 15) : 30;
+                      return (
+                        <div key={ev.id} className="absolute left-1 right-1 z-[5]" style={{ top, height: (min / 60) * ROW_HEIGHT }}>
+                          <EventoChip ev={ev} block />
+                        </div>
+                      );
+                    })}
                   {tasksOnDay(day)
                     .filter((t) => !t.allDay)
                     .map((t) => {

@@ -45,5 +45,7 @@ export interface EquipoInfo {
 
 /** Nombre de quien tiene la tarea: el responsable del equipo o, en tareas viejas, el texto de «assignee». */
 export function nombreResponsable(task: Pick<TaskItem, "responsable" | "assignee">): string | null {
-  return task.responsable?.nombre ?? task.assignee ?? null;
+  const n = task.responsable?.nombre ?? task.assignee ?? null;
+  // Sin nombre en el perfil llega el correo: se muestra la parte antes de la arroba, que cabe en la fila.
+  return n && n.includes("@") && !n.includes(" ") ? n.split("@")[0] : n;
 }

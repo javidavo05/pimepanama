@@ -7,6 +7,7 @@ import { Segmented } from "@/components/empresa/tasks/task-parts";
 import { TaskOverview } from "@/components/empresa/tasks/task-overview";
 import type { TaskItem } from "@/components/empresa/tasks/types";
 import { TasksCalendar } from "./tasks-calendar";
+import { PipelineGoogle } from "@/components/empresa/calendario/pipeline-google";
 
 export type SerializedTask = TaskItem;
 
@@ -19,6 +20,7 @@ export function TasksView() {
   const { tasks, projects, equipoInfo, patchTask, deleteTask, createTask, openTask } = useTaskStore();
   const [view, setView] = useState<ViewMode>("list");
   const [alcance, setAlcance] = useState<Alcance>("todas");
+  const [versionGoogle, setVersionGoogle] = useState(0);
   const params = useSearchParams();
 
   useEffect(() => {
@@ -48,6 +50,7 @@ export function TasksView() {
 
   return (
     <div>
+      <PipelineGoogle onCambio={() => { setVersionGoogle((v) => v + 1); if (view === "list") setView("week"); }} />
       <div className="mb-6 flex flex-wrap items-center gap-3">
         <Segmented
           label="Vista"
@@ -75,6 +78,7 @@ export function TasksView() {
         <TaskOverview defaultGroupBy="date" soloMias={soloMias} />
       ) : (
         <TasksCalendar
+          versionGoogle={versionGoogle}
           mode={view}
           tasks={visibles}
           projects={projects}
