@@ -29,6 +29,7 @@
     "test:db": "node --env-file=.env.local --import tsx --test scripts/pruebas/*.test.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^1.0.0",
     "@aws-sdk/client-s3": "^3.1075.0",
     "@aws-sdk/s3-request-presigner": "^3.1075.0",
     "@hookform/resolvers": "^5.4.0",

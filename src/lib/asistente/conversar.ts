@@ -56,6 +56,11 @@ En la respuesta escribe las fechas como «28 ago» y los montos como «USD 300.0
 }
 
 export async function conversar(user: U & { supabaseUid: string }, historial: Mensaje[]): Promise<{ respuesta: string; acciones: Accion[] }> {
+  // Proveedor del cerebro: OpenAI por defecto. Con ASISTENTE_IA=claude (y ANTHROPIC_API_KEY) usa Claude.
+  if (process.env.ASISTENTE_IA === "claude" && process.env.ANTHROPIC_API_KEY) {
+    const { conversarConClaude } = await import("./conversar-claude");
+    return conversarConClaude(user, historial, sistema(user.fullName?.split(" ")[0] ?? null));
+  }
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const pedido = [...historial].reverse().find((m) => m.rol === "usuario")?.texto ?? "";
   const mensajes: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
@@ -108,7 +113,7 @@ export async function conversar(user: U & { supabaseUid: string }, historial: Me
 }
 
 /** Respuesta de respaldo armada con lo que se hizo, por si el modelo no alcanzó a escribirla. */
-function resumenDe(acciones: Accion[]): string {
+export function resumenDe(acciones: Accion[]): string {
   const grupo = (t: string, xs: Accion[]) => (xs.length ? `${t}\n${xs.map((x) => `- ${x.summary}${x.error ? ` (${x.error})` : ""}`).join("\n")}` : "");
   return [grupo("Hecho:", acciones.filter((a) => a.estado === "hecha")), grupo("Por confirmar:", acciones.filter((a) => a.estado === "propuesta")), grupo("No se pudo:", acciones.filter((a) => a.estado === "error"))].filter(Boolean).join("\n\n");
 }
