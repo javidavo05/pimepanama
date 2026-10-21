@@ -8,6 +8,24 @@ function escapeHtml(s: string): string {
     .replace(/"/g, "&quot;");
 }
 
+const ENLACE = 'style="color:#2F5BEA;text-decoration:underline;"';
+
+/**
+ * Enlaces en texto ya escapado. «…dese de baja aquí: https://…/baja/…» (el pie de los correos en frío) queda como
+ * «…<a>dese de baja aquí</a>.»; cualquier otra dirección, como enlace con su propio texto.
+ */
+function enlazar(html: string): string {
+  return html
+    .replace(/([^\s:.,;][^:<>]*?):\s*(https?:\/\/[^\s<]+\/baja\/[^\s<]+)/g, (_, texto: string, url: string) => {
+      const i = texto.search(/(dese de baja aquí|unsubscribe here)$/i);
+      return i < 0
+        ? `${texto}: <a href="${url}" ${ENLACE}>${url}</a>`
+        : `${texto.slice(0, i)}<a href="${url}" ${ENLACE}>${texto.slice(i)}</a>.`;
+    })
+    .replace(/(^|[\s(])(https?:\/\/[^\s<]+?)([.,;:!?)]?)(?=\s|$|<)/g, (m, antes: string, url: string, despues: string) =>
+      `${antes}<a href="${url}" ${ENLACE}>${url}</a>${despues}`);
+}
+
 /** Convierte texto plano (p. ej. respuesta IA) a HTML de correo. */
 export function plainTextToHtml(text: string): string {
   const trimmed = text.trim();
@@ -18,7 +36,7 @@ export function plainTextToHtml(text: string): string {
     .split(/\n{2,}/)
     .map(
       (p) =>
-        `<p style="margin:0 0 1em 0;line-height:1.65;">${escapeHtml(p).replace(/\n/g, "<br>")}</p>`
+        `<p style="margin:0 0 1em 0;line-height:1.65;">${enlazar(escapeHtml(p)).replace(/\n/g, "<br>")}</p>`
     )
     .join("");
 }

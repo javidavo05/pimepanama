@@ -117,6 +117,9 @@ export async function sendMailViaResend(params: ResendSendParams): Promise<Resen
     headers["In-Reply-To"] = inReplyTo;
     headers.References = references ?? inReplyTo;
   }
+  // Correo en frío con enlace de baja: Gmail y Yahoo lo muestran como «Anular suscripción» junto al remitente.
+  const baja = body.match(/https?:\/\/[^\s<"]+\/baja\/[^\s<".]+\.[^\s<".]+/)?.[0];
+  if (baja) headers["List-Unsubscribe"] = `<${baja}>`;
 
   const { data, error } = await resend.emails.send({
     from,
