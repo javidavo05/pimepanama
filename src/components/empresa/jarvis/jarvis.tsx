@@ -241,7 +241,31 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
     const mo = new MutationObserver(() => { leerPaleta(); if (quieto) dibujar(0); });
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     let W = 0, H = 0, raf = 0, ultimo = 0, visible = true;
-    const parts = Array.from({ length: 80 }, () => ({ r: 0.45 + Math.random() * 0.9, a: Math.random() * 6.283, s: (Math.random() * 0.3 + 0.05) * (Math.random() < 0.5 ? -1 : 1), z: Math.random() * 1.2 + 0.3 }));
+    // Partículas: en espera forman el símbolo de Pime (las tres capas); al hablar, pensar o responder se
+    // deshacen en una esfera viva. Coordenadas del símbolo tomadas del SVG de marca (viewBox 100, centro 50,50).
+    const NP = Math.min(2400, Math.max(800, Math.round((st.clientWidth || 600) * 3.2)));
+    const lx = new Float32Array(NP), ly = new Float32Array(NP), sx = new Float32Array(NP), sy = new Float32Array(NP), sz = new Float32Array(NP);
+    const capa = new Uint8Array(NP), retraso = new Float32Array(NP), tam = new Float32Array(NP), fase = new Float32Array(NP);
+    const px = new Float32Array(NP), py = new Float32Array(NP), vx = new Float32Array(NP), vy = new Float32Array(NP);
+    const dentroRombo = (x: number, y: number) => Math.abs(x - 50) / 30 + Math.abs(y - 36) / (y < 36 ? 20 : 12) <= 1;
+    const enLinea = (y0: number) => { const u = Math.random(), x = 20 + u * 60, y = y0 + (u < 0.5 ? u * 2 : (1 - u) * 2) * 12; return [x + (Math.random() - 0.5) * 6, y + (Math.random() - 0.5) * 6]; };
+    for (let i = 0; i < NP; i++) {
+      const r = Math.random();
+      let x: number, y: number;
+      if (r < 0.5) { capa[i] = 0; do { x = 20 + Math.random() * 60; y = 16 + Math.random() * 32; } while (!dentroRombo(x, y)); }
+      else if (r < 0.75) { capa[i] = 1; [x, y] = enLinea(54); }
+      else { capa[i] = 2; [x, y] = enLinea(72); }
+      lx[i] = (x - 50) / 34; ly[i] = (y - 50) / 34;
+      // Esfera de Fibonacci: reparto parejo en la superficie.
+      const k = i + 0.5, phi = Math.acos(1 - (2 * k) / NP), th = Math.PI * (1 + Math.sqrt(5)) * k;
+      sx[i] = Math.cos(th) * Math.sin(phi); sy[i] = Math.cos(phi); sz[i] = Math.sin(th) * Math.sin(phi);
+      retraso[i] = Math.random() * 0.45; tam[i] = 1.1 + Math.random() * 1.6; fase[i] = Math.random() * 6.283;
+    }
+    let morf = 0, iniciado = false;
+    const puntero = { x: -9999, y: -9999 };
+    const mover = (e: PointerEvent) => { const r = st.getBoundingClientRect(); puntero.x = e.clientX - r.left; puntero.y = e.clientY - r.top; };
+    const salir = () => { puntero.x = -9999; puntero.y = -9999; };
+    st.addEventListener("pointermove", mover); st.addEventListener("pointerleave", salir);
     const N = conexiones.length;
     const posNodo = (i: number) => { const a = -Math.PI / 2 + (i * Math.PI * 2) / N; return { a, x: W / 2 + Math.cos(a) * W * 0.4, y: H / 2 + Math.sin(a) * H * 0.4 }; };
     const areas = memoria?.areas ?? [];
@@ -321,31 +345,53 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
       for (let k = 0; k < 3; k++) { const a0 = -t * 0.35 * vel + k * 2.094; anillo(cx, cy, R * 1.45, 2, `rgb(${C} / .75)`, a0, a0 + 0.55); }
       ctx.save(); ctx.setLineDash([2, 8]); anillo(cx, cy, R * 1.25, 1, `rgb(${C} / .4)`); ctx.restore();
       marcas(cx, cy, R * 1.12, 72, 6, -t * 0.12 * vel, `rgb(${C} / .55)`, 6);
-      for (let s = 0; s < 4; s++) { const b0 = t * 0.6 * vel + s * 1.571; anillo(cx, cy, R * 0.92, 3, `rgb(${C} / .85)`, b0, b0 + 1.05); }
-      anillo(cx, cy, R * 0.8, 1, `rgb(${C} / .3)`);
       if ((v.estado === "pensando" || v.estado === "transcribiendo") && !quieto) {
         const sw = t * 3; ctx.save(); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, R * 1.6, sw, sw + 0.6); ctx.closePath();
         const gs = ctx.createRadialGradient(cx, cy, R * 0.4, cx, cy, R * 1.6); gs.addColorStop(0, `rgb(${C} / 0)`); gs.addColorStop(1, `rgb(${C} / .18)`);
         ctx.fillStyle = gs; ctx.fill(); ctx.restore();
       }
-      if (v.estado === "escuchando" || v.estado === "hablando") {
-        const amp = v.estado === "hablando" ? 1 : 0.6; ctx.strokeStyle = `rgb(${C} / .9)`; ctx.lineWidth = 2; ctx.beginPath();
-        for (let w = 0; w < 96; w++) {
-          const aw = (w * 6.283) / 96, val = (Math.sin(t * 9 + w * 0.7) * 0.5 + Math.sin(t * 13 + w * 1.9) * 0.5) * amp, r0 = R * 0.62, r1 = r0 + Math.max(2, Math.abs(val) * R * 0.18);
-          ctx.moveTo(cx + Math.cos(aw) * r0, cy + Math.sin(aw) * r0); ctx.lineTo(cx + Math.cos(aw) * r1, cy + Math.sin(aw) * r1);
-        }
-        ctx.stroke();
+      // Brillo suave detrás de las partículas.
+      const gc = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.1);
+      gc.addColorStop(0, `rgb(${C} / ${document.documentElement.dataset.theme === "light" ? 0.1 : 0.22})`); gc.addColorStop(1, `rgb(${C} / 0)`);
+      ctx.fillStyle = gc; ctx.beginPath(); ctx.arc(cx, cy, R * 1.1, 0, 6.283); ctx.fill();
+      // Del símbolo a la esfera según el estado, con un desfase por partícula para que se desarme en cascada.
+      const objetivo = v.estado === "espera" ? 0 : 1;
+      morf += (objetivo - morf) * (quieto ? 1 : 0.06);
+      const claro = document.documentElement.dataset.theme === "light";
+      const colores = claro ? ["111 168 255", "31 91 255", "11 29 58"] : ["111 168 255", "76 125 255", "232 240 255"];
+      const amp = v.estado === "hablando" ? 0.14 : v.estado === "escuchando" ? 0.09 : v.estado === "pensando" || v.estado === "transcribiendo" ? 0.05 : 0.02;
+      const giro = t * (0.25 + 0.5 * vel * 0.25), cg = Math.cos(giro), sg = Math.sin(giro), inc = 0.38, ci = Math.cos(inc), si = Math.sin(inc);
+      const vaiven = Math.sin(t * 0.6) * 0.35, cv0 = Math.cos(vaiven), abre = (Math.sin(t * 1.3) * 0.5 + 0.5) * 0.09;
+      const RS = R * 1.05, RL = R * 0.95;
+      ctx.save();
+      if (!claro) ctx.globalCompositeOperation = "lighter";
+      for (let i = 0; i < NP; i++) {
+        // Símbolo: las capas se abren y cierran (capas abiertas) y el conjunto se mece en 3D.
+        const dy = capa[i] === 0 ? -abre : capa[i] === 2 ? abre : 0;
+        const ax = cx + lx[i] * cv0 * RL, ay = cy + (ly[i] + dy) * RL;
+        // Esfera: gira, se inclina y respira con la voz.
+        const x1 = sx[i] * cg + sz[i] * sg, z1 = -sx[i] * sg + sz[i] * cg;
+        const y2 = sy[i] * ci - z1 * si, z2 = sy[i] * si + z1 * ci;
+        const ruido = 1 + amp * Math.sin(t * 7 + fase[i] * 3 + sy[i] * 5);
+        const persp = 1 / (1.6 - z2 * 0.6);
+        const bx = cx + x1 * RS * ruido * persp * 1.2, by = cy + y2 * RS * ruido * persp * 1.2;
+        const m = Math.min(1, Math.max(0, (morf * 1.45 - retraso[i])));
+        const e = m * m * (3 - 2 * m);
+        let tx = ax + (bx - ax) * e, ty = ay + (by - ay) * e;
+        // El puntero empuja las partículas y vuelven solas.
+        const ddx = tx + vx[i] - puntero.x, ddy = ty + vy[i] - puntero.y, d2 = ddx * ddx + ddy * ddy;
+        if (d2 < 3600 && !quieto) { const f = (1 - d2 / 3600) * 6; const d = Math.sqrt(d2) || 1; vx[i] += (ddx / d) * f; vy[i] += (ddy / d) * f; }
+        vx[i] *= 0.9; vy[i] *= 0.9; tx += vx[i]; ty += vy[i];
+        if (!iniciado) { px[i] = tx; py[i] = ty; }
+        px[i] += (tx - px[i]) * 0.35; py[i] += (ty - py[i]) * 0.35;
+        const fondo = e * (1 - (z2 + 1) / 2);
+        const a = (claro ? 0.8 + 0.2 * Math.sin(t * 2 + fase[i]) : 0.6 + 0.4 * Math.sin(t * 2 + fase[i])) * (1 - fondo * 0.7);
+        const s = tam[i] * (1 + e * (persp - 0.6));
+        ctx.fillStyle = `rgb(${colores[capa[i]]} / ${a.toFixed(2)})`;
+        ctx.fillRect(px[i] - s / 2, py[i] - s / 2, s, s);
       }
-      for (const q of parts) { q.a += quieto ? 0 : q.s * 0.008 * vel; const rr = R * q.r; ctx.fillStyle = `rgb(${C} / ${0.25 + 0.35 * Math.sin(t + q.z * 4) ** 2})`; ctx.fillRect(cx + Math.cos(q.a) * rr, cy + Math.sin(q.a) * rr, q.z, q.z); }
-      const latido = v.estado === "hablando" ? 0.12 : v.estado === "escuchando" ? 0.08 : 0.04;
-      const pr = R * (0.42 + (quieto ? 0 : Math.sin(t * (v.estado === "espera" ? 2 : 8)) * latido));
-      const gc = ctx.createRadialGradient(cx, cy, 0, cx, cy, pr * 1.6);
-      gc.addColorStop(0, `rgb(${paleta.hot})`); gc.addColorStop(0.18, `rgb(${paleta.hot} / .9)`); gc.addColorStop(0.45, `rgb(${C} / .75)`); gc.addColorStop(1, `rgb(${C} / 0)`);
-      ctx.fillStyle = gc; ctx.beginPath(); ctx.arc(cx, cy, pr * 1.6, 0, 6.283); ctx.fill();
-      anillo(cx, cy, R * 0.5, 1, `rgb(${paleta.hot} / .35)`);
-      ctx.save(); ctx.translate(cx, cy); ctx.rotate(t * 0.2 * vel); ctx.strokeStyle = `rgb(${paleta.hot} / .45)`; ctx.lineWidth = 1; ctx.beginPath();
-      for (let k = 0; k < 3; k++) { const av = k * 2.094 - 1.571; ctx.lineTo(Math.cos(av) * R * 0.36, Math.sin(av) * R * 0.36); }
-      ctx.closePath(); ctx.stroke(); ctx.restore();
+      ctx.restore();
+      iniciado = true;
     }
     const bucle = (ms: number) => {
       raf = requestAnimationFrame(bucle);
@@ -355,7 +401,7 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
     const ro = new ResizeObserver(medir); ro.observe(st); medir();
     const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }); io.observe(st);
     if (!quieto) raf = requestAnimationFrame(bucle);
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); mo.disconnect(); };
+    return () => { cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); mo.disconnect(); st.removeEventListener("pointermove", mover); st.removeEventListener("pointerleave", salir); };
   }, [conexiones, memoria]);
 
   const N = conexiones.length;
@@ -374,7 +420,9 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
     <div ref={raiz} className={`jv${completa ? " jv-full" : ""}`}>
       <div className="jv-top">
         <div className="jv-brand">
-          <div className="jv-glyph" aria-hidden><i /></div>
+          <div className="jv-glyph" aria-hidden>
+            <svg viewBox="0 0 100 100" className="jv-logo"><g strokeLinecap="round" strokeLinejoin="round" strokeWidth="8"><path className="jv-c3" d="M20 72 50 84 80 72" fill="none" /><path className="jv-c2" d="M20 54 50 66 80 54" fill="none" /><path className="jv-c1" d="M20 36 50 16 80 36 50 48Z" /></g></svg>
+          </div>
           <div className="jv-hola">
             <span className="jv-word">JARVIS</span>
             <h1>{nombre ? `Hola, ${nombre}` : "Hola"}</h1>

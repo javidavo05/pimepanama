@@ -35,7 +35,15 @@ html[data-theme="light"] .jv {
 .jv-top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: space-between }
 .jv-brand { display: flex; align-items: center; gap: 12px; min-width: 0 }
 .jv-glyph { width: 40px; height: 40px; flex: none; border-radius: 50%; border: 1px solid var(--jv-cyan); display: grid; place-items: center; box-shadow: 0 0 16px rgb(var(--jv-rgb) / .45), inset 0 0 8px rgb(var(--jv-rgb) / .35) }
-.jv-glyph i { width: 16px; height: 16px; border-radius: 50%; background: radial-gradient(circle, var(--jv-hot), var(--jv-cyan) 60%, transparent 72%) }
+.jv-logo { width: 24px; height: 24px; overflow: visible }
+.jv-logo .jv-c1 { fill: #6fa8ff; stroke: #6fa8ff; animation: jv-capa-arriba 3.2s ease-in-out infinite }
+.jv-logo .jv-c2 { stroke: #4c7dff }
+.jv-logo .jv-c3 { stroke: #e8f0ff; animation: jv-capa-abajo 3.2s ease-in-out infinite }
+html[data-theme="light"] .jv-logo .jv-c2 { stroke: #1f5bff }
+html[data-theme="light"] .jv-logo .jv-c3 { stroke: #0b1d3a }
+@keyframes jv-capa-arriba { 50% { transform: translateY(-6px) } }
+@keyframes jv-capa-abajo { 50% { transform: translateY(6px) } }
+@media (prefers-reduced-motion: reduce) { .jv-logo .jv-c1, .jv-logo .jv-c3 { animation: none } }
 .jv-hola { display: grid; gap: 0; min-width: 0 }
 .jv-word { font-size: 12px; font-weight: 700; letter-spacing: .42em; color: var(--jv-cyan); text-shadow: 0 0 12px rgb(var(--jv-rgb) / .6) }
 .jv-hola h1 { margin: 0; font-size: 20px; font-weight: 600; line-height: 1.3; color: var(--jv-fg) }
