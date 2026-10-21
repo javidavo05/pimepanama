@@ -36,7 +36,7 @@ const OPTIONS: {
 }[] = [
   { value: "light", label: "Claro", hint: "Fondo claro, siempre", Icon: SunIcon },
   { value: "dark", label: "Oscuro", hint: "Fondo oscuro, siempre", Icon: MoonIcon },
-  { value: "system", label: "Sistema", hint: "Sigue a tu equipo", Icon: SystemIcon },
+  { value: "system", label: "Sistema", hint: "Sigue el tema de tu dispositivo", Icon: SystemIcon },
 ];
 
 /**

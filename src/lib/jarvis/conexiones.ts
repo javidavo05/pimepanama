@@ -1,12 +1,15 @@
 /** Estado real de cada conexión que dibuja Jarvis en la pantalla de inicio. Lecturas baratas: conteos y fechas, nada de llamadas externas. */
 import { prisma } from "@/lib/prisma";
+import { AREA_LABEL, areaValida } from "@/lib/auth/permisos";
 
 export type EstadoConexion = "ok" | "aviso" | "apagado";
 export type Conexion = {
   id: string;
   nombre: string;
-  /** fuente: de dónde salen los datos. motor: lo que oye, piensa y habla. */
-  tipo: "fuente" | "motor";
+  /** fuente: de dónde salen los datos. motor: lo que oye, piensa y habla. persona: alguien del equipo. */
+  tipo: "fuente" | "motor" | "persona";
+  /** Solo para personas: su área, para ligarla con los sistemas que usa. */
+  area?: string;
   estado: EstadoConexion;
   /** Una línea corta bajo el nodo: «3 cuentas», «sin conectar». */
   resumen: string;
@@ -24,12 +27,14 @@ const hace = (d: Date | null | undefined) => {
 };
 
 export async function conexionesDeJarvis(userId: string, calendario: { estado: "sin" | "ok" | "error"; error: string | null }): Promise<Conexion[]> {
-  const [correos, github, sistemas, caidos, portal] = await Promise.all([
+  const [correos, github, sistemas, caidos, portal, gente, invitados] = await Promise.all([
     prisma.mailAccount.findMany({ where: { userId, active: true }, select: { lastSyncAt: true } }),
     prisma.githubAccount.findMany({ where: { userId }, select: { lastError: true, lastCheckedAt: true } }),
     prisma.monitoredSystem.count({ where: { userId, active: true } }),
     prisma.monitoredSystem.count({ where: { userId, active: true, status: { in: ["caido", "degradado"] } } }),
     prisma.clientUser.count({ where: { userId, status: "activo" } }),
+    prisma.empresaUser.findMany({ where: { OR: [{ id: userId }, { ownerId: userId }] }, orderBy: { createdAt: "asc" }, select: { id: true, email: true, fullName: true, area: true, activo: true } }),
+    prisma.empresaInvite.findMany({ where: { ownerId: userId, acceptedAt: null, revokedAt: null }, orderBy: { createdAt: "asc" }, select: { id: true, email: true, fullName: true, area: true } }),
   ]);
   const ultimoCorreo = correos.map((c) => c.lastSyncAt).filter((d): d is Date => !!d).sort((a, b) => b.getTime() - a.getTime())[0];
   const githubConError = github.filter((g) => g.lastError).length;
@@ -37,7 +42,25 @@ export async function conexionesDeJarvis(userId: string, calendario: { estado: "
   const ia = !!process.env.OPENAI_API_KEY || conClaude;
   const cerebro = conClaude ? "Claude" : "GPT-4.1";
 
+  // El equipo: cada persona es un nodo ligado a los sistemas de su área. Las invitadas salen apagadas.
+  const nombreCorto = (n: string | null, email: string) => (n?.trim() ? n.trim().split(/\s+/)[0] : email.split("@")[0]);
+  const area = (a: string | null) => (areaValida(a) ? a : "dueno");
+  const personas: Conexion[] = [
+    ...gente.map((g): Conexion => ({
+      id: `p:${g.id}`, nombre: nombreCorto(g.fullName, g.email), tipo: "persona", area: g.id === userId ? "dueno" : area(g.area),
+      estado: g.activo || g.id === userId ? "ok" : "apagado",
+      resumen: g.id === userId ? "Dueño" : AREA_LABEL[area(g.area)],
+      detalle: `${g.fullName || g.email} · ${g.id === userId ? "dueño de la cuenta" : `área ${AREA_LABEL[area(g.area)].toLowerCase()}`}${g.activo || g.id === userId ? "" : " · desactivado"}. Ve lo que su área permite y trabaja con los sistemas a los que está ligado.`,
+      href: "/empresa/configuracion",
+    })),
+    ...invitados.map((i): Conexion => ({
+      id: `p:i-${i.id}`, nombre: nombreCorto(i.fullName, i.email), tipo: "persona", area: area(i.area), estado: "apagado",
+      resumen: "Invitado", detalle: `${i.fullName || i.email} · invitado al área ${AREA_LABEL[area(i.area)].toLowerCase()}, todavía no entra.`, href: "/empresa/configuracion",
+    })),
+  ];
+
   return [
+    ...personas,
     { id: "pime", nombre: "Pime", tipo: "fuente", estado: "ok", resumen: "base de datos", detalle: "Clientes, proyectos, facturas, cobros, leads y tareas del panel. Es la fuente de casi todo lo que ves aquí.", href: "/empresa/clientes" },
     correos.length
       ? { id: "correo", nombre: "Correo", tipo: "fuente", estado: "ok", resumen: `${correos.length} ${correos.length === 1 ? "cuenta" : "cuentas"} · ${hace(ultimoCorreo) ?? "sin leer"}`, detalle: `Lee los correos de clientes y leads, los resume y los liga a su ficha. Última lectura: ${hace(ultimoCorreo) ?? "todavía ninguna"}.`, href: "/empresa/correos/hub" }

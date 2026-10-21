@@ -32,6 +32,7 @@ const ICONOS: Record<string, ReactNode> = {
   oido: <><rect x="9" y="3" width="6" height="11" rx="3" /><path d="M5 11a7 7 0 0 0 14 0M12 18v3" /></>,
   asistente: <><path d="M12 3l1.8 4.2L18 9l-4.2 1.8L12 15l-1.8-4.2L6 9l4.2-1.8z" /><path d="M18.5 15l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" /></>,
   voz: <><path d="M4 10v4h4l5 4V6L8 10Z" /><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11" /></>,
+  persona: <><circle cx="12" cy="9" r="3.5" /><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0" /><circle cx="12" cy="12" r="10" /></>,
 };
 
 /** Atajos de nivel 1: abrir una sección sin pasar por la IA. */
@@ -90,7 +91,8 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
   const rec = useRef<MediaRecorder | null>(null);
   const trozos = useRef<Blob[]>([]);
 
-  const enLinea = conexiones.filter((c) => c.estado === "ok").length;
+  const sistemasN = conexiones.filter((c) => c.tipo !== "persona");
+  const enLinea = sistemasN.filter((c) => c.estado === "ok").length;
 
   useEffect(() => { vivo.current.estado = estado; }, [estado]);
   useEffect(() => { vivo.current.modo = modo; }, [modo]);
@@ -255,7 +257,7 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
         </div>
         <div className="jv-tele" aria-label="Estado del sistema">
           <div><span className="jv-k">Hora</span><b suppressHydrationWarning>{hora || "--:--:--"}</b></div>
-          <div><span className="jv-k">Enlaces</span><b>{enLinea} / {N}</b></div>
+          <div><span className="jv-k">Enlaces</span><b>{enLinea} / {sistemasN.length}</b></div>
           <div><span className="jv-k">Nivel</span><b>{nivel ? `N${nivel}` : "—"}</b></div>
           {memoria && modo === "memoria" && <div><span className="jv-k">Memoria</span><b>{memoria.nodos.toLocaleString("es-PA")} piezas</b></div>}
         </div>
@@ -289,7 +291,7 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
                 onMouseEnter={() => { vivo.current.hover = c.id; }} onMouseLeave={() => { vivo.current.hover = null; }}
                 onFocus={() => { vivo.current.hover = c.id; }} onBlur={() => { vivo.current.hover = null; }}
                 onClick={() => { setDetalle({ t: c.nombre, d: c.detalle }); encender([c.id]); setTimeout(() => setEncendidos((e) => (e.length === 1 && e[0] === c.id ? [] : e)), 1800); }}>
-                <span className="jv-hex"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{ICONOS[c.id]}</svg></span>
+                <span className="jv-hex"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{ICONOS[c.tipo === "persona" ? "persona" : c.id]}</svg></span>
                 <span className="jv-nl">{c.nombre}</span>
                 <span className="jv-ns">{c.resumen}</span>
               </button>

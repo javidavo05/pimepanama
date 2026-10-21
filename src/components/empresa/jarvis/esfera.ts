@@ -36,12 +36,21 @@ function colorArea(i: number, n: number, claro: boolean): string {
   const f = (m: number) => Math.round(255 * (l - a * Math.max(-1, Math.min(k(m) - 3, 9 - k(m), 1))));
   return `${f(0)} ${f(8)} ${f(4)}`;
 }
-export const colorDe = (id: string, claro: boolean) => (COLORES[id] ?? COLORES.pime)[claro ? 1 : 0];
+/** Color de cada cosa. Las personas del equipo reciben un tono propio, estable, sacado de su id. */
+export const colorDe = (id: string, claro: boolean) => {
+  if (COLORES[id]) return COLORES[id][claro ? 1 : 0];
+  let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return colorArea(h % 360, 360, claro);
+};
+/** Con qué sistemas trabaja cada área del equipo. */
+const SISTEMAS_DEL_AREA: Record<string, string[]> = {
+  dueno: ["pime", "asistente"], ventas: ["pime", "correo", "agenda"], proyectos: ["pime", "github", "sistemas"], finanzas: ["pime", "portal"],
+};
 
 type Opciones = {
   lienzo: HTMLCanvasElement; escenario: HTMLElement;
   vivo: { current: Vivo };
-  conexiones: { id: string; estado: string }[];
+  conexiones: { id: string; estado: string; area?: string }[];
   memoria: { areas: { id: string; n: number }[]; links: [string, string, number][] } | null;
 };
 
@@ -67,7 +76,10 @@ export function iniciarEsfera({ lienzo, escenario, vivo, conexiones, memoria }: 
     return conexiones.map((c, i) => ({ id: c.id, ...fib(i, conexiones.length), color: colorDe(c.id, claro), peso: 1 }));
   };
   const enlacesDe = (modo: "conexiones" | "memoria"): [string, string, number][] =>
-    modo === "memoria" && memoria ? memoria.links.map(([a, b, w]) => [`m:${a}`, `m:${b}`, w]) : ENLACES.filter(([a, b]) => conexiones.some((c) => c.id === a) && conexiones.some((c) => c.id === b)).map(([a, b]) => [a, b, 1]);
+    modo === "memoria" && memoria ? memoria.links.map(([a, b, w]) => [`m:${a}`, `m:${b}`, w]) : [
+      ...ENLACES.filter(([a, b]) => conexiones.some((c) => c.id === a) && conexiones.some((c) => c.id === b)).map(([a, b]): [string, string, number] => [a, b, 1]),
+      ...conexiones.filter((c) => c.id.startsWith("p:")).flatMap((c) => (SISTEMAS_DEL_AREA[c.area ?? "dueno"] ?? ["pime"]).filter((s) => conexiones.some((x) => x.id === s)).map((s): [string, string, number] => [c.id, s, 0.6])),
+    ];
 
   // ── Partículas ──
   const NP = Math.min(2600, Math.max(900, Math.round((escenario.clientWidth || 600) * 3.4)));

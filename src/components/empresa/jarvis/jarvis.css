@@ -206,3 +206,14 @@ html[data-theme="light"] .jv-node { --nc: var(--nc-claro) }
 
 /* Los nodos del lado de atrás de la esfera solo muestran su ícono. */
 .jv-node[data-atras="1"] .jv-ns, .jv-node[data-atras="1"] .jv-nl, .jv-mnode[data-atras="1"] .jv-ns { visibility: hidden }
+
+/* Las personas del equipo: nodo redondo. */
+.jv-node[data-tipo="persona"] .jv-hex { clip-path: circle(50%) }
+/* Etiquetas legibles sobre las partículas, en los dos temas: una pastilla con fondo propio. */
+.jv-node .jv-nl, .jv-node .jv-ns, .jv-mnode .jv-nl, .jv-mnode .jv-ns { background: var(--jv-labelbg); padding: 0 6px; border-radius: 4px; line-height: 18px; text-shadow: none }
+.jv { --jv-labelbg: rgba(4, 11, 22, .78) }
+html[data-theme="light"] .jv { --jv-labelbg: rgba(255, 255, 255, .94) }
+html[data-theme="light"] .jv-node .jv-nl, html[data-theme="light"] .jv-mnode .jv-nl { box-shadow: 0 1px 3px rgba(11, 29, 58, .14) }
+html[data-theme="light"] .jv-node .jv-ns { color: #3c4a66 }
+html[data-theme="light"] .jv-hex { filter: drop-shadow(0 1px 3px rgba(11, 29, 58, .22)) }
+html[data-theme="light"] .jv-node .jv-hex::after { background: #ffffff }
