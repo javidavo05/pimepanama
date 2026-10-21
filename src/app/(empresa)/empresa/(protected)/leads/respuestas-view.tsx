@@ -1,0 +1,456 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import Link from "@/components/empresa/link";
+import { btn, seg } from "@/components/empresa/page-header";
+import { campo } from "@/components/empresa/clientes/formularios";
+import { chip, fechaHora } from "@/components/empresa/crm-ficha/comun";
+import { faltaParaEnviar, type RespuestaVista } from "@/lib/leads/respuestas-comun";
+import {
+  descartarRespuestaAction,
+  enviarRespuestasAction,
+  guardarRespuestaAction,
+  marcarLinkedinAction,
+  prepararPropuestaAction,
+} from "./acciones-respuestas";
+
+type Buzon = { id: string; label: string; username: string };
+type Filtro = "revisar" | "enviadas" | "descartadas" | "todas";
+type Cambios = { para: string; asunto: string; cuerpo: string; adjuntarPdf: boolean };
+
+const etiqueta = "block text-fg-dim text-xs font-semibold uppercase tracking-widest mb-2";
+const botonTexto = "inline-flex items-center min-h-11 sm:min-h-9 px-2 -mx-2 rounded-lg text-sm font-medium text-brand-fg hover:underline disabled:opacity-50 disabled:pointer-events-none";
+
+const enFiltro = (r: RespuestaVista, f: Filtro) =>
+  f === "todas" ? true
+    : f === "revisar" ? r.estado === "borrador" || r.estado === "fallo"
+    : f === "enviadas" ? r.estado === "enviada"
+    : r.estado === "descartada";
+
+function EstadoChip({ r }: { r: RespuestaVista }) {
+  if (r.estado === "enviada") return <span className={`${chip} bg-ok/10 text-ok`}>Enviada{r.enviadaAt ? ` · ${fechaHora(r.enviadaAt, false)}` : ""}</span>;
+  if (r.estado === "fallo") return <span className={`${chip} bg-danger/10 text-danger`}>No salió</span>;
+  if (r.estado === "descartada") return <span className={`${chip} bg-fill text-fg-faint`}>Descartada</span>;
+  return <span className={`${chip} bg-sand/10 text-sand-fg`}>Por revisar</span>;
+}
+
+function sin<T>(obj: Record<string, T>, clave: string): Record<string, T> {
+  const copia = { ...obj };
+  delete copia[clave];
+  return copia;
+}
+
+const pdfUrl = (id: string) => `/api/empresa/leads/respuestas/${id}/pdf?inline=1`;
+
+export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]; buzones: Buzon[] }) {
+  const [respuestas, setRespuestas] = useState(inicial);
+  const [filtro, setFiltro] = useState<Filtro>(inicial.some((r) => enFiltro(r, "revisar")) ? "revisar" : "todas");
+  const [buzonId, setBuzonId] = useState(buzones[0]?.id ?? "");
+  const [abierta, setAbierta] = useState<string | null>(null);
+  // Lo que se editó y todavía no se guardó. Se guarda solo antes de enviar.
+  const [cambios, setCambios] = useState<Record<string, Cambios>>({});
+  const [quitadas, setQuitadas] = useState<Set<string>>(new Set());
+  const [ocupado, setOcupado] = useState<{ lote: string; texto: string } | null>(null);
+  const [confirmar, setConfirmar] = useState<string | null>(null);
+  const [aviso, setAviso] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
+
+  const buzon = buzones.find((b) => b.id === buzonId) ?? null;
+  const conCambios = (r: RespuestaVista): RespuestaVista => (cambios[r.id] ? { ...r, ...cambios[r.id] } : r);
+  const reemplazar = (lista: RespuestaVista[]) =>
+    setRespuestas((prev) => prev.map((r) => lista.find((n) => n.id === r.id) ?? r));
+
+  const cuenta = (f: Filtro) => respuestas.filter((r) => enFiltro(r, f)).length;
+
+  const lotes = useMemo(() => {
+    const grupos = new Map<string, RespuestaVista[]>();
+    for (const r of respuestas) {
+      if (!enFiltro(r, filtro)) continue;
+      grupos.set(r.lote, [...(grupos.get(r.lote) ?? []), r]);
+    }
+    return [...grupos.entries()]
+      .map(([lote, filas]) => ({ lote, filas, desde: filas.reduce((m, r) => (r.createdAt < m ? r.createdAt : m), filas[0].createdAt) }))
+      .sort((a, b) => b.desde.localeCompare(a.desde));
+  }, [respuestas, filtro]);
+
+  async function guardarSiHaceFalta(ids: string[]): Promise<string | null> {
+    for (const id of ids) {
+      const c = cambios[id];
+      if (!c) continue;
+      const r = await guardarRespuestaAction(id, c);
+      if (!r.ok) return r.error;
+      reemplazar([r.dato]);
+      setCambios((prev) => sin(prev, id));
+    }
+    return null;
+  }
+
+  async function enviar(lote: string, ids: string[]) {
+    if (!buzon) return setAviso({ tipo: "error", texto: "Conecta un buzón en Correos para poder enviar." });
+    setConfirmar(null);
+    setAviso(null);
+    setOcupado({ lote, texto: "Guardando cambios…" });
+    const errGuardar = await guardarSiHaceFalta(ids);
+    if (errGuardar) {
+      setOcupado(null);
+      return setAviso({ tipo: "error", texto: errGuardar });
+    }
+    let faltan = ids, enviadas = 0;
+    const fallos: string[] = [];
+    try {
+      while (faltan.length) {
+        setOcupado({ lote, texto: `Enviando ${enviadas + fallos.length + 1} de ${ids.length}…` });
+        const r = await enviarRespuestasAction(faltan, buzon.id);
+        if (!r.ok) { fallos.push(r.error); break; }
+        reemplazar(r.dato.respuestas);
+        enviadas += r.dato.enviadas.length;
+        fallos.push(...r.dato.fallos.map((f) => f.error));
+        faltan = r.dato.faltan;
+      }
+    } catch {
+      fallos.push("Se cortó la conexión. Lo que ya salió quedó marcado como enviado; vuelve a intentar con el resto.");
+    }
+    setOcupado(null);
+    if (fallos.length) {
+      setAviso({ tipo: "error", texto: `Salieron ${enviadas} de ${ids.length}. ${fallos[0]}${fallos.length > 1 ? ` (y ${fallos.length - 1} más: mira las marcadas «No salió»)` : ""}` });
+    } else {
+      setAviso({ tipo: "ok", texto: enviadas === 1 ? `Listo: salió 1 correo desde ${buzon.username}.` : `Listo: salieron ${enviadas} correos desde ${buzon.username}.` });
+    }
+  }
+
+  async function prepararPropuestas(lote: string, ids: string[]) {
+    setAviso(null);
+    let hechas = 0;
+    for (const id of ids) {
+      setOcupado({ lote, texto: `Redactando la propuesta ${hechas + 1} de ${ids.length}… (unos 15 segundos cada una)` });
+      const r = await prepararPropuestaAction(id, false).catch(() => ({ ok: false as const, error: "Se cortó la conexión." }));
+      if (!r.ok) {
+        setOcupado(null);
+        return setAviso({ tipo: "error", texto: `Quedaron ${hechas} de ${ids.length} propuestas. ${r.error}` });
+      }
+      reemplazar([r.dato]);
+      hechas++;
+    }
+    setOcupado(null);
+    setAviso({ tipo: "ok", texto: hechas === 1 ? "La propuesta y su correo están listos. Revísalos con «Revisar» y «Ver PDF» antes de enviar." : `Las ${hechas} propuestas y sus correos están listos. Revísalos con «Revisar» y «Ver PDF» antes de enviar.` });
+  }
+
+  if (respuestas.length === 0) {
+    return (
+      <div className="rounded-xl border border-line bg-panel px-6 py-12 text-center">
+        <p className="text-sm font-medium text-fg-mute">Todavía no hay respuestas para revisar</p>
+        <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-fg-faint">
+          Cada mañana el agente de prospección carga una tanda de prospectos con el correo y el mensaje de LinkedIn ya
+          redactados. Aparecen aquí para que los revises, prepares la propuesta en PDF y los envíes.
+        </p>
+        <Link href="/empresa/leads" className={`${btn.secondary} mt-6`}>Ver los prospectos</Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="grid gap-2 lg:flex lg:items-end lg:justify-between">
+        {/* Cuatro filtros no caben en una fila del celular: dos por fila hasta sm. */}
+        <div className={`${seg.group} grid-cols-2 grid-flow-row sm:grid-flow-col sm:grid-cols-none`} aria-label="Qué respuestas ver">
+          {([
+            ["revisar", "Por revisar"],
+            ["enviadas", "Enviadas"],
+            ["descartadas", "Descartadas"],
+            ["todas", "Todas"],
+          ] as [Filtro, string][]).map(([f, texto]) => (
+            <button key={f} type="button" aria-pressed={filtro === f} onClick={() => setFiltro(f)} className={seg.item(filtro === f)}>
+              {texto} <span className="text-fg-faint tabular-nums">{cuenta(f)}</span>
+            </button>
+          ))}
+        </div>
+        {buzones.length > 0 ? (
+          <label className="grid gap-2 lg:w-80">
+            <span className="text-fg-dim text-xs font-semibold uppercase tracking-widest">Enviar desde</span>
+            <select value={buzonId} onChange={(e) => setBuzonId(e.target.value)} className={`${campo} field-select pr-8`}>
+              {buzones.map((b) => <option key={b.id} value={b.id}>{b.username}</option>)}
+            </select>
+          </label>
+        ) : (
+          <p className="rounded-lg border border-warn/30 bg-warn/10 px-4 py-3 text-sm text-warn">
+            No hay un buzón conectado: puedes revisar y preparar las propuestas, pero para enviar hay que <Link href="/empresa/correos" className="underline">conectar uno en Correos</Link>.
+          </p>
+        )}
+      </div>
+
+      {aviso && (
+        <div role={aviso.tipo === "error" ? "alert" : "status"}
+          className={`flex items-start justify-between gap-4 rounded-lg border px-4 py-3 text-sm ${aviso.tipo === "ok" ? "border-ok/20 bg-ok/[0.08] text-ok" : "border-danger/25 bg-danger/[0.08] text-danger"}`}>
+          <span className="min-w-0 [overflow-wrap:anywhere]">{aviso.texto}</span>
+          <button type="button" onClick={() => setAviso(null)} aria-label="Cerrar aviso" className="shrink-0 min-h-8 px-2">×</button>
+        </div>
+      )}
+
+      {lotes.length === 0 ? (
+        <div className="rounded-xl border border-line bg-panel px-6 py-12 text-center">
+          <p className="text-sm text-fg-dim">
+            {filtro === "revisar" ? "No queda nada por revisar: todas las respuestas se enviaron o se descartaron." : "No hay respuestas en esta vista."}
+          </p>
+          <button type="button" onClick={() => setFiltro("todas")} className={`${botonTexto} mt-4`}>Ver todas las respuestas</button>
+        </div>
+      ) : (
+        lotes.map(({ lote, filas, desde }, iLote) => {
+          const listas = filas.filter((r) => !faltaParaEnviar(conCambios(r)));
+          const elegidas = listas.filter((r) => !quitadas.has(r.id));
+          const sinPropuesta = elegidas.filter((r) => conCambios(r).adjuntarPdf && !r.tienePropuesta);
+          const ocupadoAqui = ocupado?.lote === lote;
+          const conCorreo = filas.filter((r) => r.para).length;
+          return (
+            <section key={lote} className="rounded-2xl border border-line bg-panel" aria-labelledby={`lote-${lote}`}>
+              <header className="grid gap-4 border-b border-line p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+                <div className="min-w-0">
+                  <h2 id={`lote-${lote}`} className="text-fg text-base font-semibold tracking-tight">Tanda del {fechaHora(desde)}</h2>
+                  <p className="mt-1 text-sm text-fg-dim">
+                    {filas.length} {filas.length === 1 ? "respuesta" : "respuestas"} · {conCorreo} con correo · {filas.length - conCorreo} solo por LinkedIn
+                  </p>
+                </div>
+                {listas.length > 0 && (
+                  <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center lg:justify-end">
+                    {sinPropuesta.length > 0 && (
+                      <button type="button" disabled={!!ocupado} onClick={() => prepararPropuestas(lote, sinPropuesta.map((r) => r.id))} className={btn.secondary}>
+                        Preparar {sinPropuesta.length === 1 ? "1 propuesta" : `${sinPropuesta.length} propuestas`}
+                      </button>
+                    )}
+                    <button type="button" disabled={!!ocupado || !elegidas.length || !buzon} onClick={() => setConfirmar(lote)}
+                      // Una sola acción principal en la pantalla: la tanda más reciente.
+                      className={iLote === 0 ? btn.primary : btn.secondary}>
+                      {elegidas.length === 1 ? "Enviar 1 correo" : `Enviar ${elegidas.length} correos`}
+                    </button>
+                  </div>
+                )}
+              </header>
+
+              {(confirmar === lote || ocupadoAqui) && (
+                <div className="border-b border-line bg-fill px-4 py-4 sm:px-6" role="status">
+                  {ocupadoAqui ? (
+                    <p className="text-sm text-fg-mute">{ocupado!.texto}</p>
+                  ) : (
+                    <div className="grid gap-4 sm:flex sm:items-center sm:justify-between">
+                      <p className="text-sm text-fg-mute">
+                        Van a salir {elegidas.length === 1 ? "1 correo" : `${elegidas.length} correos`} desde <strong className="text-fg">{buzon?.username}</strong>
+                        {elegidas.some((r) => conCambios(r).adjuntarPdf) ? ", con la propuesta en PDF donde está marcada" : ""}. Cada uno queda en Enviados y en la ficha del lead.
+                      </p>
+                      <div className="grid grid-flow-col auto-cols-fr gap-2 sm:flex">
+                        <button type="button" onClick={() => setConfirmar(null)} className={btn.secondary}>Cancelar</button>
+                        <button type="button" onClick={() => enviar(lote, elegidas.map((r) => r.id))} className={btn.primary}>Sí, enviar</button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <ul className="divide-y divide-line">
+                {filas.map((r0) => {
+                  const r = conCambios(r0);
+                  const falta = faltaParaEnviar(r);
+                  const empresa = r.lead.company || r.lead.name;
+                  const abiertaAqui = abierta === r.id;
+                  return (
+                    <li key={r.id}>
+                      <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 px-4 py-4 sm:px-6 xl:grid-cols-[auto_minmax(0,1fr)_auto] xl:items-center">
+                        <div className="flex min-h-11 items-start pt-1 xl:items-center xl:pt-0">
+                          {falta ? (
+                            <span className="block size-5" aria-hidden />
+                          ) : (
+                            // La caja mide 20 px; la etiqueta da los 44 px de toque.
+                            <label className="-m-3 flex size-11 cursor-pointer items-center justify-center">
+                            <input type="checkbox" className="size-5 accent-brand"
+                              checked={!quitadas.has(r.id)} disabled={!!ocupado}
+                              aria-label={`Incluir a ${empresa} en el envío`}
+                              onChange={(e) => setQuitadas((prev) => { const n = new Set(prev); if (e.target.checked) n.delete(r.id); else n.add(r.id); return n; })} />
+                            </label>
+                          )}
+                        </div>
+                        <button type="button" onClick={() => setAbierta(abiertaAqui ? null : r.id)} aria-expanded={abiertaAqui}
+                          className="min-w-0 text-left group">
+                          <span className="block text-sm font-medium text-fg group-hover:underline [overflow-wrap:anywhere]">{empresa}</span>
+                          <span className="block text-xs text-fg-faint [overflow-wrap:anywhere]">
+                            {r.para ?? "Sin correo · solo LinkedIn"}{r.asunto ? ` · ${r.asunto}` : ""}
+                          </span>
+                        </button>
+                        <div className="col-start-2 flex flex-wrap items-center gap-2 xl:col-start-auto xl:justify-end">
+                          <EstadoChip r={r} />
+                          {r.para && r.estado !== "descartada" && (
+                            <span className={`${chip} bg-fill text-fg-dim`}>{r.adjuntarPdf ? (r.tienePropuesta ? "PDF listo" : "PDF por preparar") : "Sin PDF"}</span>
+                          )}
+                          {r.mensajeLinkedin && (
+                            <span className={`${chip} bg-fill ${r.linkedinAt ? "text-ok" : "text-fg-dim"}`}>{r.linkedinAt ? "LinkedIn enviado" : "LinkedIn pendiente"}</span>
+                          )}
+                          {cambios[r.id] && <span className={`${chip} bg-warn/10 text-warn`}>Sin guardar</span>}
+                          <button type="button" onClick={() => setAbierta(abiertaAqui ? null : r.id)} aria-expanded={abiertaAqui} className={botonTexto}>
+                            {abiertaAqui ? "Cerrar" : "Revisar"}
+                          </button>
+                        </div>
+                      </div>
+                      {abiertaAqui && (
+                        <Detalle
+                          r={r}
+                          editable={r.estado === "borrador" || r.estado === "fallo"}
+                          ocupado={!!ocupado}
+                          puedeEnviar={!!buzon}
+                          onCambio={(c) => setCambios((prev) => ({ ...prev, [r.id]: c }))}
+                          onActualizada={(n) => { reemplazar([n]); setCambios((prev) => sin(prev, r.id)); }}
+                          onEnviar={() => enviar(lote, [r.id])}
+                          onAviso={setAviso}
+                        />
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          );
+        })
+      )}
+    </div>
+  );
+}
+
+function Detalle({ r, editable, ocupado, puedeEnviar, onCambio, onActualizada, onEnviar, onAviso }: {
+  r: RespuestaVista;
+  editable: boolean;
+  ocupado: boolean;
+  puedeEnviar: boolean;
+  onCambio: (c: Cambios) => void;
+  onActualizada: (r: RespuestaVista) => void;
+  onEnviar: () => void;
+  onAviso: (a: { tipo: "ok" | "error"; texto: string } | null) => void;
+}) {
+  const [trabajando, setTrabajando] = useState<string | null>(null);
+  const [copiado, setCopiado] = useState(false);
+  const valores: Cambios = { para: r.para ?? "", asunto: r.asunto, cuerpo: r.cuerpo, adjuntarPdf: r.adjuntarPdf };
+  const cambiar = (p: Partial<Cambios>) => onCambio({ ...valores, ...p });
+  const falta = faltaParaEnviar(r);
+  const bloqueado = ocupado || !!trabajando;
+  const f = (k: string) => `respuesta-${r.id}-${k}`;
+
+  async function correr(texto: string, accion: () => Promise<{ ok: true; dato: RespuestaVista } | { ok: false; error: string }>, ok?: string) {
+    setTrabajando(texto);
+    onAviso(null);
+    try {
+      const res = await accion();
+      if (res.ok) { onActualizada(res.dato); if (ok) onAviso({ tipo: "ok", texto: ok }); }
+      else onAviso({ tipo: "error", texto: res.error });
+    } catch {
+      onAviso({ tipo: "error", texto: "Se cortó la conexión. Vuelve a intentar." });
+    } finally {
+      setTrabajando(null);
+    }
+  }
+
+  const buscarLinkedin = `https://www.linkedin.com/search/results/companies/?keywords=${encodeURIComponent(r.lead.company || r.lead.name)}`;
+
+  return (
+    <div className="grid gap-6 border-t border-line bg-fill/50 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+      <div className="grid content-start gap-4 min-w-0">
+        <h3 className="text-fg text-sm font-semibold">Correo</h3>
+        {r.estado === "fallo" && r.error && <p className="text-sm text-danger" role="alert">La última vez no salió: {r.error}</p>}
+        <div>
+          <label htmlFor={f("para")} className={etiqueta}>Para</label>
+          <input id={f("para")} type="email" inputMode="email" autoComplete="off" disabled={!editable} value={valores.para}
+            placeholder="correo@empresa.com" onChange={(e) => cambiar({ para: e.target.value })} className={campo} />
+        </div>
+        <div>
+          <label htmlFor={f("asunto")} className={etiqueta}>Asunto</label>
+          <input id={f("asunto")} disabled={!editable} value={valores.asunto} maxLength={200}
+            onChange={(e) => cambiar({ asunto: e.target.value })} className={campo} />
+        </div>
+        <div>
+          <label htmlFor={f("cuerpo")} className={etiqueta}>Texto</label>
+          <textarea id={f("cuerpo")} disabled={!editable} value={valores.cuerpo} rows={14}
+            onChange={(e) => cambiar({ cuerpo: e.target.value })} className={`${campo} py-3 leading-relaxed`} />
+          <p className="mt-2 text-xs text-fg-faint">Al final va la firma del buzón. Si falta la dirección postal o el enlace de baja, se agregan solos al enviar.</p>
+        </div>
+
+        <div className="grid gap-4 rounded-xl border border-line bg-panel p-4">
+          <label className="flex min-h-11 items-center gap-3 text-sm text-fg-mute">
+            <input type="checkbox" className="size-5 accent-brand" disabled={!editable} checked={valores.adjuntarPdf}
+              onChange={(e) => cambiar({ adjuntarPdf: e.target.checked })} />
+            Adjuntar la propuesta en PDF
+          </label>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            {r.tienePropuesta ? (
+              <>
+                <a href={pdfUrl(r.id)} target="_blank" rel="noreferrer" className={botonTexto}>Ver PDF</a>
+                {editable && (
+                  <button type="button" disabled={bloqueado} className={botonTexto}
+                    onClick={() => correr("rehacer", () => prepararPropuestaAction(r.id, true), "Propuesta y correo redactados de nuevo. Revisa el texto y ábrela con «Ver PDF».")}>
+                    {trabajando === "rehacer" ? "Redactando… unos 15 segundos" : "Redactar de nuevo"}
+                  </button>
+                )}
+              </>
+            ) : (
+              <button type="button" disabled={bloqueado} className={botonTexto}
+                onClick={() => correr("preparar", () => prepararPropuestaAction(r.id, false), "Propuesta lista y correo reescrito para presentarla. Revisa el texto y ábrela con «Ver PDF».")}>
+                {trabajando === "preparar" ? "Redactando… unos 15 segundos" : "Preparar la propuesta"}
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-fg-faint">La IA la arma con lo que el agente vio de la empresa, sin precios, y reescribe el correo para que la presente. Revisa los dos antes de enviar.</p>
+        </div>
+
+        {editable && (
+          <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center">
+            <button type="button" disabled={bloqueado || falta != null || !puedeEnviar} onClick={onEnviar} className={btn.secondary}>
+              Enviar solo este correo
+            </button>
+            <button type="button" disabled={bloqueado} className={btn.secondary}
+              onClick={() => correr("guardar", () => guardarRespuestaAction(r.id, valores), "Cambios guardados.")}>
+              {trabajando === "guardar" ? "Guardando…" : "Guardar cambios"}
+            </button>
+            <button type="button" disabled={bloqueado} className={`${botonTexto} text-danger sm:ml-auto sm:mx-0`}
+              onClick={() => correr("descartar", () => descartarRespuestaAction(r.id, true), "Respuesta descartada. La encuentras en «Descartadas».")}>
+              Descartar
+            </button>
+          </div>
+        )}
+        {editable && falta && <p className="text-xs text-fg-faint">Para enviarlo: {falta.charAt(0).toLowerCase() + falta.slice(1)}</p>}
+        {r.estado === "descartada" && (
+          <button type="button" disabled={bloqueado} className={`${btn.secondary} justify-self-start`}
+            onClick={() => correr("restaurar", () => descartarRespuestaAction(r.id, false), "Volvió a «Por revisar».")}>
+            Devolver a por revisar
+          </button>
+        )}
+        {r.estado === "enviada" && r.correoId && (
+          <Link href={`/empresa/correos/hub/${r.correoId}`} className={botonTexto}>Ver el correo enviado</Link>
+        )}
+      </div>
+
+      <div className="grid content-start gap-4 min-w-0">
+        <h3 className="text-fg text-sm font-semibold">LinkedIn</h3>
+        {r.mensajeLinkedin ? (
+          <>
+            <p className="whitespace-pre-wrap rounded-xl border border-line bg-panel p-4 text-sm leading-relaxed text-fg-mute [overflow-wrap:anywhere]">{r.mensajeLinkedin}</p>
+            <div className="grid grid-flow-col auto-cols-fr gap-2 sm:flex sm:flex-wrap">
+              <button type="button" className={btn.secondary}
+                onClick={async () => { try { await navigator.clipboard.writeText(r.mensajeLinkedin ?? ""); setCopiado(true); setTimeout(() => setCopiado(false), 1600); } catch { /* sin permiso de portapapeles */ } }}>
+                {copiado ? "Copiado" : "Copiar mensaje"}
+              </button>
+              <a href={r.linkedinUrl ?? buscarLinkedin} target="_blank" rel="noreferrer" className={btn.secondary}>
+                {r.linkedinUrl ? "Abrir perfil" : "Buscar en LinkedIn"}
+              </a>
+            </div>
+            <label className="flex min-h-11 items-center gap-3 text-sm text-fg-mute">
+              <input type="checkbox" className="size-5 accent-brand" checked={!!r.linkedinAt} disabled={bloqueado}
+                onChange={(e) => correr("linkedin", () => marcarLinkedinAction(r.id, e.target.checked))} />
+              {r.linkedinAt ? `Lo mandé por LinkedIn el ${fechaHora(r.linkedinAt, false)}` : "Ya lo mandé por LinkedIn"}
+            </label>
+            <p className="text-xs text-fg-faint">LinkedIn no se automatiza: copia el mensaje, mándalo desde el perfil y márcalo aquí.</p>
+          </>
+        ) : (
+          <p className="text-sm text-fg-faint">El agente no dejó mensaje de LinkedIn para este lead.</p>
+        )}
+        <div className="grid justify-items-start gap-2 border-t border-line pt-4 text-sm">
+          <Link href={`/empresa/leads/${r.lead.id}`} className={botonTexto}>Abrir la ficha de {r.lead.name}</Link>
+          {r.lead.sitio && (
+            <a href={r.lead.sitio} target="_blank" rel="noreferrer" className={`${botonTexto} [overflow-wrap:anywhere]`}>{r.lead.sitio.replace(/^https?:\/\/(www\.)?/, "")}</a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

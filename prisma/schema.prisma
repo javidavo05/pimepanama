@@ -318,6 +318,7 @@ model EmpresaUser {
   plantillasCorreo       PlantillaCorreo[]
   campanas               Campana[]
   bajasCorreo            BajaCorreo[]
+  respuestasLead         RespuestaLead[]
   vistasGuardadas        VistaGuardada[]
   encuestas              Encuesta[]
   archivosCliente        ArchivoCliente[]
@@ -454,6 +455,7 @@ model Lead {
   interacciones    Interaccion[]
   oportunidades    Oportunidad[]
   tareasCrm        Task[]        @relation("TareaLead")
+  respuestas       RespuestaLead[]
   @@index([userId])
   @@index([userId, status])
 }
@@ -2132,4 +2134,38 @@ model ArchivoCliente {
   createdAt      DateTime    @default(now())
 
   @@index([clientId])
+}
+
+/// Correo (y mensaje de LinkedIn) redactado para un lead, por tandas del agente (migración 0063).
+model RespuestaLead {
+  id              String      @id @default(cuid())
+  userId          String
+  user            EmpresaUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  leadId          String
+  lead            Lead        @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  /// Tanda en que llegó: una corrida del agente.
+  lote            String
+  origen          String      @default("agente")
+  idioma          String      @default("es")
+  para            String?
+  asunto          String      @default("")
+  cuerpo          String      @default("")
+  mensajeLinkedin String?
+  linkedinUrl     String?
+  adjuntarPdf     Boolean     @default(true)
+  /// "borrador" | "enviada" | "descartada" | "fallo"
+  estado          String      @default("borrador")
+  error           String?
+  enviadaAt       DateTime?
+  /// InboxEmail (SENT) con el que salió.
+  correoId        String?
+  linkedinAt      DateTime?
+  /// Contenido de la propuesta en PDF (src/lib/leads/propuesta-prospecto.ts) (migración 0064).
+  propuesta       Json?
+  propuestaAt     DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@index([userId, lote])
+  @@index([leadId])
 }

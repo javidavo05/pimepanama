@@ -1,4 +1,5 @@
-import { renderToStream, type DocumentProps } from "@react-pdf/renderer";
+import { renderToStream, renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
+import type { PropuestaProspecto } from "@/lib/leads/propuesta-prospecto";
 import type { Document as PrismaDocument, CompanyConfig, Contract, Client, Project, PaymentMethod } from "@prisma/client";
 import type { ReactElement, JSXElementConstructor } from "react";
 import type { ProposalContent } from "./proposal-content";
@@ -70,4 +71,10 @@ export async function renderProjectProposalPdf(
   const { ProyectoPropuestaPdf } = await import("./templates/proyecto-propuesta-pdf");
   const element = ProyectoPropuestaPdf({ project, client, company, content, linea }) as PdfElement;
   return renderToStream(element);
+}
+
+/** Propuesta corta para un prospecto (RespuestaLead.propuesta). En Buffer: sale adjunta en el correo. */
+export async function renderPropuestaProspectoPdf(p: { empresa: string; idioma: "es" | "en"; propuesta: PropuestaProspecto; fecha?: Date }): Promise<Buffer> {
+  const { PropuestaProspectoPdf } = await import("./templates/propuesta-prospecto-pdf");
+  return renderToBuffer(PropuestaProspectoPdf(p) as PdfElement);
 }

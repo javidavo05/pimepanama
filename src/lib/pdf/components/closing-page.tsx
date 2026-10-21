@@ -34,10 +34,14 @@ interface ClosingPageProps {
   sectionTag: string;
   title: string;
   steps: { title: string; description: string }[];
+  /** Textos fijos del cierre; por defecto en español. */
+  etiquetas?: { eyebrow: string; sub: string; gracias: string };
 }
 
+const ETIQUETAS_ES = { eyebrow: "Próximos pasos", sub: "Desarrollo de software empresarial · Panamá", gracias: "Gracias por la confianza." };
+
 /** design-system §4.13 — Cierre en el oscuro de la línea (azul tinta o negro) con el símbolo en contorno. */
-export function ClosingPage({ t, sectionTag, title, steps }: ClosingPageProps) {
+export function ClosingPage({ t, sectionTag, title, steps, etiquetas = ETIQUETAS_ES }: ClosingPageProps) {
     const s = estilos(t);
   return (
     <Page size="LETTER" style={s.page}>
@@ -54,7 +58,7 @@ export function ClosingPage({ t, sectionTag, title, steps }: ClosingPageProps) {
         <View style={{ marginTop: 44 }}>
           <View style={s.eyebrow}>
             <View style={s.bar} />
-            <Text style={s.eyebrowText}>Próximos pasos</Text>
+            <Text style={s.eyebrowText}>{etiquetas.eyebrow}</Text>
           </View>
           <Text style={s.title}>{title}</Text>
           <View style={s.steps}>
@@ -77,11 +81,11 @@ export function ClosingPage({ t, sectionTag, title, steps }: ClosingPageProps) {
         <View style={s.bottomRow}>
           <View>
             <Text style={s.companyName}>Pime Panamá</Text>
-            <Text style={s.companySub}>Desarrollo de software empresarial · Panamá</Text>
+            <Text style={s.companySub}>{etiquetas.sub}</Text>
           </View>
           <View style={s.bottomRight}>
             <Text style={s.bottomText}>pimepanama.com</Text>
-            <Text style={[s.bottomText, { marginTop: 3 }]}>Gracias por la confianza.</Text>
+            <Text style={[s.bottomText, { marginTop: 3 }]}>{etiquetas.gracias}</Text>
           </View>
         </View>
       </View>

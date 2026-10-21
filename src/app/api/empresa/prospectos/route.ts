@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { notifyUser } from "@/lib/notifications/notify";
 import { getSiteUrl } from "@/lib/site-url";
 import { tokenBaja } from "@/lib/crm/correo-baja";
+import { loteDeAhora } from "@/lib/leads/respuestas-comun";
 
 export const runtime = "nodejs";
 
@@ -15,7 +16,8 @@ export const runtime = "nodejs";
  *
  * GET  → lo que el agente necesita para no repetir: empresas, dominios y correos que ya están en el CRM o dados de baja.
  * POST → carga hasta 25 prospectos como Lead (fuente LLAMADA_FRIA, etiqueta «agente»), con el puntaje, las fuentes y
- *        los mensajes ya redactados en la nota. No envía nada a nadie: Javier revisa y envía.
+ *        los mensajes ya redactados en la nota y como RespuestaLead de la tanda del día (se revisan y envían desde
+ *        /empresa/leads, pestaña Respuestas). No envía nada a nadie: Javier revisa y envía.
  *
  * Correos a EE. UU. (CAN-SPAM): el borrador sale con la dirección física de Pime y el enlace de baja firmado; quien
  * se da de baja (BajaCorreo) no vuelve a entrar.
@@ -85,6 +87,7 @@ export const POST = withEmpresaRoute(async (request) => {
   );
   const dadosDeBaja = new Set(bajas.map((b) => normal(b.email)));
   const site = getSiteUrl();
+  const lote = loteDeAhora();
 
   const creados: { id: string; empresa: string; puntaje: number }[] = [];
   const duplicados: string[] = [], deBaja: string[] = [], invalidos: string[] = [];
@@ -144,6 +147,14 @@ export const POST = withEmpresaRoute(async (request) => {
       },
       select: { id: true },
     });
+    if (cuerpo || mensajeLinkedin) {
+      await prisma.respuestaLead.create({
+        data: {
+          userId, leadId: lead.id, lote, origen: "agente", idioma: mercado === "US" ? "en" : "es",
+          para: email || null, asunto, cuerpo, mensajeLinkedin: mensajeLinkedin || null, linkedinUrl: linkedin || null,
+        },
+      });
+    }
     creados.push({ id: lead.id, empresa, puntaje });
     empresas.add(normal(empresa));
     if (email) correos.add(email);
@@ -155,8 +166,8 @@ export const POST = withEmpresaRoute(async (request) => {
     await notifyUser({
       userId,
       title: `${creados.length} prospecto${creados.length === 1 ? "" : "s"} nuevo${creados.length === 1 ? "" : "s"} del agente`,
-      body: `${altos} con puntaje alto. Los mensajes ya están redactados en cada ficha.`,
-      link: creados.length === 1 ? `/empresa/leads/${creados[0].id}` : "/empresa/leads",
+      body: `${altos} con puntaje alto. Los correos y las propuestas esperan tu revisión en Respuestas.`,
+      link: "/empresa/leads?vista=respuestas",
       tag: "agente-prospeccion",
     });
   }

@@ -42,13 +42,17 @@ interface CoverPageProps {
   preparedBy?: string;
   date: string;
   brandTag?: string;
+  /** Etiquetas fijas de la portada; por defecto en español. */
+  etiquetas?: { para: string; por: string; fecha: string; pie: string };
 }
+
+const ETIQUETAS_ES = { para: "Preparado para", por: "Preparado por", fecha: "Fecha", pie: "Documento confidencial · Preparado exclusivamente para el destinatario" };
 
 /**
  * design-system §4.1 — Portada. Normal: blanca, banda de tres capas y logo a color.
  * Premium: negra, filete de oro, logo invertido y sello «Confidencial».
  */
-export function CoverPage({ t, eyebrow, title, subtitle, preparedFor, preparedBy = "Pime Panamá", date, brandTag = "Panamá · Desarrollo de software" }: CoverPageProps) {
+export function CoverPage({ t, eyebrow, title, subtitle, preparedFor, preparedBy = "Pime Panamá", date, brandTag = "Panamá · Desarrollo de software", etiquetas = ETIQUETAS_ES }: CoverPageProps) {
     const s = estilos(t);
   const oscuro = t.linea === "premium";
   return (
@@ -80,9 +84,9 @@ export function CoverPage({ t, eyebrow, title, subtitle, preparedFor, preparedBy
 
           <View style={s.metaRow}>
             {[
-              ["Preparado para", preparedFor],
-              ["Preparado por", preparedBy],
-              ["Fecha", date],
+              [etiquetas.para, preparedFor],
+              [etiquetas.por, preparedBy],
+              [etiquetas.fecha, date],
             ].map(([k, v]) => (
               <View key={k} style={s.meta}>
                 <Text style={s.metaLabel}>{k}</Text>
@@ -93,7 +97,7 @@ export function CoverPage({ t, eyebrow, title, subtitle, preparedFor, preparedBy
         </View>
 
         <View style={s.bottomRow}>
-          <Text style={s.bottomText}>Documento confidencial · Preparado exclusivamente para el destinatario</Text>
+          <Text style={s.bottomText}>{etiquetas.pie}</Text>
           <Text style={s.bottomText}>pimepanama.com</Text>
         </View>
       </View>

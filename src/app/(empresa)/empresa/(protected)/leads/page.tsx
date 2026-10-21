@@ -4,18 +4,68 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { serializeLead } from "@/lib/serializers";
 import { LeadsView } from "./leads-view";
-import { PageHeader, btn } from "@/components/empresa/page-header";
+import { PageHeader, btn, seg } from "@/components/empresa/page-header";
+import { RespuestasView } from "./respuestas-view";
+import { respuestasDelPanel, buzonesParaEnviar } from "@/lib/leads/respuestas";
 import { puedeVer } from "@/lib/auth/permisos";
 import { fechaCorta } from "@/lib/format-datetime";
 import type { SolicitudCotizacion } from "@/lib/mail/ai-analyze";
 
 export const metadata = { title: "Leads — Pime Suite" };
 export const dynamic = "force-dynamic";
+// Enviar una tanda y redactar propuestas corre en las acciones de esta página.
+export const maxDuration = 60;
 
-export default async function LeadsPage() {
+export default async function LeadsPage({ searchParams }: { searchParams: Promise<{ vista?: string }> }) {
   const user = await getEmpresaUser();
+  const vistaRespuestas = (await searchParams).vista === "respuestas";
 
   const veCorreos = puedeVer(user.miembro.area, "correos");
+  const [porRevisar, respuestas, buzones] = await Promise.all([
+    prisma.respuestaLead.count({ where: { userId: user.id, estado: { in: ["borrador", "fallo"] } } }).catch(() => 0),
+    vistaRespuestas ? respuestasDelPanel(user.id).catch((e) => { console.error("[leads] respuestas", e); return null; }) : Promise.resolve(null),
+    vistaRespuestas ? buzonesParaEnviar(user.id, user.miembro.email).catch(() => []) : Promise.resolve([]),
+  ]);
+
+  const pestanas = (
+    <nav className={`${seg.group} mb-6`} aria-label="Secciones de leads">
+      <Link href="/empresa/leads" aria-current={vistaRespuestas ? undefined : "page"} className={seg.item(!vistaRespuestas)}>Prospectos</Link>
+      <Link href="/empresa/leads?vista=respuestas" aria-current={vistaRespuestas ? "page" : undefined} className={seg.item(vistaRespuestas)}>
+        Respuestas{porRevisar > 0 && <span className="rounded-full bg-sand/15 px-2 text-xs font-semibold text-sand-fg tabular-nums">{porRevisar}</span>}
+      </Link>
+    </nav>
+  );
+
+  const encabezado = (
+    <PageHeader
+      className="mb-6"
+      title="Leads"
+      description={vistaRespuestas ? "Correos, propuestas en PDF y mensajes de LinkedIn que el agente dejó redactados, por tanda" : "Seguimiento de posibles clientes"}
+      actions={
+        <Link href="/empresa/leads/nuevo" className={vistaRespuestas ? btn.secondary : btn.primary}>
+          + Nuevo lead
+        </Link>
+      }
+    />
+  );
+
+  if (vistaRespuestas) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        {encabezado}
+        {pestanas}
+        {respuestas ? (
+          <RespuestasView inicial={respuestas} buzones={buzones} />
+        ) : (
+          <div className="rounded-xl border border-danger/25 bg-danger/[0.08] px-6 py-12 text-center" role="alert">
+            <p className="text-sm font-medium text-danger">No se pudieron cargar las respuestas.</p>
+            <Link href="/empresa/leads?vista=respuestas" className={`${btn.secondary} mt-6`}>Volver a intentar</Link>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const [leads, solicitudes] = await Promise.all([
     prisma.lead.findMany({
       where: { userId: user.id },
@@ -38,16 +88,8 @@ export default async function LeadsPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <PageHeader
-        className="mb-6"
-        title="Leads"
-        description="Seguimiento de posibles clientes"
-        actions={
-          <Link href="/empresa/leads/nuevo" className={btn.primary}>
-            + Nuevo lead
-          </Link>
-        }
-      />
+      {encabezado}
+      {pestanas}
 
       {solicitudes.length > 0 && (
         <section className="mb-6 rounded-2xl border border-sand/40 bg-sand/5 p-4 sm:p-6" aria-labelledby="solicitudes-titulo">
