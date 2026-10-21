@@ -84,7 +84,7 @@ function pieLegal(cuerpo: string, userId: string, para: string | null, idioma: "
   const previo = cuerpo.match(/\n+—\n[\s\S]*$/)?.[0];
   if (previo) return previo;
   if (!para) return "";
-  const baja = `${getSiteUrl()}/baja/${tokenBaja(userId, para.toLowerCase())}`;
+  const baja = `${getSiteUrl()}/baja/${tokenBaja(userId, para.toLowerCase())}${idioma === "en" ? "?lang=en" : ""}`;
   return idioma === "en"
     ? `\n\n—\n${DIRECCION}\nIf you'd rather not hear from us, unsubscribe here: ${baja}`
     : `\n\n—\n${DIRECCION}\nSi prefiere no recibir más correos, dese de baja aquí: ${baja}`;

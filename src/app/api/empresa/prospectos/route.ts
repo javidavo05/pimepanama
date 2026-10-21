@@ -116,7 +116,7 @@ export const POST = withEmpresaRoute(async (request) => {
     let cuerpo = recorte(correo.cuerpo, 4000);
     if (cuerpo && email) {
       // CAN-SPAM (y buena práctica en Panamá): dirección física real y una forma clara de darse de baja.
-      const baja = `${site}/baja/${tokenBaja(userId, email)}`;
+      const baja = `${site}/baja/${tokenBaja(userId, email)}${mercado === "US" ? "?lang=en" : ""}`;
       cuerpo += mercado === "US"
         ? `\n\n—\n${DIRECCION}\nIf you'd rather not hear from us, unsubscribe here: ${baja}`
         : `\n\n—\n${DIRECCION}\nSi prefiere no recibir más correos, dese de baja aquí: ${baja}`;
