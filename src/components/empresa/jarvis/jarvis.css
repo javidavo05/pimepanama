@@ -64,7 +64,7 @@ html[data-theme="light"] .jv-logo .jv-c3 { stroke: #0b1d3a }
 
 /* Disposición */
 .jv-main { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr); grid-template-areas: "stage" "l" "r" }
-@container (min-width: 1000px) { .jv-main { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr); grid-template-areas: "l stage r"; align-items: start } }
+@container (min-width: 1000px) { .jv-main { grid-template-columns: minmax(0, 1fr) minmax(0, 1.9fr) minmax(0, 1fr); grid-template-areas: "l stage r"; align-items: start } }
 .jv-l { grid-area: l } .jv-r { grid-area: r } .jv-st { grid-area: stage; display: grid; gap: 8px; min-width: 0 }
 .jv-col { display: grid; gap: 16px; align-content: start; min-width: 0 }
 .jv-more { display: grid; gap: 16px; grid-template-columns: minmax(0, 1fr) }
@@ -139,20 +139,25 @@ html[data-theme="light"] .jv-logo .jv-c3 { stroke: #0b1d3a }
 
 /* Escenario */
 .jv-stage { position: relative; width: 100%; aspect-ratio: 1 / 1; max-width: 100%; justify-self: center }
-@container (min-width: 1000px) { .jv-stage { aspect-ratio: 1 / .96 } }
-.jv.jv-full .jv-stage { width: min(100%, calc(100dvh - 320px)); min-width: 280px }
+@container (min-width: 1000px) { .jv-stage { aspect-ratio: 1 / .92 } }
+.jv-stage { touch-action: none; cursor: grab }
+.jv-stage:active { cursor: grabbing }
+.jv.jv-full .jv-stage { width: min(100%, calc(100dvh - 250px)); min-width: 280px }
 .jv-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block }
 .jv-core { position: absolute; left: 50%; top: 50%; width: 28%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; border: 0; background: transparent; cursor: pointer }
 .jv-node, .jv-mnode { position: absolute; transform: translate(-50%, -50%); display: grid; justify-items: center; gap: 4px; border: 0; background: transparent; color: var(--jv-fg); cursor: pointer; padding: 4px; min-width: 44px; min-height: 44px; font: inherit; text-align: center }
-.jv-hex { width: 40px; height: 40px; display: grid; place-items: center; color: var(--jv-cyan); position: relative; isolation: isolate;
-  clip-path: polygon(25% 4%, 75% 4%, 100% 50%, 75% 96%, 25% 96%, 0 50%); background: linear-gradient(180deg, rgb(var(--jv-rgb) / .34), rgb(var(--jv-rgb) / .08)); transition: background .3s, color .3s }
+.jv-node { --nc: rgb(var(--jv-rgb)); transition: opacity .2s }
+html[data-theme="light"] .jv-node { --nc: var(--nc-claro) }
+.jv-hex { width: 40px; height: 40px; display: grid; place-items: center; color: var(--nc); position: relative; isolation: isolate;
+  clip-path: polygon(25% 4%, 75% 4%, 100% 50%, 75% 96%, 25% 96%, 0 50%); background: linear-gradient(180deg, color-mix(in srgb, var(--nc) 55%, transparent), color-mix(in srgb, var(--nc) 12%, transparent)); transition: background .3s, color .3s }
 .jv-hex::after { content: ""; position: absolute; inset: 1px; clip-path: inherit; background: var(--jv-hexfill); z-index: -1 }
 .jv-hex svg { width: 18px; height: 18px }
 .jv-node[data-tipo="motor"] .jv-hex { clip-path: circle(50%) }
 .jv-node[data-e="aviso"] .jv-hex { color: var(--jv-amber); background: linear-gradient(180deg, rgb(var(--jv-amber-rgb) / .45), rgb(var(--jv-amber-rgb) / .1)) }
 .jv-node[data-e="apagado"] .jv-hex { color: var(--jv-faint); background: linear-gradient(180deg, rgb(var(--jv-faint-rgb) / .4), rgb(var(--jv-faint-rgb) / .1)) }
-.jv-node.jv-on .jv-hex { background: var(--jv-cyan); color: var(--jv-ink) }
+.jv-node.jv-on .jv-hex { background: var(--nc); color: var(--jv-ink) }
 .jv-node.jv-on .jv-hex::after { background: var(--jv-hexon) }
+.jv-node .jv-nl { color: var(--nc) }
 .jv-nl { font-size: 12px; font-weight: 600; white-space: nowrap; text-shadow: var(--jv-tshadow) }
 .jv-ns { font-size: 12px; color: var(--jv-faint); white-space: nowrap; text-shadow: var(--jv-tshadow); font-variant-numeric: tabular-nums }
 .jv-node[data-e="aviso"] .jv-ns { color: var(--jv-amber) }
@@ -198,3 +203,6 @@ html[data-theme="light"] .jv-logo .jv-c3 { stroke: #0b1d3a }
 
 /* En la pantalla de inicio Jarvis ya es el asistente: el botón flotante sobra y tapaba un nodo. */
 .empresa-app:has(.jv) [aria-label="Abrir el asistente"] { display: none }
+
+/* Los nodos del lado de atrás de la esfera solo muestran su ícono. */
+.jv-node[data-atras="1"] .jv-ns, .jv-node[data-atras="1"] .jv-nl, .jv-mnode[data-atras="1"] .jv-ns { visibility: hidden }

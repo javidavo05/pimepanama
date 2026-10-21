@@ -11,6 +11,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { useRouter } from "next/navigation";
 import { fetchLargo } from "@/lib/fetch-largo";
 import type { Conexion } from "@/lib/jarvis/conexiones";
+import { iniciarEsfera, colorDe, type Vivo } from "./esfera";
 import "./jarvis.css";
 
 type EstadoAccion = "propuesta" | "hecha" | "cancelada" | "deshecha" | "error";
@@ -85,14 +86,14 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
   const [completa, setCompleta] = useState(false);
   const [vozActiva, setVozActiva] = useState(true);
   const [hora, setHora] = useState("");
-  const vivo = useRef({ estado: "espera" as Estado, encendidos: [] as string[], hover: null as string | null, modo: "conexiones" as "conexiones" | "memoria", pulsos: [] as { a: string; b?: string; t: number; v: number; grande: boolean }[] });
+  const vivo = useRef<Vivo>({ estado: "espera", encendidos: [], hover: null, modo: "conexiones", finArrastre: 0 });
   const rec = useRef<MediaRecorder | null>(null);
   const trozos = useRef<Blob[]>([]);
 
   const enLinea = conexiones.filter((c) => c.estado === "ok").length;
 
   useEffect(() => { vivo.current.estado = estado; }, [estado]);
-  useEffect(() => { vivo.current.modo = modo; vivo.current.pulsos = []; }, [modo]);
+  useEffect(() => { vivo.current.modo = modo; }, [modo]);
   useEffect(() => {
     vivo.current.encendidos = encendidos;
     // Los paneles cuya fuente participa se iluminan.
@@ -111,7 +112,6 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
 
   const encender = useCallback((ids: string[]) => {
     setEncendidos(ids);
-    for (const id of ids) for (let i = 0; i < 3; i++) vivo.current.pulsos.push({ a: id, t: 1 + i * 0.14, v: -0.02, grande: true });
   }, []);
 
   const hablar = useCallback((t: string) => {
@@ -221,187 +221,11 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
   }, [microfono, completa]);
   useEffect(() => { document.documentElement.style.overflow = completa ? "hidden" : ""; return () => { document.documentElement.style.overflow = ""; }; }, [completa]);
 
-  // Escenario: núcleo, anillos, líneas y pulsos. 30 cuadros por segundo y en pausa si no se ve.
+  // Escenario: la esfera de partículas con sus regiones, enlaces y nodos (ver esfera.ts).
   useEffect(() => {
     const cv = lienzo.current, st = escenario.current;
     if (!cv || !st) return;
-    const ctx0 = cv.getContext("2d");
-    if (!ctx0) return;
-    const ctx: CanvasRenderingContext2D = ctx0;
-    const quieto = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // Colores del tema actual (claro u oscuro), leídos de las variables de .jv: se releen si cambia el tema.
-    const paleta = { c: "111 168 255", aviso: "255 181 71", apagado: "88 115 137", hot: "242 247 255" };
-    const leerPaleta = () => {
-      const s = getComputedStyle(raiz.current ?? st);
-      const v = (n: string, d: string) => s.getPropertyValue(n).trim() || d;
-      paleta.c = v("--jv-rgb", paleta.c); paleta.aviso = v("--jv-amber-rgb", paleta.aviso); paleta.apagado = v("--jv-faint-rgb", paleta.apagado);
-      paleta.hot = document.documentElement.dataset.theme === "light" ? "255 255 255" : "242 247 255";
-    };
-    leerPaleta();
-    const mo = new MutationObserver(() => { leerPaleta(); if (quieto) dibujar(0); });
-    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-    let W = 0, H = 0, raf = 0, ultimo = 0, visible = true;
-    // Partículas: en espera forman el símbolo de Pime (las tres capas); al hablar, pensar o responder se
-    // deshacen en una esfera viva. Coordenadas del símbolo tomadas del SVG de marca (viewBox 100, centro 50,50).
-    const NP = Math.min(2400, Math.max(800, Math.round((st.clientWidth || 600) * 3.2)));
-    const lx = new Float32Array(NP), ly = new Float32Array(NP), sx = new Float32Array(NP), sy = new Float32Array(NP), sz = new Float32Array(NP);
-    const capa = new Uint8Array(NP), retraso = new Float32Array(NP), tam = new Float32Array(NP), fase = new Float32Array(NP);
-    const px = new Float32Array(NP), py = new Float32Array(NP), vx = new Float32Array(NP), vy = new Float32Array(NP);
-    const dentroRombo = (x: number, y: number) => Math.abs(x - 50) / 30 + Math.abs(y - 36) / (y < 36 ? 20 : 12) <= 1;
-    const enLinea = (y0: number) => { const u = Math.random(), x = 20 + u * 60, y = y0 + (u < 0.5 ? u * 2 : (1 - u) * 2) * 12; return [x + (Math.random() - 0.5) * 6, y + (Math.random() - 0.5) * 6]; };
-    for (let i = 0; i < NP; i++) {
-      const r = Math.random();
-      let x: number, y: number;
-      if (r < 0.5) { capa[i] = 0; do { x = 20 + Math.random() * 60; y = 16 + Math.random() * 32; } while (!dentroRombo(x, y)); }
-      else if (r < 0.75) { capa[i] = 1; [x, y] = enLinea(54); }
-      else { capa[i] = 2; [x, y] = enLinea(72); }
-      lx[i] = (x - 50) / 34; ly[i] = (y - 50) / 34;
-      // Esfera de Fibonacci: reparto parejo en la superficie.
-      const k = i + 0.5, phi = Math.acos(1 - (2 * k) / NP), th = Math.PI * (1 + Math.sqrt(5)) * k;
-      sx[i] = Math.cos(th) * Math.sin(phi); sy[i] = Math.cos(phi); sz[i] = Math.sin(th) * Math.sin(phi);
-      retraso[i] = Math.random() * 0.45; tam[i] = 1.1 + Math.random() * 1.6; fase[i] = Math.random() * 6.283;
-    }
-    let morf = 0, iniciado = false;
-    const puntero = { x: -9999, y: -9999 };
-    const mover = (e: PointerEvent) => { const r = st.getBoundingClientRect(); puntero.x = e.clientX - r.left; puntero.y = e.clientY - r.top; };
-    const salir = () => { puntero.x = -9999; puntero.y = -9999; };
-    st.addEventListener("pointermove", mover); st.addEventListener("pointerleave", salir);
-    const N = conexiones.length;
-    const posNodo = (i: number) => { const a = -Math.PI / 2 + (i * Math.PI * 2) / N; return { a, x: W / 2 + Math.cos(a) * W * 0.4, y: H / 2 + Math.sin(a) * H * 0.4 }; };
-    const areas = memoria?.areas ?? [];
-    const posArea = (i: number) => {
-      const interior = i < 8, lista = interior ? 8 : Math.max(1, areas.length - 8), k = interior ? i : i - 8;
-      const a = (interior ? -Math.PI / 2 : -Math.PI / 2 + 0.24) + (k * Math.PI * 2) / lista, r = interior ? 0.27 : 0.43;
-      return { a, x: W / 2 + Math.cos(a) * W * r, y: H / 2 + Math.sin(a) * H * r };
-    };
-    const indice = new Map(conexiones.map((c, i) => [c.id, i]));
-    const indiceArea = new Map(areas.map((a, i) => [a.id, i]));
-    const curva = (i: number) => {
-      const p = posNodo(i), R = Math.min(W, H) * 0.2;
-      const x0 = W / 2 + Math.cos(p.a) * R * 1.18, y0 = H / 2 + Math.sin(p.a) * R * 1.18, x1 = p.x - Math.cos(p.a) * 24, y1 = p.y - Math.sin(p.a) * 24;
-      return { x0, y0, x1, y1, qx: (x0 + x1) / 2 - (y1 - y0) * 0.18, qy: (y0 + y1) / 2 + (x1 - x0) * 0.18 };
-    };
-    const enCurva = (c: { x0: number; y0: number; x1: number; y1: number; qx: number; qy: number }, t: number) => { const u = 1 - t; return [u * u * c.x0 + 2 * u * t * c.qx + t * t * c.x1, u * u * c.y0 + 2 * u * t * c.qy + t * t * c.y1]; };
-    const anillo = (x: number, y: number, r: number, w: number, color: string, a0 = 0, a1 = Math.PI * 2) => { ctx.beginPath(); ctx.arc(x, y, r, a0, a1); ctx.lineWidth = w; ctx.strokeStyle = color; ctx.stroke(); };
-    const marcas = (x: number, y: number, r: number, n: number, largo: number, giro: number, color: string, cada: number) => {
-      ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.beginPath();
-      for (let i = 0; i < n; i++) { const a = giro + (i * Math.PI * 2) / n, L = i % cada === 0 ? largo * 2 : largo; ctx.moveTo(x + Math.cos(a) * r, y + Math.sin(a) * r); ctx.lineTo(x + Math.cos(a) * (r - L), y + Math.sin(a) * (r - L)); }
-      ctx.stroke();
-    };
-    const medir = () => {
-      const r = st.getBoundingClientRect(); W = r.width; H = r.height;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      if (quieto) dibujar(0);
-    };
-    function dibujar(ms: number) {
-      const v = vivo.current, t = ms / 1000, cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.2, C = paleta.c, AM = paleta.aviso, OFF = paleta.apagado;
-      const vel = v.estado === "pensando" || v.estado === "transcribiendo" ? 4 : v.estado === "escuchando" ? 1.6 : 1;
-      ctx.clearRect(0, 0, W, H);
-      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 2.6); g.addColorStop(0, `rgb(${C} / .16)`); g.addColorStop(1, `rgb(${C} / 0)`);
-      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-      if (v.modo === "memoria" && memoria) {
-        const wmax = memoria.links[0]?.[2] ?? 1;
-        for (const [a, b, w] of memoria.links) {
-          const ia = indiceArea.get(a), ib = indiceArea.get(b); if (ia === undefined || ib === undefined) continue;
-          const A = posArea(ia), B = posArea(ib), on = v.hover === `m:${a}` || v.hover === `m:${b}` || v.encendidos.includes(`m:${a}`) || v.encendidos.includes(`m:${b}`);
-          const qx = (A.x + B.x) / 2 + (cx - (A.x + B.x) / 2) * 0.35, qy = (A.y + B.y) / 2 + (cy - (A.y + B.y) / 2) * 0.35;
-          ctx.save(); ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.quadraticCurveTo(qx, qy, B.x, B.y);
-          ctx.lineWidth = 0.6 + (2 * w) / wmax; ctx.strokeStyle = `rgb(${C} / ${on ? 0.9 : 0.08 + (0.3 * w) / wmax})`;
-          if (on) { ctx.shadowColor = `rgb(${C} / .9)`; ctx.shadowBlur = 10; }
-          ctx.stroke(); ctx.restore();
-          if (!quieto && Math.random() < (0.024 * w) / wmax) v.pulsos.push({ a, b, t: 0, v: 0.008, grande: false });
-        }
-      } else {
-        conexiones.forEach((c, i) => {
-          const k = curva(i), on = v.encendidos.includes(c.id) || v.hover === c.id, aviso = c.estado !== "ok";
-          ctx.save(); ctx.beginPath(); ctx.moveTo(k.x0, k.y0); ctx.quadraticCurveTo(k.qx, k.qy, k.x1, k.y1);
-          if (aviso) ctx.setLineDash([4, 6]);
-          const col = c.estado === "aviso" ? AM : c.estado === "apagado" ? OFF : C;
-          ctx.lineWidth = on ? 1.6 : 1; ctx.strokeStyle = `rgb(${col} / ${on ? 0.95 : aviso ? 0.45 : 0.24})`;
-          if (on) { ctx.shadowColor = `rgb(${col} / .9)`; ctx.shadowBlur = 12; }
-          ctx.stroke(); ctx.restore();
-          ctx.beginPath(); ctx.arc(k.x0, k.y0, on ? 3 : 2, 0, 6.283); ctx.fillStyle = `rgb(${col} / ${on ? 1 : 0.6})`; ctx.fill();
-          if (!aviso && !quieto && Math.random() < 0.004 * vel) v.pulsos.push({ a: c.id, t: 1, v: -0.006 - Math.random() * 0.004, grande: false });
-        });
-      }
-      for (let p = v.pulsos.length - 1; p >= 0; p--) {
-        const q = v.pulsos[p]; q.t += quieto ? 0 : q.v;
-        if (q.t < 0 || q.t > 1.6) { v.pulsos.splice(p, 1); continue; }
-        if (q.t > 1) continue;
-        let pt: number[] | null = null;
-        if (q.b && v.modo === "memoria") {
-          const ia = indiceArea.get(q.a), ib = indiceArea.get(q.b);
-          if (ia !== undefined && ib !== undefined) { const A = posArea(ia), B = posArea(ib); pt = enCurva({ x0: A.x, y0: A.y, x1: B.x, y1: B.y, qx: (A.x + B.x) / 2 + (cx - (A.x + B.x) / 2) * 0.35, qy: (A.y + B.y) / 2 + (cy - (A.y + B.y) / 2) * 0.35 }, q.t); }
-        } else if (!q.b && v.modo === "conexiones") {
-          const i = indice.get(q.a); if (i !== undefined) pt = enCurva(curva(i), q.t);
-        }
-        if (!pt) { v.pulsos.splice(p, 1); continue; }
-        ctx.beginPath(); ctx.arc(pt[0], pt[1], q.grande ? 3.5 : 2, 0, 6.283);
-        ctx.fillStyle = q.grande ? `rgb(${paleta.hot})` : `rgb(${C} / .9)`; ctx.shadowColor = `rgb(${C} / 1)`; ctx.shadowBlur = q.grande ? 16 : 8; ctx.fill(); ctx.shadowBlur = 0;
-      }
-      marcas(cx, cy, R * 1.62, 180, 3, t * 0.03 * vel, `rgb(${C} / .22)`, 15);
-      anillo(cx, cy, R * 1.45, 1, `rgb(${C} / .12)`);
-      for (let k = 0; k < 3; k++) { const a0 = -t * 0.35 * vel + k * 2.094; anillo(cx, cy, R * 1.45, 2, `rgb(${C} / .75)`, a0, a0 + 0.55); }
-      ctx.save(); ctx.setLineDash([2, 8]); anillo(cx, cy, R * 1.25, 1, `rgb(${C} / .4)`); ctx.restore();
-      marcas(cx, cy, R * 1.12, 72, 6, -t * 0.12 * vel, `rgb(${C} / .55)`, 6);
-      if ((v.estado === "pensando" || v.estado === "transcribiendo") && !quieto) {
-        const sw = t * 3; ctx.save(); ctx.beginPath(); ctx.moveTo(cx, cy); ctx.arc(cx, cy, R * 1.6, sw, sw + 0.6); ctx.closePath();
-        const gs = ctx.createRadialGradient(cx, cy, R * 0.4, cx, cy, R * 1.6); gs.addColorStop(0, `rgb(${C} / 0)`); gs.addColorStop(1, `rgb(${C} / .18)`);
-        ctx.fillStyle = gs; ctx.fill(); ctx.restore();
-      }
-      // Brillo suave detrás de las partículas.
-      const gc = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.1);
-      gc.addColorStop(0, `rgb(${C} / ${document.documentElement.dataset.theme === "light" ? 0.1 : 0.22})`); gc.addColorStop(1, `rgb(${C} / 0)`);
-      ctx.fillStyle = gc; ctx.beginPath(); ctx.arc(cx, cy, R * 1.1, 0, 6.283); ctx.fill();
-      // Del símbolo a la esfera según el estado, con un desfase por partícula para que se desarme en cascada.
-      const objetivo = v.estado === "espera" ? 0 : 1;
-      morf += (objetivo - morf) * (quieto ? 1 : 0.06);
-      const claro = document.documentElement.dataset.theme === "light";
-      const colores = claro ? ["111 168 255", "31 91 255", "11 29 58"] : ["111 168 255", "76 125 255", "232 240 255"];
-      const amp = v.estado === "hablando" ? 0.14 : v.estado === "escuchando" ? 0.09 : v.estado === "pensando" || v.estado === "transcribiendo" ? 0.05 : 0.02;
-      const giro = t * (0.25 + 0.5 * vel * 0.25), cg = Math.cos(giro), sg = Math.sin(giro), inc = 0.38, ci = Math.cos(inc), si = Math.sin(inc);
-      const vaiven = Math.sin(t * 0.6) * 0.35, cv0 = Math.cos(vaiven), abre = (Math.sin(t * 1.3) * 0.5 + 0.5) * 0.09;
-      const RS = R * 1.05, RL = R * 0.95;
-      ctx.save();
-      if (!claro) ctx.globalCompositeOperation = "lighter";
-      for (let i = 0; i < NP; i++) {
-        // Símbolo: las capas se abren y cierran (capas abiertas) y el conjunto se mece en 3D.
-        const dy = capa[i] === 0 ? -abre : capa[i] === 2 ? abre : 0;
-        const ax = cx + lx[i] * cv0 * RL, ay = cy + (ly[i] + dy) * RL;
-        // Esfera: gira, se inclina y respira con la voz.
-        const x1 = sx[i] * cg + sz[i] * sg, z1 = -sx[i] * sg + sz[i] * cg;
-        const y2 = sy[i] * ci - z1 * si, z2 = sy[i] * si + z1 * ci;
-        const ruido = 1 + amp * Math.sin(t * 7 + fase[i] * 3 + sy[i] * 5);
-        const persp = 1 / (1.6 - z2 * 0.6);
-        const bx = cx + x1 * RS * ruido * persp * 1.2, by = cy + y2 * RS * ruido * persp * 1.2;
-        const m = Math.min(1, Math.max(0, (morf * 1.45 - retraso[i])));
-        const e = m * m * (3 - 2 * m);
-        let tx = ax + (bx - ax) * e, ty = ay + (by - ay) * e;
-        // El puntero empuja las partículas y vuelven solas.
-        const ddx = tx + vx[i] - puntero.x, ddy = ty + vy[i] - puntero.y, d2 = ddx * ddx + ddy * ddy;
-        if (d2 < 3600 && !quieto) { const f = (1 - d2 / 3600) * 6; const d = Math.sqrt(d2) || 1; vx[i] += (ddx / d) * f; vy[i] += (ddy / d) * f; }
-        vx[i] *= 0.9; vy[i] *= 0.9; tx += vx[i]; ty += vy[i];
-        if (!iniciado) { px[i] = tx; py[i] = ty; }
-        px[i] += (tx - px[i]) * 0.35; py[i] += (ty - py[i]) * 0.35;
-        const fondo = e * (1 - (z2 + 1) / 2);
-        const a = (claro ? 0.8 + 0.2 * Math.sin(t * 2 + fase[i]) : 0.6 + 0.4 * Math.sin(t * 2 + fase[i])) * (1 - fondo * 0.7);
-        const s = tam[i] * (1 + e * (persp - 0.6));
-        ctx.fillStyle = `rgb(${colores[capa[i]]} / ${a.toFixed(2)})`;
-        ctx.fillRect(px[i] - s / 2, py[i] - s / 2, s, s);
-      }
-      ctx.restore();
-      iniciado = true;
-    }
-    const bucle = (ms: number) => {
-      raf = requestAnimationFrame(bucle);
-      if (!visible || document.hidden || ms - ultimo < 33) return;
-      ultimo = ms; dibujar(ms);
-    };
-    const ro = new ResizeObserver(medir); ro.observe(st); medir();
-    const io = new IntersectionObserver(([e]) => { visible = e.isIntersecting; }); io.observe(st);
-    if (!quieto) raf = requestAnimationFrame(bucle);
-    return () => { cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); mo.disconnect(); st.removeEventListener("pointermove", mover); st.removeEventListener("pointerleave", salir); };
+    return iniciarEsfera({ lienzo: cv, escenario: st, vivo, conexiones, memoria });
   }, [conexiones, memoria]);
 
   const N = conexiones.length;
@@ -458,9 +282,9 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
         <div className="jv-st">
           <div className="jv-stage" ref={escenario} data-modo={modo}>
             <canvas ref={lienzo} aria-hidden />
-            <button type="button" className="jv-core" onClick={() => void microfono()} aria-label={estado === "escuchando" ? "Dejar de escuchar" : "Hablarle a Jarvis"} />
+            <button type="button" className="jv-core" onClick={() => { if (Date.now() - vivo.current.finArrastre > 300) void microfono(); }} aria-label={estado === "escuchando" ? "Dejar de escuchar" : "Hablarle a Jarvis"} />
             {conexiones.map((c, i) => (
-              <button key={c.id} type="button" className={`jv-node${encendidos.includes(c.id) ? " jv-on" : ""}`} data-tipo={c.tipo} data-e={c.estado} style={posicion(i)}
+              <button key={c.id} type="button" className={`jv-node${encendidos.includes(c.id) ? " jv-on" : ""}`} data-ancla={c.id} data-tipo={c.tipo} data-e={c.estado} style={{ ...posicion(i), ["--nc" as string]: `rgb(${colorDe(c.id, false)})`, ["--nc-claro" as string]: `rgb(${colorDe(c.id, true)})` }}
                 aria-label={`${c.nombre}: ${c.resumen}`}
                 onMouseEnter={() => { vivo.current.hover = c.id; }} onMouseLeave={() => { vivo.current.hover = null; }}
                 onFocus={() => { vivo.current.hover = c.id; }} onBlur={() => { vivo.current.hover = null; }}
@@ -474,7 +298,7 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
               const sz = Math.round(8 + 16 * Math.sqrt(a.n / maxN));
               const cruces = (memoria?.links ?? []).filter((l) => l[0] === a.id || l[1] === a.id).slice(0, 3).map((l) => `${l[0] === a.id ? l[1] : l[0]} (${l[2]})`);
               return (
-                <button key={a.id} type="button" className={`jv-mnode${encendidos.includes(`m:${a.id}`) ? " jv-on" : ""}`} style={posArea(i)} aria-label={`${a.id}: ${a.n} piezas de código`}
+                <button key={a.id} type="button" className={`jv-mnode${encendidos.includes(`m:${a.id}`) ? " jv-on" : ""}`} data-ancla={`m:${a.id}`} style={posArea(i)} aria-label={`${a.id}: ${a.n} piezas de código`}
                   onMouseEnter={() => { vivo.current.hover = `m:${a.id}`; }} onMouseLeave={() => { vivo.current.hover = null; }}
                   onClick={() => { setEncendidos([`m:${a.id}`]); setDetalle({ t: a.id, d: `${a.n.toLocaleString("es-PA")} piezas de código. Lo más conectado: ${a.top.join(", ")}.${cruces.length ? ` Se cruza con ${cruces.join(", ")}.` : ""}` }); }}>
                   <span className="jv-mdot" style={{ width: sz, height: sz }} />
