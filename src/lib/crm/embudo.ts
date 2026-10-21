@@ -33,6 +33,7 @@ export const FUENTES: { value: string; label: string }[] = [
   { value: "REDES_SOCIALES", label: "Redes sociales" },
   { value: "FERIA", label: "Feria" },
   { value: "LLAMADA_FRIA", label: "Llamada en frío" },
+  { value: "CORREO", label: "Correo" },
   { value: "OTRO", label: "Otro" },
 ];
 

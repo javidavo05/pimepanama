@@ -28,7 +28,8 @@ const BOTON: Record<TipoInteraccion, string> = {
   llamada: "Guardar llamada", whatsapp: "Guardar conversación", visita: "Guardar visita", nota: "Guardar nota", correo: "Guardar correo", reunion: "Guardar reunión",
 };
 
-export function RegistrarInteraccion({ clientId, contactos }: { clientId: string; contactos: ContactoOpcion[] }) {
+/** Con `clientId` registra en el cliente; con `leadId`, en el lead (sin contactos). */
+export function RegistrarInteraccion({ clientId, leadId, contactos }: { clientId?: string; leadId?: string; contactos: ContactoOpcion[] }) {
   const [estado, accion, enviando] = useActionState(registrarInteraccionAction, null);
   const principal = contactos.find((k) => k.principal)?.id ?? contactos[0]?.id ?? "";
   const [tipo, setTipo] = useState<TipoInteraccion>("llamada");
@@ -68,7 +69,7 @@ export function RegistrarInteraccion({ clientId, contactos }: { clientId: string
   const conContacto = tipo !== "nota" && contactos.length > 0;
   return (
     <form ref={formRef} action={accion} className="space-y-4" id={ANCLA_REGISTRO} tabIndex={-1}>
-      <input type="hidden" name="clientId" value={clientId} />
+      {clientId ? <input type="hidden" name="clientId" value={clientId} /> : <input type="hidden" name="leadId" value={leadId ?? ""} />}
       <input type="hidden" name="tipo" value={tipo} />
       <fieldset>
         <legend className="sr-only">Qué fue</legend>
@@ -97,7 +98,7 @@ export function RegistrarInteraccion({ clientId, contactos }: { clientId: string
                 {(["saliente", "entrante"] as const).map((d) => (
                   <button key={d} type="button" aria-pressed={direccion === d} onClick={() => setDireccion(d)}
                     className={`min-h-11 rounded-lg border text-sm font-medium ${direccion === d ? "border-brand bg-brand/10 text-brand-fg" : "border-line-mid text-fg-mute hover:border-line-loud"}`}>
-                    {d === "saliente" ? "Nosotros" : "El cliente"}
+                    {d === "saliente" ? "Nosotros" : clientId ? "El cliente" : "El prospecto"}
                   </button>
                 ))}
               </div>
@@ -118,7 +119,7 @@ export function RegistrarInteraccion({ clientId, contactos }: { clientId: string
       <div>
         <label htmlFor="crm-resumen" className={etiqueta}>{tipo === "nota" ? "Nota" : "De qué hablaron"}</label>
         <textarea key={`r-${vuelta}`} ref={resumenRef} id="crm-resumen" name="resumen" rows={3} required className={`${campo} py-2`}
-          placeholder={tipo === "nota" ? "Lo que conviene recordar de este cliente. Él no lo ve." : "Una o dos líneas bastan"} />
+          placeholder={tipo === "nota" ? `Lo que conviene recordar de este ${clientId ? "cliente" : "prospecto"}. No lo ve.` : "Una o dos líneas bastan"} />
       </div>
 
       {tipo !== "nota" && (
@@ -131,7 +132,7 @@ export function RegistrarInteraccion({ clientId, contactos }: { clientId: string
             <label htmlFor="crm-paso-fecha" className={etiqueta}>Para cuándo</label>
             <input key={`f-${vuelta}`} id="crm-paso-fecha" name="proximoPasoFecha" type="date" className={campo} />
           </div>
-          <p className="sm:col-span-2 -mt-2 text-xs text-fg-dim">Con fecha, el próximo paso queda como tarea tuya ligada a este cliente.</p>
+          <p className="sm:col-span-2 -mt-2 text-xs text-fg-dim">Con fecha, el próximo paso queda como tarea tuya ligada a este {clientId ? "cliente" : "lead"}.</p>
         </div>
       )}
 

@@ -7,8 +7,8 @@
  */
 import { useActionState, useEffect, useState, useTransition } from "react";
 import Link from "@/components/empresa/link";
-import { borrarInteraccionAction, cargarHistoriaAction, fijarInteraccionAction } from "@/app/(empresa)/empresa/(protected)/acciones-crm-ficha";
-import { TIPOS_HISTORIA, TIPO_HISTORIA_LABEL, TIPO_HISTORIA_UNO, type EventoHistoria, type PaginaHistoria, type TipoHistoria } from "@/lib/crm/historia";
+import { borrarInteraccionAction, cargarHistoriaAction, cargarHistoriaLeadAction, fijarInteraccionAction } from "@/app/(empresa)/empresa/(protected)/acciones-crm-ficha";
+import { TIPOS_HISTORIA, TIPOS_HISTORIA_LEAD, TIPO_HISTORIA_LABEL, TIPO_HISTORIA_UNO, type EventoHistoria, type PaginaHistoria, type TipoHistoria } from "@/lib/crm/historia";
 import { btn } from "@/components/empresa/page-header";
 import { Resultado, botonChico, fechaHora } from "./comun";
 
@@ -56,7 +56,9 @@ function Evento({ e }: { e: EventoHistoria }) {
   );
 }
 
-export function Historia({ clientId, inicial, fijadas }: { clientId: string; inicial: PaginaHistoria | null; fijadas: EventoHistoria[] }) {
+/** Con `clientId`, la historia del cliente; con `leadId`, la comunicación del lead (correos, conversaciones, citas y cotizaciones). */
+export function Historia({ clientId, leadId, inicial, fijadas }: { clientId?: string; leadId?: string; inicial: PaginaHistoria | null; fijadas: EventoHistoria[] }) {
+  const tiposDisponibles: readonly TipoHistoria[] = leadId ? TIPOS_HISTORIA_LEAD : TIPOS_HISTORIA;
   const [tipos, setTipos] = useState<TipoHistoria[]>([]);
   const [eventos, setEventos] = useState<EventoHistoria[]>(inicial?.eventos ?? []);
   const [cursor, setCursor] = useState<string | null>(inicial?.cursor ?? null);
@@ -73,7 +75,7 @@ export function Historia({ clientId, inicial, fijadas }: { clientId: string; ini
 
   function pedir(nuevos: TipoHistoria[], antes: string | null) {
     iniciar(async () => {
-      const r = await cargarHistoriaAction(clientId, antes, nuevos);
+      const r = leadId ? await cargarHistoriaLeadAction(leadId, antes, nuevos) : await cargarHistoriaAction(clientId ?? "", antes, nuevos);
       if ("error" in r) { setError(r.error); return; }
       setError(null);
       setEventos((prev) => (antes ? [...prev, ...r.eventos.filter((x) => !prev.some((p) => p.id === x.id))] : r.eventos));
@@ -102,7 +104,7 @@ export function Historia({ clientId, inicial, fijadas }: { clientId: string; ini
       <div className="-mx-1 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="group" aria-label="Filtrar por tipo">
         <div className="flex w-max gap-2 px-1">
           <button type="button" aria-pressed={!tipos.length} className={chipCls(!tipos.length)} onClick={() => alternar(null)}>Todo</button>
-          {TIPOS_HISTORIA.map((t) => <button key={t} type="button" aria-pressed={tipos.includes(t)} className={chipCls(tipos.includes(t))} onClick={() => alternar(t)}>{TIPO_HISTORIA_LABEL[t]}</button>)}
+          {tiposDisponibles.map((t) => <button key={t} type="button" aria-pressed={tipos.includes(t)} className={chipCls(tipos.includes(t))} onClick={() => alternar(t)}>{TIPO_HISTORIA_LABEL[t]}</button>)}
         </div>
       </div>
 
@@ -115,7 +117,11 @@ export function Historia({ clientId, inicial, fijadas }: { clientId: string; ini
           <p className="text-sm text-fg-dim">Cargando…</p>
         ) : !error ? (
           <p className="text-sm text-fg-dim">
-            {tipos.length ? "Nada de ese tipo todavía. Quita el filtro para ver todo." : "Aquí queda todo lo que pase con este cliente: llamadas, WhatsApp, correos, reuniones, cotizaciones y tickets. Registra la primera conversación arriba."}
+            {tipos.length
+              ? "Nada de ese tipo todavía. Quita el filtro para ver todo."
+              : leadId
+                ? "Aquí queda la comunicación con este lead: los correos que le mandes o te mande (se ligan solos por su dirección), llamadas, WhatsApp, citas y cotizaciones. Registra la primera conversación arriba."
+                : "Aquí queda todo lo que pase con este cliente: llamadas, WhatsApp, correos, reuniones, cotizaciones y tickets. Registra la primera conversación arriba."}
           </p>
         ) : null}
       </div>

@@ -143,6 +143,7 @@ export const FUENTE_LEAD_LABEL: Record<string, string> = {
   REDES_SOCIALES: "Redes sociales",
   FERIA: "Feria o evento",
   LLAMADA_FRIA: "Llamada fría",
+  CORREO: "Correo",
   OTRO: "Otro",
 };
 

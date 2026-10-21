@@ -11,6 +11,7 @@ import { formatEmailReceivedAt } from "@/lib/format-datetime";
 import { resolveReplyRecipient } from "@/lib/mail/reply-recipient";
 import type { WatchStatus } from "@/lib/mail/watch";
 import { useThreadWatch, WatchStatusCard, WatchToggleButton } from "@/components/empresa/mail/thread-watch";
+import { CorreoVinculo, type SolicitudCorreo, type VinculoCorreo } from "@/components/empresa/mail/correo-vinculo";
 
 const TAG_COLORS: Record<string, string> = {
   urgent: "bg-danger/15 text-danger border-danger/20",
@@ -47,6 +48,7 @@ interface EmailDetailClientProps {
   accounts: ComposeAccount[];
   company: CompanyPreview | null;
   initialWatch: WatchStatus;
+  vinculo: { inicial: VinculoCorreo; ignorado: boolean; solicitud: SolicitudCorreo; remitente: { nombre: string | null; email: string } };
 }
 
 function fmtBytes(b: number): string {
@@ -55,7 +57,7 @@ function fmtBytes(b: number): string {
   return `${(b / 1024 / 1024).toFixed(1)} MB`;
 }
 
-export function EmailDetailClient({ email, accounts, company, initialWatch }: EmailDetailClientProps) {
+export function EmailDetailClient({ email, accounts, company, initialWatch, vinculo }: EmailDetailClientProps) {
   const router = useRouter();
   const watchState = useThreadWatch(email.id, initialWatch);
   const [replyOpen, setReplyOpen] = useState(false);
@@ -74,6 +76,8 @@ export function EmailDetailClient({ email, accounts, company, initialWatch }: Em
       if (!res.ok) return;
       const data = await res.json();
       setAnalysis({ aiSummary: data.aiSummary, aiTags: data.aiTags, urgency: data.urgency, suggestedAction: data.suggestedAction, costUSD: data.costUSD });
+      // Si vio una solicitud de cotización, la tarjeta «Posible lead» la muestra para aprobarla.
+      if (data.solicitud) router.refresh();
     } finally {
       setAnalyzing(false);
     }
@@ -89,6 +93,7 @@ export function EmailDetailClient({ email, accounts, company, initialWatch }: Em
     });
   }
 
+  const sugerenciaPendiente = !vinculo.inicial && !vinculo.ignorado && !!vinculo.solicitud;
   const tags = analysis?.aiTags ?? email.aiTags;
   const summary = analysis?.aiSummary ?? email.aiSummary;
   const replyToEmail = resolveReplyRecipient(
@@ -100,9 +105,9 @@ export function EmailDetailClient({ email, accounts, company, initialWatch }: Em
     <div className="space-y-5">
       {/* Header */}
       <div className="bg-panel border border-line rounded-xl p-5">
-        <div className="flex items-start justify-between gap-3 mb-4">
+        <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <h1 className="text-fg text-lg font-semibold leading-snug">{email.subject}</h1>
+            <h1 className="text-fg text-lg font-semibold leading-snug [overflow-wrap:anywhere]">{email.subject}</h1>
             {email.folder === "SENT" && (
               <div className="mt-2">
                 <MailDeliveryStatusBadge
@@ -117,16 +122,16 @@ export function EmailDetailClient({ email, accounts, company, initialWatch }: Em
               </div>
             )}
           </div>
-          <div className="flex items-center gap-2 flex-none">
+          <div className="flex flex-wrap items-center gap-2 flex-none">
             <WatchToggleButton state={watchState} />
-            <button onClick={handleStar} className={`p-1.5 rounded-lg transition-colors ${isStarred ? "text-warn" : "text-fg-faint hover:text-warn"}`}>
+            <button onClick={handleStar} aria-label={isStarred ? "Quitar estrella" : "Marcar con estrella"} className={`inline-flex items-center justify-center min-h-11 min-w-11 sm:min-h-8 sm:min-w-8 rounded-lg transition-colors ${isStarred ? "text-warn" : "text-fg-faint hover:text-warn"}`}>
               <svg className="w-4 h-4" fill={isStarred ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
               </svg>
             </button>
             {email.account.id && (
               <button onClick={() => setReplyOpen(true)}
-                className="px-3 py-1.5 bg-brand/10 border border-brand/20 text-brand-fg text-xs font-medium rounded-lg hover:bg-brand/15 transition-all inline-flex items-center gap-1.5">
+                className="min-h-11 sm:min-h-8 px-3 bg-brand/10 border border-brand/20 text-brand-fg text-xs font-medium rounded-lg hover:bg-brand/15 transition-all inline-flex items-center gap-1.5">
                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                 </svg>
@@ -209,13 +214,15 @@ export function EmailDetailClient({ email, accounts, company, initialWatch }: Em
         </div>
 
         {/* AI Panel — narrow sidebar */}
-        <div className="space-y-4 xl:sticky xl:top-4">
+        {/* Con una solicitud por aprobar, en el teléfono la tarjeta va antes del hilo: es lo primero que hay que decidir. */}
+        <div className={`space-y-4 xl:sticky xl:top-4 ${sugerenciaPendiente ? "order-first xl:order-none" : ""}`}>
+        {vinculo.remitente.email && <CorreoVinculo emailId={email.id} {...vinculo} />}
         <WatchStatusCard state={watchState} currentEmailId={email.id} />
         <div className="bg-panel border border-line rounded-xl p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-fg-dim text-xs uppercase tracking-widest font-medium">Análisis IA</h3>
             <button onClick={handleAnalyze} disabled={analyzing}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-iris/10 border border-iris/25 text-iris-fg text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
+              className="inline-flex items-center gap-1.5 min-h-11 sm:min-h-8 px-3 rounded-lg bg-iris/10 border border-iris/25 text-iris-fg text-xs font-medium hover:bg-iris/15 disabled:opacity-40 disabled:cursor-not-allowed transition-all">
               {analyzing ? (
                 <><span className="w-1.5 h-1.5 rounded-full bg-iris animate-pulse" /> Analizando...</>
               ) : (

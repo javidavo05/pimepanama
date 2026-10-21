@@ -81,7 +81,7 @@ test("correo: enviado o recibido, con enlace al correo", () => {
   const r = deCorreo({ id: "m1", subject: "Propuesta", fromEmail: "ana@cliente.com", fromName: "Ana", receivedAt: "2026-10-10T00:00:00.000Z", folder: "INBOX", aiSummary: null, bodyText: "Hola,\n\n  gracias" });
   assert.equal(r.titulo, "Correo de Ana: Propuesta");
   assert.equal(r.detalle, "Hola, gracias");
-  assert.equal(r.enlace, "/empresa/correos/m1");
+  assert.equal(r.enlace, "/empresa/correos/hub/m1");
   assert.equal(deCorreo({ id: "m2", subject: null, fromEmail: "yo@pime.com", fromName: null, receivedAt: "2026-10-10T00:00:00.000Z", folder: "SENT", aiSummary: "Resumen", bodyText: null }).titulo, "Correo enviado: (sin asunto)");
 });
 

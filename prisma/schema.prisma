@@ -385,6 +385,7 @@ model Client {
   campanaEnvios    CampanaEnvio[]
   encuestas        Encuesta[]
   archivos         ArchivoCliente[]
+  correos          InboxEmail[]
   @@index([userId])
 }
 
@@ -411,6 +412,8 @@ enum LeadSource {
   REDES_SOCIALES
   FERIA
   LLAMADA_FRIA
+  /// Escribió directo a un buzón pidiendo cotización (migración 0062).
+  CORREO
   OTRO
 }
 
@@ -442,6 +445,7 @@ model Lead {
   convertedClient   Client?     @relation(fields: [convertedClientId], references: [id])
   convertedAt       DateTime?
   bookings          Booking[]
+  correos           InboxEmail[]
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
 
@@ -1150,6 +1154,15 @@ model InboxEmail {
   aiSummary        String?
   aiTags           String[]
   aiNotified       Boolean           @default(false)
+  /// Lead o cliente del correo (migración 0062): por dirección, por hilo, por la IA o a mano.
+  leadId           String?
+  lead             Lead?             @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  clientId         String?
+  client           Client?           @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  /// "auto" | "manual" | "ignorado" (el equipo dijo que no es de nadie: el sync no lo toca).
+  vinculo          String?
+  /// Datos que la IA sacó de una solicitud de cotización (ver src/lib/leads/correo-entrante.ts).
+  solicitud        Json?
   attachments      EmailAttachment[]
   createdAt        DateTime          @default(now())
 
@@ -1158,6 +1171,8 @@ model InboxEmail {
   @@index([userId, folder, receivedAt])
   @@index([userId, threadKey])
   @@index([resendId])
+  @@index([leadId])
+  @@index([clientId])
   @@index([accountId])
   @@index([receivedAt])
 }

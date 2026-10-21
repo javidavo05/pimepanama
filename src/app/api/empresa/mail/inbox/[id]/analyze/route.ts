@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { analyzeEmail } from "@/lib/mail/ai-analyze";
+import { htmlToPlainText, isHtmlEmail } from "@/lib/mail/email-html";
+import { vincularCorreo } from "@/lib/crm/vinculo-correo-datos";
 
 export const runtime = "nodejs";
 
@@ -16,13 +18,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const email = await prisma.inboxEmail.findFirst({ where: { id, userId: user.id } });
     if (!email) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const analysis = await analyzeEmail(email.subject ?? "", email.bodyText ?? "");
+    const body = email.bodyText ?? "";
+    const analysis = await analyzeEmail(email.subject ?? "", (isHtmlEmail(body) ? htmlToPlainText(body) : body).slice(0, 2000));
 
     const updated = await prisma.inboxEmail.update({
       where: { id },
       data: { aiSummary: analysis.summary, aiTags: analysis.tags },
-      select: { id: true, aiSummary: true, aiTags: true },
     });
+    if (!updated.leadId && !updated.clientId) {
+      await vincularCorreo(updated, { solicitud: analysis.solicitud, etiquetas: analysis.tags });
+    }
 
     // Log AI usage
     await prisma.aiUsageLog.create({
@@ -48,7 +53,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       });
     }
 
-    return NextResponse.json({ ...updated, urgency: analysis.urgency, suggestedAction: analysis.suggestedAction, costUSD: analysis.costUSD });
+    return NextResponse.json({ id: updated.id, aiSummary: updated.aiSummary, aiTags: updated.aiTags, urgency: analysis.urgency, solicitud: analysis.solicitud, suggestedAction: analysis.suggestedAction, costUSD: analysis.costUSD });
   } catch (err) {
     if (err instanceof Response) return err;
     return NextResponse.json({ error: "Analysis error" }, { status: 500 });

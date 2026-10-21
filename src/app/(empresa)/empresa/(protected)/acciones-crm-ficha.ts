@@ -11,7 +11,7 @@ import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { puedeVer } from "@/lib/auth/permisos";
 import { registrarEvento } from "@/lib/portal/eventos";
 import { ROLES_CONTACTO, TIPOS_CAMPO, claveDeCampo } from "@/lib/crm/ficha";
-import { TIPOS_INTERACCION, historiaDelCliente, tiposValidos, type PaginaHistoria } from "@/lib/crm/historia";
+import { TIPOS_INTERACCION, historiaDelCliente, historiaDelLead, tiposValidos, type PaginaHistoria } from "@/lib/crm/historia";
 
 export type EstadoCrm = { ok?: boolean; error?: string; mensaje?: string } | null;
 
@@ -112,9 +112,12 @@ function diaPanama(v: string): Date | null {
 
 export async function registrarInteraccionAction(_: EstadoCrm, form: FormData): Promise<EstadoCrm> {
   const u = await getEmpresaUser();
+  // Con cliente o con lead (la comunicación del lead usa el mismo formulario).
   const clientId = txt(form.get("clientId"), 60);
-  const c = await clienteDe(u.id, clientId);
-  if (!c) return { error: "No encontré ese cliente." };
+  const c = clientId ? await clienteDe(u.id, clientId) : null;
+  const lead = clientId ? null : await prisma.lead.findFirst({ where: { id: txt(form.get("leadId"), 60), userId: u.id }, select: { id: true, name: true, company: true } });
+  if (!c && !lead) return { error: clientId ? "No encontré ese cliente." : "No encontré ese lead." };
+  const quien = c ? c.company || c.name : lead!.company || lead!.name;
   const tipo = txt(form.get("tipo"), 20);
   if (!esUno(TIPOS_INTERACCION, tipo)) return { error: "Elige qué fue: llamada, WhatsApp, visita, nota, correo o reunión." };
   const resumen = txt(form.get("resumen"), 4000);
@@ -128,34 +131,37 @@ export async function registrarInteraccionAction(_: EstadoCrm, form: FormData): 
   const fechaPaso = diaPanama(txt(form.get("proximoPasoFecha"), 10));
   if (fechaPaso && !proximoPaso) return { error: "Escribe cuál es el próximo paso para esa fecha." };
   let contactoId = txt(form.get("contactoId"), 60) || null;
-  if (contactoId) {
+  if (contactoId && c) {
     const k = await prisma.contacto.findFirst({ where: { id: contactoId, clientId, userId: u.id }, select: { id: true } });
     contactoId = k?.id ?? null;
-  }
+  } else contactoId = null;
   const esContacto = tipo !== "nota";
   try {
     await prisma.$transaction([
       prisma.interaccion.create({
         data: {
-          userId: u.id, clientId, contactoId, autorId: u.miembro.id, tipo, direccion, resumen,
+          userId: u.id, clientId: c?.id ?? null, leadId: lead?.id ?? null, contactoId, autorId: u.miembro.id, tipo, direccion, resumen,
           resultado: txt(form.get("resultado"), 300) || null,
           duracionMin: Number.isFinite(duracion) && duracion > 0 ? Math.min(duracion, 1440) : null,
           proximoPaso, ocurrioAt: ocurrio, fijada: form.get("fijada") === "1",
         },
       }),
       // Una nota no es contacto con el cliente: no mueve «último contacto».
-      ...(esContacto
-        ? [prisma.client.updateMany({ where: { id: clientId, userId: u.id, OR: [{ ultimoContactoAt: null }, { ultimoContactoAt: { lt: ocurrio } }] }, data: { ultimoContactoAt: ocurrio } })]
+      ...(esContacto && c
+        ? [prisma.client.updateMany({ where: { id: c.id, userId: u.id, OR: [{ ultimoContactoAt: null }, { ultimoContactoAt: { lt: ocurrio } }] }, data: { ultimoContactoAt: ocurrio } })]
         : []),
+      // Un lead NUEVO con el que ya se habló queda CONTACTADO.
+      ...(esContacto && lead ? [prisma.lead.updateMany({ where: { id: lead.id, userId: u.id, status: "NUEVO" }, data: { status: "CONTACTADO" } })] : []),
       ...(proximoPaso && fechaPaso
-        ? [prisma.task.create({ data: { userId: u.id, clientId, responsableId: u.miembro.id, title: proximoPaso, description: `${c.company || c.name}: ${resumen.slice(0, 500)}`, dueDate: fechaPaso, allDay: true } })]
+        ? [prisma.task.create({ data: { userId: u.id, clientId: c?.id ?? null, leadId: lead?.id ?? null, responsableId: u.miembro.id, title: proximoPaso, description: `${quien}: ${resumen.slice(0, 500)}`, dueDate: fechaPaso, allDay: true } })]
         : []),
     ]);
   } catch (e) {
     console.error("[crm] interaccion", e);
     return { error: "No se pudo guardar. Intenta de nuevo." };
   }
-  refrescar(clientId);
+  if (c) refrescar(c.id);
+  else revalidatePath(`/empresa/leads/${lead!.id}`);
   revalidatePath("/empresa/tareas");
   const queda = tipo === "nota" ? "Nota guardada." : "Conversación registrada.";
   return { ok: true, mensaje: proximoPaso && fechaPaso ? `${queda} El próximo paso quedó en tus tareas.` : queda };
@@ -163,21 +169,23 @@ export async function registrarInteraccionAction(_: EstadoCrm, form: FormData): 
 
 export async function fijarInteraccionAction(_: EstadoCrm, form: FormData): Promise<EstadoCrm> {
   const u = await getEmpresaUser();
-  const i = await prisma.interaccion.findFirst({ where: { id: txt(form.get("id"), 60), userId: u.id }, select: { id: true, clientId: true, fijada: true } });
+  const i = await prisma.interaccion.findFirst({ where: { id: txt(form.get("id"), 60), userId: u.id }, select: { id: true, clientId: true, leadId: true, fijada: true } });
   if (!i) return { error: "No encontré esa nota." };
   await prisma.interaccion.update({ where: { id: i.id }, data: { fijada: !i.fijada } });
   if (i.clientId) refrescar(i.clientId);
+  if (i.leadId) revalidatePath(`/empresa/leads/${i.leadId}`);
   return { ok: true, mensaje: i.fijada ? "Ya no está fijada." : "Fijada arriba de la historia." };
 }
 
 export async function borrarInteraccionAction(_: EstadoCrm, form: FormData): Promise<EstadoCrm> {
   const u = await getEmpresaUser();
-  const i = await prisma.interaccion.findFirst({ where: { id: txt(form.get("id"), 60), userId: u.id }, select: { id: true, clientId: true, autorId: true } });
+  const i = await prisma.interaccion.findFirst({ where: { id: txt(form.get("id"), 60), userId: u.id }, select: { id: true, clientId: true, leadId: true, autorId: true } });
   if (!i) return { error: "No encontré esa nota." };
   // Solo quien la escribió o el dueño.
   if (i.autorId && i.autorId !== u.miembro.id && !u.miembro.esDueno) return { error: "Solo quien la escribió o el dueño puede borrarla." };
   await prisma.interaccion.delete({ where: { id: i.id } });
   if (i.clientId) refrescar(i.clientId);
+  if (i.leadId) revalidatePath(`/empresa/leads/${i.leadId}`);
   return { ok: true, mensaje: "Borrada." };
 }
 
@@ -250,5 +258,17 @@ export async function cargarHistoriaAction(clientId: string, antes: string | nul
   } catch (e) {
     console.error("[crm] historia", e);
     return { error: "No se pudo cargar la historia. Intenta de nuevo." };
+  }
+}
+
+export async function cargarHistoriaLeadAction(leadId: string, antes: string | null, tipos: string[]): Promise<PaginaHistoria | { error: string }> {
+  const u = await getEmpresaUser();
+  const l = await prisma.lead.findFirst({ where: { id: String(leadId).slice(0, 60), userId: u.id }, select: { id: true } });
+  if (!l) return { error: "No encontré ese lead." };
+  try {
+    return await historiaDelLead(u.id, l.id, { antes, tipos: tiposValidos(tipos) });
+  } catch (e) {
+    console.error("[crm] comunicación del lead", e);
+    return { error: "No se pudo cargar la comunicación. Intenta de nuevo." };
   }
 }

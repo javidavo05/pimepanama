@@ -6,6 +6,7 @@ import type { MailOutgoingAttachment } from "./outgoing-attachments";
 import { wrapBodyWithSignature } from "./signature";
 import { buildThreadKey } from "./thread";
 import { handleIncomingForWatches } from "./watch";
+import { vincularCorreo } from "@/lib/crm/vinculo-correo-datos";
 
 export async function persistSentEmail(params: {
   account: MailAccount;
@@ -83,6 +84,9 @@ export async function persistSentEmail(params: {
     }
     await prisma.emailAttachment.createMany({ data });
   }
+
+  // Lo enviado a un lead o cliente queda en su historia (y un lead NUEVO pasa a CONTACTADO).
+  await vincularCorreo(sentEmail);
 
   // Si el hilo está marcado, su Message-ID queda registrado: la respuesta a
   // este envío casa por In-Reply-To aunque la otra parte cambie el asunto.

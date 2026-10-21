@@ -93,7 +93,7 @@ export function EmailBodyRenderer({ body, emailId, onBodyUpdated }: EmailBodyRen
               type="button"
               onClick={handleResyncBody}
               disabled={resyncing}
-              className="shrink-0 px-3 py-1.5 rounded-lg bg-warn/15 border border-warn/30 text-warn-soft hover:bg-warn/25 disabled:opacity-50 transition-all"
+              className="shrink-0 min-h-11 sm:min-h-8 px-3 rounded-lg bg-warn/15 border border-warn/30 text-warn-soft hover:bg-warn/25 disabled:opacity-50 transition-all"
             >
               {resyncing ? "Recuperando…" : "Recuperar formato"}
             </button>
@@ -128,7 +128,7 @@ export function EmailBodyRenderer({ body, emailId, onBodyUpdated }: EmailBodyRen
           <span className="text-fg-faint text-xs">Correo HTML</span>
           <button
             onClick={() => setViewMode("text")}
-            className="text-[10px] text-fg-dim hover:text-fg-dim transition-colors"
+            className="inline-flex items-center min-h-11 sm:min-h-8 px-2 text-xs text-fg-dim hover:text-fg-mute transition-colors"
           >
             Ver texto plano
           </button>

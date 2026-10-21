@@ -9,7 +9,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const ESTADO: Record<string, string> = { NUEVO: "Nuevo", CONTACTADO: "Contactado", COTIZANDO: "Cotizando", NEGOCIACION: "Negociación", GANADO: "Ganado", PERDIDO: "Perdido" };
-const FUENTE: Record<string, string> = { REFERIDO: "Referido", WEB: "Web", REDES_SOCIALES: "Redes sociales", FERIA: "Feria", LLAMADA_FRIA: "Llamada en frío", OTRO: "Otro" };
+const FUENTE: Record<string, string> = { REFERIDO: "Referido", WEB: "Web", REDES_SOCIALES: "Redes sociales", FERIA: "Feria", LLAMADA_FRIA: "Llamada en frío", CORREO: "Correo", OTRO: "Otro" };
 const PRIORIDAD: Record<string, string> = { ALTA: "Alta", MEDIA: "Media", BAJA: "Baja" };
 
 export async function GET(request: Request) {

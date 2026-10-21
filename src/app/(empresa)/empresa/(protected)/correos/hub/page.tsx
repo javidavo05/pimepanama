@@ -52,7 +52,8 @@ export default async function HubPage({
       },
     }),
     prisma.client.findMany({
-      where: { userId: user.id },
+      // La empresa interna (Pime Panamá) comparte dirección con los buzones: no es un cliente del correo.
+      where: { userId: user.id, internal: false },
       select: { id: true, name: true, email: true },
     }),
     prisma.inboxEmail.count({ where: { userId: user.id, isRead: false, folder: "INBOX" } }),
@@ -115,6 +116,9 @@ export default async function HubPage({
       inReplyTo: true, referencesHeader: true,
       deliveryStatus: true, resendId: true, bounceReason: true,
       bodyText: true,
+      vinculo: true, solicitud: true,
+      lead: { select: { id: true, name: true } },
+      client: { select: { id: true, name: true, email: true } },
       account: { select: { id: true, label: true, username: true } },
       _count: { select: { attachments: true } },
     },
@@ -141,7 +145,7 @@ export default async function HubPage({
   const serialized = rows.map(({ email: e, isWatched }) => {
     // Las cabeceras de hilo solo sirven para casar en servidor; no viajan al cliente.
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { inReplyTo: _inReplyTo, referencesHeader: _references, ...rest } = e;
+    const { inReplyTo: _inReplyTo, referencesHeader: _references, lead, client, vinculo, solicitud, ...rest } = e;
     const counterparty =
       e.folder === "SENT" && e.toAddresses[0]
         ? extractEmailAddress(e.toAddresses[0])
@@ -152,7 +156,10 @@ export default async function HubPage({
       isWatched,
       receivedAt: e.receivedAt.toISOString(),
       bodyPreview: e.folder === "SENT" ? mailBodyPreview(e.bodyText) : null,
-      clientMatch: clientByEmail[counterparty] ?? null,
+      // Lo ligado (migración 0062) manda; si no, el cliente con esa dirección.
+      clientMatch: client ?? (lead || vinculo === "ignorado" ? null : clientByEmail[counterparty] ?? null),
+      leadMatch: client ? null : lead,
+      posibleLead: !lead && !client && !vinculo && solicitud != null,
     };
   });
 

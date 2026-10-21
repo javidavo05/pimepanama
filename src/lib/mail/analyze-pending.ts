@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { analyzeEmail } from "./ai-analyze";
 import { htmlToPlainText, isHtmlEmail } from "./email-html";
+import { vincularCorreo } from "@/lib/crm/vinculo-correo-datos";
 
 /** Por llamada: cabe en los 60 s de la ruta sin reventar el límite por minuto de OpenAI. */
 const BATCH = 20;
@@ -45,11 +46,19 @@ export async function analyzePendingEmails(
           // Sin resumen, el correo volvería a la cola en cada sync.
           const summary = analysis.summary || "Sin resumen";
 
-          await prisma.inboxEmail.update({
+          const guardado = await prisma.inboxEmail.update({
             where: { id: email.id },
             data: { aiSummary: summary, aiTags: analysis.tags },
           });
           analyzed++;
+          // Un urgente viejo no avisa; una solicitud vieja tampoco suena el teléfono, pero queda sugerida en el correo.
+          if (!guardado.leadId && !guardado.clientId) {
+            await vincularCorreo(guardado, {
+              solicitud: analysis.solicitud,
+              etiquetas: analysis.tags,
+              avisar: Date.now() - email.receivedAt.getTime() < NOTIFY_WINDOW_MS,
+            });
+          }
 
           const notify =
             analysis.urgency === "high" ||

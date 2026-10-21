@@ -97,12 +97,22 @@ export function deInteraccion(i: { id: string; tipo: string; direccion: string |
   };
 }
 
+/** Lo legible de un cuerpo de correo: sin estilos ni etiquetas (los enviados se guardan en HTML). */
+export function textoDeCorreo(cuerpo: string | null | undefined): string {
+  return (cuerpo ?? "")
+    .replace(/<(style|head|script)[^>]*>[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<[^>]*>?/g, " ")
+    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 export function deCorreo(m: { id: string; subject: string | null; fromEmail: string; fromName: string | null; receivedAt: Date | string; folder: string; aiSummary: string | null; bodyText?: string | null }): EventoHistoria {
   const enviado = m.folder === "SENT";
   return {
     id: `correo:${m.id}`, tipo: "correo", subtipo: enviado ? "enviado" : "recibido", fecha: iso(m.receivedAt),
     titulo: `${enviado ? "Correo enviado" : `Correo de ${m.fromName || m.fromEmail}`}: ${m.subject?.trim() || "(sin asunto)"}`,
-    detalle: corto(m.aiSummary) ?? corto(m.bodyText, 160), enlace: `/empresa/correos/${m.id}`,
+    detalle: corto(m.aiSummary) ?? corto(textoDeCorreo(m.bodyText), 160), enlace: `/empresa/correos/hub/${m.id}`,
   };
 }
 
@@ -210,7 +220,8 @@ export async function historiaDelCliente(
       : nada,
     tiposInteraccion === undefined || tiposInteraccion.length
       ? prisma.interaccion.findMany({
-          where: { userId, clientId, ...(tiposInteraccion && { tipo: { in: [...tiposInteraccion] } }), ...(lt && { ocurrioAt: lt }) },
+          // También lo registrado cuando todavía era lead.
+          where: { userId, OR: [{ clientId }, { clientId: null, lead: { convertedClientId: clientId } }], ...(tiposInteraccion && { tipo: { in: [...tiposInteraccion] } }), ...(lt && { ocurrioAt: lt }) },
           orderBy: { ocurrioAt: "desc" }, take: toma,
           select: { id: true, tipo: true, direccion: true, resumen: true, resultado: true, duracionMin: true, proximoPaso: true, fijada: true, ocurrioAt: true, contacto: { select: { nombre: true } }, autor: { select: { fullName: true, email: true } } },
         })
@@ -222,13 +233,16 @@ export async function historiaDelCliente(
             UNION
             SELECT lower(trim(email)) FROM "Contacto" WHERE "clientId" = ${clientId} AND "userId" = ${userId} AND coalesce(trim(email), '') <> ''
           )
-          SELECT m.id, m.subject, m."fromEmail", m."fromName", m."receivedAt", m.folder, m."aiSummary", left(m."bodyText", 400) AS "bodyText"
+          SELECT m.id, m.subject, m."fromEmail", m."fromName", m."receivedAt", m.folder, m."aiSummary", left(m."bodyText", 6000) AS "bodyText"
           FROM "InboxEmail" m
           WHERE m."userId" = ${userId}
             AND m.folder NOT IN ('TRASH', 'SPAM', 'DRAFTS')
+            AND m.vinculo IS DISTINCT FROM 'ignorado'
             ${antesD ? Prisma.sql`AND m."receivedAt" < ${antesD}` : Prisma.empty}
             AND (
-              lower(m."fromEmail") IN (SELECT e FROM correos)
+              m."clientId" = ${clientId}
+              OR m."leadId" IN (SELECT id FROM "Lead" WHERE "convertedClientId" = ${clientId} AND "userId" = ${userId})
+              OR lower(m."fromEmail") IN (SELECT e FROM correos)
               OR EXISTS (
                 SELECT 1 FROM unnest(m."toAddresses" || m."ccAddresses") AS t(dir), correos c
                 WHERE lower(trim(t.dir)) = c.e OR lower(t.dir) LIKE '%<' || c.e || '>%'
@@ -267,3 +281,72 @@ export async function historiaDelCliente(
   );
   return paginar(filtrarEventos(todos, tipos), limite);
 }
+
+/**
+ * Comunicación con un lead: sus correos (ligados o de su dirección), conversaciones y notas, citas y cotizaciones.
+ * Misma forma que la historia del cliente; cuando el lead se gana, todo esto sigue en la ficha del cliente.
+ */
+export async function historiaDelLead(
+  userId: string,
+  leadId: string,
+  opciones: { antes?: string | null; tipos?: readonly TipoHistoria[]; limite?: number } = {},
+): Promise<PaginaHistoria> {
+  const { prisma } = await import("@/lib/prisma");
+  const { Prisma } = await import("@prisma/client");
+  const tipos = opciones.tipos ?? [];
+  const limite = Math.min(Math.max(opciones.limite ?? LIMITE_HISTORIA, 1), 100);
+  const toma = limite + 1;
+  const antesD = opciones.antes && !Number.isNaN(Date.parse(opciones.antes)) ? new Date(opciones.antes) : null;
+  const lt = antesD ? { lt: antesD } : undefined;
+  const nada = Promise.resolve([] as never[]);
+
+  const [interacciones, correos, citas, cotizaciones] = await Promise.all([
+    pide(tipos, "conversacion", "nota")
+      ? prisma.interaccion.findMany({
+          where: { userId, leadId, ...(lt && { ocurrioAt: lt }) },
+          orderBy: { ocurrioAt: "desc" }, take: toma,
+          select: { id: true, tipo: true, direccion: true, resumen: true, resultado: true, duracionMin: true, proximoPaso: true, fijada: true, ocurrioAt: true, contacto: { select: { nombre: true } }, autor: { select: { fullName: true, email: true } } },
+        })
+      : nada,
+    pide(tipos, "correo")
+      ? prisma.$queryRaw<{ id: string; subject: string | null; fromEmail: string; fromName: string | null; receivedAt: Date; folder: string; aiSummary: string | null; bodyText: string | null }[]>(Prisma.sql`
+          WITH correos AS (
+            SELECT lower(trim(email)) AS e FROM "Lead" WHERE id = ${leadId} AND "userId" = ${userId} AND coalesce(trim(email), '') <> ''
+          )
+          SELECT m.id, m.subject, m."fromEmail", m."fromName", m."receivedAt", m.folder, m."aiSummary", left(m."bodyText", 6000) AS "bodyText"
+          FROM "InboxEmail" m
+          WHERE m."userId" = ${userId}
+            AND m.folder NOT IN ('TRASH', 'SPAM', 'DRAFTS')
+            AND m.vinculo IS DISTINCT FROM 'ignorado'
+            ${antesD ? Prisma.sql`AND m."receivedAt" < ${antesD}` : Prisma.empty}
+            AND (
+              m."leadId" = ${leadId}
+              OR lower(m."fromEmail") IN (SELECT e FROM correos)
+              OR EXISTS (
+                SELECT 1 FROM unnest(m."toAddresses" || m."ccAddresses") AS t(dir), correos c
+                WHERE lower(trim(t.dir)) = c.e OR lower(t.dir) LIKE '%<' || c.e || '>%'
+              )
+            )
+          ORDER BY m."receivedAt" DESC
+          LIMIT ${toma}`)
+      : nada,
+    pide(tipos, "cita")
+      ? prisma.booking.findMany({ where: { userId, leadId, ...(lt && { startTime: lt }) }, orderBy: { startTime: "desc" }, take: toma, select: { id: true, attendeeName: true, startTime: true, status: true, notes: true, eventType: { select: { title: true } } } })
+      : nada,
+    pide(tipos, "cotizacion")
+      ? prisma.document.findMany({ where: { userId, leadId, type: "COTIZACION", ...(lt && { issueDate: lt }) }, orderBy: { issueDate: "desc" }, take: toma, select: { id: true, number: true, title: true, status: true, issueDate: true, total: true, aceptadaAt: true } })
+      : nada,
+  ]);
+
+  const { dinero } = await import("@/lib/portal/dinero");
+  const todos = fusionarEventos(
+    interacciones.map(deInteraccion),
+    correos.map(deCorreo),
+    citas.map(deCita),
+    cotizaciones.map((d) => deCotizacion(d, dinero)),
+  );
+  return paginar(filtrarEventos(todos, tipos), limite);
+}
+
+/** Los tipos que tienen sentido en la comunicación con un lead (no tiene portal, contratos ni tickets). */
+export const TIPOS_HISTORIA_LEAD = ["conversacion", "nota", "correo", "cita", "cotizacion"] as const satisfies readonly TipoHistoria[];

@@ -28,6 +28,9 @@ interface InboxEmailRow {
   account: { id: string; label: string };
   _count: { attachments: number };
   clientMatch: ClientMatch | null;
+  leadMatch?: { id: string; name: string } | null;
+  /** La IA vio una solicitud de cotización y nadie la aprobó todavía. */
+  posibleLead?: boolean;
 }
 
 interface AccountColor {
@@ -503,24 +506,11 @@ export function InboxList({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-0.5">
                       <div className="flex items-center gap-2 min-w-0">
-                        <p className={`text-sm truncate ${!email.isRead ? "text-fg font-medium" : "text-fg-mute"}`}>
+                        <p className={`text-sm line-clamp-2 [overflow-wrap:anywhere] ${!email.isRead ? "text-fg font-medium" : "text-fg-mute"}`}>
                           {isSentFolder && <span className="text-fg-faint font-normal">Para: </span>}
                           {listLabel}
                         </p>
-                        {/* Client link */}
-                        {email.clientMatch && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              router.push(`/empresa/clientes/${email.clientMatch!.id}`);
-                            }}
-                            className="text-[10px] px-1.5 py-0.5 rounded bg-sand/15 text-sand-fg border border-sand/20 hover:bg-sand/25 shrink-0 transition-colors"
-                          >
-                            👤 {email.clientMatch.name}
-                          </button>
-                        )}
+
                       </div>
                       {/* «hace 3h» depende del reloj y Safari abrevia los meses distinto que
                           el servidor: el texto puede cambiar al hidratar y no es un error. */}
@@ -538,6 +528,38 @@ export function InboxList({
                       <p className="text-fg-faint text-xs truncate">{email.aiSummary}</p>
                     )}
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                      {/* A quién pertenece: cliente o lead ligado, o la solicitud por aprobar. */}
+                      {email.clientMatch && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            router.push(`/empresa/clientes/${email.clientMatch!.id}`);
+                          }}
+                          className="inline-flex items-center min-h-8 max-w-48 px-2 text-xs rounded bg-sand/15 text-sand-fg border border-sand/20 hover:bg-sand/25 transition-colors"
+                        >
+                          <span className="truncate">Cliente · {email.clientMatch.name}</span>
+                        </button>
+                      )}
+                      {email.leadMatch && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            router.push(`/empresa/leads/${email.leadMatch!.id}`);
+                          }}
+                          className="inline-flex items-center min-h-8 max-w-48 px-2 text-xs rounded bg-brand/10 text-brand-fg border border-brand/20 hover:bg-brand/15 transition-colors"
+                        >
+                          <span className="truncate">Lead · {email.leadMatch.name}</span>
+                        </button>
+                      )}
+                      {email.posibleLead && (
+                        <span className="inline-flex items-center min-h-8 px-2 text-xs rounded bg-sand/15 text-sand-fg border border-sand/30">
+                          Posible lead
+                        </span>
+                      )}
                       {email.isWatched && (
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded border bg-amber2/10 text-amber2 border-amber2/25">
                           <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24" aria-hidden>

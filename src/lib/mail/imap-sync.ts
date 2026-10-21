@@ -14,6 +14,8 @@ import {
 } from "./folders";
 import { buildThreadKey } from "./thread";
 import { handleIncomingForWatches } from "./watch";
+import type { SolicitudCotizacion } from "./ai-analyze";
+import { vincularCorreo } from "@/lib/crm/vinculo-correo-datos";
 
 const MAX_PER_FOLDER = 200;
 const BACKFILL_MAX_PER_FOLDER = 500;
@@ -89,6 +91,7 @@ async function processMessage(
   let aiTags: string[] = [];
   let urgency = "low";
   let shouldNotify = false;
+  let solicitud: SolicitudCotizacion | null = null;
 
   if (folder === "INBOX") {
     try {
@@ -103,6 +106,7 @@ async function processMessage(
       aiSummary = analysis.summary;
       aiTags = analysis.tags;
       urgency = analysis.urgency;
+      solicitud = analysis.solicitud;
       shouldNotify =
         urgency === "high" ||
         analysis.tags.includes("urgent") ||
@@ -150,10 +154,19 @@ async function processMessage(
     },
   });
 
+  // Al lead o cliente que corresponda; una solicitud de cotización nueva queda sugerida para aprobarla.
+  const vinculo = await vincularCorreo(email, {
+    solicitud,
+    etiquetas: aiTags,
+    masivo: parsed.headers?.has("list-unsubscribe") ?? false,
+  });
+
   const watchNotified =
     watches.length > 0 && (await handleIncomingForWatches(email, watches, account.username));
 
-  if (shouldNotify && !watchNotified) {
+  // La sugerencia de lead ya avisó con su propia campana y push.
+  const leadAviso = !vinculo.ligado && vinculo.sugerido === true;
+  if (shouldNotify && !watchNotified && !leadAviso) {
     await prisma.mailNotification.create({
       data: {
         userId: account.userId,

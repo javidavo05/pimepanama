@@ -26,6 +26,7 @@ const SOURCE_OPTS: { value: LeadSource; label: string }[] = [
   { value: "REDES_SOCIALES", label: "Redes sociales" },
   { value: "FERIA", label: "Feria/Evento" },
   { value: "LLAMADA_FRIA", label: "Llamada fría" },
+  { value: "CORREO", label: "Correo" },
   { value: "OTRO", label: "Otro" },
 ];
 

@@ -120,7 +120,7 @@ export function EmailThreadPanel({
           type="button"
           onClick={loadThread}
           disabled={loading}
-          className="text-[10px] text-fg-faint hover:text-fg-mute disabled:opacity-40"
+          className="inline-flex items-center min-h-11 sm:min-h-8 px-2 text-xs text-fg-faint hover:text-fg-mute disabled:opacity-40"
         >
           Actualizar
         </button>
@@ -213,8 +213,8 @@ export function EmailThreadPanel({
               key={msg.id}
               className={`border-l-4 ${border} ${bg} rounded-r-lg px-3 py-2.5 transition-colors`}
             >
-              <div className="flex items-start justify-between gap-2 mb-1">
-                <div className="min-w-0">
+              <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1 mb-1">
+                <div className="min-w-0 basis-48 grow">
                   <p className="text-xs font-medium text-fg-soft">
                     {isSent ? "Tú enviaste" : "Recibiste"} · {msg.accountLabel}
                   </p>
@@ -239,7 +239,7 @@ export function EmailThreadPanel({
                 {!msg.isCurrent && (
                   <Link
                     href={`/empresa/correos/hub/${msg.id}`}
-                    className="text-[10px] text-brand-fg hover:underline"
+                    className="inline-flex items-center min-h-11 sm:min-h-8 text-xs text-brand-fg hover:underline"
                   >
                     Ver mensaje
                   </Link>

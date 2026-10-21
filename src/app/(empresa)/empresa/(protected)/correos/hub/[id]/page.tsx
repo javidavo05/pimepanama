@@ -6,6 +6,8 @@ import { EmailDetailClient } from "./email-detail-client";
 
 import { ensureMailSignaturesSeeded } from "@/lib/mail/signature-bootstrap";
 import { findWatchForEmail, serializeWatch } from "@/lib/mail/watch";
+import { extractEmailAddress } from "@/lib/mail/thread";
+import type { SolicitudCorreo, VinculoCorreo } from "@/components/empresa/mail/correo-vinculo";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +21,8 @@ export default async function EmailDetailPage({ params }: { params: Promise<{ id
       where: { id, userId: user.id },
       include: {
         attachments: true,
+        lead: { select: { id: true, name: true, company: true, status: true } },
+        client: { select: { id: true, name: true, company: true } },
         account: {
           select: {
             id: true, label: true, smtpHost: true, username: true,
@@ -46,6 +50,16 @@ export default async function EmailDetailPage({ params }: { params: Promise<{ id
   ]);
   if (!email) notFound();
 
+  const vinculo: VinculoCorreo = email.client
+    ? { tipo: "cliente", id: email.client.id, nombre: email.client.company || email.client.name, detalle: email.client.company ? email.client.name : null }
+    : email.lead
+      ? { tipo: "lead", id: email.lead.id, nombre: email.lead.name, detalle: email.lead.company }
+      : null;
+  const remitente =
+    email.folder === "SENT"
+      ? { nombre: null, email: extractEmailAddress(email.toAddresses[0] ?? "") }
+      : { nombre: email.fromName, email: extractEmailAddress(email.fromEmail) };
+
   const watch = serializeWatch(findWatchForEmail(email, watches, email.account.username));
 
   // Mark as read
@@ -54,13 +68,13 @@ export default async function EmailDetailPage({ params }: { params: Promise<{ id
   }
 
   return (
-    <div className="w-full space-y-0">
+    <div className="w-full space-y-0 pb-24">
       <div className="flex items-center gap-3 mb-5">
-        <Link href="/empresa/correos/hub" className="text-fg-dim text-sm hover:text-fg-dim transition-colors">
+        <Link href="/empresa/correos/hub" className="inline-flex items-center min-h-11 sm:min-h-8 shrink-0 text-fg-dim text-sm hover:text-fg-mute transition-colors">
           ← Bandeja
         </Link>
         <span className="text-fg-faint">/</span>
-        <span className="text-fg-dim text-sm truncate">{email.subject ?? "(Sin asunto)"}</span>
+        <span className="text-fg-dim text-sm truncate min-w-0">{email.subject ?? "(Sin asunto)"}</span>
       </div>
 
       <EmailDetailClient
@@ -88,6 +102,7 @@ export default async function EmailDetailPage({ params }: { params: Promise<{ id
         accounts={accounts}
         company={company}
         initialWatch={watch}
+        vinculo={{ inicial: vinculo, ignorado: email.vinculo === "ignorado", solicitud: (email.solicitud ?? null) as SolicitudCorreo, remitente }}
       />
     </div>
   );
