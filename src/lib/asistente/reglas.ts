@@ -6,7 +6,8 @@
  *   - borra o anula cualquier cosa;
  *   - toca una factura ya emitida (no borrador) o un plan de pagos que ya tiene pagos;
  *   - el cambio afecta más de 10 registros de una vez;
- *   - mueve USD 1,000 o más en una sola acción (pago, precio de fase, factura, gasto, cambio de plan).
+ *   - mueve USD 1,000 o más en una sola acción (pago, precio de fase, factura, gasto, cambio de plan);
+ *   - envía algo hacia afuera (un correo): siempre, con el borrador a la vista.
  * Todo lo demás lo hace al instante y deja «Deshacer».
  */
 export const UMBRAL_USD = 1000;
@@ -23,11 +24,14 @@ export type Evaluable = {
   facturaEmitida?: boolean;
   /** toca un plan de pagos que ya tiene pagos */
   planConPagos?: boolean;
+  /** sale hacia afuera (un correo a alguien): no se puede deshacer */
+  sale?: boolean;
 };
 
 export type Decision = { confirmar: boolean; motivo: string | null };
 
 export function requiereConfirmacion(a: Evaluable): Decision {
+  if (a.sale) return { confirmar: true, motivo: "Envía un correo: revisa el borrador." };
   if (a.destruye) return { confirmar: true, motivo: "Borra o anula algo." };
   if (a.facturaEmitida) return { confirmar: true, motivo: "Toca una factura ya emitida." };
   if (a.planConPagos) return { confirmar: true, motivo: "El plan de pagos ya tiene pagos." };

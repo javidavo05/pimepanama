@@ -324,8 +324,8 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, principal,
                   <li key={a.id} className="jv-act" data-e={a.estado}>
                     <p>{a.summary}<small>{a.estado === "propuesta" ? (a.motivo ?? "Por confirmar") : a.estado === "hecha" ? "Hecho" : a.estado === "cancelada" ? "Cancelado" : a.estado === "deshecha" ? "Deshecho" : (a.error ?? "No se pudo")}{a.error && a.estado !== "error" ? ` · ${a.error}` : ""}</small></p>
                     <span className="jv-act-b">
-                      {a.estado === "propuesta" && <><button type="button" className="jv-btn" disabled={a.ocupado} onClick={() => void decidir(a, "confirmar")}>Confirmar</button><button type="button" className="jv-btn jv-sec" disabled={a.ocupado} onClick={() => void decidir(a, "cancelar")}>Cancelar</button></>}
-                      {a.estado === "hecha" && <button type="button" className="jv-btn jv-sec" disabled={a.ocupado} onClick={() => void decidir(a, "deshacer")}>Deshacer</button>}
+                      {a.estado === "propuesta" && <><button type="button" className="jv-btn" disabled={a.ocupado} onClick={() => void decidir(a, "confirmar")}>{a.kind === "correo_enviar" ? "Enviar correo" : "Confirmar"}</button><button type="button" className="jv-btn jv-sec" disabled={a.ocupado} onClick={() => void decidir(a, "cancelar")}>Cancelar</button></>}
+                      {a.estado === "hecha" && a.kind !== "correo_enviar" && <button type="button" className="jv-btn jv-sec" disabled={a.ocupado} onClick={() => void decidir(a, "deshacer")}>Deshacer</button>}
                       {a.href && a.estado === "hecha" && <a className="jv-link" href={a.href}>Ver</a>}
                     </span>
                   </li>

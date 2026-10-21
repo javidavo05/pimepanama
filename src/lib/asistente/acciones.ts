@@ -64,6 +64,8 @@ async function borrarEventosDe(userId: string, cuando: Date, pasos: Paso[], extr
 
 /** Deshace lo que hizo una acción. Si algo ya no se puede (por ejemplo, la factura recibió otro pago), avisa. */
 export async function deshacerAccion(userId: string, id: string) {
+  const previa = await prisma.assistantAction.findFirst({ where: { id, userId }, select: { kind: true } });
+  if (previa?.kind === "correo_enviar") throw new Error("Un correo enviado no se puede deshacer.");
   const tomada = await prisma.assistantAction.updateMany({ where: { id, userId, status: "hecha" }, data: { status: "deshecha", decidedAt: new Date() } });
   if (!tomada.count) throw new Error("No hay nada que deshacer.");
   const a = await prisma.assistantAction.findFirstOrThrow({ where: { id, userId } });

@@ -9,6 +9,9 @@
 import type OpenAI from "openai";
 import { prisma } from "@/lib/prisma";
 import { crearCobro, type Equipo } from "@/lib/motor/cobros";
+import { cuentaParaEnviar, enviarCorreo } from "@/lib/mail/enviar-desde-asistente";
+import { resolveReplyRecipient } from "@/lib/mail/reply-recipient";
+import { validateMailAddressList } from "@/lib/mail/validate-address";
 import { registrarPago, recalcularFactura, avanceDeFaseEvento } from "@/lib/portal/empresa";
 import { registrarEvento } from "@/lib/portal/eventos";
 import { unirClienteAProyecto } from "@/lib/motor/enlaces";
@@ -942,6 +945,30 @@ export const OPERACIONES: Record<string, Op> = {
       const pl = await prisma.platform.findFirstOrThrow({ where: { id: String(p.plataformaId), userId: u.id }, select: { id: true, clientId: true, projectId: true } });
       await prisma.platform.update({ where: { id: pl.id }, data: { ...(p.clienteId ? { clientId: String(p.clienteId) } : {}), ...(p.proyectoId ? { projectId: String(p.proyectoId) } : {}) } });
       return { pasos: [{ t: "editar", m: "platform", id: pl.id, antes: { clientId: pl.clientId, projectId: pl.projectId } }], resultType: "plataforma", resultId: pl.id, href: "/empresa/platforms" };
+    },
+  },
+  correo_enviar: {
+    def: def("correo_enviar", "Envía un correo desde la cuenta de la empresa (o la cuentaId de correo_cuentas). Para responder, pasa responderA con el correoId: el destinatario y el asunto salen solos. Escribe el cuerpo en texto plano, como Javier: directo y cordial, ustedeo con prospectos y clientes, sin firma (la pone el sistema). Siempre queda como borrador para que la persona lo confirme.", P({ para: STR, cc: STR, asunto: STR, cuerpo: STR, responderA: STR, cuentaId: STR }), ["cuerpo"]),
+    async preparar(u, a) {
+      const cuerpo = s(a, "cuerpo");
+      if (!cuerpo) return { error: "Falta el texto del correo." };
+      const original = s(a, "responderA") ? await prisma.inboxEmail.findFirst({ where: { id: s(a, "responderA"), userId: u.id }, select: { id: true, folder: true, fromEmail: true, toAddresses: true, subject: true, accountId: true, account: { select: { username: true } } } }) : null;
+      if (s(a, "responderA") && !original) return { error: "No encontré el correo al que respondes." };
+      const para = original ? resolveReplyRecipient(original, original.account.username, s(a, "para") || undefined) : s(a, "para");
+      if (!para) return { error: "¿A quién se lo mando? Falta la dirección." };
+      const ok = validateMailAddressList(para, "Para");
+      if (!ok.ok) return { error: ok.error };
+      const asunto = s(a, "asunto") || (original ? (original.subject?.startsWith("Re:") ? original.subject : `Re: ${original.subject ?? ""}`) : "");
+      if (!asunto) return { error: "Falta el asunto." };
+      const cuenta = await cuentaParaEnviar(u.id, u.configId ?? null, s(a, "cuentaId") || original?.accountId || null);
+      if (!cuenta) return { error: "No hay una cuenta de correo activa para enviar. Se conecta en Correos." };
+      // El borrador completo va en el resumen: es lo que la persona lee antes de tocar Confirmar.
+      return { resumen: `Correo a ${para}${s(a, "cc") ? ` (cc ${s(a, "cc")})` : ""} desde ${cuenta.username}\nAsunto: ${asunto}\n\n${cuerpo}`.slice(0, 1000), evalua: { sale: true }, payload: { para, cc: s(a, "cc") || null, asunto, cuerpo, responderA: original?.id ?? null, cuentaId: cuenta.id } };
+    },
+    async ejecutar(u, p) {
+      const m = await enviarCorreo({ userId: u.id, configId: u.configId ?? null, cuentaId: String(p.cuentaId), para: String(p.para), cc: (p.cc as string) || null, asunto: String(p.asunto), cuerpo: String(p.cuerpo), responderA: (p.responderA as string) || null });
+      // Un correo enviado no se puede deshacer: sin pasos.
+      return { pasos: [], resultType: "correo", resultId: m.id, href: `/empresa/correos/hub/${m.id}` };
     },
   },
   nota_crear: {

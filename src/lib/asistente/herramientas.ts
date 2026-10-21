@@ -40,6 +40,9 @@ const LECTURA: Def[] = [
   def("ver_plataformas", "Plataformas (Platforms) por nombre aproximado, con id, cliente y proyecto.", { texto: STR }),
   def("ver_citas", "Citas agendadas desde una fecha (YYYY-MM-DD, por defecto hoy), con id.", { desde: STR }),
   def("dinero_y_agenda", "Lo de hoy: vencido (rojo), por cobrar (azul, incluye fases iniciadas sin factura), lo que entró este mes (verde), facturas vencidas, agenda, sistemas con problemas y decisiones pendientes.", {}),
+  def("correo_buscar", "Busca correos del buzón (recibidos y enviados) por texto en asunto, remitente o contenido, por quién lo mandó, desde una fecha (YYYY-MM-DD) o solo los que esperan respuesta. Devuelve correoId, fecha, de, para, asunto y resumen. Sin texto trae los más recientes.", { texto: STR, de: STR, desde: STR, carpeta: { type: "string", enum: ["recibidos", "enviados", "todos"] }, sinLeer: { type: "boolean" } }),
+  def("correo_leer", "Lee un correo completo (texto, adjuntos y la conversación a la que pertenece) por su correoId.", { correoId: STR }, ["correoId"]),
+  def("correo_cuentas", "Cuentas de correo desde las que se puede enviar, con cuentaId y dirección; la marcada como principal es la que firma por defecto.", {}),
   def("ver_acciones", "Lo último que hiciste o propusiste en el sistema, con id y estado (para deshacer).", {}),
   def("deshacer_accion", "Deshace algo que hiciste (accionId de ver_acciones o de una respuesta anterior).", { accionId: STR }, ["accionId"]),
 ];
@@ -55,6 +58,43 @@ async function leer(u: U, nombreHerr: string, a: Args): Promise<unknown> {
   const s = (k: string) => (typeof a[k] === "string" ? (a[k] as string).trim() : "");
   const userId = u.id;
   switch (nombreHerr) {
+    case "correo_buscar": {
+      const carpeta = s("carpeta") === "enviados" ? "SENT" : s("carpeta") === "todos" ? null : "INBOX";
+      const texto = s("texto"), de = s("de");
+      const desde = /^\d{4}-\d{2}-\d{2}$/.test(s("desde")) ? new Date(`${s("desde")}T05:00:00Z`) : null;
+      const rs = await prisma.inboxEmail.findMany({
+        where: {
+          userId,
+          ...(carpeta ? { folder: carpeta } : {}),
+          ...(desde ? { receivedAt: { gte: desde } } : {}),
+          ...(a.sinLeer === true ? { isRead: false } : {}),
+          ...(de ? { OR: [{ fromEmail: { contains: de, mode: "insensitive" as const } }, { fromName: { contains: de, mode: "insensitive" as const } }] } : {}),
+          ...(texto ? { AND: [{ OR: [{ subject: { contains: texto, mode: "insensitive" as const } }, { fromName: { contains: texto, mode: "insensitive" as const } }, { fromEmail: { contains: texto, mode: "insensitive" as const } }, { bodyText: { contains: texto, mode: "insensitive" as const } }, { aiSummary: { contains: texto, mode: "insensitive" as const } }] }] } : {}),
+        },
+        orderBy: { receivedAt: "desc" }, take: 15,
+        select: { id: true, receivedAt: true, fromName: true, fromEmail: true, toAddresses: true, subject: true, aiSummary: true, isRead: true, folder: true, client: { select: { name: true, company: true } }, lead: { select: { name: true } } },
+      });
+      return rs.length ? rs.map((m) => ({ correoId: m.id, fecha: m.receivedAt.toISOString().slice(0, 16).replace("T", " "), de: m.fromName ? `${m.fromName} <${m.fromEmail}>` : m.fromEmail, para: m.toAddresses.slice(0, 3), asunto: m.subject ?? "(sin asunto)", resumen: m.aiSummary && m.aiSummary !== "Sin resumen" ? m.aiSummary : null, leido: m.isRead, carpeta: m.folder === "SENT" ? "enviado" : "recibido", cliente: nombre(m.client), lead: m.lead?.name ?? null })) : { resultado: "No encontré correos con eso." };
+    }
+    case "correo_leer": {
+      const m = await prisma.inboxEmail.findFirst({ where: { id: s("correoId"), userId }, select: { id: true, receivedAt: true, fromName: true, fromEmail: true, toAddresses: true, ccAddresses: true, subject: true, bodyText: true, aiSummary: true, folder: true, threadKey: true, accountId: true, attachments: { select: { filename: true } }, client: { select: { id: true, name: true, company: true } }, lead: { select: { id: true, name: true } } } });
+      if (!m) return { error: "No encontré ese correo." };
+      const hilo = m.threadKey ? await prisma.inboxEmail.findMany({ where: { userId, threadKey: m.threadKey, id: { not: m.id } }, orderBy: { receivedAt: "asc" }, take: 8, select: { id: true, receivedAt: true, fromEmail: true, folder: true, subject: true } }) : [];
+      return {
+        correoId: m.id, fecha: m.receivedAt.toISOString().slice(0, 16).replace("T", " "), de: m.fromName ? `${m.fromName} <${m.fromEmail}>` : m.fromEmail,
+        para: m.toAddresses, cc: m.ccAddresses, asunto: m.subject ?? "(sin asunto)", carpeta: m.folder === "SENT" ? "enviado" : "recibido", cuentaId: m.accountId,
+        texto: (m.bodyText ?? "").slice(0, 8000), resumen: m.aiSummary, adjuntos: m.attachments.map((x) => x.filename),
+        cliente: m.client ? { clienteId: m.client.id, nombre: nombre(m.client) } : null, lead: m.lead ? { leadId: m.lead.id, nombre: m.lead.name } : null,
+        conversacion: hilo.map((h) => ({ correoId: h.id, fecha: h.receivedAt.toISOString().slice(0, 10), de: h.fromEmail, carpeta: h.folder === "SENT" ? "enviado" : "recibido", asunto: h.subject })),
+      };
+    }
+    case "correo_cuentas": {
+      const [cs, cfg] = await Promise.all([
+        prisma.mailAccount.findMany({ where: { userId, active: true }, orderBy: { createdAt: "asc" }, select: { id: true, label: true, username: true, fromName: true } }),
+        u.configId ? prisma.companyConfig.findFirst({ where: { id: u.configId }, select: { signingMailAccountId: true } }) : null,
+      ]);
+      return cs.length ? cs.map((c, i) => ({ cuentaId: c.id, nombre: c.label, direccion: c.username, remitente: c.fromName, principal: cfg?.signingMailAccountId ? c.id === cfg.signingMailAccountId : i === 0 })) : { resultado: "No hay cuentas de correo conectadas: se conectan en Correos." };
+    }
     case "buscar_cliente": {
       const cs = await prisma.client.findMany({ where: { userId, archivedAt: null }, select: { id: true, name: true, company: true, email: true, brandLine: true } });
       const r = mejores(s("texto"), cs, (c) => [c.company ?? "", c.name, c.email ?? ""]);

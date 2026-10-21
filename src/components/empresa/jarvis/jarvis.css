@@ -188,7 +188,7 @@ html[data-theme="light"] .jv-node { --nc: var(--nc-claro) }
 .jv-acts { display: grid; gap: 8px; width: 100%; max-width: 520px; text-align: left; list-style: none; margin: 0; padding: 0 }
 .jv-act { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 8px 12px; border-radius: 4px; border: 1px solid var(--jv-line-2); background: rgb(var(--jv-rgb) / .05) }
 .jv-act[data-e="error"] { border-color: rgb(var(--jv-bad-rgb) / .5) }
-.jv-act p { margin: 0; font-size: 14px; overflow-wrap: anywhere }
+.jv-act p { margin: 0; font-size: 14px; overflow-wrap: anywhere; white-space: pre-line }
 .jv-act small { display: block; font-size: 12px; color: var(--jv-dim) }
 .jv-act-b { display: flex; gap: 8px; flex-wrap: wrap }
 .jv-btn { min-height: 44px; padding: 0 12px; border-radius: 8px; border: 1px solid var(--jv-cyan); background: var(--jv-cyan); color: var(--jv-ink); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer }

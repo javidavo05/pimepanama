@@ -266,20 +266,20 @@ function Fila({ a, secundario, onDecidir, onAbrir }: { a: Accion; secundario: bo
   const apagada = a.estado === "deshecha" || a.estado === "cancelada";
   return (
     <li className="space-y-2 px-4 py-3">
-      <p className={`text-sm [overflow-wrap:anywhere] ${apagada ? "text-fg-dim line-through" : "text-fg"}`}>{a.summary}</p>
+      <p className={`text-sm whitespace-pre-line [overflow-wrap:anywhere] ${apagada ? "text-fg-dim line-through" : "text-fg"}`}>{a.summary}</p>
       {a.estado === "propuesta" && a.motivo && <p className="text-xs text-fg-dim">{a.motivo}</p>}
       {(apagada || (a.estado === "hecha" && a.antes === "propuesta")) && <p className="text-xs text-fg-dim">{ETIQUETA[a.estado]}</p>}
       {a.error && <p className="text-sm text-danger" role="alert">{a.error}</p>}
       {a.estado === "propuesta" && (
         <div className="grid grid-cols-2 gap-2">
           <button type="button" disabled={a.ocupado} onClick={() => onDecidir(a, "cancelar")} className="min-h-11 rounded-xl border border-line-mid text-sm font-semibold text-fg-mute hover:text-fg disabled:opacity-50">Cancelar</button>
-          <button type="button" disabled={a.ocupado} onClick={() => onDecidir(a, "confirmar")} className={`min-h-11 rounded-xl text-sm font-semibold disabled:opacity-50 ${secundario ? "border border-brand/40 text-brand-fg hover:bg-fill" : "bg-brand text-on-brand hover:bg-brand-hi"}`}>{a.ocupado ? "Haciendo…" : "Confirmar"}</button>
+          <button type="button" disabled={a.ocupado} onClick={() => onDecidir(a, "confirmar")} className={`min-h-11 rounded-xl text-sm font-semibold disabled:opacity-50 ${secundario ? "border border-brand/40 text-brand-fg hover:bg-fill" : "bg-brand text-on-brand hover:bg-brand-hi"}`}>{a.ocupado ? (a.kind === "correo_enviar" ? "Enviando…" : "Haciendo…") : a.kind === "correo_enviar" ? "Enviar correo" : "Confirmar"}</button>
         </div>
       )}
       {a.estado === "hecha" && (
         <div className="flex flex-wrap gap-2">
           {a.href && <Link href={a.href} onClick={onAbrir} className="inline-flex items-center min-h-11 px-4 rounded-xl bg-fill text-sm font-semibold text-brand-fg">Abrir</Link>}
-          <button type="button" disabled={a.ocupado} onClick={() => onDecidir(a, "deshacer")} className="inline-flex items-center min-h-11 px-4 rounded-xl text-sm font-semibold text-fg-dim hover:text-fg disabled:opacity-50">{a.ocupado ? "Deshaciendo…" : "Deshacer"}</button>
+          {a.kind !== "correo_enviar" && <button type="button" disabled={a.ocupado} onClick={() => onDecidir(a, "deshacer")} className="inline-flex items-center min-h-11 px-4 rounded-xl text-sm font-semibold text-fg-dim hover:text-fg disabled:opacity-50">{a.ocupado ? "Deshaciendo…" : "Deshacer"}</button>}
         </div>
       )}
     </li>

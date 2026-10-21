@@ -33,3 +33,9 @@ test("montos raros no rompen la regla", () => {
   assert.equal(requiereConfirmacion({ monto: Number.NaN }).confirmar, false);
   assert.equal(requiereConfirmacion({ monto: null }).confirmar, false);
 });
+
+test("un correo siempre pide confirmar, aunque no mueva dinero", () => {
+  const d = requiereConfirmacion({ sale: true });
+  assert.equal(d.confirmar, true);
+  assert.match(d.motivo ?? "", /correo/);
+});
