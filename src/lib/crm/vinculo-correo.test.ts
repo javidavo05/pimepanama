@@ -60,3 +60,10 @@ test("el detalle de un correo enviado en HTML se lee como texto", async () => {
   assert.equal(textoDeCorreo('<html><head><style>p{color:red}</style></head><div style="font-family: Manrope">Hola&nbsp;Myron,<br>te envío la propuesta</div>'), "Hola Myron, te envío la propuesta");
   assert.equal(textoDeCorreo('texto cortado <div style="font-fam'), "texto cortado");
 });
+
+test("en la historia, un correo que pide cotización dice qué pide", async () => {
+  const { deCorreo } = await import("./historia");
+  const base = { id: "m1", subject: "RFP", fromEmail: "a@b.com", fromName: "Ana", receivedAt: "2026-10-20T10:00:00Z", folder: "INBOX", bodyText: "<p>x</p>" };
+  assert.equal(deCorreo({ ...base, aiSummary: "Resumen", necesidad: "Sistema de requisiciones" }).detalle, "Pide cotización: Sistema de requisiciones");
+  assert.equal(deCorreo({ ...base, aiSummary: "Sin resumen" }).detalle, "x");
+});

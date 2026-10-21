@@ -237,6 +237,16 @@ export function EmailDetailClient({ email, accounts, company, initialWatch, vinc
                 <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Resumen</p>
                 <p className="text-fg-mute text-sm leading-relaxed">{summary}</p>
               </div>
+              {vinculo.solicitud && (
+                <div className="rounded-lg border border-sand/30 bg-sand/5 p-3">
+                  <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Pide cotización</p>
+                  <p className="text-fg-soft text-sm leading-relaxed [overflow-wrap:anywhere]">{vinculo.solicitud.necesidad}</p>
+                  <p className="mt-1 text-fg-dim text-xs [overflow-wrap:anywhere]">
+                    {[vinculo.solicitud.nombre, vinculo.solicitud.empresa, vinculo.solicitud.telefono, vinculo.solicitud.valorEstimado ? `≈ $${vinculo.solicitud.valorEstimado.toLocaleString("en-US")}` : null, `prioridad ${vinculo.solicitud.prioridad.toLowerCase()}`].filter(Boolean).join(" · ")}
+                  </p>
+                  <p className="mt-1 text-fg-faint text-xs">{vinculo.inicial ? `Quedó en la comunicación de ${vinculo.inicial.nombre}.` : vinculo.ignorado ? "Marcado como que no es un lead." : "Apruébalo en la tarjeta «Posible lead»."}</p>
+                </div>
+              )}
               {analysis?.urgency && (
                 <div>
                   <p className="text-fg-dim text-[10px] uppercase tracking-widest mb-1">Urgencia</p>

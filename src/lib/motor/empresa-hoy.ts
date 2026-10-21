@@ -28,7 +28,7 @@ export async function datosDeLaEmpresa(userId: string, ver: Ver, ahora = new Dat
   const hace60 = new Date(ahora.getTime() - 60 * DIA);
   const nada = Promise.resolve([] as never[]);
 
-  const [porEtapa, nuevos7, sinContactar, seguimientos, oportunidades, solicitudes, correos, esperan, actividad] = await Promise.all([
+  const [porEtapa, nuevos7, sinContactar, seguimientos, oportunidades, solicitudes, correos, esperan, actividad, pedidos] = await Promise.all([
     ver.ventas ? prisma.lead.groupBy({ by: ["status"], where: { userId, status: { in: [...ABIERTOS] } }, _count: { _all: true } }) : nada,
     ver.ventas ? prisma.lead.count({ where: { userId, createdAt: { gte: hace7 } } }) : Promise.resolve(0),
     ver.ventas
@@ -42,21 +42,21 @@ export async function datosDeLaEmpresa(userId: string, ver: Ver, ahora = new Dat
     ver.correos
       ? prisma.inboxEmail.findMany({
           where: { userId, folder: "INBOX", leadId: null, clientId: null, vinculo: null, NOT: { solicitud: { equals: Prisma.DbNull } }, receivedAt: { gte: hace60 } },
-          orderBy: { receivedAt: "desc" }, take: 4, select: { id: true, fromName: true, fromEmail: true, receivedAt: true, solicitud: true },
+          orderBy: { receivedAt: "desc" }, take: 3, select: { id: true, fromName: true, fromEmail: true, receivedAt: true, solicitud: true },
         })
       : nada,
     ver.correos
       ? prisma.inboxEmail.findMany({
           where: { userId, folder: { in: ["INBOX", "SENT"] }, OR: [{ clientId: { not: null } }, { leadId: { not: null } }], vinculo: { not: "ignorado" } },
-          orderBy: { receivedAt: "desc" }, take: 4,
+          orderBy: { receivedAt: "desc" }, take: 3,
           select: { id: true, folder: true, subject: true, receivedAt: true, aiSummary: true, client: { select: { id: true, name: true, company: true } }, lead: { select: { id: true, name: true } } },
         })
       : nada,
     // Clientes y leads cuyo último correo del mes es de ellos: nadie del equipo les escribió después (por ningún
     // buzón ni hilo). Las respuestas automáticas no cuentan como algo que contestar.
     ver.correos
-      ? prisma.$queryRaw<{ id: string; subject: string | null; receivedAt: Date; nombre: string; tipo: "cliente" | "lead"; refId: string }[]>(Prisma.sql`
-          SELECT DISTINCT ON (coalesce(m."clientId", m."leadId")) m.id, m.subject, m."receivedAt",
+      ? prisma.$queryRaw<{ id: string; subject: string | null; aiSummary: string | null; receivedAt: Date; nombre: string; tipo: "cliente" | "lead"; refId: string }[]>(Prisma.sql`
+          SELECT DISTINCT ON (coalesce(m."clientId", m."leadId")) m.id, m.subject, m."aiSummary", m."receivedAt",
                  coalesce(c.company, c.name, l.name) AS nombre,
                  CASE WHEN m."clientId" IS NOT NULL THEN 'cliente' ELSE 'lead' END AS tipo,
                  coalesce(m."clientId", m."leadId") AS "refId"
@@ -79,6 +79,14 @@ export async function datosDeLaEmpresa(userId: string, ver: Ver, ahora = new Dat
       where: { userId, client: { internal: false } }, orderBy: { createdAt: "desc" }, take: 6,
       select: { id: true, title: true, detail: true, createdAt: true, actorType: true, clientId: true, client: { select: { name: true, company: true } } },
     }),
+    // Lo que la IA sacó del correo en los últimos 60 días: quién pide cotización y qué pide, ligado o no.
+    ver.correos
+      ? prisma.inboxEmail.findMany({
+          where: { userId, folder: "INBOX", NOT: { solicitud: { equals: Prisma.DbNull } }, receivedAt: { gte: hace60 }, OR: [{ vinculo: null }, { vinculo: { in: ["auto", "manual"] } }] },
+          orderBy: { receivedAt: "desc" }, take: 12,
+          select: { id: true, fromName: true, fromEmail: true, receivedAt: true, solicitud: true, lead: { select: { id: true, name: true } }, client: { select: { id: true, name: true, company: true } } },
+        })
+      : nada,
   ]);
 
   const etapas = ABIERTOS.map((s) => ({ etapa: s, label: ETAPA_LEAD[s], n: porEtapa.find((g) => g.status === s)?._count._all ?? 0 }));
@@ -109,6 +117,17 @@ export async function datosDeLaEmpresa(userId: string, ver: Ver, ahora = new Dat
           totalEsperan: esperanOrden.length,
         }
       : null,
+    pedidos: (() => {
+      const vistos = new Set<string>();
+      return pedidos.flatMap((m) => {
+        const clave = m.client?.id ?? m.lead?.id ?? m.fromEmail.toLowerCase();
+        if (vistos.has(clave)) return [];
+        vistos.add(clave);
+        const s = m.solicitud as unknown as SolicitudCotizacion;
+        const quien = m.client ? { tipo: "cliente" as const, id: m.client.id, nombre: m.client.company || m.client.name } : m.lead ? { tipo: "lead" as const, id: m.lead.id, nombre: m.lead.name } : null;
+        return [{ id: m.id, quien, nombre: quien?.nombre ?? ([s.nombre || m.fromName || m.fromEmail, s.empresa].filter(Boolean).join(" · ")), necesidad: s.necesidad, prioridad: s.prioridad, valor: s.valorEstimado, fecha: m.receivedAt }];
+      }).slice(0, 3);
+    })(),
     actividad: actividad.map((a) => ({ id: a.id, titulo: a.title, detalle: a.detail, fecha: a.createdAt, delCliente: a.actorType === "cliente", clienteId: a.clientId, cliente: a.client.company || a.client.name })),
   };
 }

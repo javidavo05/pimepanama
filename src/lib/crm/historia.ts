@@ -107,12 +107,14 @@ export function textoDeCorreo(cuerpo: string | null | undefined): string {
     .trim();
 }
 
-export function deCorreo(m: { id: string; subject: string | null; fromEmail: string; fromName: string | null; receivedAt: Date | string; folder: string; aiSummary: string | null; bodyText?: string | null }): EventoHistoria {
+export function deCorreo(m: { id: string; subject: string | null; fromEmail: string; fromName: string | null; receivedAt: Date | string; folder: string; aiSummary: string | null; bodyText?: string | null; necesidad?: string | null }): EventoHistoria {
   const enviado = m.folder === "SENT";
   return {
     id: `correo:${m.id}`, tipo: "correo", subtipo: enviado ? "enviado" : "recibido", fecha: iso(m.receivedAt),
     titulo: `${enviado ? "Correo enviado" : `Correo de ${m.fromName || m.fromEmail}`}: ${m.subject?.trim() || "(sin asunto)"}`,
-    detalle: corto(m.aiSummary) ?? corto(textoDeCorreo(m.bodyText), 160), enlace: `/empresa/correos/hub/${m.id}`,
+    // Lo que la IA sacó del correo: si pide cotización, qué pide; si no, su resumen.
+    detalle: (m.necesidad ? `Pide cotización: ${corto(m.necesidad)}` : null) ?? (m.aiSummary && m.aiSummary !== "Sin resumen" ? corto(m.aiSummary) : null) ?? corto(textoDeCorreo(m.bodyText), 160),
+    enlace: `/empresa/correos/hub/${m.id}`,
   };
 }
 
@@ -227,13 +229,13 @@ export async function historiaDelCliente(
         })
       : nada,
     pide(tipos, "correo")
-      ? prisma.$queryRaw<{ id: string; subject: string | null; fromEmail: string; fromName: string | null; receivedAt: Date; folder: string; aiSummary: string | null; bodyText: string | null }[]>(Prisma.sql`
+      ? prisma.$queryRaw<{ id: string; subject: string | null; fromEmail: string; fromName: string | null; receivedAt: Date; folder: string; aiSummary: string | null; bodyText: string | null; necesidad: string | null }[]>(Prisma.sql`
           WITH correos AS (
             SELECT lower(trim(email)) AS e FROM "Client" WHERE id = ${clientId} AND "userId" = ${userId} AND coalesce(trim(email), '') <> ''
             UNION
             SELECT lower(trim(email)) FROM "Contacto" WHERE "clientId" = ${clientId} AND "userId" = ${userId} AND coalesce(trim(email), '') <> ''
           )
-          SELECT m.id, m.subject, m."fromEmail", m."fromName", m."receivedAt", m.folder, m."aiSummary", left(m."bodyText", 6000) AS "bodyText"
+          SELECT m.id, m.subject, m."fromEmail", m."fromName", m."receivedAt", m.folder, m."aiSummary", left(m."bodyText", 6000) AS "bodyText", m.solicitud->>'necesidad' AS necesidad
           FROM "InboxEmail" m
           WHERE m."userId" = ${userId}
             AND m.folder NOT IN ('TRASH', 'SPAM', 'DRAFTS')
@@ -309,11 +311,11 @@ export async function historiaDelLead(
         })
       : nada,
     pide(tipos, "correo")
-      ? prisma.$queryRaw<{ id: string; subject: string | null; fromEmail: string; fromName: string | null; receivedAt: Date; folder: string; aiSummary: string | null; bodyText: string | null }[]>(Prisma.sql`
+      ? prisma.$queryRaw<{ id: string; subject: string | null; fromEmail: string; fromName: string | null; receivedAt: Date; folder: string; aiSummary: string | null; bodyText: string | null; necesidad: string | null }[]>(Prisma.sql`
           WITH correos AS (
             SELECT lower(trim(email)) AS e FROM "Lead" WHERE id = ${leadId} AND "userId" = ${userId} AND coalesce(trim(email), '') <> ''
           )
-          SELECT m.id, m.subject, m."fromEmail", m."fromName", m."receivedAt", m.folder, m."aiSummary", left(m."bodyText", 6000) AS "bodyText"
+          SELECT m.id, m.subject, m."fromEmail", m."fromName", m."receivedAt", m.folder, m."aiSummary", left(m."bodyText", 6000) AS "bodyText", m.solicitud->>'necesidad' AS necesidad
           FROM "InboxEmail" m
           WHERE m."userId" = ${userId}
             AND m.folder NOT IN ('TRASH', 'SPAM', 'DRAFTS')

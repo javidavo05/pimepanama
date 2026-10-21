@@ -251,17 +251,34 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
             <p className="mt-1 text-sm text-fg-dim">
               {e.correos.totalEsperan
                 ? <><b className="font-semibold text-warn">{e.correos.totalEsperan === 1 ? "1 conversación espera" : `${e.correos.totalEsperan} conversaciones esperan`}</b> tu respuesta.</>
-                : "Nadie espera respuesta tuya este mes."} Los correos con clientes y leads se guardan solos en su ficha.
+                : "Nadie espera respuesta tuya este mes."} La IA resume cada correo y lo guarda en la ficha del cliente o lead.
             </p>
             {e.correos.esperan.length > 0 && (
               <ul className="mt-3 divide-y divide-line">
                 {e.correos.esperan.map((m) => (
                   <li key={`e-${m.id}`}><Link href={`/empresa/correos/hub/${m.id}`} className={fila}>
-                    <span className="min-w-0"><span className="block text-fg text-sm font-semibold truncate">{m.nombre}</span><span className="block text-fg-dim text-xs truncate">{m.subject?.trim() || "(sin asunto)"} · {hace(m.receivedAt, ahora)}</span></span>
+                    <span className="min-w-0"><span className="block text-fg text-sm font-semibold truncate">{m.nombre}</span><span className="block text-fg-dim text-xs line-clamp-2 [overflow-wrap:anywhere]">{(m.aiSummary && m.aiSummary !== "Sin resumen" ? m.aiSummary : m.subject?.trim()) || "(sin asunto)"} · {hace(m.receivedAt, ahora)}</span></span>
                     <span className="text-warn text-sm font-semibold whitespace-nowrap">Responder →</span>
                   </Link></li>
                 ))}
               </ul>
+            )}
+            {e.pedidos.length > 0 && (
+              <>
+                <p className="mt-4 text-xs font-semibold uppercase tracking-widest text-fg-dim">Piden cotización por correo</p>
+                <ul className="mt-1 divide-y divide-line">
+                  {e.pedidos.map((x) => (
+                    <li key={`p-${x.id}`}><Link href={x.quien ? `/empresa/${x.quien.tipo === "cliente" ? "clientes" : "leads"}/${x.quien.id}` : `/empresa/correos/hub/${x.id}`} className={fila}>
+                      <span className="min-w-0">
+                        <span className="block text-fg text-sm font-semibold truncate">{x.nombre}</span>
+                        <span className="block text-fg-dim text-xs line-clamp-2 [overflow-wrap:anywhere]">{x.necesidad}</span>
+                        <span className="block text-fg-faint text-xs">{x.quien ? (x.quien.tipo === "cliente" ? "Cliente" : "Lead") : "Sin aprobar"}{x.valor ? ` · ≈ ${usd(x.valor)}` : ""} · {hace(x.fecha, ahora)}</span>
+                      </span>
+                      <span className="text-brand-fg text-sm font-semibold whitespace-nowrap">{x.quien ? "Ver ficha →" : "Revisar →"}</span>
+                    </Link></li>
+                  ))}
+                </ul>
+              </>
             )}
             {e.correos.recientes.length === 0 ? (
               <p className="mt-4 rounded-xl bg-fill p-4 text-sm text-fg-dim">Cuando escribas o recibas correos de un cliente o lead, aparecen aquí y en su ficha. Si uno no se liga solo, ábrelo y elige de quién es.</p>
@@ -274,7 +291,8 @@ export default async function HoyPage({ searchParams }: { searchParams: Promise<
                       <span className={`mt-1.5 h-2 w-2 rounded-full ${m.recibido ? "bg-ok" : "bg-brand"}`} aria-hidden />
                       <span className="min-w-0">
                         <span className="block text-fg text-sm font-semibold truncate">{m.recibido ? `${m.quien.nombre} escribió` : `Le escribiste a ${m.quien.nombre}`}</span>
-                        <span className="block text-fg-dim text-xs truncate">{m.asunto}</span>
+                        {/* Lo que la IA sacó del correo; sin resumen, el asunto. */}
+                        <span className="block text-fg-dim text-xs line-clamp-2 [overflow-wrap:anywhere]">{m.resumen && m.resumen !== "Sin resumen" ? m.resumen : m.asunto}</span>
                         <span className="block text-fg-faint text-xs">{m.quien.tipo === "cliente" ? "Cliente" : "Lead"} · {hace(m.fecha, ahora)}</span>
                       </span>
                     </Link></li>
