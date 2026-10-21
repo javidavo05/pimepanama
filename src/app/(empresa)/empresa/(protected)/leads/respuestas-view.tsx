@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "@/components/empresa/link";
 import { btn, seg } from "@/components/empresa/page-header";
 import { campo } from "@/components/empresa/clientes/formularios";
@@ -27,11 +27,67 @@ const enFiltro = (r: RespuestaVista, f: Filtro) =>
     : f === "enviadas" ? r.estado === "enviada"
     : r.estado === "descartada";
 
-function EstadoChip({ r }: { r: RespuestaVista }) {
-  if (r.estado === "enviada") return <span className={`${chip} bg-ok/10 text-ok`}>Enviada{r.enviadaAt ? ` · ${fechaHora(r.enviadaAt, false)}` : ""}</span>;
-  if (r.estado === "fallo") return <span className={`${chip} bg-danger/10 text-danger`}>No salió</span>;
-  if (r.estado === "descartada") return <span className={`${chip} bg-fill text-fg-faint`}>Descartada</span>;
-  return <span className={`${chip} bg-sand/10 text-sand-fg`}>Por revisar</span>;
+type Tono = "ok" | "pendiente" | "falta" | "neutro";
+
+/** Semáforo de cada pieza: verde lista, naranja pendiente, rojo no existe. */
+const TONO: Record<Tono, { caja: string; punto: string }> = {
+  ok: { caja: "border-ok/30 bg-ok/10 text-ok", punto: "bg-ok" },
+  pendiente: { caja: "border-warn/30 bg-warn/10 text-warn", punto: "bg-warn" },
+  falta: { caja: "border-danger/30 bg-danger/10 text-danger", punto: "bg-danger" },
+  neutro: { caja: "border-line bg-fill text-fg-faint", punto: "bg-fg-faint" },
+};
+
+function Celda({ titulo, tono, texto, children }: { titulo: string; tono: Tono; texto: string; children?: React.ReactNode }) {
+  return (
+    <div className={`flex min-h-11 min-w-0 items-center justify-between gap-2 rounded-lg border px-3 py-2 ${TONO[tono].caja}`}>
+      <span className="min-w-0">
+        {/* El título solo hace falta cuando no está la cabecera de columnas (debajo de xl). */}
+        <span className="block text-[11px] font-semibold uppercase tracking-widest opacity-75 xl:hidden">{titulo}</span>
+        <span className="flex items-center gap-2 text-xs font-semibold">
+          <span className={`size-2 shrink-0 rounded-full ${TONO[tono].punto}`} aria-hidden />
+          <span className="truncate">{texto}</span>
+        </span>
+      </span>
+      {children}
+    </div>
+  );
+}
+
+function estadoCorreo(r: RespuestaVista): { tono: Tono; texto: string } {
+  if (r.estado === "enviada") return { tono: "ok", texto: r.enviadaAt ? `Enviado ${fechaHora(r.enviadaAt, false)}` : "Enviado" };
+  if (r.estado === "descartada") return { tono: "neutro", texto: "Descartado" };
+  if (r.estado === "fallo") return { tono: "falta", texto: "No salió" };
+  if (!r.para) return { tono: "falta", texto: "Sin correo" };
+  return { tono: "pendiente", texto: "Por enviar" };
+}
+
+function estadoLinkedin(r: RespuestaVista): { tono: Tono; texto: string } {
+  if (!r.mensajeLinkedin) return { tono: "falta", texto: "No existe" };
+  if (r.linkedinAt) return { tono: "ok", texto: "Enviado" };
+  return { tono: "pendiente", texto: "Pendiente" };
+}
+
+/** Barra de avance: lo hecho más una estimación del que va en curso, que nunca llega sola al final. */
+function Progreso({ texto, hechas, total, desde, porItemMs }: { texto: string; hechas: number; total: number; desde: number; porItemMs: number }) {
+  const [ahora, setAhora] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setAhora(Date.now()), 250);
+    return () => clearInterval(t);
+  }, []);
+  const enCurso = hechas < total ? Math.min(0.9, (ahora - desde) / porItemMs) : 0;
+  const pct = Math.round(((hechas + enCurso) / Math.max(total, 1)) * 100);
+  return (
+    <div className="grid gap-2">
+      <div className="flex items-baseline justify-between gap-4 text-sm">
+        <span className="min-w-0 text-fg-mute [overflow-wrap:anywhere]">{texto}</span>
+        <span className="shrink-0 font-semibold tabular-nums text-fg">{pct} %</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct} aria-label={texto}>
+        <div className="h-full rounded-full bg-brand transition-[width] duration-300 ease-out" style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-xs text-fg-faint tabular-nums">{hechas} de {total} listas</span>
+    </div>
+  );
 }
 
 function sin<T>(obj: Record<string, T>, clave: string): Record<string, T> {
@@ -39,6 +95,9 @@ function sin<T>(obj: Record<string, T>, clave: string): Record<string, T> {
   delete copia[clave];
   return copia;
 }
+
+/** Columnas de cada fila desde xl: casilla, prospecto, correo, PDF, LinkedIn y acción. */
+const COLUMNAS = "xl:grid-cols-[2.75rem_minmax(0,1fr)_11rem_12rem_10rem_8rem]";
 
 const pdfUrl = (id: string) => `/api/empresa/leads/respuestas/${id}/pdf?inline=1`;
 
@@ -50,7 +109,8 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
   // Lo que se editó y todavía no se guardó. Se guarda solo antes de enviar.
   const [cambios, setCambios] = useState<Record<string, Cambios>>({});
   const [quitadas, setQuitadas] = useState<Set<string>>(new Set());
-  const [ocupado, setOcupado] = useState<{ lote: string; texto: string } | null>(null);
+  // Lo que está corriendo en una tanda. Con `total`, la pantalla muestra la barra de avance.
+  const [ocupado, setOcupado] = useState<{ lote: string; texto: string; hechas?: number; total?: number; desde?: number; porItemMs?: number; ids?: string[]; tipo?: "preparar" | "enviar" } | null>(null);
   const [confirmar, setConfirmar] = useState<string | null>(null);
   const [aviso, setAviso] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
 
@@ -71,6 +131,9 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
       .map(([lote, filas]) => ({ lote, filas, desde: filas.reduce((m, r) => (r.createdAt < m ? r.createdAt : m), filas[0].createdAt) }))
       .sort((a, b) => b.desde.localeCompare(a.desde));
   }, [respuestas, filtro]);
+
+  // Una sola acción principal en la pantalla: el envío de la tanda más reciente que tiene algo listo.
+  const lotePrincipal = lotes.find(({ filas }) => filas.some((r) => !faltaParaEnviar(cambios[r.id] ? { ...r, ...cambios[r.id] } : r)))?.lote;
 
   async function guardarSiHaceFalta(ids: string[]): Promise<string | null> {
     for (const id of ids) {
@@ -98,7 +161,7 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
     const fallos: string[] = [];
     try {
       while (faltan.length) {
-        setOcupado({ lote, texto: `Enviando ${enviadas + fallos.length + 1} de ${ids.length}…` });
+        setOcupado({ lote, texto: `Enviando ${Math.min(enviadas + fallos.length + 1, ids.length)} de ${ids.length}…`, hechas: enviadas + fallos.length, total: ids.length, desde: Date.now(), porItemMs: 6000, ids: faltan, tipo: "enviar" });
         const r = await enviarRespuestasAction(faltan, buzon.id);
         if (!r.ok) { fallos.push(r.error); break; }
         reemplazar(r.dato.respuestas);
@@ -121,7 +184,8 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
     setAviso(null);
     let hechas = 0;
     for (const id of ids) {
-      setOcupado({ lote, texto: `Redactando la propuesta ${hechas + 1} de ${ids.length}… (unos 15 segundos cada una)` });
+      const quien = respuestas.find((r) => r.id === id);
+      setOcupado({ lote, texto: `Redactando la propuesta de ${quien?.lead.company || quien?.lead.name || "…"}`, hechas, total: ids.length, desde: Date.now(), porItemMs: 18000, ids: [id], tipo: "preparar" });
       const r = await prepararPropuestaAction(id, false).catch(() => ({ ok: false as const, error: "Se cortó la conexión." }));
       if (!r.ok) {
         setOcupado(null);
@@ -151,7 +215,7 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
     <div className="space-y-4">
       <div className="grid gap-2 lg:flex lg:items-end lg:justify-between">
         {/* Cuatro filtros no caben en una fila del celular: dos por fila hasta sm. */}
-        <div className={`${seg.group} grid-cols-2 grid-flow-row sm:grid-flow-col sm:grid-cols-none`} aria-label="Qué respuestas ver">
+        <div className="grid grid-cols-2 gap-1 rounded-xl border border-line bg-fill p-1 sm:inline-grid sm:grid-flow-col sm:auto-cols-fr sm:grid-cols-none" aria-label="Qué respuestas ver">
           {([
             ["revisar", "Por revisar"],
             ["enviadas", "Enviadas"],
@@ -193,40 +257,52 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
           <button type="button" onClick={() => setFiltro("todas")} className={`${botonTexto} mt-4`}>Ver todas las respuestas</button>
         </div>
       ) : (
-        lotes.map(({ lote, filas, desde }, iLote) => {
+        lotes.map(({ lote, filas, desde }) => {
           const listas = filas.filter((r) => !faltaParaEnviar(conCambios(r)));
           const elegidas = listas.filter((r) => !quitadas.has(r.id));
-          const sinPropuesta = elegidas.filter((r) => conCambios(r).adjuntarPdf && !r.tienePropuesta);
+          // Todas las que siguen abiertas y no tienen propuesta, tengan o no correo.
+          const sinPropuesta = filas.filter((r) => !r.tienePropuesta && (r.estado === "borrador" || r.estado === "fallo"));
+          const abiertas = filas.filter((r) => r.estado === "borrador" || r.estado === "fallo");
           const ocupadoAqui = ocupado?.lote === lote;
-          const conCorreo = filas.filter((r) => r.para).length;
+          const resumen: [Tono, string][] = [
+            [listas.length ? "ok" : "neutro", `${listas.length} por enviar`],
+            [sinPropuesta.length ? "falta" : "ok", sinPropuesta.length ? `${sinPropuesta.length} sin PDF` : "PDF listos"],
+            [filas.some((r) => !r.para) ? "pendiente" : "ok", `${filas.filter((r) => !r.para).length} sin correo`],
+          ];
           return (
             <section key={lote} className="rounded-2xl border border-line bg-panel" aria-labelledby={`lote-${lote}`}>
-              <header className="grid gap-4 border-b border-line p-4 sm:p-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-                <div className="min-w-0">
-                  <h2 id={`lote-${lote}`} className="text-fg text-base font-semibold tracking-tight">Tanda del {fechaHora(desde)}</h2>
-                  <p className="mt-1 text-sm text-fg-dim">
-                    {filas.length} {filas.length === 1 ? "respuesta" : "respuestas"} · {conCorreo} con correo · {filas.length - conCorreo} solo por LinkedIn
-                  </p>
-                </div>
-                {listas.length > 0 && (
-                  <div className="grid gap-2 sm:flex sm:flex-wrap sm:items-center lg:justify-end">
-                    {sinPropuesta.length > 0 && (
-                      <button type="button" disabled={!!ocupado} onClick={() => prepararPropuestas(lote, sinPropuesta.map((r) => r.id))} className={btn.secondary}>
-                        Preparar {sinPropuesta.length === 1 ? "1 propuesta" : `${sinPropuesta.length} propuestas`}
-                      </button>
-                    )}
-                    <button type="button" disabled={!!ocupado || !elegidas.length || !buzon} onClick={() => setConfirmar(lote)}
-                      // Una sola acción principal en la pantalla: la tanda más reciente.
-                      className={iLote === 0 ? btn.primary : btn.secondary}>
-                      {elegidas.length === 1 ? "Enviar 1 correo" : `Enviar ${elegidas.length} correos`}
-                    </button>
+              <header className="grid gap-4 border-b border-line p-4 sm:p-6">
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+                  <div className="min-w-0">
+                    <h2 id={`lote-${lote}`} className="text-fg text-base font-semibold tracking-tight">Tanda del {fechaHora(desde)}</h2>
+                    <p className="mt-1 text-sm text-fg-dim">{filas.length} {filas.length === 1 ? "respuesta" : "respuestas"}</p>
                   </div>
-                )}
+                  {abiertas.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 lg:flex">
+                      <button type="button" disabled={!!ocupado || !sinPropuesta.length} onClick={() => prepararPropuestas(lote, sinPropuesta.map((r) => r.id))} className={btn.secondary}>
+                        {sinPropuesta.length ? `Preparar ${sinPropuesta.length === 1 ? "1 propuesta" : `${sinPropuesta.length} propuestas`}` : "Propuestas listas"}
+                      </button>
+                      <button type="button" disabled={!!ocupado || !elegidas.length || !buzon} onClick={() => setConfirmar(lote)}
+                        className={lote === lotePrincipal ? btn.primary : btn.secondary}>
+                        {!elegidas.length ? "Nada para enviar" : elegidas.length === 1 ? "Enviar 1 correo" : `Enviar ${elegidas.length} correos`}
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <ul className="grid gap-2 sm:grid-cols-3" aria-label="Resumen de la tanda">
+                  {resumen.map(([tono, texto]) => (
+                    <li key={texto} className={`flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-medium ${TONO[tono].caja}`}>
+                      <span className={`size-2 shrink-0 rounded-full ${TONO[tono].punto}`} aria-hidden />{texto}
+                    </li>
+                  ))}
+                </ul>
               </header>
 
               {(confirmar === lote || ocupadoAqui) && (
                 <div className="border-b border-line bg-fill px-4 py-4 sm:px-6" role="status">
-                  {ocupadoAqui ? (
+                  {ocupadoAqui && ocupado!.total ? (
+                    <Progreso texto={ocupado!.texto} hechas={ocupado!.hechas ?? 0} total={ocupado!.total} desde={ocupado!.desde ?? Date.now()} porItemMs={ocupado!.porItemMs ?? 15000} />
+                  ) : ocupadoAqui ? (
                     <p className="text-sm text-fg-mute">{ocupado!.texto}</p>
                   ) : (
                     <div className="grid gap-4 sm:flex sm:items-center sm:justify-between">
@@ -243,16 +319,28 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
                 </div>
               )}
 
+              {/* Cabecera de columnas: desde xl las celdas van alineadas como tabla. */}
+              <div className={`hidden xl:grid ${COLUMNAS} gap-x-4 border-b border-line px-6 py-2 text-[11px] font-semibold uppercase tracking-widest text-fg-faint`} aria-hidden>
+                <span /><span>Prospecto</span><span>Correo</span><span>Propuesta PDF</span><span>LinkedIn</span><span />
+              </div>
+
               <ul className="divide-y divide-line">
                 {filas.map((r0) => {
                   const r = conCambios(r0);
                   const falta = faltaParaEnviar(r);
                   const empresa = r.lead.company || r.lead.name;
                   const abiertaAqui = abierta === r.id;
+                  const preparando = ocupado?.tipo === "preparar" && !!ocupado.ids?.includes(r.id);
+                  const correo = estadoCorreo(r);
+                  const li = estadoLinkedin(r);
+                  const abierta_ = r.estado === "borrador" || r.estado === "fallo";
+                  const pdf: { tono: Tono; texto: string } = r.tienePropuesta ? { tono: "ok", texto: "Lista" }
+                    : preparando ? { tono: "pendiente", texto: "Preparando…" }
+                    : { tono: "falta", texto: "No existe" };
                   return (
                     <li key={r.id}>
-                      <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-2 px-4 py-4 sm:px-6 xl:grid-cols-[auto_minmax(0,1fr)_auto] xl:items-center">
-                        <div className="flex min-h-11 items-start pt-1 xl:items-center xl:pt-0">
+                      <div className={`grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-4 px-4 py-4 sm:px-6 xl:items-center xl:gap-y-0 ${COLUMNAS}`}>
+                        <div className="flex min-h-11 items-center">
                           {falta ? (
                             <span className="block size-5" aria-hidden />
                           ) : (
@@ -267,21 +355,31 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
                         </div>
                         <button type="button" onClick={() => setAbierta(abiertaAqui ? null : r.id)} aria-expanded={abiertaAqui}
                           className="min-w-0 text-left group">
-                          <span className="block text-sm font-medium text-fg group-hover:underline [overflow-wrap:anywhere]">{empresa}</span>
-                          <span className="block text-xs text-fg-faint [overflow-wrap:anywhere]">
-                            {r.para ?? "Sin correo · solo LinkedIn"}{r.asunto ? ` · ${r.asunto}` : ""}
+                          <span className="flex flex-wrap items-center gap-2">
+                            <span className="text-sm font-medium text-fg group-hover:underline [overflow-wrap:anywhere]">{empresa}</span>
+                            {cambios[r.id] && <span className={`${chip} bg-warn/10 text-warn`}>Sin guardar</span>}
+                          </span>
+                          <span className="block text-xs text-fg-faint [overflow-wrap:anywhere] line-clamp-2">
+                            {r.para ?? "Sin correo"}{r.asunto ? ` · ${r.asunto}` : ""}
                           </span>
                         </button>
-                        <div className="col-start-2 flex flex-wrap items-center gap-2 xl:col-start-auto xl:justify-end">
-                          <EstadoChip r={r} />
-                          {r.para && r.estado !== "descartada" && (
-                            <span className={`${chip} bg-fill text-fg-dim`}>{r.adjuntarPdf ? (r.tienePropuesta ? "PDF listo" : "PDF por preparar") : "Sin PDF"}</span>
-                          )}
-                          {r.mensajeLinkedin && (
-                            <span className={`${chip} bg-fill ${r.linkedinAt ? "text-ok" : "text-fg-dim"}`}>{r.linkedinAt ? "LinkedIn enviado" : "LinkedIn pendiente"}</span>
-                          )}
-                          {cambios[r.id] && <span className={`${chip} bg-warn/10 text-warn`}>Sin guardar</span>}
-                          <button type="button" onClick={() => setAbierta(abiertaAqui ? null : r.id)} aria-expanded={abiertaAqui} className={botonTexto}>
+                        {/* Debajo de xl: las tres piezas y la acción en una cuadrícula de 2 × 2, iguales en cada fila. */}
+                        <div className="col-span-2 grid grid-cols-2 gap-2 xl:contents">
+                          <Celda titulo="Correo" {...correo} />
+                          <Celda titulo="PDF" {...pdf}>
+                            {!r.tienePropuesta && abierta_ && !preparando && (
+                              <button type="button" disabled={!!ocupado} onClick={() => prepararPropuestas(lote, [r.id])}
+                                className="-my-1 inline-flex min-h-9 min-w-11 shrink-0 items-center justify-center rounded-md bg-panel px-2 text-xs font-semibold text-fg hover:bg-fill disabled:opacity-50">
+                                Preparar
+                              </button>
+                            )}
+                            {r.tienePropuesta && (
+                              <a href={pdfUrl(r.id)} target="_blank" rel="noreferrer" className="-my-1 inline-flex min-h-9 min-w-11 shrink-0 items-center justify-center rounded-md bg-panel px-2 text-xs font-semibold text-fg hover:bg-fill">Ver</a>
+                            )}
+                          </Celda>
+                          <Celda titulo="LinkedIn" {...li} />
+                          <button type="button" onClick={() => setAbierta(abiertaAqui ? null : r.id)} aria-expanded={abiertaAqui}
+                            className={`${btn.secondary} w-full`}>
                             {abiertaAqui ? "Cerrar" : "Revisar"}
                           </button>
                         </div>
@@ -289,12 +387,13 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
                       {abiertaAqui && (
                         <Detalle
                           r={r}
-                          editable={r.estado === "borrador" || r.estado === "fallo"}
+                          editable={abierta_}
                           ocupado={!!ocupado}
                           puedeEnviar={!!buzon}
                           onCambio={(c) => setCambios((prev) => ({ ...prev, [r.id]: c }))}
                           onActualizada={(n) => { reemplazar([n]); setCambios((prev) => sin(prev, r.id)); }}
                           onEnviar={() => enviar(lote, [r.id])}
+                          onPreparar={() => prepararPropuestas(lote, [r.id])}
                           onAviso={setAviso}
                         />
                       )}
@@ -310,7 +409,7 @@ export function RespuestasView({ inicial, buzones }: { inicial: RespuestaVista[]
   );
 }
 
-function Detalle({ r, editable, ocupado, puedeEnviar, onCambio, onActualizada, onEnviar, onAviso }: {
+function Detalle({ r, editable, ocupado, puedeEnviar, onCambio, onActualizada, onEnviar, onPreparar, onAviso }: {
   r: RespuestaVista;
   editable: boolean;
   ocupado: boolean;
@@ -318,6 +417,8 @@ function Detalle({ r, editable, ocupado, puedeEnviar, onCambio, onActualizada, o
   onCambio: (c: Cambios) => void;
   onActualizada: (r: RespuestaVista) => void;
   onEnviar: () => void;
+  /** Prepara la propuesta con la barra de avance de la tanda. */
+  onPreparar: () => void;
   onAviso: (a: { tipo: "ok" | "error"; texto: string } | null) => void;
 }) {
   const [trabajando, setTrabajando] = useState<string | null>(null);
@@ -384,9 +485,8 @@ function Detalle({ r, editable, ocupado, puedeEnviar, onCambio, onActualizada, o
                 )}
               </>
             ) : (
-              <button type="button" disabled={bloqueado} className={botonTexto}
-                onClick={() => correr("preparar", () => prepararPropuestaAction(r.id, false), "Propuesta lista y correo reescrito para presentarla. Revisa el texto y ábrela con «Ver PDF».")}>
-                {trabajando === "preparar" ? "Redactando… unos 15 segundos" : "Preparar la propuesta"}
+              <button type="button" disabled={bloqueado} className={btn.secondary} onClick={onPreparar}>
+                Preparar la propuesta
               </button>
             )}
           </div>
