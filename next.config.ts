@@ -45,6 +45,9 @@ const nextConfig: NextConfig = {
     "/api/empresa/contracts/preview": [...PDF_FONT_TRACE],
     "/api/empresa/contracts/preview/html": [...PDF_HTML_TRACE],
     "/api/empresa/projects/[id]/proposal-pdf": [...PDF_FONT_TRACE],
+    // Respuestas a leads: el PDF se ve por la ruta y se arma para adjuntarlo en las acciones de la página.
+    "/api/empresa/leads/respuestas/[id]/pdf": [...PDF_FONT_TRACE],
+    "/empresa/leads": [...PDF_FONT_TRACE],
     "/api/empresa/pulso/paquete": ["./packages/pime-pulso/pulso.ts"],
   },
   images: {
