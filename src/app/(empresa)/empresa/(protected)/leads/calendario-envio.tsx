@@ -3,17 +3,22 @@
 /**
  * Calendario de envío de la pestaña Respuestas: qué día sale cada correo pendiente con el cupo que sube cada semana
  * (10 → 20 → 30 → 40 al día), hasta completar todos. Primero los agendados, por orden de llegada a la cola; después
- * los que todavía hay que agendar, como proyección. Los días pasados de la semana muestran lo que salió.
+ * los que todavía hay que agendar, como proyección. Se ve por mes y se avanza a los siguientes; los días pasados
+ * muestran lo que salió.
  */
 import { useMemo, useState } from "react";
 import { faltaParaEnviar, type RespuestaVista } from "@/lib/leads/respuestas-comun";
 import type { EstadoEnvio } from "@/lib/leads/envio-automatico";
-import { calendarioDeEnvio, diaPanama, DIA_MS, ESCALONES } from "@/lib/leads/cupo-envio";
+import { calendarioDeEnvio, cupoDelDia, diaPanama, DIA_MS, ESCALONES } from "@/lib/leads/cupo-envio";
 
 type Fila = { id: string; nombre: string; agendado: boolean };
 type Celda = { dia: string; pasado: boolean; hoy: boolean; enviados: number; cupo: number; filas: Fila[]; acumulado: number };
 
 const SEMANA = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+/** Meses que se pueden ver después del último envío: el calendario siempre deja mirar hacia adelante. */
+const MESES_EXTRA = 2;
+const mesDe = (d: string) => d.slice(0, 7);
+const sumarMes = (m: string, n: number) => { const [a, b] = m.split("-").map(Number); const t = new Date(Date.UTC(a, b - 1 + n, 1)); return t.toISOString().slice(0, 7); };
 const fecha = (d: string, o: Intl.DateTimeFormatOptions) => new Date(`${d}T12:00:00`).toLocaleDateString("es-PA", o);
 const nombreDe = (r: RespuestaVista) => r.lead.company?.trim() || r.lead.name;
 
@@ -40,26 +45,35 @@ export function CalendarioEnvio({ respuestas, envio }: { respuestas: RespuestaVi
     }
     const ultimoEnvio = [...enviadosPorDia.keys()].sort().at(-1) ?? null;
 
-    // Semanas de lunes a domingo, desde la de hoy hasta la del último envío.
+    // Cada día desde el mes del primer envío hasta MESES_EXTRA meses después del último.
     const porDia = new Map(dias.map((d) => [d.dia, d]));
+    const primerEnvio = [...enviadosPorDia.keys()].sort()[0] ?? hoy;
+    const ultimo = dias.at(-1)?.dia ?? hoy;
+    const meses: string[] = [];
+    for (let m = mesDe(primerEnvio < hoy ? primerEnvio : hoy); m <= sumarMes(mesDe(ultimo), MESES_EXTRA); m = sumarMes(m, 1)) meses.push(m);
     let usado = 0;
     const celdas: Celda[] = [];
-    const lunes = Date.parse(`${hoy}T12:00:00Z`) - ((new Date(`${hoy}T12:00:00Z`).getUTCDay() + 6) % 7) * DIA_MS;
-    const ultimo = dias.at(-1)?.dia ?? hoy;
-    for (let t = lunes; ; t += DIA_MS) {
+    for (let t = Date.parse(`${meses[0]}-01T12:00:00Z`); ; t += DIA_MS) {
       const dia = new Date(t).toISOString().slice(0, 10);
-      if (dia > ultimo && celdas.length % 7 === 0) break;
+      if (mesDe(dia) > meses.at(-1)!) break;
       const p = porDia.get(dia);
       const salen = p?.salen ?? 0;
-      celdas.push({ dia, pasado: dia < hoy, hoy: dia === hoy, enviados: (enviadosPorDia.get(dia) ?? 0), cupo: p?.cupo ?? 0, filas: fila.slice(usado, usado + salen), acumulado: p?.acumulado ?? usado });
+      celdas.push({ dia, pasado: dia < hoy, hoy: dia === hoy, enviados: (enviadosPorDia.get(dia) ?? 0), cupo: p?.cupo ?? (dia > hoy ? cupoDelDia(t) : 0), filas: fila.slice(usado, usado + salen), acumulado: p?.acumulado ?? usado });
       usado += salen;
     }
-    return { hoy, total: fila.length, agendadas: agendadas.length, porAgendar: porAgendar.length, sinCorreo, celdas, termina: dias.at(-1)?.dia ?? null, ultimoEnvio, pausado };
+    return { hoy, total: fila.length, agendadas: agendadas.length, porAgendar: porAgendar.length, sinCorreo, celdas, meses, termina: dias.at(-1)?.dia ?? null, ultimoEnvio, pausado };
   }, [respuestas, envio]);
 
   const primero = plan.celdas.find((c) => c.filas.length)?.dia ?? plan.hoy;
   const [elegido, setElegido] = useState<string | null>(null);
   const sel = plan.celdas.find((c) => c.dia === (elegido ?? primero)) ?? null;
+  const [mes, setMes] = useState<string | null>(null);
+  const mesVisto = mes && plan.meses.includes(mes) ? mes : mesDe(plan.hoy);
+  const iMes = plan.meses.indexOf(mesVisto);
+  const delMes = plan.celdas.filter((c) => mesDe(c.dia) === mesVisto);
+  const huecos = (new Date(`${mesVisto}-01T12:00:00Z`).getUTCDay() + 6) % 7;
+  const salenMes = delMes.reduce((n, c) => n + (c.pasado ? c.enviados : c.filas.length), 0);
+  const ir = (n: number) => { const m = plan.meses[iMes + n]; if (!m) return; setMes(m); const delOtro = plan.celdas.filter((c) => mesDe(c.dia) === m); setElegido((delOtro.find((c) => !c.pasado && c.filas.length) ?? delOtro.find((c) => c.enviados) ?? delOtro.find((c) => !c.pasado) ?? delOtro[0])?.dia ?? null); };
   const maxDia = Math.max(...ESCALONES);
   // El envío automático corre una vez al día; si lo último salió antes de ayer con agendados en cola, no está corriendo.
   const ayer = diaPanama(Date.now() - DIA_MS);
@@ -77,7 +91,7 @@ export function CalendarioEnvio({ respuestas, envio }: { respuestas: RespuestaVi
           <p className="text-sm text-fg-dim">
             {plan.total === 1 ? "1 correo por enviar" : `${plan.total} correos por enviar`}: {plan.agendadas} {plan.agendadas === 1 ? "agendado" : "agendados"} y {plan.porAgendar} por agendar.
             {" "}El cupo sube cada semana (hoy {envio?.delDia ?? 0} al día, hasta {maxDia})
-            {plan.termina && <>: {plan.pausado ? "si se reanuda mañana y se agendan todos" : "si se agendan todos"}, el último sale el <strong className="text-fg">{fecha(plan.termina, { weekday: "long", day: "numeric", month: "long" })}</strong></>}.
+            {plan.termina && <>: {[plan.pausado && "si se reanuda mañana", plan.porAgendar > 0 && "si se agendan todos"].filter(Boolean).join(" y ") || "a este ritmo"}, el último sale el <strong className="text-fg">{fecha(plan.termina, { weekday: "long", day: "numeric", month: "long" })}</strong></>}.
             {plan.sinCorreo > 0 && ` ${plan.sinCorreo} sin correo no entran hasta que lo escribas.`}
           </p>
         )}
@@ -93,9 +107,22 @@ export function CalendarioEnvio({ respuestas, envio }: { respuestas: RespuestaVi
       {plan.total > 0 && (
         <>
           <div className="border-t border-line px-2 py-4 sm:px-6">
-            <div className="grid grid-cols-7 gap-1 sm:gap-2" role="grid" aria-label="Correos que salen cada día">
+            <div className="mb-3 flex items-center justify-between gap-2 px-2 sm:px-0">
+              <button type="button" onClick={() => ir(-1)} disabled={iMes <= 0} aria-label="Mes anterior" className="inline-flex size-11 items-center justify-center rounded-lg border border-line text-fg-mute hover:border-brand/60 disabled:opacity-40 sm:size-9">
+                <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="m15 18-6-6 6-6" /></svg>
+              </button>
+              <div className="min-w-0 text-center">
+                <h3 className="text-sm font-semibold text-fg first-letter:uppercase" aria-live="polite">{fecha(`${mesVisto}-15`, { month: "long", year: "numeric" })}</h3>
+                <span className="text-xs text-fg-dim tabular-nums">{salenMes ? `${salenMes} ${salenMes === 1 ? "correo" : "correos"} este mes` : "Nada este mes"}</span>
+              </div>
+              <button type="button" onClick={() => ir(1)} disabled={iMes >= plan.meses.length - 1} aria-label="Mes siguiente" className="inline-flex size-11 items-center justify-center rounded-lg border border-line text-fg-mute hover:border-brand/60 disabled:opacity-40 sm:size-9">
+                <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="m9 18 6-6-6-6" /></svg>
+              </button>
+            </div>
+            <div className="grid grid-cols-7 gap-1 sm:gap-2" role="grid" aria-label={`Correos que salen cada día de ${fecha(`${mesVisto}-15`, { month: "long" })}`}>
               {SEMANA.map((d) => <span key={d} role="columnheader" className="pb-1 text-center text-[11px] font-semibold uppercase tracking-widest text-fg-faint">{d}</span>)}
-              {plan.celdas.map((c) => {
+              {Array.from({ length: huecos }, (_, i) => <span key={`h${i}`} aria-hidden />)}
+              {delMes.map((c) => {
                 const n = c.pasado || (c.hoy && !c.filas.length) ? c.enviados : c.filas.length;
                 const ag = c.filas.filter((f) => f.agendado).length;
                 const activo = sel?.dia === c.dia;
@@ -121,7 +148,7 @@ export function CalendarioEnvio({ respuestas, envio }: { respuestas: RespuestaVi
             <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 px-2 text-xs text-fg-faint sm:px-0">
               <span className="inline-flex items-center gap-2"><span className="h-1 w-4 rounded-full bg-brand" aria-hidden />Agendado</span>
               <span className="inline-flex items-center gap-2"><span className="h-1 w-4 rounded-full bg-brand/40" aria-hidden />Por agendar</span>
-              <span>Los días pasados muestran lo que salió.</span>
+              <span>Los días pasados muestran lo que salió. Cambia de mes con las flechas.</span>
             </p>
           </div>
 
@@ -152,7 +179,7 @@ export function CalendarioEnvio({ respuestas, envio }: { respuestas: RespuestaVi
                   ))}
                 </ol>
               ) : (
-                <p className="text-sm text-fg-dim">{sel.pasado ? "Ese día ya pasó." : "Ese día no sale nada: el cupo ya alcanzó para todo lo pendiente."}</p>
+                <p className="text-sm text-fg-dim">{sel.pasado ? "Ese día ya pasó." : sel.dia > (plan.termina ?? "") ? `Ese día no sale nada: el cupo ya alcanzó para todo lo pendiente. Quedan ${sel.cupo} lugares libres para lo que deje el agente.` : "Ese día no sale nada."}</p>
               )}
             </div>
           )}
