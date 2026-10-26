@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { clienteIA, elegirCerebro } from "@/lib/ai/cerebro";
 import { calcGptCost } from "@/lib/ai-pricing";
 import { brandSystemPrompt } from "@/lib/ai/pime-brand-voice";
 import type { LeadPriority } from "@prisma/client";
@@ -75,9 +75,9 @@ export async function classifyLead(input: LeadInput): Promise<LeadClassification
     costUSD: 0,
   };
 
-  if (!process.env.OPENAI_API_KEY) return fallback;
+  if (!elegirCerebro()) return fallback;
 
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = await clienteIA();
 
   const payload = [
     `Nombre: ${input.name}`,
@@ -103,7 +103,7 @@ export async function classifyLead(input: LeadInput): Promise<LeadClassification
     ],
   });
 
-  const costUSD = calcGptCost(res.usage?.prompt_tokens ?? 0, res.usage?.completion_tokens ?? 0);
+  const costUSD = calcGptCost(res.usage?.prompt_tokens ?? 0, res.usage?.completion_tokens ?? 0, res.model);
 
   try {
     const p = JSON.parse(res.choices[0]?.message?.content ?? "{}");

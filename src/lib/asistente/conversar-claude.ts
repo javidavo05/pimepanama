@@ -1,11 +1,12 @@
-/** La misma vuelta del asistente, con Claude como cerebro (se elige en Jarvis). Mismas herramientas, mismas reglas. */
+/** La misma vuelta del asistente, con Claude como cerebro (cerebro de la plataforma, se elige en Jarvis). Mismas herramientas, mismas reglas. */
 import Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "@/lib/prisma";
 import { HERRAMIENTAS, ejecutarHerramienta, type Accion } from "./herramientas";
 import type { U } from "./operaciones";
 import { resumenDe, type Mensaje } from "./conversar";
+import { MODELO_CLAUDE } from "@/lib/ai/cerebro";
 
-const MODELO = process.env.ASISTENTE_MODELO_CLAUDE || "claude-sonnet-5-5";
+const MODELO = MODELO_CLAUDE;
 const MAX_VUELTAS = 16;
 
 /** Las definiciones de herramientas están en formato de OpenAI; Claude recibe nombre, descripción y el mismo esquema. */

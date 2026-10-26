@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI, { toFile } from "openai";
+import { clienteIA } from "@/lib/ai/cerebro";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { withEmpresaRoute } from "@/app/api/empresa/_route";
 import { prisma } from "@/lib/prisma";
@@ -125,7 +126,8 @@ export const POST = withEmpresaRoute(async (request) => {
 
   if (text) {
     try {
-      const resp = await openai.chat.completions.create({
+      const ia = await clienteIA();
+      const resp = await ia.chat.completions.create({
         model: INTERPRET_MODEL,
         temperature: 0.2,
         response_format: { type: "json_object" },
@@ -142,12 +144,12 @@ export const POST = withEmpresaRoute(async (request) => {
       };
       const inputTokens = resp.usage?.prompt_tokens ?? 0;
       const outputTokens = resp.usage?.completion_tokens ?? 0;
-      costUSD += calcGptCost(inputTokens, outputTokens);
+      costUSD += calcGptCost(inputTokens, outputTokens, resp.model);
       await prisma.aiUsageLog.create({
         data: {
           supabaseUid: user.supabaseUid,
           operation: "voice-note-interpret",
-          model: INTERPRET_MODEL,
+          model: resp.model,
           inputTokens,
           outputTokens,
           durationMs: Date.now() - started,

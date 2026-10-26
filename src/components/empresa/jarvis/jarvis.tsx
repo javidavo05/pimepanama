@@ -13,7 +13,8 @@ import { fetchLargo } from "@/lib/fetch-largo";
 import { oidoLocal, transcribir } from "@/lib/voz/transcribir";
 import { hablar as hablarJarvis, detener as callarJarvis, prepararAudio, nivelDeVoz } from "@/lib/voz/hablar";
 import type { Conexion } from "@/lib/jarvis/conexiones";
-import type { Cerebro } from "@/lib/asistente/conversar";
+import type { Cerebro } from "@/lib/ai/cerebro";
+import { cambiarCerebroAction } from "@/app/(empresa)/empresa/(protected)/acciones-cerebro";
 import { iniciarEsfera, colorDe, posicionEnAnillo, posicionArea, type Vivo } from "./esfera";
 import "./jarvis.css";
 
@@ -71,12 +72,12 @@ function fuentesDe(texto: string): string[] {
 type Props = {
   nombre: string; fecha: string; resumen: string;
   conexiones: Conexion[]; memoria: Memoria | null;
-  /** Qué cerebros tienen llave en el servidor. */
-  cerebros: Record<Cerebro, boolean>;
+  /** Qué cerebros tienen llave en el servidor, cuál usa hoy la plataforma y si esta persona puede cambiarlo (solo el dueño). */
+  cerebros: Record<Cerebro, boolean>; cerebro: Cerebro | null; puedeCambiarCerebro: boolean;
   principal?: ReactNode; izquierda: ReactNode; derecha: ReactNode; abajo: ReactNode;
 };
 
-export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, cerebros, principal, izquierda, derecha, abajo }: Props) {
+export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, cerebros, cerebro: cerebroInicial, puedeCambiarCerebro, principal, izquierda, derecha, abajo }: Props) {
   const router = useRouter();
   const raiz = useRef<HTMLDivElement>(null);
   const escenario = useRef<HTMLDivElement>(null);
@@ -89,16 +90,24 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, cerebros, 
   const [acciones, setAcciones] = useState<Accion[]>([]);
   const [historial, setHistorial] = useState<Mensaje[]>([]);
   const [texto, setTexto] = useState("");
-  const [detalle, setDetalle] = useState<{ t?: string; d: string }>({ d: "Toca cualquier conexión para ver qué aporta." });
+  const [detalle, setDetalle] = useState<{ id?: string; t?: string; d: string }>({ d: "Toca cualquier conexión para ver qué aporta." });
   const [encendidos, setEncendidos] = useState<string[]>([]);
   const [modo, setModo] = useState<"conexiones" | "memoria">("conexiones");
   const [completa, setCompleta] = useState(false);
   const [vozActiva, setVozActiva] = useState(true);
-  // El cerebro del asistente: OpenAI por defecto; Claude si se elige y tiene llave. Se recuerda en este navegador.
-  const porDefecto: Cerebro = cerebros.openai || !cerebros.claude ? "openai" : "claude";
-  const [cerebro, setCerebro] = useState<Cerebro>(porDefecto);
-  useEffect(() => { try { const c = localStorage.getItem("jarvis-cerebro"); if ((c === "openai" || c === "claude") && cerebros[c]) setCerebro(c); } catch { /* sin almacenamiento */ } }, [cerebros]);
-  const elegirCerebro = (c: Cerebro) => { setCerebro(c); try { localStorage.setItem("jarvis-cerebro", c); } catch { /* sin almacenamiento */ } };
+  // El cerebro de toda la IA de la plataforma. Se cambia en el nodo «Asistente» y queda guardado en el servidor.
+  const [cerebro, setCerebro] = useState<Cerebro | null>(cerebroInicial);
+  const [cambiandoCerebro, setCambiandoCerebro] = useState(false);
+  const [avisoCerebro, setAvisoCerebro] = useState<{ ok: boolean; t: string } | null>(null);
+  const elegirCerebro = async (c: Cerebro) => {
+    if (c === cerebro || cambiandoCerebro) return;
+    const antes = cerebro;
+    setCerebro(c); setCambiandoCerebro(true); setAvisoCerebro(null);
+    const r = await cambiarCerebroAction(c).catch(() => ({ error: "No se pudo guardar. Revisa tu conexión e inténtalo otra vez." }));
+    setCambiandoCerebro(false);
+    if ("error" in r) { setCerebro(antes); setAvisoCerebro({ ok: false, t: r.error }); return; }
+    setAvisoCerebro({ ok: true, t: `Listo: toda la IA de Pime usa ${c === "claude" ? "Claude" : "OpenAI"} desde ahora.` });
+  };
   const [hora, setHora] = useState("");
   // ¿El oído es el Whisper local de esta Mac o el de la nube? Se ve en el nodo «Oído».
   const [oidoLocalActivo, setOidoLocalActivo] = useState<boolean | null>(null);
@@ -107,6 +116,7 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, cerebros, 
   const [logo, setLogo] = useState(false);
   useEffect(() => { try { if (localStorage.getItem("jarvis-logo") === "1") setLogo(true); } catch { /* sin almacenamiento */ } }, []);
   useEffect(() => { vivo.current.logo = logo; }, [logo]);
+  const ficha = useRef<HTMLDivElement>(null);
   const rec = useRef<MediaRecorder | null>(null);
   const trozos = useRef<Blob[]>([]);
 
@@ -154,7 +164,7 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, cerebros, 
     setNivel(0); setEstado("pensando"); encender(["asistente", ...fuentesDe(t)]);
     const nuevos: Mensaje[] = [...historial, { rol: "usuario" as const, texto: t }].slice(-12);
     try {
-      const r = await fetchLargo("/api/empresa/asistente", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mensajes: nuevos, cerebro }) });
+      const r = await fetchLargo("/api/empresa/asistente", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ mensajes: nuevos }) });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(j.error ?? "El asistente no respondió.");
       const acc: Accion[] = j.acciones ?? [];
@@ -168,7 +178,7 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, cerebros, 
       setError(e instanceof Error ? e.message : "El asistente no respondió.");
       setEstado("espera"); setEncendidos([]);
     }
-  }, [estado, historial, encender, hablar, router, cerebro]);
+  }, [estado, historial, encender, hablar, router]);
 
   async function decidir(a: Accion, accion: "confirmar" | "cancelar" | "deshacer") {
     const poner = (c: Partial<Accion>) => setAcciones((xs) => xs.map((x) => (x.id === a.id ? { ...x, ...c } : x)));
@@ -274,13 +284,6 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, cerebros, 
               <button type="button" aria-pressed={modo === "memoria"} onClick={() => { setModo("memoria"); setDetalle({ t: "Memoria", d: `El código de Pime mapeado con Graphify: ${memoria.nodos.toLocaleString("es-PA")} piezas y ${memoria.aristas.toLocaleString("es-PA")} conexiones, agrupadas por área. Toca un área.` }); }}>Memoria</button>
             </div>
           )}
-          <div className="jv-seg" role="group" aria-label="Cerebro del asistente">
-            {(["openai", "claude"] as const).map((c) => (
-              <button key={c} type="button" aria-pressed={cerebro === c} disabled={!cerebros[c]} onClick={() => elegirCerebro(c)} title={cerebros[c] ? `Responder con ${c === "openai" ? "OpenAI" : "Claude"}` : "Sin llave en el servidor"}>
-                {c === "openai" ? "OpenAI" : "Claude"}{!cerebros[c] && <span className="jv-nd"> · sin llave</span>}
-              </button>
-            ))}
-          </div>
           <button type="button" className="jv-ib" aria-pressed={logo} onClick={() => { const v = !logo; setLogo(v); try { localStorage.setItem("jarvis-logo", v ? "1" : "0"); } catch { /* sin almacenamiento */ } }} aria-label={logo ? "Volver a la esfera" : "Mostrar el logo de Pime"}>
             <svg viewBox="0 0 100 100" aria-hidden><g fill="none" stroke="currentColor" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round"><path d="M20 72 50 84 80 72" /><path d="M20 54 50 66 80 54" /><path d="M20 36 50 16 80 36 50 48Z" fill="currentColor" /></g></svg><span className="jv-lbl">{logo ? "Esfera" : "Logo"}</span>
           </button>
@@ -301,13 +304,13 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, cerebros, 
             <canvas ref={lienzo} aria-hidden />
             <button type="button" className="jv-core" onClick={() => { if (Date.now() - vivo.current.finArrastre > 300) void microfono(); }} aria-label={estado === "escuchando" ? "Dejar de escuchar" : "Hablarle a Jarvis"} />
             {conexiones.map((c0, i) => {
-              const c = c0.id === "asistente" && c0.estado === "ok" ? { ...c0, resumen: cerebro === "claude" ? "Claude" : "OpenAI" } : c0.id === "oido" && oidoLocalActivo !== null ? { ...c0, estado: "ok" as const, resumen: oidoLocalActivo ? "Whisper local" : "Whisper nube", detalle: oidoLocalActivo ? "Whisper corre en esta Mac (github.com/openai/whisper): tu voz se pasa a texto aquí mismo, gratis y sin salir de la máquina." : "Whisper en la nube de OpenAI pasa tu voz a texto. En la Mac de Javier corre local, gratis y privado, cuando el oído local está prendido." } : c0;
+              const c = c0.id === "asistente" && c0.estado === "ok" ? { ...c0, resumen: cerebro ? (cerebro === "claude" ? "Claude" : "OpenAI") : c0.resumen } : c0.id === "oido" && oidoLocalActivo !== null ? { ...c0, estado: "ok" as const, resumen: oidoLocalActivo ? "Whisper local" : "Whisper nube", detalle: oidoLocalActivo ? "Whisper corre en esta Mac (github.com/openai/whisper): tu voz se pasa a texto aquí mismo, gratis y sin salir de la máquina." : "Whisper en la nube de OpenAI pasa tu voz a texto. En la Mac de Javier corre local, gratis y privado, cuando el oído local está prendido." } : c0;
               return (
               <button key={c.id} type="button" className={`jv-node${encendidos.includes(c.id) ? " jv-on" : ""}`} data-ancla={c.id} data-tipo={c.tipo} data-e={c.estado} style={{ ...posicion(i), ["--nc" as string]: `rgb(${colorDe(c.id, false)})`, ["--nc-claro" as string]: `rgb(${colorDe(c.id, true)})` }}
                 aria-label={`${c.nombre}: ${c.resumen}`}
                 onMouseEnter={() => { vivo.current.hover = c.id; }} onMouseLeave={() => { vivo.current.hover = null; }}
                 onFocus={() => { vivo.current.hover = c.id; }} onBlur={() => { vivo.current.hover = null; }}
-                onClick={() => { setDetalle({ t: c.nombre, d: c.detalle }); encender([c.id]); setTimeout(() => setEncendidos((e) => (e.length === 1 && e[0] === c.id ? [] : e)), 1800); }}>
+                onClick={() => { setDetalle({ id: c.id, t: c.nombre, d: c.detalle }); setAvisoCerebro(null); requestAnimationFrame(() => ficha.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })); encender([c.id]); setTimeout(() => setEncendidos((e) => (e.length === 1 && e[0] === c.id ? [] : e)), 1800); }}>
                 <span className="jv-hex"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>{ICONOS[c.tipo === "persona" ? "persona" : c.id]}</svg></span>
                 <span className="jv-nl">{c.nombre}</span>
                 <span className="jv-ns">{c.resumen}</span>
@@ -360,7 +363,30 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, cerebros, 
               </button>
             </form>
             {!dicho && <div className="jv-sug">{sugerencias.map((s) => <button key={s} type="button" onClick={() => { prepararAudio(); void procesar(s); }}>{s}</button>)}</div>}
-            <p className="jv-detail" aria-live="polite">{detalle.t && <><b>{detalle.t}</b> · </>}{detalle.d}</p>
+            <div className="jv-ficha" ref={ficha} aria-live="polite">
+              <p className="jv-detail">{detalle.t && <><b>{detalle.t}</b> · </>}{detalle.d}</p>
+              {detalle.id === "asistente" && (
+                <>
+                  <div className="jv-seg" role="group" aria-label="Cerebro de la IA de toda la plataforma">
+                    {(["openai", "claude"] as const).map((c) => (
+                      <button key={c} type="button" aria-pressed={cerebro === c} disabled={!cerebros[c] || !puedeCambiarCerebro || cambiandoCerebro} onClick={() => void elegirCerebro(c)}>
+                        {c === "openai" ? "OpenAI" : "Claude"}{!cerebros[c] && " · sin llave"}
+                      </button>
+                    ))}
+                  </div>
+                  <small className="jv-fnota" data-e={avisoCerebro ? (avisoCerebro.ok ? "ok" : "error") : undefined}>
+                    {cambiandoCerebro ? "Guardando…" : avisoCerebro ? avisoCerebro.t : puedeCambiarCerebro ? "Vale para todo el equipo y todos los dispositivos: asistente, correo, leads, reuniones, propuestas y documentos. La voz a texto sigue en Whisper." : "Solo el dueño cambia el cerebro de la plataforma."}
+                  </small>
+                </>
+              )}
+              {detalle.id === "voz" && (
+                <button type="button" className="jv-btn jv-sec" aria-pressed={vozActiva} onClick={() => { const v = !vozActiva; setVozActiva(v); try { localStorage.setItem("jarvis-voz", v ? "1" : "0"); } catch { /* sin almacenamiento */ } if (!v) callarJarvis(); }}>{vozActiva ? "Apagar la voz" : "Encender la voz"}</button>
+              )}
+              {detalle.id === "oido" && (
+                <button type="button" className="jv-btn jv-sec" disabled={ocupado} onClick={() => void microfono()}>{estado === "escuchando" ? "Dejar de escuchar" : "Hablarle a Jarvis"}</button>
+              )}
+              {detalle.id && (() => { const c = conexiones.find((x) => x.id === detalle.id); return c?.href ? <button type="button" className="jv-btn jv-sec" onClick={() => router.push(c.href!)}>Abrir {c.tipo === "persona" ? "el equipo" : c.nombre}</button> : null; })()}
+            </div>
           </div>
         </div>
 

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { clienteIA, elegirCerebro } from "@/lib/ai/cerebro";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { calcGptCost } from "@/lib/ai-pricing";
@@ -9,13 +9,13 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!elegirCerebro()) {
       return NextResponse.json(
-        { error: "OPENAI_API_KEY no está configurada. Agrégala a .env.local y reinicia el servidor." },
+        { error: "Falta la llave de IA en el servidor (OpenAI o Claude)." },
         { status: 503 }
       );
     }
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const openai = await clienteIA();
     const user = await requireEmpresaUser(request);
     const { text, language = "es", context = "" } = await request.json();
 
@@ -54,13 +54,13 @@ Devuelve SOLO el texto mejorado, sin comillas, explicaciones ni notas.`,
     const usage = response.usage;
     const inputTokens = usage?.prompt_tokens ?? 0;
     const outputTokens = usage?.completion_tokens ?? 0;
-    const costUSD = calcGptCost(inputTokens, outputTokens);
+    const costUSD = calcGptCost(inputTokens, outputTokens, response.model);
 
     await prisma.aiUsageLog.create({
       data: {
         supabaseUid: user.supabaseUid,
         operation: "enhance",
-        model: "gpt-4o",
+        model: response.model,
         inputTokens,
         outputTokens,
         durationMs: Date.now() - start,

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { clienteIA } from "@/lib/ai/cerebro";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { calcGptCost } from "@/lib/ai-pricing";
@@ -10,7 +10,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const openai = await clienteIA();
     const user = await requireEmpresaUser(request);
     const { intent, language = "es", tone = "formal" } = await request.json();
 
@@ -50,7 +50,7 @@ Return a JSON object with "subject" (string) and "body" (string — the email bo
     const usage = response.usage;
     const inputTokens = usage?.prompt_tokens ?? 0;
     const outputTokens = usage?.completion_tokens ?? 0;
-    const costUSD = calcGptCost(inputTokens, outputTokens);
+    const costUSD = calcGptCost(inputTokens, outputTokens, response.model);
     const content = JSON.parse(response.choices[0]?.message?.content ?? "{}");
     const { subject, body } = normalizeComposeAiResult(content);
 
@@ -58,7 +58,7 @@ Return a JSON object with "subject" (string) and "body" (string — the email bo
       data: {
         supabaseUid: user.supabaseUid,
         operation: "compose",
-        model: "gpt-4o",
+        model: response.model,
         inputTokens,
         outputTokens,
         durationMs: Date.now() - start,

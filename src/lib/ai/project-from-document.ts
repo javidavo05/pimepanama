@@ -1,4 +1,6 @@
 import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
+import { MODELO_CLAUDE, soloJson } from "@/lib/ai/cerebro";
 
 /**
  * Convierte un documento comercial (propuesta, cotización, contrato...) en el
@@ -304,5 +306,37 @@ export async function analyzeProjectDocument(
     outputText: response.output_text || "",
     inputTokens: response.usage?.input_tokens ?? 0,
     outputTokens: response.usage?.output_tokens ?? 0,
+  };
+}
+
+/** Lo mismo con Claude: el PDF va como documento y la salida sigue el mismo esquema. */
+export async function analyzeProjectDocumentConClaude(input: AnalyzeInput) {
+  const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const base64 = input.fileDataUrl ? String(input.fileDataUrl).split(",")[1] ?? "" : "";
+  const content: Anthropic.Beta.BetaContentBlockParam[] = base64
+    ? [
+        { type: "document", source: { type: "base64", media_type: "application/pdf", data: base64 }, title: String(input.fileName ?? "documento.pdf") },
+        { type: "text", text: USER_PROMPT },
+      ]
+    : [{ type: "text", text: `${USER_PROMPT}\n\n${input.text ?? ""}` }];
+  // Salida larga (todas las fases con sus entregables y el contrato): va en streaming.
+  const r = await claude.beta.messages
+    .stream({
+      model: MODELO_CLAUDE,
+      max_tokens: 64000,
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+      // El esquema es demasiado grande para la salida estructurada de Claude: va en el prompt.
+      system: `${INSTRUCTIONS}\n\nResponde únicamente con un objeto JSON que cumpla exactamente este esquema (todas las claves, sin texto antes ni después y sin cercas de código):\n${JSON.stringify(SCHEMA)}`,
+      output_config: { effort: "medium" },
+      messages: [{ role: "user", content }],
+    })
+    .finalMessage();
+  return {
+    incomplete: r.stop_reason === "max_tokens" || r.stop_reason === "refusal",
+    outputText: soloJson(r.content.filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text").map((b) => b.text).join("")),
+    inputTokens: r.usage.input_tokens,
+    outputTokens: r.usage.output_tokens,
+    model: r.model,
   };
 }

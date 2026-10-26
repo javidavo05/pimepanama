@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { clienteIA, elegirCerebro } from "@/lib/ai/cerebro";
 import { calcGptCost } from "@/lib/ai-pricing";
 import { htmlToPlainText } from "@/lib/mail/email-html";
 import { brandSystemPrompt } from "@/lib/ai/pime-brand-voice";
@@ -15,11 +15,11 @@ export async function analyzeEmailForReply(
   subject: string,
   body: string
 ): Promise<ReplyEmailAnalysis> {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!elegirCerebro()) {
     return { topic: "", keyPoints: [], senderAsk: "", urgency: "low", costUSD: 0 };
   }
 
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = await clienteIA();
   const plain = htmlToPlainText(body).slice(0, 6000);
 
   const res = await openai.chat.completions.create({
@@ -51,7 +51,7 @@ Sé estrictamente factual. No inventes información que no esté en el correo.`,
   });
 
   const usage = res.usage;
-  const costUSD = calcGptCost(usage?.prompt_tokens ?? 0, usage?.completion_tokens ?? 0);
+  const costUSD = calcGptCost(usage?.prompt_tokens ?? 0, usage?.completion_tokens ?? 0, res.model);
 
   try {
     const parsed = JSON.parse(res.choices[0]?.message?.content ?? "{}");

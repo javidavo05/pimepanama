@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import OpenAI from "openai";
+import { clienteIA, elegirCerebro } from "@/lib/ai/cerebro";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { calcGptCost } from "@/lib/ai-pricing";
@@ -9,14 +9,14 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    if (!process.env.OPENAI_API_KEY) {
+    if (!elegirCerebro()) {
       return NextResponse.json(
-        { error: "OPENAI_API_KEY no está configurada." },
+        { error: "Falta la llave de IA en el servidor (OpenAI o Claude)." },
         { status: 503 }
       );
     }
 
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const openai = await clienteIA();
     const user = await requireEmpresaUser(request);
     const { texts, to = "en" } = await request.json() as { texts: string[]; to: "en" | "es" };
 
@@ -51,7 +51,7 @@ Rules:
     const usage = response.usage;
     const inputTokens = usage?.prompt_tokens ?? 0;
     const outputTokens = usage?.completion_tokens ?? 0;
-    const costUSD = calcGptCost(inputTokens, outputTokens);
+    const costUSD = calcGptCost(inputTokens, outputTokens, response.model);
 
     // GPT returns { "translations": [...] } or similar — extract the array
     const raw = JSON.parse(response.choices[0]?.message?.content ?? "{}");
@@ -67,7 +67,7 @@ Rules:
       data: {
         supabaseUid: user.supabaseUid,
         operation: "translate",
-        model: "gpt-4o",
+        model: response.model,
         inputTokens,
         outputTokens,
         durationMs: Date.now() - start,

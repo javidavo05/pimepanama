@@ -4,23 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { HERRAMIENTAS, ejecutarHerramienta, type Accion } from "./herramientas";
 import type { U } from "./operaciones";
 import { UMBRAL_USD } from "./reglas";
+import type { Cerebro } from "@/lib/ai/cerebro";
 
 export type Mensaje = { rol: "usuario" | "asistente"; texto: string };
 export type { Accion };
-export type Cerebro = "openai" | "claude";
-
-/** Qué cerebros tienen su llave en el servidor. */
-export function cerebrosDisponibles(): Record<Cerebro, boolean> {
-  return { openai: !!process.env.OPENAI_API_KEY, claude: !!process.env.ANTHROPIC_API_KEY };
-}
-
-/** El que se pidió si tiene llave; si no, OpenAI, y Claude como último recurso. null si no hay ninguna llave. */
-export function elegirCerebro(pedido?: unknown): Cerebro | null {
-  const d = cerebrosDisponibles();
-  if ((pedido === "openai" || pedido === "claude") && d[pedido]) return pedido;
-  return d.openai ? "openai" : d.claude ? "claude" : null;
-}
-
+export type { Cerebro } from "@/lib/ai/cerebro";
 const MODELOS = ["gpt-4.1", "gpt-4o"];
 /** Vueltas del modelo por pedido. Un «haz todo esto» largo cabe holgado; el tope evita que se quede dando vueltas. */
 const MAX_VUELTAS = 16;
@@ -70,7 +58,7 @@ En la respuesta escribe las fechas como «28 ago» y los montos como «USD 300.0
 }
 
 export async function conversar(user: U & { supabaseUid: string }, historial: Mensaje[], cerebro: Cerebro = "openai"): Promise<{ respuesta: string; acciones: Accion[] }> {
-  // El cerebro lo elige la persona en Jarvis; OpenAI por defecto.
+  // El cerebro de la plataforma, elegido en Jarvis; OpenAI por defecto.
   if (cerebro === "claude") {
     const { conversarConClaude } = await import("./conversar-claude");
     return conversarConClaude(user, historial, sistema(user.fullName?.split(" ")[0] ?? null));

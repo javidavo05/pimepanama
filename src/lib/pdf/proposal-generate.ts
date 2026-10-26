@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { clienteIA, elegirCerebro } from "@/lib/ai/cerebro";
 import type { Client, Project } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { calcGptCost } from "@/lib/ai-pricing";
@@ -76,8 +76,7 @@ export async function generateProposalContent({
   language = "es",
   supabaseUid,
 }: GenerateProposalInput): Promise<GenerateProposalResult> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new ProposalGenerationError("OPENAI_API_KEY no configurada");
+  if (!elegirCerebro()) throw new ProposalGenerationError("Falta la llave de IA en el servidor (OpenAI o Claude).");
 
   const brandLang = language === "en" ? "en" : "es";
 
@@ -107,7 +106,7 @@ Resumen ejecutivo previo: ${project.aiSummary ?? "(ninguno)"}
 Presupuesto total conocido: ${project.totalBudget != null ? `USD ${Number(project.totalBudget)}` : "(no definido, estíma uno razonable)"}
 ${extraNotes.trim() ? `Notas adicionales:\n${extraNotes.trim()}` : ""}`.trim();
 
-  const openai = new OpenAI({ apiKey });
+  const openai = await clienteIA();
   const start = Date.now();
   const resp = await openai.chat.completions.create({
     model: "gpt-4o",
@@ -127,7 +126,7 @@ ${extraNotes.trim() ? `Notas adicionales:\n${extraNotes.trim()}` : ""}`.trim();
     data: {
       supabaseUid,
       operation: "project-proposal-expand",
-      model: "gpt-4o",
+      model: resp.model,
       inputTokens,
       outputTokens,
       durationMs: Date.now() - start,
@@ -149,5 +148,5 @@ ${extraNotes.trim() ? `Notas adicionales:\n${extraNotes.trim()}` : ""}`.trim();
     );
   }
 
-  return { content: result.data, costUSD: calcGptCost(inputTokens, outputTokens) };
+  return { content: result.data, costUSD: calcGptCost(inputTokens, outputTokens, resp.model) };
 }

@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { cerebroDeLaPlataforma } from "@/lib/ai/cerebro";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { calcGptCost } from "@/lib/ai-pricing";
 import {
   ANALYZE_MODEL,
   analyzeProjectDocument,
+  analyzeProjectDocumentConClaude,
   type DocumentAnalysis,
 } from "@/lib/ai/project-from-document";
 
@@ -19,7 +21,8 @@ const MAX_BYTES = 12 * 1024 * 1024;
 export async function POST(request: Request) {
   try {
     const user = await requireEmpresaUser(request);
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const cerebro = await cerebroDeLaPlataforma();
+    if (!cerebro) return NextResponse.json({ error: "Falta la llave de IA en el servidor (OpenAI o Claude)." }, { status: 503 });
 
     const { fileName, fileDataUrl, text } = await request.json();
 
@@ -38,14 +41,16 @@ export async function POST(request: Request) {
     }
 
     const start = Date.now();
-    const result = await analyzeProjectDocument(openai, { fileName, fileDataUrl, text });
-    const costUSD = calcGptCost(result.inputTokens, result.outputTokens, ANALYZE_MODEL);
+    const result = cerebro === "claude"
+      ? await analyzeProjectDocumentConClaude({ fileName, fileDataUrl, text })
+      : { ...(await analyzeProjectDocument(new OpenAI({ apiKey: process.env.OPENAI_API_KEY }), { fileName, fileDataUrl, text })), model: ANALYZE_MODEL };
+    const costUSD = calcGptCost(result.inputTokens, result.outputTokens, result.model);
 
     await prisma.aiUsageLog.create({
       data: {
         supabaseUid: user.supabaseUid,
         operation: "analyze-contract",
-        model: ANALYZE_MODEL,
+        model: result.model,
         inputTokens: result.inputTokens,
         outputTokens: result.outputTokens,
         durationMs: Date.now() - start,

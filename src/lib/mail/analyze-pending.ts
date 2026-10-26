@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { analyzeEmail } from "./ai-analyze";
 import { htmlToPlainText, isHtmlEmail } from "./email-html";
 import { vincularCorreo } from "@/lib/crm/vinculo-correo-datos";
+import { elegirCerebro } from "@/lib/ai/cerebro";
 
 /** Por llamada: cabe en los 60 s de la ruta sin reventar el límite por minuto de OpenAI. */
 const BATCH = 20;
@@ -24,7 +25,7 @@ const pendingWhere = (accountId: string) => ({
 export async function analyzePendingEmails(
   accountId: string
 ): Promise<{ analyzed: number; failed: number; remaining: number }> {
-  if (!process.env.OPENAI_API_KEY) return { analyzed: 0, failed: 0, remaining: 0 };
+  if (!elegirCerebro()) return { analyzed: 0, failed: 0, remaining: 0 };
 
   const emails = await prisma.inboxEmail.findMany({
     where: pendingWhere(accountId),

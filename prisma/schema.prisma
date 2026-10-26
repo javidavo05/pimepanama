@@ -517,6 +517,8 @@ model CompanyConfig {
   updatedAt            DateTime      @updatedAt
   /// {"leadSinRespuestaDias","clienteSinContactoDias","renovacionDias"} (migración 0057)
   reglasCrm               Json?
+  /// Cerebro de toda la IA de la plataforma: "openai" | "claude" (migración 0067).
+  cerebroIa               String        @default("openai")
 }
 
 model Document {

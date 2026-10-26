@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
-import OpenAI from "openai";
+import { clienteIA, elegirCerebro } from "@/lib/ai/cerebro";
 import { calcGptCost } from "@/lib/ai-pricing";
 import { coerceAiText } from "@/lib/ai-text";
 import { brandSystemPrompt } from "@/lib/ai/pime-brand-voice";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireEmpresaUser(req);
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({ error: "OPENAI_API_KEY no configurada" }, { status: 503 });
+  if (!elegirCerebro()) {
+    return NextResponse.json({ error: "Falta la llave de IA en el servidor (OpenAI o Claude)." }, { status: 503 });
   }
-  const openai = new OpenAI({ apiKey });
+  const openai = await clienteIA();
   const { id } = await params;
 
   // Allow tmp- prefix for new projects not yet saved to DB
@@ -74,7 +73,7 @@ For each field:
     data: {
       supabaseUid: user.supabaseUid,
       operation: "project-expand",
-      model: "gpt-4o",
+      model: resp.model,
       inputTokens,
       outputTokens,
       durationMs,
@@ -87,7 +86,7 @@ For each field:
     result = JSON.parse(resp.choices[0].message.content ?? "{}");
   } catch { /* keep empty */ }
 
-  const costUSD = calcGptCost(inputTokens, outputTokens);
+  const costUSD = calcGptCost(inputTokens, outputTokens, resp.model);
 
   return NextResponse.json({
     name: coerceAiText(result.name),

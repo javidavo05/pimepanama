@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { clienteIA, elegirCerebro } from "@/lib/ai/cerebro";
 import { calcGptCost } from "@/lib/ai-pricing";
 
 const TAGS = ["urgent", "invoice", "follow-up", "support", "payment", "spam", "general"] as const;
@@ -44,13 +44,13 @@ export function leerSolicitud(raw: unknown): SolicitudCotizacion | null {
 }
 
 export async function analyzeEmail(subject: string, bodyText: string): Promise<EmailAnalysis> {
-  if (!process.env.OPENAI_API_KEY) {
+  if (!elegirCerebro()) {
     return { summary: "", tags: ["general"], urgency: "low", suggestedAction: "", solicitud: null, costUSD: 0 };
   }
 
   // Con análisis en tandas el límite de tokens por minuto de OpenAI salta
   // enseguida: el SDK espera y reintenta el 429 en vez de perder el correo.
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY, maxRetries: 5 });
+  const openai = await clienteIA({ maxRetries: 5 });
   const truncated = bodyText.slice(0, 2000);
 
   const res = await openai.chat.completions.create({
@@ -85,7 +85,7 @@ Responde SOLO con JSON válido.`,
   });
 
   const usage = res.usage;
-  const costUSD = calcGptCost(usage?.prompt_tokens ?? 0, usage?.completion_tokens ?? 0);
+  const costUSD = calcGptCost(usage?.prompt_tokens ?? 0, usage?.completion_tokens ?? 0, res.model);
 
   try {
     const parsed = JSON.parse(res.choices[0]?.message?.content ?? "{}");

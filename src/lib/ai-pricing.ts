@@ -22,8 +22,16 @@ export const GPT51 = {
   outputPerToken: 10.00 / 1_000_000,
 };
 
+// Claude (Anthropic), por millón de tokens: Sonnet 5.5 $2/$10, Opus 5.5 $4/$20, Haiku 5.5 $0.10/$0.50.
+const CLAUDE: Record<string, { inputPerToken: number; outputPerToken: number }> = {
+  sonnet: { inputPerToken: 2 / 1_000_000, outputPerToken: 10 / 1_000_000 },
+  opus: { inputPerToken: 4 / 1_000_000, outputPerToken: 20 / 1_000_000 },
+  haiku: { inputPerToken: 0.1 / 1_000_000, outputPerToken: 0.5 / 1_000_000 },
+};
+
 export function calcGptCost(inputTokens: number, outputTokens: number, model = "gpt-4o"): number {
-  const price = model === "gpt-4.1" ? GPT41 : model === "gpt-5.1" ? GPT51 : GPT4O;
+  const familia = model.startsWith("claude") ? (["opus", "haiku"].find((f) => model.includes(f)) ?? "sonnet") : null;
+  const price = familia ? CLAUDE[familia] : model.startsWith("gpt-4.1") ? GPT41 : model.startsWith("gpt-5.1") ? GPT51 : GPT4O;
   return inputTokens * price.inputPerToken + outputTokens * price.outputPerToken;
 }
 

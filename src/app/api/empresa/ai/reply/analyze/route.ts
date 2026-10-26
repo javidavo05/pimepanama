@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { analyzeEmailForReply } from "@/lib/mail/ai-reply-analyze";
+import { elegirCerebro } from "@/lib/ai/cerebro";
 
 export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    if (!process.env.OPENAI_API_KEY) {
-      return NextResponse.json({ error: "OPENAI_API_KEY no configurada" }, { status: 503 });
+    if (!elegirCerebro()) {
+      return NextResponse.json({ error: "Falta la llave de IA en el servidor (OpenAI o Claude)." }, { status: 503 });
     }
 
     const user = await requireEmpresaUser(request);

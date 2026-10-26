@@ -1,4 +1,4 @@
-import OpenAI from "openai";
+import { clienteIA, elegirCerebro } from "@/lib/ai/cerebro";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { calcGptCost } from "@/lib/ai-pricing";
@@ -252,9 +252,8 @@ async function pedirJson<T>(
   validar: (v: unknown) => { success: true; data: T } | { success: false; error: { issues: unknown } },
   esfuerzo: "low" | "medium" = "low",
 ): Promise<T> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) throw new PropuestaError("Falta OPENAI_API_KEY en el servidor.");
-  const openai = new OpenAI({ apiKey });
+  if (!elegirCerebro()) throw new PropuestaError("Falta la llave de IA en el servidor (OpenAI o Claude).");
+  const openai = await clienteIA();
   let error = "";
   for (let intento = 1; intento <= 2; intento++) {
     const inicio = Date.now();
@@ -269,9 +268,9 @@ async function pedirJson<T>(
     const entrada = resp.usage?.prompt_tokens ?? 0;
     const salida = resp.usage?.completion_tokens ?? 0;
     await prisma.aiUsageLog
-      .create({ data: { supabaseUid, operation: operacion, model: MODELO, inputTokens: entrada, outputTokens: salida, durationMs: Date.now() - inicio } })
+      .create({ data: { supabaseUid, operation: operacion, model: resp.model, inputTokens: entrada, outputTokens: salida, durationMs: Date.now() - inicio } })
       .catch(() => null);
-    console.info(`[${operacion}] US$${calcGptCost(entrada, salida).toFixed(4)}`);
+    console.info(`[${operacion}] US$${calcGptCost(entrada, salida, resp.model).toFixed(4)}`);
 
     let json: unknown;
     try {

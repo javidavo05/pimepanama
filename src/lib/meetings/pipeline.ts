@@ -1,3 +1,4 @@
+import { cerebroDeLaPlataforma, clienteIA, MODELO_CLAUDE } from "@/lib/ai/cerebro";
 import OpenAI from "openai";
 import { prisma } from "@/lib/prisma";
 import { calcGptCost } from "@/lib/ai-pricing";
@@ -111,7 +112,8 @@ export interface AiCallResult<T> {
 }
 
 export function getOpenAI(): OpenAI {
-  const apiKey = process.env.OPENAI_API_KEY;
+  // Con solo la llave de Claude las etapas de texto igual corren (jsonCall va a Claude); Whisper sí necesita la de OpenAI.
+  const apiKey = process.env.OPENAI_API_KEY || (process.env.ANTHROPIC_API_KEY ? "sin-llave-de-openai" : "");
   if (!apiKey) {
     throw new Response(JSON.stringify({ error: "OPENAI_API_KEY no configurada" }), {
       status: 503,
@@ -141,7 +143,15 @@ async function jsonCall<T>(
   user: string,
   maxTokens: number
 ): Promise<AiCallResult<T>> {
-  const resp = await rateLimitedCompletion(openai, system, user, maxTokens);
+  // Con Claude como cerebro de la plataforma, las etapas van a Claude; el reparto por minuto es de la cuenta de OpenAI.
+  const resp = (await cerebroDeLaPlataforma()) === "claude"
+    ? await (await clienteIA({ cerebro: "claude", maxRetries: 8 })).chat.completions.create({
+        model: MODEL,
+        messages: [{ role: "system", content: system }, { role: "user", content: user }],
+        response_format: { type: "json_object" },
+        max_tokens: maxTokens,
+      })
+    : await rateLimitedCompletion(openai, system, user, maxTokens);
   const inputTokens = resp.usage?.prompt_tokens ?? 0;
   const outputTokens = resp.usage?.completion_tokens ?? 0;
 
@@ -213,7 +223,7 @@ export async function logMeetingAiUsage(
   durationMs: number
 ): Promise<void> {
   await prisma.aiUsageLog.create({
-    data: { supabaseUid, operation, model: MODEL, inputTokens, outputTokens, durationMs },
+    data: { supabaseUid, operation, model: (await cerebroDeLaPlataforma()) === "claude" ? MODELO_CLAUDE : MODEL, inputTokens, outputTokens, durationMs },
   });
 }
 
