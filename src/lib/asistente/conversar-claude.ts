@@ -5,7 +5,7 @@ import { HERRAMIENTAS, ejecutarHerramienta, type Accion } from "./herramientas";
 import type { U } from "./operaciones";
 import { resumenDe, type Mensaje } from "./conversar";
 
-const MODELO = process.env.ASISTENTE_MODELO_CLAUDE || "claude-opus-5-5";
+const MODELO = process.env.ASISTENTE_MODELO_CLAUDE || "claude-sonnet-5-5";
 const MAX_VUELTAS = 16;
 
 /** Las definiciones de herramientas están en formato de OpenAI; Claude recibe nombre, descripción y el mismo esquema. */

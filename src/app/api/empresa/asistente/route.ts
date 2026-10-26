@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     const body = (await request.json().catch(() => ({}))) as { mensajes?: Mensaje[] };
     const mensajes = (body.mensajes ?? []).filter((m) => (m.rol === "usuario" || m.rol === "asistente") && typeof m.texto === "string" && m.texto.trim()).slice(-20);
     if (!mensajes.length || mensajes[mensajes.length - 1].rol !== "usuario") return NextResponse.json({ error: "Escribe o dicta lo que necesitas." }, { status: 400 });
-    if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error: "Falta la llave de IA en el servidor." }, { status: 503 });
+    if (!process.env.OPENAI_API_KEY && !(process.env.ASISTENTE_IA === "claude" && process.env.ANTHROPIC_API_KEY)) return NextResponse.json({ error: "Falta la llave de IA en el servidor." }, { status: 503 });
     const r = await conversar(user, mensajes);
     const rutas = ["/empresa", "/empresa/tareas", "/empresa/dinero", "/empresa/facturas", "/empresa/clientes", "/empresa/proyectos", "/empresa/cuentas-por-cobrar"];
     if (r.acciones.some((a) => a.estado === "hecha")) rutas.forEach((x) => revalidatePath(x, "layout"));

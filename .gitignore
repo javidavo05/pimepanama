@@ -74,3 +74,8 @@ login-light.png
 # Credenciales locales por proyecto (nunca se commitean)
 .claude/settings.local.json
 .pime/preflight.json
+
+# Credenciales locales (pime-project-preflight)
+.pime/
+.vercel
+.env.local
