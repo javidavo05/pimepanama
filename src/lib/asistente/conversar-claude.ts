@@ -1,4 +1,4 @@
-/** La misma vuelta del asistente, con Claude como cerebro (ASISTENTE_IA=claude). Mismas herramientas, mismas reglas. */
+/** La misma vuelta del asistente, con Claude como cerebro (se elige en Jarvis). Mismas herramientas, mismas reglas. */
 import Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "@/lib/prisma";
 import { HERRAMIENTAS, ejecutarHerramienta, type Accion } from "./herramientas";

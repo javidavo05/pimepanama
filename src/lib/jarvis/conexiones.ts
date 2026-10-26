@@ -38,9 +38,7 @@ export async function conexionesDeJarvis(userId: string, calendario: { estado: "
   ]);
   const ultimoCorreo = correos.map((c) => c.lastSyncAt).filter((d): d is Date => !!d).sort((a, b) => b.getTime() - a.getTime())[0];
   const githubConError = github.filter((g) => g.lastError).length;
-  const conClaude = process.env.ASISTENTE_IA === "claude" && !!process.env.ANTHROPIC_API_KEY;
-  const ia = !!process.env.OPENAI_API_KEY || conClaude;
-  const cerebro = conClaude ? "Claude" : "GPT-4.1";
+  const ia = !!process.env.OPENAI_API_KEY || !!process.env.ANTHROPIC_API_KEY;
 
   // El equipo: cada persona es un nodo ligado a los sistemas de su área. Las invitadas salen apagadas.
   const nombreCorto = (n: string | null, email: string) => (n?.trim() ? n.trim().split(/\s+/)[0] : email.split("@")[0]);
@@ -76,7 +74,7 @@ export async function conexionesDeJarvis(userId: string, calendario: { estado: "
     { id: "sistemas", nombre: "Sistemas", tipo: "fuente", estado: caidos ? "aviso" : sistemas ? "ok" : "apagado", resumen: caidos ? `${caidos} con problemas` : sistemas ? `${sistemas} en vigilancia` : "ninguno", detalle: caidos ? `${caidos} de ${sistemas} sistemas de clientes no responden o fallan. Están en «Atiende primero».` : sistemas ? `Vigila ${sistemas} sistemas de clientes; todos responden.` : "Todavía no vigilas ningún sistema de cliente.", href: "/empresa/sistemas" },
     { id: "portal", nombre: "Portal", tipo: "fuente", estado: portal ? "ok" : "apagado", resumen: portal ? `${portal} ${portal === 1 ? "cliente activo" : "clientes activos"}` : "sin clientes", detalle: portal ? `${portal} personas de tus clientes entran a su cuenta: pagos, aprobaciones y tickets llegan de ahí.` : "Ningún cliente entra todavía a su cuenta. Se invitan desde la ficha del cliente.", href: "/empresa/clientes" },
     { id: "oido", nombre: "Oído", tipo: "motor", estado: ia ? "ok" : "apagado", resumen: ia ? "transcripción" : "sin llave", detalle: ia ? "Pasa tu voz a texto cuando tocas el micrófono o el núcleo. El micrófono solo abre cuando lo pides." : "Falta la llave de IA en el servidor: no puedo transcribir tu voz.", href: null },
-    { id: "asistente", nombre: "Asistente", tipo: "motor", estado: ia ? "ok" : "apagado", resumen: ia ? cerebro : "sin llave", detalle: ia ? `Entiende el pedido y lo hace con las herramientas de Pime: pagos, facturas, fases, tareas. Lo grande queda por confirmar. Cerebro: ${conClaude ? "Claude (Anthropic)" : "GPT-4.1 (OpenAI)"}; se cambia con la variable ASISTENTE_IA.` : "Falta la llave de IA en el servidor: el asistente no puede responder.", href: null },
+    { id: "asistente", nombre: "Asistente", tipo: "motor", estado: ia ? "ok" : "apagado", resumen: ia ? "OpenAI" : "sin llave", detalle: ia ? "Entiende el pedido y lo hace con las herramientas de Pime: pagos, facturas, fases, tareas. Lo grande queda por confirmar. El cerebro (OpenAI o Claude) se elige arriba." : "Falta la llave de IA en el servidor: el asistente no puede responder.", href: null },
     { id: "voz", nombre: "Voz", tipo: "motor", estado: "ok", resumen: "del navegador", detalle: "Te responde en voz alta con la voz en español de tu navegador. Puedes apagarla con el botón de voz.", href: null },
   ];
 }

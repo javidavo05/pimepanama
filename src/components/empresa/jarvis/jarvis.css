@@ -60,6 +60,7 @@ html[data-theme="light"] .jv-logo .jv-c3 { stroke: #0b1d3a }
 .jv-seg { display: inline-flex; border: 1px solid var(--jv-line-2); border-radius: 8px; overflow: hidden }
 .jv-seg button { min-height: 44px; padding: 0 12px; border: 0; background: transparent; color: var(--jv-dim); font: inherit; font-size: 14px; cursor: pointer }
 .jv-seg button[aria-pressed="true"] { background: rgb(var(--jv-rgb) / .16); color: var(--jv-ice) }
+.jv-seg button:disabled { opacity: .5; cursor: not-allowed }
 @container (max-width: 599px) { .jv-fs { display: none } .jv-ib .jv-lbl { display: none } .jv-tele { gap: 16px } .jv-tools { width: 100% } .jv-tools > :first-child { flex: 1 } }
 
 /* Disposición */

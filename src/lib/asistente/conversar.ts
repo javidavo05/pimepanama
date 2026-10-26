@@ -7,6 +7,19 @@ import { UMBRAL_USD } from "./reglas";
 
 export type Mensaje = { rol: "usuario" | "asistente"; texto: string };
 export type { Accion };
+export type Cerebro = "openai" | "claude";
+
+/** Qué cerebros tienen su llave en el servidor. */
+export function cerebrosDisponibles(): Record<Cerebro, boolean> {
+  return { openai: !!process.env.OPENAI_API_KEY, claude: !!process.env.ANTHROPIC_API_KEY };
+}
+
+/** El que se pidió si tiene llave; si no, OpenAI, y Claude como último recurso. null si no hay ninguna llave. */
+export function elegirCerebro(pedido?: unknown): Cerebro | null {
+  const d = cerebrosDisponibles();
+  if ((pedido === "openai" || pedido === "claude") && d[pedido]) return pedido;
+  return d.openai ? "openai" : d.claude ? "claude" : null;
+}
 
 const MODELOS = ["gpt-4.1", "gpt-4o"];
 /** Vueltas del modelo por pedido. Un «haz todo esto» largo cabe holgado; el tope evita que se quede dando vueltas. */
@@ -56,9 +69,9 @@ Al terminar, cada acción ya aparece en pantalla como tarjeta (hecha, por confir
 En la respuesta escribe las fechas como «28 ago» y los montos como «USD 300.00». Omite las secciones vacías. Si solo era una pregunta, responde con los números. No inventes: si una herramienta no trae el dato, dilo. Para deshacer algo, usa ver_acciones y deshacer_accion.`;
 }
 
-export async function conversar(user: U & { supabaseUid: string }, historial: Mensaje[]): Promise<{ respuesta: string; acciones: Accion[] }> {
-  // Proveedor del cerebro: OpenAI por defecto. Con ASISTENTE_IA=claude (y ANTHROPIC_API_KEY) usa Claude.
-  if (process.env.ASISTENTE_IA === "claude" && process.env.ANTHROPIC_API_KEY) {
+export async function conversar(user: U & { supabaseUid: string }, historial: Mensaje[], cerebro: Cerebro = "openai"): Promise<{ respuesta: string; acciones: Accion[] }> {
+  // El cerebro lo elige la persona en Jarvis; OpenAI por defecto.
+  if (cerebro === "claude") {
     const { conversarConClaude } = await import("./conversar-claude");
     return conversarConClaude(user, historial, sistema(user.fullName?.split(" ")[0] ?? null));
   }

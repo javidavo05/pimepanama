@@ -11,6 +11,7 @@ import { PAID_INVOICE_REVENUE_SELECT, paidInvoiceWhere, effectiveInvoiceAmount }
 import { datosDeLaEmpresa } from "@/lib/motor/empresa-hoy";
 import { conexionesDeJarvis } from "@/lib/jarvis/conexiones";
 import { Jarvis } from "@/components/empresa/jarvis/jarvis";
+import { cerebrosDisponibles } from "@/lib/asistente/conversar";
 import memoria from "@/lib/jarvis/memoria.json";
 
 export const metadata = { title: "Jarvis — Pime Suite" };
@@ -298,6 +299,7 @@ export default async function JarvisPage({ searchParams }: { searchParams: Promi
         fecha={fecha}
         resumen={resumen}
         conexiones={conexiones}
+        cerebros={cerebrosDisponibles()}
         memoria={esDueno ? memoria as unknown as Parameters<typeof Jarvis>[0]["memoria"] : null}
         principal={veDinero ? <BotonCobrar clientes={clientes.map((c) => ({ id: c.id, nombre: c.company || c.name }))} className="jv-btn" /> : null}
         izquierda={izquierda}
