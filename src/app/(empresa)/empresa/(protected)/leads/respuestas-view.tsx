@@ -16,6 +16,7 @@ import {
   marcarLinkedinAction,
   prepararPropuestaAction,
 } from "./acciones-respuestas";
+import { CalendarioEnvio } from "./calendario-envio";
 
 type Buzon = { id: string; label: string; username: string };
 type Filtro = "revisar" | "enviadas" | "descartadas" | "todas";
@@ -366,6 +367,8 @@ export function RespuestasView({ inicial, buzones, envioInicial }: { inicial: Re
           )}
         </section>
       )}
+
+      <CalendarioEnvio respuestas={respuestas} envio={envio} />
 
       {aviso && (
         <div role={aviso.tipo === "error" ? "alert" : "status"}

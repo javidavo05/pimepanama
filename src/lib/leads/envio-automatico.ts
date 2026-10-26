@@ -18,23 +18,11 @@ import { prisma } from "@/lib/prisma";
 import { asegurarPropuesta, enviarRespuesta } from "./respuestas";
 import { leerPropuesta, textoDePropuesta, verificarCorreo } from "./propuesta-prospecto";
 import { huellaCorreo } from "./respuestas-comun";
+import { cupoDelDia, DIA_MS, inicioDeHoy, seVaciaEl } from "./cupo-envio";
 
-const INICIO = Date.UTC(2026, 9, 21, 5); // 21 oct 2026, 00:00 en Panamá (UTC-5, sin horario de verano)
-const DIA_MS = 86_400_000;
-const ESCALONES = [10, 20, 30, 40];
+export { cupoDelDia, seVaciaEl };
+
 export const PUNTAJE_MINIMO = 50;
-
-/** Inicio del día de hoy en Panamá, en UTC. */
-function inicioDeHoy(ahora = Date.now()): Date {
-  return new Date(Math.floor((ahora - 5 * 3_600_000) / DIA_MS) * DIA_MS + 5 * 3_600_000);
-}
-
-/** Cuántos correos fríos pueden salir hoy, según la semana del plan. 0 antes de empezar. */
-export function cupoDelDia(ahora = Date.now()): number {
-  if (ahora < INICIO) return 0;
-  const semana = Math.floor((ahora - INICIO) / (7 * DIA_MS));
-  return ESCALONES[Math.min(semana, ESCALONES.length - 1)];
-}
 
 /** Rebotes y quejas de lo que salió desde Respuestas en los últimos 7 días. */
 export async function freno(userId: string): Promise<string | null> {
@@ -121,20 +109,6 @@ export async function revisar(r: { para: string | null; asunto: string; cuerpo: 
 
 /** Las aprobadas que esperan su turno, por orden de aprobación. */
 const EN_COLA = (userId: string) => ({ userId, aprobadaAt: { not: null }, estado: "borrador" });
-
-/**
- * Qué día queda vacía una cola de `n` correos si no entra nada más (el cupo de hoy ya descontado). En Panamá,
- * AAAA-MM-DD; null si la cola está vacía.
- */
-export function seVaciaEl(n: number, restantesHoy: number, ahora = Date.now()): string | null {
-  if (n <= 0) return null;
-  let falta = n - restantesHoy, dia = inicioDeHoy(ahora).getTime();
-  while (falta > 0) {
-    dia += DIA_MS;
-    falta -= cupoDelDia(dia + DIA_MS / 2);
-  }
-  return new Date(dia).toISOString().slice(0, 10);
-}
 
 export type EstadoEnvio = { delDia: number; usados: number; restantesHoy: number; enCola: number; seVaciaEl: string | null; pausado: string | null };
 
