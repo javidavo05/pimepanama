@@ -82,7 +82,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // partir la reunión en temas no mejora por conocer el repositorio, y ese
     // bloque son miles de tokens en cada una de las llamadas de la etapa.
     const codeContext = withRepoContext(projectContext, repoBlock);
-    const openai = getOpenAI();
+    const openai = await getOpenAI();
 
     // El estado en el que queda la reunión no depende de la etapa que acaba de
     // correr sino de lo que ya tiene: correr solo «Minutas» no puede dejarla

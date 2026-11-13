@@ -2,6 +2,7 @@
 import { prisma } from "@/lib/prisma";
 import { AREA_LABEL, areaValida } from "@/lib/auth/permisos";
 import { cerebroDeLaPlataforma, NOMBRE_CEREBRO } from "@/lib/ai/cerebro";
+import { hayLlaveOpenAI } from "@/lib/ai/llave-openai";
 
 export type EstadoConexion = "ok" | "aviso" | "apagado";
 export type Conexion = {
@@ -42,7 +43,7 @@ export async function conexionesDeJarvis(userId: string, calendario: { estado: "
   const cerebro = await cerebroDeLaPlataforma();
   const ia = !!cerebro;
   // La voz a texto es Whisper: necesita la llave de OpenAI aunque el cerebro sea Claude.
-  const oido = !!process.env.OPENAI_API_KEY;
+  const oido = hayLlaveOpenAI();
 
   // El equipo: cada persona es un nodo ligado a los sistemas de su área. Las invitadas salen apagadas.
   const nombreCorto = (n: string | null, email: string) => (n?.trim() ? n.trim().split(/\s+/)[0] : email.split("@")[0]);

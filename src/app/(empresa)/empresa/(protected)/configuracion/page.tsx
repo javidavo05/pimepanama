@@ -10,6 +10,8 @@ import { CuentasGithub } from "@/components/empresa/github/cuentas-github";
 import { CalendarioConfig } from "@/components/empresa/calendario/asistente-calendario";
 import { PimeEnGoogleConfig } from "@/components/empresa/calendario/pime-en-google";
 import { EquipoConfig, type FilaEquipo } from "@/components/empresa/equipo/equipo-config";
+import { LlaveOpenAIConfig } from "@/components/empresa/ia/llave-openai-config";
+import { aliasEnUso, llavesOpenAI } from "@/lib/ai/llave-openai";
 
 export const metadata = { title: "Configuración — Pime Suite" };
 
@@ -83,6 +85,8 @@ export default async function ConfiguracionPage() {
         </div>
         <span className="text-fg-faint text-sm">→</span>
       </Link>
+
+      <LlaveOpenAIConfig llaves={llavesOpenAI()} enUso={await aliasEnUso()} />
 
       <PimeEnGoogleConfig />
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI, { toFile } from "openai";
+import { llaveOpenAI } from "@/lib/ai/llave-openai";
 import { clienteIA } from "@/lib/ai/cerebro";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { withEmpresaRoute } from "@/app/api/empresa/_route";
@@ -83,7 +84,7 @@ export const POST = withEmpresaRoute(async (request) => {
     );
   }
 
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = new OpenAI({ apiKey: await llaveOpenAI() });
 
   let transcription: OpenAI.Audio.TranscriptionVerbose;
   const started = Date.now();

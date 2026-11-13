@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
+import { llaveOpenAI } from "@/lib/ai/llave-openai";
 import { cerebroDeLaPlataforma } from "@/lib/ai/cerebro";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
     const start = Date.now();
     const result = cerebro === "claude"
       ? await analyzeProjectDocumentConClaude({ fileName, fileDataUrl, text })
-      : { ...(await analyzeProjectDocument(new OpenAI({ apiKey: process.env.OPENAI_API_KEY }), { fileName, fileDataUrl, text })), model: ANALYZE_MODEL };
+      : { ...(await analyzeProjectDocument(new OpenAI({ apiKey: await llaveOpenAI() }), { fileName, fileDataUrl, text })), model: ANALYZE_MODEL };
     const costUSD = calcGptCost(result.inputTokens, result.outputTokens, result.model);
 
     await prisma.aiUsageLog.create({

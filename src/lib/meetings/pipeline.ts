@@ -1,5 +1,6 @@
 import { cerebroDeLaPlataforma, clienteIA, MODELO_CLAUDE } from "@/lib/ai/cerebro";
 import OpenAI from "openai";
+import { llaveOpenAI } from "@/lib/ai/llave-openai";
 import { prisma } from "@/lib/prisma";
 import { calcGptCost } from "@/lib/ai-pricing";
 import { acquireSlot, disableLane, estimateInputTokens, releaseSlot, settleSlot } from "./rate-limit";
@@ -111,9 +112,9 @@ export interface AiCallResult<T> {
   outputTokens: number;
 }
 
-export function getOpenAI(): OpenAI {
+export async function getOpenAI(): Promise<OpenAI> {
   // Con solo la llave de Claude las etapas de texto igual corren (jsonCall va a Claude); Whisper sí necesita la de OpenAI.
-  const apiKey = process.env.OPENAI_API_KEY || (process.env.ANTHROPIC_API_KEY ? "sin-llave-de-openai" : "");
+  const apiKey = (await llaveOpenAI()) || (process.env.ANTHROPIC_API_KEY ? "sin-llave-de-openai" : "");
   if (!apiKey) {
     throw new Response(JSON.stringify({ error: "OPENAI_API_KEY no configurada" }), {
       status: 503,

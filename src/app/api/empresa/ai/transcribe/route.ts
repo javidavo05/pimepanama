@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import OpenAI, { toFile } from "openai";
+import { llaveOpenAI } from "@/lib/ai/llave-openai";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { calcWhisperCost } from "@/lib/ai-pricing";
@@ -9,7 +10,7 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    const openai = new OpenAI({ apiKey: await llaveOpenAI() });
     const user = await requireEmpresaUser(request);
     const formData = await request.formData();
     const audioFile = formData.get("audio") as File | null;

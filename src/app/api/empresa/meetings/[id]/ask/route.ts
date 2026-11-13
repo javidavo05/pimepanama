@@ -56,7 +56,7 @@ export const POST = withEmpresaIdRoute(async (req, { params }) => {
   const projectContext = withManualContext(block, meeting.manualContext);
 
   const result = await runAsk(
-    getOpenAI(),
+    await getOpenAI(),
     transcript,
     question,
     parseAttendees(meeting.attendees),

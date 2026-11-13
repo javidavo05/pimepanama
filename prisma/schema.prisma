@@ -519,6 +519,8 @@ model CompanyConfig {
   reglasCrm               Json?
   /// Cerebro de toda la IA de la plataforma: "openai" | "claude" (migración 0067).
   cerebroIa               String        @default("openai")
+  /// Alias de la llave de OpenAI en uso (OPENAI_API_KEY_<ALIAS>); null = OPENAI_API_KEY (migración 0068).
+  llaveOpenai             String?
 }
 
 model Document {

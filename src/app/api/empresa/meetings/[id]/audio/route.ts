@@ -116,7 +116,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const key = `meetings/${id}/${channel === "REMOTE" ? "r" : "l"}${String(index).padStart(4, "0")}.${extensionFor(mime)}`;
     await putR2Object(key, buffer, mime);
 
-    const openai = getOpenAI();
+    const openai = await getOpenAI();
     const start = Date.now();
     // Con un solo idioma se le dice cuál, que acierta más. En una reunión
     // bilingüe se omite: Whisper detecta el idioma de cada tramo por su cuenta,

@@ -1,5 +1,6 @@
 /** Una vuelta de conversación con el asistente: el modelo usa herramientas hasta poder responder. */
 import OpenAI from "openai";
+import { llaveOpenAI } from "@/lib/ai/llave-openai";
 import { prisma } from "@/lib/prisma";
 import { HERRAMIENTAS, ejecutarHerramienta, type Accion } from "./herramientas";
 import type { U } from "./operaciones";
@@ -63,7 +64,7 @@ export async function conversar(user: U & { supabaseUid: string }, historial: Me
     const { conversarConClaude } = await import("./conversar-claude");
     return conversarConClaude(user, historial, sistema(user.fullName?.split(" ")[0] ?? null));
   }
-  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  const openai = new OpenAI({ apiKey: await llaveOpenAI() });
   const pedido = [...historial].reverse().find((m) => m.rol === "usuario")?.texto ?? "";
   const mensajes: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [
     { role: "system", content: sistema(user.fullName?.split(" ")[0] ?? null) },

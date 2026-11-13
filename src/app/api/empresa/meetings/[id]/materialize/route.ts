@@ -158,7 +158,7 @@ export const POST = withEmpresaIdRoute(async (req, { params }) => {
     } else {
       const executive = meeting.executiveMinutes as unknown as ExecutiveMinutes | null;
       const draft = await runContractDraft(
-        getOpenAI(),
+        await getOpenAI(),
         deliverable,
         executive?.decisions ?? [],
         projectContext,
