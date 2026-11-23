@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { MODELO_CLAUDE, soloJson } from "@/lib/ai/cerebro";
+import { MODELO_OPENAI } from "@/lib/ai/modelo";
 
 /**
  * Convierte un documento comercial (propuesta, cotización, contrato...) en el
@@ -11,10 +12,9 @@ import { MODELO_CLAUDE, soloJson } from "@/lib/ai/cerebro";
  * levantar el servidor (scripts/test-analyze-document.ts).
  */
 
-// gpt-5.1 con razonamiento: probado contra la propuesta de Grupo BJCapital
-// (15 páginas), gpt-4o sacó 11 entregables en una sola fase, gpt-4.1 28 en 7
-// fases y gpt-5.1 101 en 8 fases, con la forma de pago exacta. Tarda ~3 min.
-export const ANALYZE_MODEL = "gpt-5.1";
+// Modelo único de la suite (ai/modelo.ts). Hasta el 2026-11-23 era gpt-5.1 (con la propuesta de Grupo
+// BJCapital sacó 101 entregables en 8 fases); se pasó a gpt-5-mini por costo, a pedido del dueño.
+export const ANALYZE_MODEL = MODELO_OPENAI;
 const INSTRUCTIONS = `Eres el gerente de proyectos y abogado corporativo de Pime Panamá, una
 empresa panameña de desarrollo de software. Recibes un documento comercial y lo
 conviertes en el registro inicial COMPLETO de un proyecto: sus fases, todos sus

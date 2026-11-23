@@ -5,6 +5,7 @@ import { clienteIA, elegirCerebro } from "@/lib/ai/cerebro";
 import { calcGptCost } from "@/lib/ai-pricing";
 import { coerceAiText } from "@/lib/ai-text";
 import { brandSystemPrompt } from "@/lib/ai/pime-brand-voice";
+import { MODELO_OPENAI } from "@/lib/ai/modelo";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await requireEmpresaUser(req);
@@ -58,7 +59,7 @@ For each field:
 
   const start = Date.now();
   const resp = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: MODELO_OPENAI,
     messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
     temperature: 0.4,
     max_tokens: 1200,

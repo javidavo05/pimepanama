@@ -5,6 +5,7 @@ import { calcGptCost } from "@/lib/ai-pricing";
 import { brandSystemPrompt } from "@/lib/ai/pime-brand-voice";
 import { projects } from "@/lib/portfolio/catalog";
 import { huellaCorreo } from "./respuestas-comun";
+import { MODELO_OPENAI } from "@/lib/ai/modelo";
 
 /**
  * Propuesta corta que acompaña el primer correo a un prospecto: cinco páginas (portada, lo que vimos, qué
@@ -237,10 +238,10 @@ ${p.notas.slice(0, 6000)}`;
 // ─── Llamada al modelo ───────────────────────────────────────────────────────
 
 /**
- * gpt-5.5 y no gpt-4o (el del resto de la suite): con gpt-4o las propuestas salían genéricas y no seguían el correo
- * (2026-10-21). Son pocas por día, así que la diferencia de costo no pesa.
+ * El modelo único de la suite (ver ai/modelo.ts). Hasta el 2026-11-23 era gpt-5.5; se pasó a gpt-5-mini por
+ * costo, a pedido del dueño.
  */
-const MODELO = "gpt-5.5";
+const MODELO = MODELO_OPENAI;
 
 /** Un segundo intento si la forma no cuadra: el modelo a veces recorta una lista. */
 async function pedirJson<T>(

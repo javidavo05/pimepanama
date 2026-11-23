@@ -2,6 +2,7 @@ import { clienteIA, elegirCerebro } from "@/lib/ai/cerebro";
 import { calcGptCost } from "@/lib/ai-pricing";
 import { brandSystemPrompt } from "@/lib/ai/pime-brand-voice";
 import type { LeadPriority } from "@prisma/client";
+import { MODELO_OPENAI } from "@/lib/ai/modelo";
 
 /**
  * No todo lo que entra por el formulario es un prospecto. La bandeja tenía
@@ -93,7 +94,7 @@ export async function classifyLead(input: LeadInput): Promise<LeadClassification
     .join("\n");
 
   const res = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: MODELO_OPENAI,
     response_format: { type: "json_object" },
     temperature: 0.1,
     max_tokens: 400,

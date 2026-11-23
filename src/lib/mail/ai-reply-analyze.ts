@@ -2,6 +2,7 @@ import { clienteIA, elegirCerebro } from "@/lib/ai/cerebro";
 import { calcGptCost } from "@/lib/ai-pricing";
 import { htmlToPlainText } from "@/lib/mail/email-html";
 import { brandSystemPrompt } from "@/lib/ai/pime-brand-voice";
+import { MODELO_OPENAI } from "@/lib/ai/modelo";
 
 export type ReplyEmailAnalysis = {
   topic: string;
@@ -23,7 +24,7 @@ export async function analyzeEmailForReply(
   const plain = htmlToPlainText(body).slice(0, 6000);
 
   const res = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: MODELO_OPENAI,
     response_format: { type: "json_object" },
     temperature: 0.2,
     max_tokens: 600,

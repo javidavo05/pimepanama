@@ -22,6 +22,18 @@ export const GPT51 = {
   outputPerToken: 10.00 / 1_000_000,
 };
 
+// gpt-5-mini: $0.25/1M input, $2.00/1M output — el modelo único desde 2026-11-23
+export const GPT5MINI = {
+  inputPerToken: 0.25 / 1_000_000,
+  outputPerToken: 2.00 / 1_000_000,
+};
+
+// gpt-5.5: $5/1M input, $30/1M output (solo para leer el historial anterior al 2026-11-23)
+export const GPT55 = {
+  inputPerToken: 5.00 / 1_000_000,
+  outputPerToken: 30.00 / 1_000_000,
+};
+
 // Claude (Anthropic), por millón de tokens: Sonnet 5.5 $2/$10, Opus 5.5 $4/$20, Haiku 5.5 $0.10/$0.50.
 const CLAUDE: Record<string, { inputPerToken: number; outputPerToken: number }> = {
   sonnet: { inputPerToken: 2 / 1_000_000, outputPerToken: 10 / 1_000_000 },
@@ -29,9 +41,9 @@ const CLAUDE: Record<string, { inputPerToken: number; outputPerToken: number }> 
   haiku: { inputPerToken: 0.1 / 1_000_000, outputPerToken: 0.5 / 1_000_000 },
 };
 
-export function calcGptCost(inputTokens: number, outputTokens: number, model = "gpt-4o"): number {
+export function calcGptCost(inputTokens: number, outputTokens: number, model = "gpt-5-mini"): number {
   const familia = model.startsWith("claude") ? (["opus", "haiku"].find((f) => model.includes(f)) ?? "sonnet") : null;
-  const price = familia ? CLAUDE[familia] : model.startsWith("gpt-4.1") ? GPT41 : model.startsWith("gpt-5.1") ? GPT51 : GPT4O;
+  const price = familia ? CLAUDE[familia] : model.startsWith("gpt-5-mini") ? GPT5MINI : model.startsWith("gpt-5.5") ? GPT55 : model.startsWith("gpt-4.1") ? GPT41 : model.startsWith("gpt-5.1") ? GPT51 : GPT4O;
   return inputTokens * price.inputPerToken + outputTokens * price.outputPerToken;
 }
 

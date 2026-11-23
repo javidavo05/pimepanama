@@ -10,13 +10,14 @@ import { applyGlossary, WHISPER_PROMPT } from "@/lib/voice-notes/glossary";
 import { isHallucination } from "@/lib/meetings/hallucinations";
 import { deleteR2Object, getR2Object } from "@/lib/r2";
 import { MAX_VOICE_NOTE_BYTES, voiceNoteKeyPrefix } from "@/lib/voice-notes/storage";
+import { MODELO_OPENAI } from "@/lib/ai/modelo";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
 
 /** Bajo este avg_logprob un tramo se marca como dudoso (mismo umbral que la skill). */
 const LOW_CONFIDENCE = -1.0;
-const INTERPRET_MODEL = "gpt-4o";
+const INTERPRET_MODEL = MODELO_OPENAI;
 
 /**
  * Whisper decide el formato por la extensión del nombre. WhatsApp guarda sus

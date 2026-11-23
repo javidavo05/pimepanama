@@ -6,11 +6,12 @@ import { HERRAMIENTAS, ejecutarHerramienta, type Accion } from "./herramientas";
 import type { U } from "./operaciones";
 import { UMBRAL_USD } from "./reglas";
 import type { Cerebro } from "@/lib/ai/cerebro";
+import { MODELO_OPENAI } from "@/lib/ai/modelo";
 
 export type Mensaje = { rol: "usuario" | "asistente"; texto: string };
 export type { Accion };
 export type { Cerebro } from "@/lib/ai/cerebro";
-const MODELOS = ["gpt-4.1", "gpt-4o"];
+const MODELOS = [MODELO_OPENAI];
 /** Vueltas del modelo por pedido. Un «haz todo esto» largo cabe holgado; el tope evita que se quede dando vueltas. */
 const MAX_VUELTAS = 16;
 
@@ -86,7 +87,7 @@ export async function conversar(user: U & { supabaseUid: string }, historial: Me
   for (let vuelta = 0; vuelta < MAX_VUELTAS; vuelta++) {
     let r: OpenAI.Chat.Completions.ChatCompletion;
     try {
-      r = await openai.chat.completions.create({ model: modelo, messages: mensajes, tools: HERRAMIENTAS, tool_choice: "auto", temperature: 0.2 });
+      r = await openai.chat.completions.create({ model: modelo, messages: mensajes, tools: HERRAMIENTAS, tool_choice: "auto", reasoning_effort: "low" });
     } catch (e) {
       // Si la cuenta no tiene el modelo, se usa el siguiente.
       if (modelo !== MODELOS[MODELOS.length - 1] && /model|not found|does not exist|access/i.test(String(e))) { modelo = MODELOS[MODELOS.indexOf(modelo) + 1]; vuelta--; continue; }

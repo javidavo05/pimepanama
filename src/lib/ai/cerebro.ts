@@ -10,6 +10,7 @@ import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "@/lib/prisma";
 import { hayLlaveOpenAI, llaveOpenAI } from "@/lib/ai/llave-openai";
+import { alModeloOpenAI } from "@/lib/ai/modelo";
 
 export type Cerebro = "openai" | "claude";
 export const MODELO_CLAUDE = process.env.ASISTENTE_MODELO_CLAUDE || "claude-sonnet-5-5";
@@ -64,7 +65,7 @@ export async function clienteIA(opciones: { maxRetries?: number; cerebro?: Cereb
   if (!cerebro) throw sinLlave();
   if (cerebro === "openai") {
     const openai = new OpenAI({ apiKey: await llaveOpenAI(), maxRetries: opciones.maxRetries });
-    return { cerebro, chat: { completions: { create: (p) => openai.chat.completions.create(p) } } };
+    return { cerebro, chat: { completions: { create: (p) => openai.chat.completions.create(alModeloOpenAI(p)) } } };
   }
   const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: opciones.maxRetries });
   return { cerebro, chat: { completions: { create: (p) => conClaude(claude, p) } } };

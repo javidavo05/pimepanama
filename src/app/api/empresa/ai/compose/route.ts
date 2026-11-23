@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { calcGptCost } from "@/lib/ai-pricing";
 import { normalizeComposeAiResult } from "@/lib/mail/compose-ai";
 import { brandSystemPrompt } from "@/lib/ai/pime-brand-voice";
+import { MODELO_OPENAI } from "@/lib/ai/modelo";
 
 export const runtime = "nodejs";
 
@@ -24,7 +25,7 @@ export async function POST(request: Request) {
 
     const start = Date.now();
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: MODELO_OPENAI,
       messages: [
         {
           role: "system",

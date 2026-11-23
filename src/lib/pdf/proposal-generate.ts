@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { calcGptCost } from "@/lib/ai-pricing";
 import { brandSystemPrompt } from "@/lib/ai/pime-brand-voice";
 import { parseProposalContent, type ProposalContent } from "./proposal-content";
+import { MODELO_OPENAI } from "@/lib/ai/modelo";
 
 /**
  * Genera el contenido estructurado de una propuesta comercial.
@@ -109,7 +110,7 @@ ${extraNotes.trim() ? `Notas adicionales:\n${extraNotes.trim()}` : ""}`.trim();
   const openai = await clienteIA();
   const start = Date.now();
   const resp = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: MODELO_OPENAI,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },

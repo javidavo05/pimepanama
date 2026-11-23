@@ -1,5 +1,6 @@
 import { clienteIA, elegirCerebro } from "@/lib/ai/cerebro";
 import { calcGptCost } from "@/lib/ai-pricing";
+import { MODELO_OPENAI } from "@/lib/ai/modelo";
 
 const TAGS = ["urgent", "invoice", "follow-up", "support", "payment", "spam", "general"] as const;
 export type EmailTag = typeof TAGS[number];
@@ -54,7 +55,7 @@ export async function analyzeEmail(subject: string, bodyText: string): Promise<E
   const truncated = bodyText.slice(0, 2000);
 
   const res = await openai.chat.completions.create({
-    model: "gpt-4o",
+    model: MODELO_OPENAI,
     response_format: { type: "json_object" },
     temperature: 0.2,
     max_tokens: 600,

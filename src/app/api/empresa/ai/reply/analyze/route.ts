@@ -3,6 +3,7 @@ import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { analyzeEmailForReply } from "@/lib/mail/ai-reply-analyze";
 import { elegirCerebro } from "@/lib/ai/cerebro";
+import { MODELO_OPENAI } from "@/lib/ai/modelo";
 
 export const runtime = "nodejs";
 
@@ -22,7 +23,7 @@ export async function POST(request: Request) {
       data: {
         supabaseUid: user.supabaseUid,
         operation: "reply-analyze",
-        model: "gpt-4o",
+        model: MODELO_OPENAI,
         inputTokens: 0,
         outputTokens: 0,
         durationMs: Date.now() - start,

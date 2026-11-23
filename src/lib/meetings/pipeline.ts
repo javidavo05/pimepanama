@@ -43,9 +43,10 @@ import type {
   TechnicalDeliverable,
   TechnicalMinutes,
 } from "./types";
+import { MARGEN_RAZONAMIENTO, MODELO_OPENAI } from "@/lib/ai/modelo";
 
 /** Etiqueta del registro de uso: las llamadas se reparten entre ambos modelos. */
-const MODEL = "gpt-4.1/gpt-4o";
+const MODEL = MODELO_OPENAI;
 /** Segmentos por llamada de diarización — acota tokens de salida y permite arrastrar el roster. */
 const DIARIZATION_BATCH = 100;
 /** Tope de caracteres de transcripción por llamada de análisis (~40k tokens de entrada). */
@@ -198,8 +199,8 @@ async function rateLimitedCompletion(
             { role: "user", content: user },
           ],
           response_format: { type: "json_object" },
-          temperature: 0.25,
-          max_tokens: slot.maxTokens,
+          reasoning_effort: "low",
+          max_completion_tokens: slot.maxTokens + MARGEN_RAZONAMIENTO,
         })
         .withResponse();
       settleSlot(slot, data.usage?.total_tokens, response.headers);

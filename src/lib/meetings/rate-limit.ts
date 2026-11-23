@@ -22,7 +22,7 @@
  * los reintentos del SDK.
  */
 
-export const LANES = ["gpt-4.1", "gpt-4o"] as const;
+export const LANES = ["gpt-5-mini"] as const;
 export type Lane = (typeof LANES)[number];
 
 const WINDOW_MS = 60_000;

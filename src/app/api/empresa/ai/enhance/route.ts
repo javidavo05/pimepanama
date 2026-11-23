@@ -4,6 +4,7 @@ import { requireEmpresaUser } from "@/app/api/empresa/_auth";
 import { prisma } from "@/lib/prisma";
 import { calcGptCost } from "@/lib/ai-pricing";
 import { brandSystemPrompt } from "@/lib/ai/pime-brand-voice";
+import { MODELO_OPENAI } from "@/lib/ai/modelo";
 
 export const runtime = "nodejs";
 
@@ -41,7 +42,7 @@ Devuelve SOLO el texto mejorado, sin comillas, explicaciones ni notas.`,
 
     const start = Date.now();
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: MODELO_OPENAI,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: text },

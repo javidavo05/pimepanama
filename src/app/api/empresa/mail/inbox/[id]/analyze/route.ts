@@ -5,6 +5,7 @@ import { analyzeEmail } from "@/lib/mail/ai-analyze";
 import { htmlToPlainText, isHtmlEmail } from "@/lib/mail/email-html";
 import { vincularCorreo } from "@/lib/crm/vinculo-correo-datos";
 import { elegirCerebro } from "@/lib/ai/cerebro";
+import { MODELO_OPENAI } from "@/lib/ai/modelo";
 
 export const runtime = "nodejs";
 
@@ -35,7 +36,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       data: {
         supabaseUid: user.supabaseUid,
         operation: "mail-analyze",
-        model: "gpt-4o",
+        model: MODELO_OPENAI,
         inputTokens: 0,
         outputTokens: 0,
         durationMs: 0,
