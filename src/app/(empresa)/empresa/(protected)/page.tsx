@@ -12,6 +12,7 @@ import { datosDeLaEmpresa } from "@/lib/motor/empresa-hoy";
 import { conexionesDeJarvis } from "@/lib/jarvis/conexiones";
 import { Jarvis } from "@/components/empresa/jarvis/jarvis";
 import { cerebroDeLaPlataforma, cerebrosDisponibles } from "@/lib/ai/cerebro";
+import { prospeccionActiva } from "@/lib/leads/prospeccion";
 import memoria from "@/lib/jarvis/memoria.json";
 
 export const metadata = { title: "Jarvis — Pime Suite" };
@@ -302,6 +303,7 @@ export default async function JarvisPage({ searchParams }: { searchParams: Promi
         cerebros={cerebrosDisponibles()}
         cerebro={await cerebroDeLaPlataforma()}
         puedeCambiarCerebro={esDueno}
+        prospeccion={await prospeccionActiva()}
         memoria={esDueno ? memoria as unknown as Parameters<typeof Jarvis>[0]["memoria"] : null}
         principal={veDinero ? <BotonCobrar clientes={clientes.map((c) => ({ id: c.id, nombre: c.company || c.name }))} className="jv-btn" /> : null}
         izquierda={izquierda}

@@ -245,3 +245,15 @@ html[data-theme="light"] .jv-node .jv-hex::after { background: #ffffff }
 .jv-mnode .jv-ns { display: none }
 .jv-mnode { min-width: 24px }
 @container (max-width: 559px) { .jv-mnode .jv-nl { padding: 0 4px; line-height: 16px } }
+
+/* Interruptor de la búsqueda de leads (ficha del Asistente) */
+.jv-switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; max-width: 320px; min-height: 48px; margin-top: 8px; padding: 8px 12px; border: 1px solid var(--jv-line-2); border-radius: 8px; background: transparent; color: var(--jv-ice); font: inherit; text-align: left; cursor: pointer }
+.jv-switch:disabled { opacity: .5; cursor: not-allowed }
+.jv-switch-txt { display: grid; gap: 4px }
+.jv-switch-txt b { font-size: 14px; font-weight: 600 }
+.jv-switch-txt span { font-size: 12px; color: var(--jv-dim) }
+.jv-switch-pista { position: relative; flex: none; width: 44px; height: 24px; border-radius: 999px; background: var(--jv-line-2); transition: background .2s }
+.jv-switch-pista i { position: absolute; top: 4px; left: 4px; width: 16px; height: 16px; border-radius: 50%; background: var(--jv-dim); transition: transform .2s, background .2s }
+.jv-switch[aria-checked="true"] .jv-switch-pista { background: rgb(var(--jv-rgb) / .35) }
+.jv-switch[aria-checked="true"] .jv-switch-pista i { transform: translateX(20px); background: var(--jv-cyan) }
+@media (prefers-reduced-motion: reduce) { .jv-switch-pista, .jv-switch-pista i { transition: none } }

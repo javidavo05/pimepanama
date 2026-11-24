@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withEmpresaRoute } from "@/app/api/empresa/_route";
 import { requireProspectorUser } from "@/lib/devices/tokens";
 import { prepararFinales } from "@/lib/leads/envio-automatico";
+import { busquedaApagada, prospeccionActiva } from "@/lib/leads/prospeccion";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -18,6 +19,7 @@ const TIEMPO_POR_LLAMADA_MS = 180_000;
  */
 export const POST = withEmpresaRoute(async (request) => {
   const u = await requireProspectorUser(request);
+  if (!(await prospeccionActiva())) return busquedaApagada();
   const body = (await request.json().catch(() => null)) as { ids?: unknown } | null;
   const ids = Array.isArray(body?.ids) ? body!.ids.filter((i): i is string => typeof i === "string") : [];
   if (!ids.length) return NextResponse.json({ error: "Falta «ids» (los respuestaId que devolvió la carga)" }, { status: 400 });

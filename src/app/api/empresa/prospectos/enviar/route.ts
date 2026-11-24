@@ -4,6 +4,7 @@ import { requireProspectorUser } from "@/lib/devices/tokens";
 import { prisma } from "@/lib/prisma";
 import { notifyUser } from "@/lib/notifications/notify";
 import { aprobarDelAgente, enviarCola, estadoEnvio } from "@/lib/leads/envio-automatico";
+import { busquedaApagada, prospeccionActiva } from "@/lib/leads/prospeccion";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -23,11 +24,12 @@ const TIEMPO_POR_LLAMADA_MS = 200_000;
  */
 export const GET = withEmpresaRoute(async (request) => {
   const u = await requireProspectorUser(request);
-  return NextResponse.json(await estadoEnvio(u.ownerId ?? u.id));
+  return NextResponse.json({ ...(await estadoEnvio(u.ownerId ?? u.id)), busquedaActiva: await prospeccionActiva() });
 });
 
 export const POST = withEmpresaRoute(async (request) => {
   const u = await requireProspectorUser(request);
+  if (!(await prospeccionActiva())) return busquedaApagada();
   const userId = u.ownerId ?? u.id;
   const dueno = u.ownerId ? await prisma.empresaUser.findUnique({ where: { id: u.ownerId }, select: { configId: true } }) : u;
   const body = (await request.json().catch(() => null)) as { aprobar?: unknown } | null;

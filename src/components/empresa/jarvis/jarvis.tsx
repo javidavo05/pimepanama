@@ -14,7 +14,7 @@ import { oidoLocal, transcribir } from "@/lib/voz/transcribir";
 import { hablar as hablarJarvis, detener as callarJarvis, prepararAudio, nivelDeVoz } from "@/lib/voz/hablar";
 import type { Conexion } from "@/lib/jarvis/conexiones";
 import type { Cerebro } from "@/lib/ai/cerebro";
-import { cambiarCerebroAction } from "@/app/(empresa)/empresa/(protected)/acciones-cerebro";
+import { cambiarCerebroAction, cambiarProspeccionAction } from "@/app/(empresa)/empresa/(protected)/acciones-cerebro";
 import { iniciarEsfera, colorDe, posicionEnAnillo, posicionArea, type Vivo } from "./esfera";
 import "./jarvis.css";
 
@@ -74,10 +74,12 @@ type Props = {
   conexiones: Conexion[]; memoria: Memoria | null;
   /** Qué cerebros tienen llave en el servidor, cuál usa hoy la plataforma y si esta persona puede cambiarlo (solo el dueño). */
   cerebros: Record<Cerebro, boolean>; cerebro: Cerebro | null; puedeCambiarCerebro: boolean;
+  /** Búsqueda de leads (agente de prospección diaria): apagada por defecto; la enciende el dueño. */
+  prospeccion: boolean;
   principal?: ReactNode; izquierda: ReactNode; derecha: ReactNode; abajo: ReactNode;
 };
 
-export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, cerebros, cerebro: cerebroInicial, puedeCambiarCerebro, principal, izquierda, derecha, abajo }: Props) {
+export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, cerebros, cerebro: cerebroInicial, puedeCambiarCerebro, prospeccion: prospeccionInicial, principal, izquierda, derecha, abajo }: Props) {
   const router = useRouter();
   const raiz = useRef<HTMLDivElement>(null);
   const escenario = useRef<HTMLDivElement>(null);
@@ -99,6 +101,19 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, cerebros, 
   const [cerebro, setCerebro] = useState<Cerebro | null>(cerebroInicial);
   const [cambiandoCerebro, setCambiandoCerebro] = useState(false);
   const [avisoCerebro, setAvisoCerebro] = useState<{ ok: boolean; t: string } | null>(null);
+  // Búsqueda de leads: el agente de prospección diaria solo trabaja si está encendida (lib/leads/prospeccion.ts).
+  const [prospeccion, setProspeccion] = useState(prospeccionInicial);
+  const [cambiandoProspeccion, setCambiandoProspeccion] = useState(false);
+  const [avisoProspeccion, setAvisoProspeccion] = useState<{ ok: boolean; t: string } | null>(null);
+  const alternarProspeccion = async () => {
+    if (cambiandoProspeccion) return;
+    const nueva = !prospeccion;
+    setProspeccion(nueva); setCambiandoProspeccion(true); setAvisoProspeccion(null);
+    const r = await cambiarProspeccionAction(nueva).catch(() => ({ error: "No se pudo guardar. Revisa tu conexión e inténtalo otra vez." }));
+    setCambiandoProspeccion(false);
+    if ("error" in r) { setProspeccion(!nueva); setAvisoProspeccion({ ok: false, t: r.error }); return; }
+    setAvisoProspeccion({ ok: true, t: nueva ? "Encendida: mañana a las 7:03 am el agente busca prospectos y prepara sus correos." : "Apagada: el agente no busca, no prepara propuestas ni envía correos." });
+  };
   const elegirCerebro = async (c: Cerebro) => {
     if (c === cerebro || cambiandoCerebro) return;
     const antes = cerebro;
@@ -376,6 +391,13 @@ export function Jarvis({ nombre, fecha, resumen, conexiones, memoria, cerebros, 
                   </div>
                   <small className="jv-fnota" data-e={avisoCerebro ? (avisoCerebro.ok ? "ok" : "error") : undefined}>
                     {cambiandoCerebro ? "Guardando…" : avisoCerebro ? avisoCerebro.t : puedeCambiarCerebro ? "Vale para todo el equipo y todos los dispositivos: asistente, correo, leads, reuniones, propuestas y documentos. La voz a texto sigue en Whisper." : "Solo el dueño cambia el cerebro de la plataforma."}
+                  </small>
+                  <button type="button" role="switch" aria-checked={prospeccion} className="jv-switch" disabled={!puedeCambiarCerebro || cambiandoProspeccion} onClick={() => void alternarProspeccion()}>
+                    <span className="jv-switch-txt"><b>Búsqueda de leads</b><span>{prospeccion ? "Encendida · cada mañana a las 7:03 am" : "Apagada"}</span></span>
+                    <span className="jv-switch-pista" aria-hidden><i /></span>
+                  </button>
+                  <small className="jv-fnota" data-e={avisoProspeccion ? (avisoProspeccion.ok ? "ok" : "error") : undefined}>
+                    {cambiandoProspeccion ? "Guardando…" : avisoProspeccion ? avisoProspeccion.t : puedeCambiarCerebro ? "El agente busca negocios nuevos, les prepara correo y propuesta, y los envía con doble verificación. Gasta saldo de IA cada día que corre." : "Solo el dueño enciende o apaga la búsqueda de leads."}
                   </small>
                 </>
               )}

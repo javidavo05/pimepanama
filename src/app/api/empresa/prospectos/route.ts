@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { LeadPriority } from "@prisma/client";
 import { withEmpresaRoute } from "@/app/api/empresa/_route";
 import { requireProspectorUser } from "@/lib/devices/tokens";
+import { busquedaApagada, prospeccionActiva } from "@/lib/leads/prospeccion";
 import { prisma } from "@/lib/prisma";
 import { notifyUser } from "@/lib/notifications/notify";
 import { getSiteUrl } from "@/lib/site-url";
@@ -48,6 +49,7 @@ async function dueno(request: Request) {
 
 export const GET = withEmpresaRoute(async (request) => {
   const userId = await dueno(request);
+  if (!(await prospeccionActiva())) return busquedaApagada();
   const [leads, bajas] = await Promise.all([
     prisma.lead.findMany({ where: { userId }, select: { company: true, email: true, notes: true } }),
     prisma.bajaCorreo.findMany({ where: { userId }, select: { email: true } }),
@@ -71,6 +73,7 @@ type Entrada = Record<string, unknown>;
 
 export const POST = withEmpresaRoute(async (request) => {
   const userId = await dueno(request);
+  if (!(await prospeccionActiva())) return busquedaApagada();
   const body = (await request.json().catch(() => null)) as { prospectos?: Entrada[] } | null;
   const lista = Array.isArray(body?.prospectos) ? body!.prospectos.slice(0, MAX) : [];
   if (!lista.length) return NextResponse.json({ error: "Falta «prospectos» (lista de 1 a 50)" }, { status: 400 });

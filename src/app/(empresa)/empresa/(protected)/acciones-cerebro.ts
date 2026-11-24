@@ -4,6 +4,7 @@
 import { revalidatePath } from "next/cache";
 import { getEmpresaUser } from "@/lib/supabase/get-empresa-user";
 import { cerebrosDisponibles, guardarCerebro, NOMBRE_CEREBRO, type Cerebro } from "@/lib/ai/cerebro";
+import { guardarProspeccion } from "@/lib/leads/prospeccion";
 
 export async function cambiarCerebroAction(cerebro: Cerebro): Promise<{ ok: true } | { error: string }> {
   const u = await getEmpresaUser();
@@ -12,6 +13,16 @@ export async function cambiarCerebroAction(cerebro: Cerebro): Promise<{ ok: true
   if (cerebro !== "openai" && cerebro !== "claude") return { error: "Ese cerebro no existe." };
   if (!cerebrosDisponibles()[cerebro]) return { error: `${NOMBRE_CEREBRO[cerebro]} no tiene su llave en el servidor.` };
   await guardarCerebro(u.configId, cerebro);
+  revalidatePath("/empresa");
+  return { ok: true };
+}
+
+/** Enciende o apaga la búsqueda de leads (agente de prospección diaria). Solo el dueño, desde Jarvis. */
+export async function cambiarProspeccionAction(activa: boolean): Promise<{ ok: true } | { error: string }> {
+  const u = await getEmpresaUser();
+  if (u.miembro.area && u.miembro.area !== "dueno") return { error: "Solo el dueño enciende o apaga la búsqueda de leads." };
+  if (!u.configId) return { error: "Primero guarda los datos de la empresa en Configuración." };
+  await guardarProspeccion(u.configId, activa === true);
   revalidatePath("/empresa");
   return { ok: true };
 }

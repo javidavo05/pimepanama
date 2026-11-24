@@ -27,6 +27,8 @@ export async function guardarReglasAction(_: EstadoReglas, form: FormData): Prom
   const previo = (actual?.reglasCrm ?? {}) as Record<string, unknown>;
   const json: Record<string, number | boolean> = reglasAJson(reglas);
   for (const k of CLAVES) if (!reglas[k].dias && typeof previo[`${k}Dias`] === "number") json[`${k}Dias`] = previo[`${k}Dias`] as number;
+  // El interruptor de la búsqueda de leads (lib/leads/prospeccion.ts) vive en el mismo JSON: no se pierde al guardar.
+  if (typeof previo.prospeccionActiva === "boolean") json.prospeccionActiva = previo.prospeccionActiva;
   await prisma.companyConfig.update({ where: { id: u.configId }, data: { reglasCrm: json } });
   revalidatePath("/empresa/configuracion/seguimientos");
   const encendidas = CLAVES.filter((k) => reglas[k].activa).length;
