@@ -113,6 +113,7 @@ export function InboxList({
   const [selectedAccount, setSelectedAccount] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkError, setBulkError] = useState<string | null>(null);
 
   // Local filter state (mirrors searchParams)
   const [q, setQ] = useState(initialQ);
@@ -182,6 +183,9 @@ export function InboxList({
   const selectedCount = selectedIds.size;
   const allVisibleSelected = visible.length > 0 && visible.every((e) => selectedIds.has(e.id));
   const someVisibleSelected = visible.some((e) => selectedIds.has(e.id));
+  const selectedEmails = emails.filter((e) => selectedIds.has(e.id));
+  const selectedHasUnread = selectedEmails.some((e) => !e.isRead);
+  const selectedHasRead = selectedEmails.some((e) => e.isRead);
 
   function toggleSelect(id: string) {
     setSelectedIds((prev) => {
@@ -216,15 +220,23 @@ export function InboxList({
     const ids = [...selectedIds];
     if (ids.length === 0) return;
     setBulkBusy(true);
+    setBulkError(null);
     try {
       const res = await fetch("/api/empresa/mail/inbox/bulk", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ids, isRead }),
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        setBulkError(`No se pudieron marcar como ${isRead ? "leídos" : "no leídos"}. Inténtalo de nuevo.`);
+        return;
+      }
       setEmails((list) => list.map((m) => (selectedIds.has(m.id) ? { ...m, isRead } : m)));
-      if (isRead) clearSelection();
+      clearSelection();
+      // El contador de no leídos de la cabecera viene del servidor.
+      router.refresh();
+    } catch {
+      setBulkError("Sin conexión. Inténtalo de nuevo.");
     } finally {
       setBulkBusy(false);
     }
@@ -263,6 +275,9 @@ export function InboxList({
       if (e.key === "r" || e.key === "R") {
         e.preventDefault();
         bulkMarkRead(true);
+      } else if (e.key === "u" || e.key === "U") {
+        e.preventDefault();
+        bulkMarkRead(false);
       } else if (e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();
         bulkDelete();
@@ -399,49 +414,65 @@ export function InboxList({
         </div>
       )}
 
-      {/* Bulk actions bar */}
-      {selectedCount > 0 && (
-        <div className="flex items-center gap-3 px-4 py-2.5 border-b border-brand/20 bg-brand/[0.06] flex-wrap">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
+      {/* Barra de selección: siempre visible cuando hay correos, para poder
+          seleccionar todos de un toque y marcarlos leídos o no leídos. */}
+      {visible.length > 0 && (
+        <div className={`flex items-center gap-3 px-4 py-2 border-b flex-wrap transition-colors ${selectedCount > 0 ? "border-brand/20 bg-brand/[0.06]" : "border-line"}`}>
+          <label className="flex items-center gap-2 min-h-10 sm:min-h-8 cursor-pointer select-none">
             <input
               type="checkbox"
               checked={allVisibleSelected}
               ref={(el) => { if (el) el.indeterminate = someVisibleSelected && !allVisibleSelected; }}
               onChange={toggleSelectAllVisible}
-              className="rounded border-line-loud bg-fill-2 text-brand-fg focus:ring-brand/30"
+              className="h-4 w-4 rounded border-line-loud bg-fill-2 text-brand-fg focus:ring-brand/30 cursor-pointer"
+              aria-label={allVisibleSelected ? "Quitar la selección" : `Seleccionar los ${visible.length} correos`}
             />
             <span className="text-xs text-fg-mute">
-              {selectedCount} seleccionado{selectedCount !== 1 ? "s" : ""}
+              {selectedCount > 0
+                ? `${selectedCount} seleccionado${selectedCount !== 1 ? "s" : ""}`
+                : `Seleccionar todos (${visible.length})`}
             </span>
           </label>
-          <div className="flex items-center gap-2 ml-auto flex-wrap">
-            <button
-              type="button"
-              disabled={bulkBusy}
-              onClick={() => bulkMarkRead(true)}
-              className="px-3 py-1.5 text-xs rounded-lg bg-fill-2 border border-line text-fg-mute hover:text-fg hover:bg-fill-3 disabled:opacity-40 transition-all"
-              title="Atajo: R"
-            >
-              Marcar leídos <kbd className="ml-1 text-[10px] text-fg-dim font-mono">R</kbd>
-            </button>
-            <button
-              type="button"
-              disabled={bulkBusy}
-              onClick={bulkDelete}
-              className="px-3 py-1.5 text-xs rounded-lg bg-danger/10 border border-danger/20 text-danger hover:bg-danger/15 disabled:opacity-40 transition-all"
-              title="Atajo: Supr"
-            >
-              Eliminar <kbd className="ml-1 text-[10px] text-danger font-mono">⌫</kbd>
-            </button>
-            <button
-              type="button"
-              onClick={clearSelection}
-              className="px-2 py-1.5 text-xs text-fg-dim hover:text-fg-dim transition-colors"
-              title="Atajo: Esc"
-            >
-              Cancelar
-            </button>
-          </div>
+          {selectedCount > 0 && (
+            <div className="flex items-center gap-2 ml-auto flex-wrap">
+              <button
+                type="button"
+                disabled={bulkBusy || !selectedHasUnread}
+                onClick={() => bulkMarkRead(true)}
+                className="min-h-10 sm:min-h-8 px-3 text-xs rounded-lg bg-fill-2 border border-line text-fg-mute hover:text-fg hover:bg-fill-3 disabled:opacity-40 transition-all"
+                title="Atajo: R"
+              >
+                Marcar como leídos <kbd className="ml-1 text-[10px] text-fg-dim font-mono">R</kbd>
+              </button>
+              <button
+                type="button"
+                disabled={bulkBusy || !selectedHasRead}
+                onClick={() => bulkMarkRead(false)}
+                className="min-h-10 sm:min-h-8 px-3 text-xs rounded-lg bg-fill-2 border border-line text-fg-mute hover:text-fg hover:bg-fill-3 disabled:opacity-40 transition-all"
+                title="Atajo: U"
+              >
+                Marcar como no leídos <kbd className="ml-1 text-[10px] text-fg-dim font-mono">U</kbd>
+              </button>
+              <button
+                type="button"
+                disabled={bulkBusy}
+                onClick={bulkDelete}
+                className="min-h-10 sm:min-h-8 px-3 text-xs rounded-lg bg-danger/10 border border-danger/20 text-danger hover:bg-danger/15 disabled:opacity-40 transition-all"
+                title="Atajo: Supr"
+              >
+                Eliminar <kbd className="ml-1 text-[10px] text-danger font-mono">⌫</kbd>
+              </button>
+              <button
+                type="button"
+                onClick={clearSelection}
+                className="min-h-10 sm:min-h-8 px-2 text-xs text-fg-dim hover:text-fg-mute transition-colors"
+                title="Atajo: Esc"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+          {bulkError && <p role="alert" className="w-full text-xs text-danger">{bulkError}</p>}
         </div>
       )}
 
