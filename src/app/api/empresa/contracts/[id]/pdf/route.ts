@@ -5,6 +5,7 @@ import { renderContractPdf } from "@/lib/pdf/render";
 import { lineaDeProyecto } from "@/lib/pdf/datos-linea";
 import { resolveContractHtml } from "@/lib/design-system/contract-html";
 import { renderHtmlToPdfBuffer } from "@/lib/design-system/html-to-pdf";
+import { cabecerasCache, etagPdf, noModificado, yaLoTiene } from "@/lib/pdf/etag";
 import { Readable } from "stream";
 
 export const runtime = "nodejs";
@@ -44,6 +45,10 @@ export async function GET(
     const inline = new URL(request.url).searchParams.get("inline") === "1";
     const useLegacy = new URL(request.url).searchParams.get("legacy") === "1";
 
+    // La versión HTML (Chromium) y la de react-pdf son PDF distintos: cada una con su ETag.
+    const etagHtml = useLegacy ? null : etagPdf("contrato-html", contract, company, linea);
+    if (yaLoTiene(request, etagHtml)) return noModificado(etagHtml);
+
     if (!useLegacy) {
       try {
         const pagesHtml = resolveContractHtml(contract, contract.client, company, contract.project);
@@ -52,13 +57,17 @@ export async function GET(
           headers: {
             "Content-Type": "application/pdf",
             "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${filename}.pdf"`,
-            "Cache-Control": "private, no-cache",
+            ...cabecerasCache(etagHtml),
           },
         });
       } catch (htmlErr) {
         console.warn("HTML→PDF failed, falling back to react-pdf:", htmlErr);
       }
     }
+
+    // Con ?legacy=1 se puede revalidar; si es el respaldo porque Chromium falló, va sin ETag para no fijarlo.
+    const etagLegacy = useLegacy ? etagPdf("contrato-react-pdf", contract, company, linea) : null;
+    if (yaLoTiene(request, etagLegacy)) return noModificado(etagLegacy);
 
     const stream = await renderContractPdf(contract, contract.client, company, linea);
     const webStream = Readable.toWeb(stream as Readable) as ReadableStream;
@@ -67,7 +76,7 @@ export async function GET(
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${filename}.pdf"`,
-        "Cache-Control": "private, no-cache",
+        ...cabecerasCache(etagLegacy),
       },
     });
   } catch (err) {

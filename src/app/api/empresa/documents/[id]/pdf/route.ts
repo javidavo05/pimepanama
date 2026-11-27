@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { renderDocumentPdf } from "@/lib/pdf/render";
 import { resolveDocumentPdfPaymentMethods } from "@/lib/pdf/payment-methods";
 import { opcionesPdfDocumento } from "@/lib/pdf/datos-linea";
+import { cabecerasCache, etagPdf, noModificado, yaLoTiene } from "@/lib/pdf/etag";
 import { Readable } from "stream";
 
 export const runtime = "nodejs";
@@ -35,6 +36,9 @@ export async function GET(
     ]);
     const paymentMethods = resolveDocumentPdfPaymentMethods(doc, allMethods);
 
+    const etag = etagPdf("documento", doc, company, paymentMethods, opciones);
+    if (yaLoTiene(request, etag)) return noModificado(etag);
+
     const stream = await renderDocumentPdf(doc, company, paymentMethods, opciones);
 
     const filename = `${doc.number ?? doc.id}.pdf`
@@ -49,7 +53,7 @@ export async function GET(
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${filename}"`,
-        "Cache-Control": "private, no-cache",
+        ...cabecerasCache(etag),
       },
     });
   } catch (err) {

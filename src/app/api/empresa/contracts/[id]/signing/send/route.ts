@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireEmpresaUser } from "@/app/api/empresa/_auth";
-import { sendContractForSigning } from "@/lib/pimesign/workflow";
+import { sendContractForSigning } from "@/lib/pimesign/send";
 
 export const runtime = "nodejs";
 

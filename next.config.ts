@@ -35,15 +35,11 @@ const nextConfig: NextConfig = {
     "/api/cliente/facturas/[id]": [...PDF_FONT_TRACE],
     "/api/empresa/pagos/[id]/recibo": [...PDF_FONT_TRACE],
     "/api/cliente/pagos/[id]/recibo": [...PDF_FONT_TRACE],
+    // Solo las rutas que arman el contrato con Chromium. Firmar después solo estampa las firmas (pdf-lib) sobre el
+    // PDF base guardado en R2, y la vista previa HTML enlaza los archivos de public/ por URL: no leen de disco.
     "/api/empresa/contracts/[id]/pdf": [...PDF_HTML_TRACE],
     "/api/empresa/contracts/[id]/signing/send": [...PDF_HTML_TRACE],
-    // La firma también arma el PDF del contrato (del lado de Pime y del cliente).
-    "/api/empresa/contracts/[id]/signing": [...PDF_HTML_TRACE],
-    "/api/empresa/contracts/[id]/signing/company-sign": [...PDF_HTML_TRACE],
-    "/api/signing/[token]": [...PDF_HTML_TRACE],
-    "/api/signing/[token]/sign": [...PDF_HTML_TRACE],
     "/api/empresa/contracts/preview": [...PDF_FONT_TRACE],
-    "/api/empresa/contracts/preview/html": [...PDF_HTML_TRACE],
     "/api/empresa/projects/[id]/proposal-pdf": [...PDF_FONT_TRACE],
     // Respuestas a leads: el PDF se ve por la ruta y se arma para adjuntarlo en las acciones de la página.
     "/api/empresa/leads/respuestas/[id]/pdf": [...PDF_FONT_TRACE],

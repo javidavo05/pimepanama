@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { renderProjectProposalPdf } from "@/lib/pdf/render";
 import { lineaDeProyecto } from "@/lib/pdf/datos-linea";
 import { isProposalContent } from "@/lib/pdf/proposal-content";
+import { cabecerasCache, etagPdf, noModificado, yaLoTiene } from "@/lib/pdf/etag";
 import { Readable } from "stream";
 
 export const runtime = "nodejs";
@@ -37,6 +38,9 @@ export async function GET(
       lineaDeProyecto(project.id, project.client ? [project.client] : []),
     ]);
 
+    const etag = etagPdf("propuesta-proyecto", project, company, linea);
+    if (yaLoTiene(request, etag)) return noModificado(etag);
+
     const stream = await renderProjectProposalPdf(project, project.client, company, project.proposalContent, linea);
 
     const filename = `Propuesta-${project.name}`
@@ -51,7 +55,7 @@ export async function GET(
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${filename}.pdf"`,
-        "Cache-Control": "private, no-cache",
+        ...cabecerasCache(etag),
       },
     });
   } catch (err) {

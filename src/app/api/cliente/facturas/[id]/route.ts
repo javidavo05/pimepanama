@@ -5,6 +5,7 @@ import { renderDocumentPdf } from "@/lib/pdf/render";
 import { resolveDocumentPdfPaymentMethods } from "@/lib/pdf/payment-methods";
 import { opcionesPdfDocumento } from "@/lib/pdf/datos-linea";
 import { personaDeApi } from "@/lib/portal/datos";
+import { cabecerasCache, etagPdf, noModificado, yaLoTiene } from "@/lib/pdf/etag";
 
 export const runtime = "nodejs";
 
@@ -21,9 +22,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     prisma.paymentMethod.findMany({ where: { userId: doc.userId, isActive: true }, orderBy: [{ type: "asc" }, { name: "asc" }] }),
     opcionesPdfDocumento(doc),
   ]);
-  const stream = await renderDocumentPdf(doc, company, resolveDocumentPdfPaymentMethods(doc, metodos), opciones);
+  const metodosPdf = resolveDocumentPdfPaymentMethods(doc, metodos);
+  const etag = etagPdf("cliente-factura", doc, company, metodosPdf, opciones);
+  if (yaLoTiene(request, etag)) return noModificado(etag);
+  const stream = await renderDocumentPdf(doc, company, metodosPdf, opciones);
   const nombre = `${doc.number ?? doc.id}.pdf`.replace(/\s+/g, "-").replace(/[^\w.-]/g, "");
   return new Response(Readable.toWeb(stream as Readable) as ReadableStream, {
-    headers: { "Content-Type": "application/pdf", "Content-Disposition": `${new URL(request.url).searchParams.get("ver") ? "inline" : "attachment"}; filename="${nombre}"`, "Cache-Control": "private, no-cache" },
+    headers: { "Content-Type": "application/pdf", "Content-Disposition": `${new URL(request.url).searchParams.get("ver") ? "inline" : "attachment"}; filename="${nombre}"`, ...cabecerasCache(etag) },
   });
 }

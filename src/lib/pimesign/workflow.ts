@@ -2,17 +2,17 @@ import { randomUUID } from "crypto";
 import type { Prisma, SigningStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getR2Object, putR2Object } from "@/lib/r2";
-import { signingLinkTtlDays, signingTokenSecret } from "./config";
+import { signingTokenSecret } from "./config";
 import { generateSigningToken, hashSigningToken, type SigningRole } from "./tokens";
-import { renderContractPdfBuffer } from "./pdf";
-import { lineaDeProyecto } from "@/lib/pdf/datos-linea";
 import { buildSignedPdf } from "./pdf-stamp";
 import {
-  clientSigningEmail,
   companySigningEmail,
   sendSigningEmail,
   signingCompletedEmail,
 } from "./notify";
+
+// sendContractForSigning vive en ./send: es la única que arma el PDF con Chromium. Así las rutas que solo
+// leen o firman no cargan Chromium (≈66 MB) en su función.
 
 type AuditMeta = Record<string, unknown> | undefined;
 
@@ -48,7 +48,7 @@ async function storeSignaturePng(requestId: string, role: SigningRole, dataUrl: 
   return key;
 }
 
-async function createToken(requestId: string, role: SigningRole, expiresAt: Date) {
+export async function createToken(requestId: string, role: SigningRole, expiresAt: Date) {
   const secret = signingTokenSecret();
   const raw = generateSigningToken();
   await prisma.contractSigningToken.create({
@@ -80,86 +80,6 @@ export async function resolveSigningToken(rawToken: string) {
   if (record.expiresAt < new Date()) return { expired: true as const, record };
   if (record.usedAt) return { used: true as const, record };
   return { ok: true as const, record };
-}
-
-export async function sendContractForSigning(contractId: string, userId: string) {
-  const contract = await prisma.contract.findFirst({
-    where: { id: contractId, userId },
-    include: {
-      client: true,
-      signingRequest: true,
-      project: { select: { name: true, description: true, proposalContent: true } },
-    },
-  });
-  if (!contract) throw new Error("Contrato no encontrado");
-  if (!contract.clientId || !contract.client?.email) {
-    throw new Error("El contrato necesita un cliente con email para enviar a firma.");
-  }
-  if (contract.signingRequest && ["PENDING_CLIENT", "PENDING_COMPANY"].includes(contract.signingRequest.status)) {
-    throw new Error("Ya hay un proceso de firma en curso.");
-  }
-
-  const company = await prisma.companyConfig.findFirst({
-    where: { users: { some: { id: userId } } },
-  });
-  const companyEmail = company?.email ?? (await prisma.empresaUser.findUnique({ where: { id: userId } }))?.email;
-  if (!companyEmail) throw new Error("Configura el email de la empresa en Configuración.");
-
-  const linea = await lineaDeProyecto(contract.projectId, contract.client ? [contract.client] : []);
-  const pdfBuffer = await renderContractPdfBuffer(contract, contract.client, company, contract.project, linea);
-  const expiresAt = new Date(Date.now() + signingLinkTtlDays() * 24 * 60 * 60 * 1000);
-  const baseKey = `contracts/signing/${contract.id}/base-${randomUUID()}.pdf`;
-  await putR2Object(baseKey, pdfBuffer, "application/pdf");
-
-  const request = await prisma.$transaction(async (tx) => {
-    if (contract.signingRequest) {
-      await tx.contractSigningToken.deleteMany({ where: { requestId: contract.signingRequest.id } });
-      await tx.contractSigningEvent.deleteMany({ where: { requestId: contract.signingRequest.id } });
-      await tx.contractSigningRequest.delete({ where: { id: contract.signingRequest.id } });
-    }
-
-    const req = await tx.contractSigningRequest.create({
-      data: {
-        contractId: contract.id,
-        userId,
-        status: "PENDING_CLIENT",
-        clientEmail: contract.client!.email!,
-        companyEmail,
-        clientName: contract.client!.name,
-        companyName: company?.name ?? "Pime Panamá",
-        basePdfR2Key: baseKey,
-        expiresAt,
-      },
-    });
-
-    await tx.contract.update({
-      where: { id: contract.id },
-      data: { signingStatus: "PENDING_CLIENT" },
-    });
-
-    return req;
-  });
-
-  const clientToken = await createToken(request.id, "CLIENT", expiresAt);
-  await logSigningEvent(request.id, "SENT", { actorEmail: companyEmail, metadata: { to: contract.client.email } });
-
-  const mail = clientSigningEmail({
-    contractTitle: contract.title,
-    clientName: contract.client.name,
-    companyName: company?.name ?? "Pime Panamá",
-    token: clientToken,
-  });
-
-  await sendSigningEmail({
-    userId,
-    mailAccountId: company?.signingMailAccountId,
-    to: contract.client.email,
-    subject: mail.subject,
-    body: mail.body,
-    companyName: company?.name,
-  });
-
-  return { requestId: request.id, status: "PENDING_CLIENT" as SigningStatus };
 }
 
 export async function applySignatureFromToken(opts: {
