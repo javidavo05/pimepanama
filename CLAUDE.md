@@ -7,6 +7,8 @@
 - **Repo:** `https://github.com/javidavo05/pimepanama`
 - **Deploy manual (CLI):** `npm run deploy:vercel` — valida proyecto, build local, luego `npx vercel deploy`.
 - **Deploy por Git:** `git push origin main` también dispara build en el mismo proyecto Vercel.
+- **Un solo build por cambio:** `deploy:vercel` se niega si HEAD ya está en `origin/main` (el push ya lo despliega); forzar con `npm run deploy:vercel -- --duplicar`.
+- **Solo `main` construye** en `pimepanama-wt62`: Ignored Build Step del proyecto salta toda rama Git distinta de `main` (p. ej. `sitio-v2`, que se despliega aparte en `pime-v2`).
 - **NUNCA** desplegar sin `node scripts/verify-vercel-project.cjs` (evita crear/enlazar otro proyecto por error).
 
 ## REGLA: NO desplegar sin que el usuario lo pida explícitamente
