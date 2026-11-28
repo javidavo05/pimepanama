@@ -16,10 +16,17 @@ export default async function ControlSlidesPage() {
   const devices = await prisma.deviceToken.findMany({
     where: { userId: user.miembro.id, revokedAt: null, alcance: "dispositivo" },
     select: { id: true, name: true, lastUsedAt: true, createdAt: true },
-    orderBy: [{ lastUsedAt: { sort: "desc", nulls: "last" } }, { createdAt: "desc" }],
+    orderBy: [
+      { lastUsedAt: { sort: "desc", nulls: "last" } },
+      { createdAt: "desc" },
+    ],
   });
   const { url, anonKey } = realtimeConfig();
-  const fecha = new Intl.DateTimeFormat("es-PA", { day: "numeric", month: "short", timeZone: "America/Panama" });
+  const fecha = new Intl.DateTimeFormat("es-PA", {
+    day: "numeric",
+    month: "short",
+    timeZone: "America/Panama",
+  });
 
   return (
     <ControlSlides
@@ -28,7 +35,9 @@ export default async function ControlSlidesPage() {
         id: d.id,
         name: d.name,
         canal: canalDeControl(d.id),
-        detalle: d.lastUsedAt ? `usada ${fecha.format(d.lastUsedAt)}` : `vinculada ${fecha.format(d.createdAt)}`,
+        detalle: d.lastUsedAt
+          ? `usada ${fecha.format(d.lastUsedAt)}`
+          : `vinculada ${fecha.format(d.createdAt)}`,
       }))}
     />
   );

@@ -2,6 +2,7 @@
 
 import Link from "@/components/empresa/link";
 import { useCallback, useEffect, useRef, useState } from "react";
+import "./control-slides.css";
 
 interface Mac {
   id: string;
@@ -24,6 +25,14 @@ interface EstadoMac {
 type Orden =
   | { a: "next" | "prev" | "first" | "last" | "black" | "chrome" | "click" }
   | { a: "move"; dx: number; dy: number };
+
+interface Acuse {
+  a: Orden["a"];
+  /** Ida y vuelta hasta la Mac; null cuando fue por internet (sin confirmación). */
+  ms: number | null;
+  via: "wifi" | "internet" | "fallo";
+  n: number;
+}
 
 type Conexion =
   "conectando" | "buscando" | "lista" | "sin-mac" | "apagada" | "error";
@@ -52,6 +61,8 @@ function useCanal(
   const [directo, setDirecto] = useState<string | null>(null);
   const directoRef = useRef<string | null>(null);
   const probando = useRef(new Set<string>());
+  /** La última orden y cuánto tardó la Mac en confirmarla (solo por Wi-Fi hay confirmación). */
+  const [ultimo, setUltimo] = useState<Acuse | null>(null);
 
   const topic = canal ? `realtime:${canal}` : null;
 
@@ -247,23 +258,52 @@ function useCanal(
   const ordenar = useCallback(
     (o: Orden) => {
       const base = directoRef.current;
+      const anotar = o.a !== "move";
       if (base && canal) {
+        const t0 = performance.now();
         postLocal(base, "/cmd", { ...o, k: canal }, 2_500).then((r) => {
-          // Se cortó el Wi-Fi directo: esta orden y las siguientes van por internet.
-          if (!r) {
-            usarDirecto(null);
-            enviar("cmd", o as unknown as Record<string, unknown>);
+          if (r) {
+            if (anotar)
+              setUltimo({
+                a: o.a,
+                ms: Math.round(performance.now() - t0),
+                via: "wifi",
+                n: Date.now(),
+              });
+            if (r.app)
+              setEstado((e) =>
+                e && e.app !== r.app ? { ...e, app: r.app } : e,
+              );
+            return;
           }
+          // Se cortó el Wi-Fi directo: esta orden y las siguientes van por internet.
+          usarDirecto(null);
+          const ok = enviar("cmd", o as unknown as Record<string, unknown>);
+          if (anotar)
+            setUltimo({
+              a: o.a,
+              ms: null,
+              via: ok ? "internet" : "fallo",
+              n: Date.now(),
+            });
         });
         return true;
       }
-      return enviar("cmd", o as unknown as Record<string, unknown>);
+      const ok = enviar("cmd", o as unknown as Record<string, unknown>);
+      if (anotar)
+        setUltimo({
+          a: o.a,
+          ms: null,
+          via: ok ? "internet" : "fallo",
+          n: Date.now(),
+        });
+      return ok;
     },
     [enviar, canal],
   );
   const reconectar = useCallback(() => setIntento((n) => n + 1), []);
 
-  return { conexion, estado, ordenar, preguntar, reconectar, directo };
+  return { conexion, estado, ordenar, preguntar, reconectar, directo, ultimo };
 }
 
 /**
@@ -326,6 +366,51 @@ function vibrar() {
   if ("vibrate" in navigator) navigator.vibrate?.(12);
 }
 
+const ETIQUETA: Record<Orden["a"], string> = {
+  next: "Siguiente",
+  prev: "Anterior",
+  first: "Primera slide",
+  last: "Última slide",
+  black: "Pantalla negra",
+  chrome: "Chrome al frente",
+  click: "Clic",
+  move: "Mover",
+};
+
+/** Cronómetro de la presentación: tocar arranca y pausa; con la pausa aparece reiniciar. */
+function useCronometro() {
+  const [desde, setDesde] = useState<number | null>(null);
+  const [acumulado, setAcumulado] = useState(0);
+  const [, setTic] = useState(0);
+  useEffect(() => {
+    if (desde === null) return;
+    const t = setInterval(() => setTic((n) => n + 1), 1_000);
+    return () => clearInterval(t);
+  }, [desde]);
+  const total = acumulado + (desde !== null ? Date.now() - desde : 0);
+  const s = Math.floor(total / 1000);
+  const texto =
+    s >= 3600
+      ? `${Math.floor(s / 3600)}:${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`
+      : `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  return {
+    texto,
+    corre: desde !== null,
+    hayTiempo: total > 0,
+    alternar: () => {
+      if (desde === null) setDesde(Date.now());
+      else {
+        setAcumulado((a) => a + Date.now() - desde);
+        setDesde(null);
+      }
+    },
+    reiniciar: () => {
+      setDesde(null);
+      setAcumulado(0);
+    },
+  };
+}
+
 export function ControlSlides({
   realtime,
   macs,
@@ -336,8 +421,9 @@ export function ControlSlides({
   const [macId, setMacId] = useState(macs[0]?.id ?? null);
   const mac = macs.find((m) => m.id === macId) ?? null;
   const [modo, setModo] = useState<"slides" | "puntero">("slides");
-  const { conexion, estado, ordenar, preguntar, reconectar, directo } =
+  const { conexion, estado, ordenar, preguntar, reconectar, directo, ultimo } =
     useCanal(realtime, mac?.canal ?? null);
+  const crono = useCronometro();
   usePantallaEncendida();
 
   const tocar = (o: Orden) => {
@@ -359,65 +445,86 @@ export function ControlSlides({
   }, [ordenar]);
 
   return (
-    // Pantalla completa, sin la navegación de la suite (grupo (presentar)): se
-    // presenta con una mano y nada debe quedar a un toque de cambiar de sección.
-    // En pantallas bajas (plegable cerrado) se desplaza en vez de recortar.
-    <div className="fixed inset-0 flex flex-col overflow-y-auto overscroll-contain bg-canvas text-fg select-none pt-[max(12px,env(safe-area-inset-top))] pb-[max(16px,env(safe-area-inset-bottom))] pl-[max(16px,env(safe-area-inset-left))] pr-[max(16px,env(safe-area-inset-right))]">
-      <header className="flex items-center gap-3 min-h-12">
+    <div className="cs">
+      <header className="cs-top">
         <Link
           href="/empresa"
-          className="inline-flex items-center gap-1 min-h-12 pr-3 text-sm text-fg-dim hover:text-fg"
+          className="cs-icon-btn"
           aria-label="Salir del control de slides"
         >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            strokeWidth={1.5}
-            aria-hidden
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15.75 19.5 8.25 12l7.5-7.5"
-            />
-          </svg>
-          Salir
+          <Icono d="M15.75 19.5 8.25 12l7.5-7.5" />
         </Link>
-        <div className="min-w-0 flex-1 text-right">
-          <p className="text-sm font-semibold truncate">
-            {estado?.nombre ?? mac?.name ?? "Control de slides"}
+
+        <div className="cs-mac">
+          <p className="cs-mac-name">
+            <span>{estado?.nombre ?? mac?.name ?? "Control de slides"}</span>
+            {macs.length > 1 && (
+              <Icono d="m19.5 8.25-7.5 7.5-7.5-7.5" size={14} />
+            )}
           </p>
           <EstadoLinea
             conexion={conexion}
             estado={estado}
             directo={directo !== null}
+            ultimo={ultimo}
           />
+          {macs.length > 1 && (
+            <select
+              value={macId ?? ""}
+              onChange={(e) => setMacId(e.target.value)}
+              aria-label="Elegir la Mac"
+            >
+              {macs.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name} · {m.detalle}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
+
+        {macs.length > 0 ? (
+          <div style={{ display: "flex", gap: 8 }}>
+            {!crono.corre && crono.hayTiempo && (
+              <button
+                className="cs-icon-btn"
+                onClick={crono.reiniciar}
+                aria-label="Reiniciar el cronómetro"
+              >
+                <Icono
+                  d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                  size={18}
+                />
+              </button>
+            )}
+            <button
+              className="cs-timer"
+              data-corre={crono.corre}
+              onClick={crono.alternar}
+              aria-label={
+                crono.corre ? "Pausar el cronómetro" : "Arrancar el cronómetro"
+              }
+            >
+              <Icono
+                d={
+                  crono.corre
+                    ? "M15.75 5.25v13.5m-7.5-13.5v13.5"
+                    : "M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                }
+                size={16}
+              />
+              {crono.texto}
+            </button>
+          </div>
+        ) : (
+          <span />
+        )}
       </header>
 
       {macs.length === 0 ? (
         <SinMac />
       ) : (
         <>
-          {macs.length > 1 && (
-            <label className="mt-2 flex items-center gap-2 text-sm text-fg-dim">
-              <span className="shrink-0">Mac</span>
-              <select
-                value={macId ?? ""}
-                onChange={(e) => setMacId(e.target.value)}
-                className="min-h-12 flex-1 min-w-0 rounded-xl border border-line bg-canvas px-3 text-base text-fg"
-              >
-                {macs.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.name} · {m.detalle}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-
           <Aviso
             conexion={conexion}
             estado={estado}
@@ -428,17 +535,16 @@ export function ControlSlides({
           <div
             role="tablist"
             aria-label="Modo"
-            className="mt-3 grid grid-cols-2 gap-1 rounded-xl border border-line p-1"
+            className="cs-modo"
+            data-modo={modo}
           >
+            <span className="cs-modo-pista" aria-hidden />
             {(["slides", "puntero"] as const).map((m) => (
               <button
                 key={m}
                 role="tab"
                 aria-selected={modo === m}
                 onClick={() => setModo(m)}
-                className={`min-h-11 rounded-lg text-sm font-medium transition-colors ${
-                  modo === m ? "bg-brand/10 text-fg" : "text-fg-mute"
-                }`}
               >
                 {m === "slides" ? "Slides" : "Puntero"}
               </button>
@@ -446,49 +552,65 @@ export function ControlSlides({
           </div>
 
           {modo === "slides" ? (
-            <div className="mt-3 flex flex-1 shrink-0 flex-col gap-3">
-              {/* En horizontal y en el plegable abierto, Anterior a la izquierda y Siguiente a la derecha. */}
-              <div className="flex flex-1 shrink-0 flex-col gap-3 sm:flex-row">
+            <>
+              <div className="cs-escena">
                 <button
+                  className="cs-prev"
                   onClick={() => tocar({ a: "prev" })}
-                  className="flex flex-[1] min-h-16 items-center justify-center gap-2 rounded-2xl border border-line-mid text-lg font-medium text-fg active:bg-fg-trace"
+                  aria-label="Slide anterior"
                 >
-                  <Flecha dir="izq" />
-                  Anterior
+                  {ultimo?.a === "prev" && (
+                    <span key={ultimo.n} className="cs-onda" aria-hidden />
+                  )}
+                  <span className="cs-flecha">
+                    <Icono d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" size={28} />
+                  </span>
+                  <span className="cs-label">Anterior</span>
                 </button>
                 <button
+                  className="cs-next"
                   onClick={() => tocar({ a: "next" })}
-                  className="flex flex-[2.4] min-h-24 items-center justify-center gap-3 rounded-2xl bg-brand text-2xl font-semibold text-on-brand active:bg-brand-hi"
+                  aria-label="Slide siguiente"
                 >
-                  Siguiente
-                  <Flecha dir="der" />
+                  {ultimo?.a === "next" && (
+                    <span key={ultimo.n} className="cs-onda" aria-hidden />
+                  )}
+                  <span className="cs-flecha">
+                    <Icono d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" size={36} />
+                  </span>
+                  <span className="cs-label">Siguiente</span>
                 </button>
               </div>
-              <div className="grid grid-cols-4 gap-2">
-                <Atajo
+              <Acuse ultimo={ultimo} />
+              <div className="cs-tools">
+                <Herramienta
                   onClick={() => tocar({ a: "first" })}
                   titulo="Inicio"
                   ayuda="Primera slide (tecla Inicio)"
+                  d="m18.75 4.5-7.5 7.5 7.5 7.5m-6-15L5.25 12l7.5 7.5"
                 />
-                <Atajo
+                <Herramienta
                   onClick={() => tocar({ a: "last" })}
                   titulo="Final"
                   ayuda="Última slide (tecla Fin)"
+                  d="m5.25 4.5 7.5 7.5-7.5 7.5m6-15 7.5 7.5-7.5 7.5"
                 />
-                <Atajo
+                <Herramienta
                   onClick={() => tocar({ a: "black" })}
                   titulo="Negro"
                   ayuda="Pantalla negra (tecla B)"
+                  d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z"
                 />
-                <Atajo
+                <Herramienta
                   onClick={() => tocar({ a: "chrome" })}
                   titulo="Chrome"
                   ayuda="Trae Chrome al frente"
+                  d="M3 8.25V18a2.25 2.25 0 0 0 2.25 2.25h13.5A2.25 2.25 0 0 0 21 18V8.25m-18 0V6a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 6v2.25m-18 0h18M5.25 6h.008v.008H5.25V6ZM7.5 6h.008v.008H7.5V6Zm2.25 0h.008v.008H9.75V6Z"
                 />
               </div>
-            </div>
+            </>
           ) : (
-            <Puntero ordenar={ordenar} tocar={tocar} />
+            <Puntero ordenar={ordenar} tocar={tocar} ultimo={ultimo} />
           )}
         </>
       )}
@@ -496,41 +618,77 @@ export function ControlSlides({
   );
 }
 
+function Icono({ d, size = 20 }: { d: string; size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      aria-hidden
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d={d} />
+    </svg>
+  );
+}
+
 function EstadoLinea({
   conexion,
   estado,
   directo,
+  ultimo,
 }: {
   conexion: Conexion;
   estado: EstadoMac | null;
   directo: boolean;
+  ultimo: Acuse | null;
 }) {
-  const via = directo ? "Wi-Fi directo" : "por internet";
-  const { texto, color } =
-    conexion === "lista"
-      ? {
-          texto: estado?.app
-            ? `${via} · recibe ${estado.app}`
-            : `Conectada ${via}`,
-          color: "bg-ok",
-        }
-      : conexion === "buscando" || conexion === "conectando"
-        ? { texto: "Buscando la Mac…", color: "bg-fg-faint" }
-        : conexion === "apagada"
-          ? { texto: "Control apagado en la Mac", color: "bg-warn" }
-          : conexion === "sin-mac"
-            ? { texto: "La Mac no contesta", color: "bg-warn" }
-            : { texto: "Sin conexión, reintentando…", color: "bg-danger" };
+  let tono = "bad";
+  let texto = "Sin conexión, reintentando…";
+  if (conexion === "lista") {
+    tono = "ok";
+    const ms = directo && ultimo?.ms != null ? ` · ${ultimo.ms} ms` : "";
+    texto = `${directo ? "Wi-Fi directo" : "Por internet"}${ms}${estado?.app ? ` · ${estado.app.replace(/^Google /, "")}` : ""}`;
+  } else if (conexion === "buscando" || conexion === "conectando") {
+    tono = "wait";
+    texto = "Buscando la Mac…";
+  } else if (conexion === "apagada") {
+    tono = "warn";
+    texto = "Control apagado en la Mac";
+  } else if (conexion === "sin-mac") {
+    tono = "warn";
+    texto = "La Mac no contesta";
+  }
   return (
-    <p
-      className="flex items-center justify-end gap-2 text-xs text-fg-dim"
-      aria-live="polite"
-    >
-      <span
-        className={`inline-block w-2 h-2 rounded-full shrink-0 ${color}`}
-        aria-hidden
-      />
-      <span className="truncate">{texto}</span>
+    <p className="cs-status" aria-live="polite">
+      <span className="cs-dot" data-tono={tono} aria-hidden />
+      <span>{texto}</span>
+    </p>
+  );
+}
+
+/** Confirma cada orden: por Wi-Fi la Mac contesta y se ve cuánto tardó. */
+function Acuse({ ultimo }: { ultimo: Acuse | null }) {
+  let contenido: React.ReactNode =
+    "Las flechas van a la app que esté al frente en la Mac";
+  if (ultimo) {
+    const que = <b>{ETIQUETA[ultimo.a]}</b>;
+    contenido =
+      ultimo.via === "wifi" ? (
+        <>
+          {que} · recibido en {ultimo.ms} ms
+        </>
+      ) : ultimo.via === "internet" ? (
+        <>{que} · enviado por internet</>
+      ) : (
+        <>{que} · no salió: sin conexión</>
+      );
+  }
+  return (
+    <p className="cs-acuse" aria-live="polite">
+      {contenido}
     </p>
   );
 }
@@ -549,6 +707,7 @@ function Aviso({
 }) {
   let titulo: string | null = null;
   let detalle = "";
+  let tono = "warn";
   let accion: { texto: string; fn: () => void } | null = null;
 
   if (conexion === "sin-mac" || conexion === "apagada") {
@@ -562,89 +721,76 @@ function Aviso({
   } else if (conexion === "error") {
     titulo = "Sin conexión";
     detalle = "Revisa el Wi-Fi o los datos del celular. Se reintenta solo.";
+    tono = "bad";
     accion = { texto: "Reintentar ahora", fn: onReconectar };
   } else if (conexion === "lista" && estado?.accesibilidad === false) {
     titulo = "Falta un permiso en la Mac";
     detalle =
-      "Ajustes del Sistema → Privacidad y seguridad → Accesibilidad → activa PIME Guard. Sin eso la Mac recibe las órdenes pero no puede pulsar teclas.";
+      "Ajustes del Sistema → Privacidad y seguridad → Device Control and Data Access (antes Accesibilidad) → activa PIME Guard.";
   }
   if (!titulo) return null;
 
   return (
-    <div className="mt-3 rounded-xl border border-warn/40 bg-warn/10 p-3">
-      <p className="text-sm font-semibold text-fg">{titulo}</p>
-      <p className="mt-1 text-sm leading-relaxed text-fg-dim">{detalle}</p>
-      {accion && (
-        <button
-          onClick={accion.fn}
-          className="mt-2 min-h-11 rounded-lg border border-line-mid px-3 text-sm font-medium text-fg"
-        >
-          {accion.texto}
-        </button>
-      )}
+    <div className="cs-aviso" data-tono={tono} role="status">
+      <Icono
+        d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
+        size={20}
+      />
+      <div>
+        <p className="cs-aviso-t">{titulo}</p>
+        <p className="cs-aviso-d">{detalle}</p>
+        {accion && (
+          <button onClick={accion.fn} className="cs-aviso-a">
+            {accion.texto}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
 function SinMac() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center px-4">
-      <p className="text-lg font-semibold">Vincula tu Mac primero</p>
-      <p className="max-w-sm text-sm leading-relaxed text-fg-dim">
+    <div className="cs-vacio">
+      <span className="cs-vacio-icono">
+        <Icono
+          d="M9 17.25v1.007a3 3 0 0 1-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0 1 15 18.257V17.25m6-12V15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 15V5.25m18 0A2.25 2.25 0 0 0 18.75 3H5.25A2.25 2.25 0 0 0 3 5.25m18 0V12a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 12V5.25"
+          size={32}
+        />
+      </span>
+      <h1>Vincula tu Mac primero</h1>
+      <p>
         El control manda Siguiente, Anterior y clics a una Mac con PIME Guard.
-        Vincúlala una vez desde la Mac y vuelve aquí.
+        Vincúlala una vez y vuelve aquí.
       </p>
-      <Link
-        href="/empresa/configuracion/mac"
-        className="mt-2 inline-flex min-h-12 items-center rounded-xl bg-brand px-6 text-base font-semibold text-on-brand"
-      >
+      <Link href="/empresa/configuracion/mac" className="cs-cta">
         Vincular la Mac
       </Link>
     </div>
   );
 }
 
-function Atajo({
+function Herramienta({
   onClick,
   titulo,
   ayuda,
+  d,
 }: {
   onClick: () => void;
   titulo: string;
   ayuda: string;
+  d: string;
 }) {
   return (
     <button
       onClick={onClick}
       title={ayuda}
       aria-label={ayuda}
-      className="min-h-12 rounded-xl border border-line text-sm font-medium text-fg-dim active:bg-fg-trace"
+      className="cs-tool"
     >
+      <Icono d={d} size={22} />
       {titulo}
     </button>
-  );
-}
-
-function Flecha({ dir }: { dir: "izq" | "der" }) {
-  return (
-    <svg
-      className="w-6 h-6"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      aria-hidden
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d={
-          dir === "der"
-            ? "M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
-            : "M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18"
-        }
-      />
-    </svg>
   );
 }
 
@@ -656,11 +802,13 @@ function Flecha({ dir }: { dir: "izq" | "der" }) {
 function Puntero({
   ordenar,
   tocar,
+  ultimo,
 }: {
   ordenar: (o: Orden) => boolean;
   tocar: (o: Orden) => void;
+  ultimo: Acuse | null;
 }) {
-  const ultimo = useRef<{ x: number; y: number; t: number } | null>(null);
+  const ultimoPunto = useRef<{ x: number; y: number; t: number } | null>(null);
   const inicio = useRef<{
     x: number;
     y: number;
@@ -670,6 +818,8 @@ function Puntero({
   const pendiente = useRef({ dx: 0, dy: 0 });
   const frame = useRef<number | null>(null);
   const ultimoEnvio = useRef(0);
+  const [dedo, setDedo] = useState<{ x: number; y: number } | null>(null);
+  const [usado, setUsado] = useState(false);
 
   const vaciar = useCallback(() => {
     frame.current = null;
@@ -692,19 +842,30 @@ function Puntero({
     [],
   );
 
+  const soltar = () => {
+    ultimoPunto.current = null;
+    inicio.current = null;
+    setDedo(null);
+  };
+
   return (
-    <div className="mt-3 flex flex-1 shrink-0 flex-col gap-3">
+    <>
       <div
-        className="relative flex flex-1 min-h-48 items-center justify-center rounded-2xl border border-line-mid bg-fg-trace/40 touch-none"
+        className="cs-pad"
+        data-activo={usado}
         onPointerDown={(e) => {
           e.currentTarget.setPointerCapture(e.pointerId);
+          const r = e.currentTarget.getBoundingClientRect();
           const t = performance.now();
-          ultimo.current = { x: e.clientX, y: e.clientY, t };
+          ultimoPunto.current = { x: e.clientX, y: e.clientY, t };
           inicio.current = { x: e.clientX, y: e.clientY, t, recorrido: 0 };
+          setDedo({ x: e.clientX - r.left, y: e.clientY - r.top });
+          setUsado(true);
         }}
         onPointerMove={(e) => {
-          const u = ultimo.current;
+          const u = ultimoPunto.current;
           if (!u) return;
+          const r = e.currentTarget.getBoundingClientRect();
           const t = performance.now();
           const mx = e.clientX - u.x;
           const my = e.clientY - u.y;
@@ -713,49 +874,54 @@ function Puntero({
           pendiente.current.dx += mx * factor;
           pendiente.current.dy += my * factor;
           if (inicio.current) inicio.current.recorrido += Math.hypot(mx, my);
-          ultimo.current = { x: e.clientX, y: e.clientY, t };
+          ultimoPunto.current = { x: e.clientX, y: e.clientY, t };
+          setDedo({ x: e.clientX - r.left, y: e.clientY - r.top });
           if (!frame.current) frame.current = requestAnimationFrame(vaciar);
         }}
         onPointerUp={() => {
           const i = inicio.current;
           if (i && i.recorrido < 8 && performance.now() - i.t < 280)
             tocar({ a: "click" });
-          ultimo.current = null;
-          inicio.current = null;
+          soltar();
         }}
-        onPointerCancel={() => {
-          ultimo.current = null;
-          inicio.current = null;
-        }}
+        onPointerCancel={soltar}
       >
-        <p className="pointer-events-none px-6 text-center text-sm leading-relaxed text-fg-faint">
-          Arrastra para mover el puntero.
-          <br />
-          Toca para hacer clic.
-        </p>
+        <div className="cs-pad-hint">
+          <Icono
+            d="M15.042 21.672 13.684 16.6m0 0-2.51 2.225.569-9.47 5.227 7.917-3.286-.672ZM12 2.25V4.5m5.834.166-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243-1.59-1.59"
+            size={28}
+          />
+          <span>
+            Arrastra para mover el puntero.
+            <br />
+            Toca para hacer clic.
+          </span>
+        </div>
+        {dedo && (
+          <span
+            className="cs-dedo"
+            style={{ left: dedo.x, top: dedo.y }}
+            aria-hidden
+          />
+        )}
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <Acuse ultimo={ultimo} />
+      <div className="cs-pad-row">
         <button
           onClick={() => tocar({ a: "prev" })}
-          className="min-h-14 rounded-xl border border-line-mid text-base font-medium"
           aria-label="Slide anterior"
         >
           Anterior
         </button>
-        <button
-          onClick={() => tocar({ a: "click" })}
-          className="min-h-14 rounded-xl border border-line-mid text-base font-medium"
-        >
-          Clic
-        </button>
+        <button onClick={() => tocar({ a: "click" })}>Clic</button>
         <button
           onClick={() => tocar({ a: "next" })}
-          className="min-h-14 rounded-xl bg-brand text-base font-semibold text-on-brand"
+          className="cs-pad-next"
           aria-label="Slide siguiente"
         >
           Siguiente
         </button>
       </div>
-    </div>
+    </>
   );
 }
