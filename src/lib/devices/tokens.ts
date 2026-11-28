@@ -36,6 +36,10 @@ function unauthorized(): Response {
 
 /** Busca la llave del Bearer y exige su alcance. Lanza un 401 si falta, está revocada o es de otro alcance. */
 async function requireLlave(request: Request, alcance: AlcanceLlave): Promise<EmpresaUser> {
+  return (await requireLlaveConId(request, alcance)).user;
+}
+
+async function requireLlaveConId(request: Request, alcance: AlcanceLlave): Promise<{ id: string; user: EmpresaUser }> {
   const header = request.headers.get("authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
   if (!token.startsWith(PREFIX)) throw unauthorized();
@@ -51,12 +55,17 @@ async function requireLlave(request: Request, alcance: AlcanceLlave): Promise<Em
       .update({ where: { id: device.id }, data: { lastUsedAt: new Date() } })
       .catch(() => undefined);
   }
-  return device.user;
+  return { id: device.id, user: device.user };
 }
 
 /** Como requireEmpresaUser, pero con la llave del dispositivo. Lanza un 401. */
 export function requireDeviceUser(request: Request): Promise<EmpresaUser> {
   return requireLlave(request, "dispositivo");
+}
+
+/** Como requireDeviceUser, pero también dice qué Mac es (para su canal del control de slides). */
+export function requireDevice(request: Request): Promise<{ id: string; user: EmpresaUser }> {
+  return requireLlaveConId(request, "dispositivo");
 }
 
 /** La llave del agente de prospección: solo abre /api/empresa/prospectos. */

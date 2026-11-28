@@ -41,6 +41,8 @@ const ICONS = {
   more: "M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5",
   ticket: "M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 0 1 1.037-.443 48.282 48.282 0 0 0 5.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z",
   close: "M6 18 18 6M6 6l12 12",
+  presentation:
+    "M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5m.75-9 3-3 2.148 2.148A12.061 12.061 0 0 1 16.5 7.605",
   search: "m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z",
   trending: "M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941",
   chart:
@@ -92,6 +94,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/empresa/reportes", label: "Reportes", icon: "chart", group: "Herramientas" },
   { href: "/empresa/contratos", label: "Contratos", icon: "contract", group: "Herramientas" },
   { href: "/empresa/bitacoras", label: "Bitácoras", icon: "pencil", group: "Herramientas" },
+  { href: "/empresa/control-slides", label: "Control de slides", icon: "presentation", group: "Herramientas" },
 ];
 
 const BOTTOM_ITEMS: NavItem[] = [{ href: "/empresa/configuracion", label: "Configuración", icon: "settings", group: "Herramientas" }];

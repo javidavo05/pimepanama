@@ -60,6 +60,19 @@
           "type": "image/png"
         }
       ]
+    },
+    {
+      "name": "Control de slides",
+      "short_name": "Slides",
+      "description": "Pasa slides y mueve el puntero de tu Mac desde el celular",
+      "url": "/empresa/control-slides",
+      "icons": [
+        {
+          "src": "/icons/empresa-icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
     }
   ]
 }
